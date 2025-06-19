@@ -81,10 +81,12 @@ public class UniverseStructureAPI {
     // MARK: - Cache Methods
 
     private func loadStructureFromCache(structureId: Int64) -> UniverseStructureInfo? {
+        // 在SQL中直接过滤过期缓存（168小时 = 7天）
         let sql = """
                 SELECT name, owner_id, solar_system_id, type_id, timestamp
                 FROM structure_cache
                 WHERE structure_id = ?
+                AND timestamp > datetime('now', '-168 hour')
             """
 
         let result = databaseManager.executeQuery(sql, parameters: [structureId])
@@ -92,20 +94,11 @@ public class UniverseStructureAPI {
         switch result {
         case let .success(rows):
             guard let row = rows.first else {
-                Logger.info("缓存中没有找到建筑物信息 - 建筑物ID: \(structureId)")
+                Logger.info("缓存中没有找到有效的建筑物信息 - 建筑物ID: \(structureId)")
                 return nil
             }
 
-            // 检查缓存是否过期（7天）
-            let timestamp = row["timestamp"] as! Int64
-            let currentTime = Int64(Date().timeIntervalSince1970)
-            if currentTime - timestamp > 7 * 24 * 3600 {
-                Logger.info("建筑物缓存已过期 - 建筑物ID: \(structureId)")
-                // 删除过期缓存
-                deleteStructureCache(structureId: structureId)
-                return nil
-            }
-
+            Logger.info("使用有效缓存的建筑物信息 - 建筑物ID: \(structureId)")
             return UniverseStructureInfo(
                 name: row["name"] as! String,
                 owner_id: Int(row["owner_id"] as! Int64),
@@ -125,10 +118,9 @@ public class UniverseStructureAPI {
 
     // 批量保存建筑物信息
     private func saveStructuresToCache(_ structures: [(Int64, UniverseStructureInfo)]) {
-        let timestamp = Int64(Date().timeIntervalSince1970)
-
+        // 直接使用SQL的datetime('now')函数获取当前时间
         // 构建批量插入的SQL
-        let valuesSql = structures.map { _ in "(?, ?, ?, ?, ?, ?)" }.joined(separator: ",")
+        let valuesSql = structures.map { _ in "(?, ?, ?, ?, ?, datetime('now'))" }.joined(separator: ",")
         let sql = """
                 INSERT OR REPLACE INTO structure_cache (
                     structure_id,
@@ -140,7 +132,7 @@ public class UniverseStructureAPI {
                 ) VALUES \(valuesSql)
             """
 
-        // 构建参数数组
+        // 构建参数数组（不再需要timestamp参数）
         var parameters: [Any] = []
         for (structureId, structure) in structures {
             parameters.append(structureId)
@@ -148,7 +140,7 @@ public class UniverseStructureAPI {
             parameters.append(structure.owner_id)
             parameters.append(structure.solar_system_id)
             parameters.append(structure.type_id)
-            parameters.append(timestamp)
+            // timestamp通过SQL的datetime('now')自动设置
         }
 
         let result = databaseManager.executeQuery(sql, parameters: parameters)
@@ -158,22 +150,6 @@ public class UniverseStructureAPI {
             Logger.info("成功批量保存 \(structures.count) 个建筑物信息到缓存")
         case let .error(error):
             Logger.error("批量保存建筑物缓存失败: \(error)")
-        }
-    }
-
-    private func deleteStructureCache(structureId: Int64) {
-        deleteStructureCacheBatch(structureIds: [structureId])
-    }
-
-    // 批量删除建筑物缓存
-    private func deleteStructureCacheBatch(structureIds: [Int64]) {
-        let placeholders = String(repeating: "?,", count: structureIds.count).dropLast()
-        let sql = "DELETE FROM structure_cache WHERE structure_id IN (\(placeholders))"
-
-        let result = databaseManager.executeQuery(sql, parameters: structureIds)
-
-        if case let .error(error) = result {
-            Logger.error("批量删除建筑物缓存失败: \(error)")
         }
     }
 

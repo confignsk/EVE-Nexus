@@ -227,23 +227,8 @@ class CacheManager {
             URLCache.shared.removeAllCachedResponses()
             Logger.info("URLCache 清理完成")
         }
-
-        // 11. 清理 URL Session 缓存
-        await clearURLSessionCacheAsync()
-
+        
         Logger.info("所有缓存清理完成")
-    }
-
-    // 异步清理URL Session缓存
-    private func clearURLSessionCacheAsync() async {
-        await MainActor.run {
-            // 清理cookies
-            if let cookies = HTTPCookieStorage.shared.cookies {
-                for cookie in cookies {
-                    HTTPCookieStorage.shared.deleteCookie(cookie)
-                }
-            }
-        }
     }
 }
 
@@ -292,6 +277,7 @@ struct SettingView: View {
     @State private var showResetDatabaseAlert = false
     @State private var showResetDatabaseSuccessAlert = false
     @State private var showingESIStatusView = false
+    @State private var showingLogsBrowserView = false
 
     // MARK: - 数据更新函数
 
@@ -386,6 +372,7 @@ struct SettingView: View {
             createAppearanceGroup(),
             createCorporationAffairsGroup(),
             createOthersGroup(),
+            createLogsGroup(),
             createCacheGroup(),
         ]
     }
@@ -522,6 +509,59 @@ struct SettingView: View {
         )
     }
 
+    private struct LoggingToggle: View {
+        @AppStorage("enableLogging") private var enableLogging: Bool = false
+
+        var body: some View {
+            HStack {
+                Toggle(isOn: $enableLogging) {
+                    VStack(alignment: .leading) {
+                        Text(NSLocalizedString("Main_Setting_Enable_Logging", comment: ""))
+                            .font(.system(size: 16))
+                            .foregroundColor(.primary)
+                        Text(NSLocalizedString("Main_Setting_Enable_Logging_Detail", comment: ""))
+                            .font(.system(size: 12))
+                            .foregroundColor(.gray)
+                    }
+                }
+                .tint(.green)
+            }
+        }
+    }
+
+    private func createLogsGroup() -> SettingGroup {
+        let enableLogging = UserDefaults.standard.bool(forKey: "enableLogging")
+        
+        var items: [SettingItem] = [
+            SettingItem(
+                title: NSLocalizedString("Main_Setting_Enable_Logging", comment: ""),
+                detail: nil,
+                iconColor: .blue,
+                action: {}
+            ) { _ in
+                AnyView(LoggingToggle())
+            }
+        ]
+        
+        // 只有在启用日志功能时才显示"查看日志"选项
+        if enableLogging {
+            items.append(
+                SettingItem(
+                    title: NSLocalizedString("Main_Setting_View_Logs", comment: ""),
+                    detail: NSLocalizedString("Main_Setting_View_Logs_Detail", comment: ""),
+                    icon: "doc.text.magnifyingglass",
+                    iconColor: .blue,
+                    action: { showingLogsBrowserView = true }
+                )
+            )
+        }
+        
+        return SettingGroup(
+            header: NSLocalizedString("Main_Setting_Logs_Section", comment: ""),
+            items: items
+        )
+    }
+
     private func createCacheGroup() -> SettingGroup {
         SettingGroup(
             header: NSLocalizedString("Main_Setting_Cache", comment: ""),
@@ -629,6 +669,9 @@ struct SettingView: View {
         .navigationDestination(isPresented: $showingESIStatusView) {
             ESIStatusView()
         }
+        .navigationDestination(isPresented: $showingLogsBrowserView) {
+            LogsBrowserView()
+        }
         .alert(
             NSLocalizedString("Main_Setting_Clean_Cache_Title", comment: ""),
             isPresented: $showingCleanCacheAlert
@@ -681,6 +724,11 @@ struct SettingView: View {
         }
         .onChange(of: selectedTheme) { _, _ in
             updateSettingGroups()  // 主题改变时更新
+        }
+        .onReceive(
+            NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
+        ) { _ in
+            updateSettingGroups()  // UserDefaults改变时更新（包括日志开关）
         }
         .navigationTitle(NSLocalizedString("Main_Setting_Title", comment: ""))
         .fullScreenCover(isPresented: $showingLoadingView) {

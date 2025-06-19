@@ -75,6 +75,7 @@ struct ShipCapacitorStatsView: View {
     
     // 计算电容稳定性
     private func calculateCapacitorStability(ship: SimShipOutput) -> (isStable: Bool, stableLevel: Double, lastsTime: Double, delta: Double) {
+
         // 获取必要的属性
         let capCapacity = ship.attributesByName["capacitorCapacity"] ?? 0
         let capRechargeTimeMs = ship.attributesByName["rechargeRate"] ?? 0

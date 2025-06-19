@@ -172,7 +172,7 @@ struct ModuleSettingsView: View {
     }
     
     var body: some View {
-        NavigationStack {
+        NavigationView {
             List {
                 // 如果是批量模式，显示批量操作信息
                 if isBatchMode {
@@ -280,29 +280,16 @@ struct ModuleSettingsView: View {
                                             // 批量模式下，调用外部回调
                                             onReplaceModule(variationID)
                                             
-                                            // 批量替换完成后，更新内部状态以反映新装备
-                                            currentModuleID = variationID
-                                            
-                                            // 从viewModel中获取更新后的模块信息，避免额外SQL查询
+                                            // 批量替换完成后，从viewModel同步获取最新的模块ID
                                             if let updatedModule = viewModel.simulationInput.modules.first(where: { $0.flag == slotFlag }) {
+                                                // 更新内部状态以反映新装备
+                                                currentModuleID = updatedModule.typeId
+                                                
                                                 // 重新加载模块信息
                                                 loadModuleDetails()
                                                 checkVariations()
-                                                
-                                                // 使用更新后的模块属性计算可用状态
-                                                availableModuleStates = getAvailableStatuses(
-                                                    itemEffects: updatedModule.effects,
-                                                    itemAttributes: updatedModule.attributes,
-                                                    databaseManager: databaseManager
-                                                )
-                                                
-                                                // 重新加载弹药组信息
-                                                chargeGroupIDs = []
-                                                for (name, value) in updatedModule.attributesByName {
-                                                    if name.hasPrefix("chargeGroup") && value > 0 {
-                                                        chargeGroupIDs.append(Int(value))
-                                                    }
-                                                }
+                                                updateAvailableStates()
+                                                loadChargeGroups()
                                                 
                                                 // 检查之前的状态是否可用
                                                 if availableModuleStates.contains(previousState) {
@@ -311,6 +298,8 @@ struct ModuleSettingsView: View {
                                                     let newState = availableModuleStates.max() ?? 0
                                                     selectedModuleState = newState
                                                 }
+                                            } else {
+                                                Logger.warning("[ModuleSettingsView] 批量替换后未找到更新的模块")
                                             }
                                         } else {
                                             // 单个模式下，直接替换
@@ -462,6 +451,8 @@ struct ModuleSettingsView: View {
                 if isBatchMode {
                     Logger.info("[ModuleSettingsView] 批量模式: \(relatedModules.count) 个相关模块")
                 }
+                currentModuleID = module.typeId
+                selectedModuleState = module.status
                 loadModuleDetails()
                 checkVariations()
                 updateAvailableStates()
@@ -488,6 +479,7 @@ struct ModuleSettingsView: View {
     
     // 加载模块详细信息
     private func loadModuleDetails() {
+        Logger.info("加载物品:\(currentModuleID)的详细信息")
         isLoading = true
         
         // 使用loadMarketItems方法获取模块数据
@@ -510,12 +502,22 @@ struct ModuleSettingsView: View {
     
     // 更新可用的模块状态
     private func updateAvailableStates() {
-        // 使用现有的getAvailableStatuses函数
-        availableModuleStates = getAvailableStatuses(
-            itemEffects: module.effects, 
-            itemAttributes: module.attributes, 
-            databaseManager: databaseManager
-        )
+        // 获取当前槽位的实际模块数据
+        if let actualModule = viewModel.simulationInput.modules.first(where: { $0.flag == slotFlag }) {
+            // 使用实际模块的效果和属性
+            availableModuleStates = getAvailableStatuses(
+                itemEffects: actualModule.effects, 
+                itemAttributes: actualModule.attributes, 
+                databaseManager: databaseManager
+            )
+        } else {
+            // 如果找不到实际模块，使用传入的模块数据作为后备
+            availableModuleStates = getAvailableStatuses(
+                itemEffects: module.effects, 
+                itemAttributes: module.attributes, 
+                databaseManager: databaseManager
+            )
+        }
         
         // 不自动重置状态，让调用者决定如何处理
     }
@@ -524,27 +526,36 @@ struct ModuleSettingsView: View {
     private func loadChargeGroups() {
         chargeGroupIDs = []
         
-        // 获取模块的所有属性
-        let attrQuery = """
-            SELECT ta.attribute_id, ta.value, da.name 
-            FROM typeAttributes ta 
-            JOIN dogmaAttributes da ON ta.attribute_id = da.attribute_id 
-            WHERE ta.type_id = ?
-        """
-        
-        // 执行查询
-        if case let .success(rows) = databaseManager.executeQuery(attrQuery, parameters: [currentModuleID]) {
-            for row in rows {
-                if let name = row["name"] as? String,
-                   let value = row["value"] as? Double,
-                   name.hasPrefix("chargeGroup") && value > 0 {
+        // 优先从当前槽位的实际模块获取弹药组信息
+        if let actualModule = viewModel.simulationInput.modules.first(where: { $0.flag == slotFlag }) {
+            // 直接从模块的attributesByName中获取弹药组
+            for (name, value) in actualModule.attributesByName {
+                if name.hasPrefix("chargeGroup") && value > 0 {
                     chargeGroupIDs.append(Int(value))
                 }
             }
+            Logger.info("从实际模块获取弹药组 ID \(actualModule.typeId): \(chargeGroupIDs)")
+        } else {
+            // 如果找不到实际模块，使用数据库查询作为后备
+            let attrQuery = """
+                SELECT ta.attribute_id, ta.value, da.name 
+                FROM typeAttributes ta 
+                JOIN dogmaAttributes da ON ta.attribute_id = da.attribute_id 
+                WHERE ta.type_id = ?
+            """
+            
+            // 执行查询
+            if case let .success(rows) = databaseManager.executeQuery(attrQuery, parameters: [currentModuleID]) {
+                for row in rows {
+                    if let name = row["name"] as? String,
+                       let value = row["value"] as? Double,
+                       name.hasPrefix("chargeGroup") && value > 0 {
+                        chargeGroupIDs.append(Int(value))
+                    }
+                }
+            }
+            Logger.info("从数据库查询获取弹药组 ID \(currentModuleID): \(chargeGroupIDs)")
         }
-        
-        // 记录找到的弹药组
-        Logger.info("模块 ID \(currentModuleID) 可装载弹药组: \(chargeGroupIDs)")
     }
 }
 
@@ -700,7 +711,20 @@ struct ChargeSelectionView: View {
     }
     
     private var groupedItems: [Int: [DatabaseListItem]] {
-        Dictionary(grouping: items) { $0.metaGroupID ?? 0 }
+        let grouped = Dictionary(grouping: items) { $0.metaGroupID ?? 0 }
+        
+        // 对每个分组内的项目进行排序
+        return grouped.mapValues { items in
+            items.sorted { item1, item2 in
+                // 首先按名称的本地化标准比较排序
+                let nameComparison = item1.name.localizedStandardCompare(item2.name)
+                if nameComparison != .orderedSame {
+                    return nameComparison == .orderedAscending
+                }
+                // 如果名称相同，则按typeID排序
+                return item1.id < item2.id
+            }
+        }
     }
     
     private func loadCharges() {
@@ -736,7 +760,7 @@ struct ChargeSelectionView: View {
         var parameters: [Any] = []
         
         // 如果既有chargeSize又有容量限制，使用一个查询同时筛选
-        if let size = chargeSize, let capacity = moduleCapacity, capacity > 0 {
+        if let size = chargeSize, size > 0, let capacity = moduleCapacity, capacity > 0 {
             // 构建筛选chargeSize和体积的SQL
             let chargeQuery = """
                 SELECT t1.type_id
@@ -772,7 +796,7 @@ struct ChargeSelectionView: View {
             }
         } 
         // 只有chargeSize限制
-        else if let size = chargeSize {
+        else if let size = chargeSize, size > 0 {
             whereClause += """
                 AND t.type_id IN (
                     SELECT ta.type_id 

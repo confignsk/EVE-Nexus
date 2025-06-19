@@ -18,7 +18,7 @@ struct SkillPlanDetailView: View {
     @State private var trainingRates: [Int: Int] = [:]  // [skillId: pointsPerHour]
     @State private var skillTimeMultipliers: [Int: Int] = [:]  // [skillId: timeMultiplier]
     @State private var injectorCalculation: InjectorCalculation?
-    @State private var injectorPrices: (large: Double?, small: Double?) = (nil, nil)
+    @State private var injectorPrices: InjectorPriceManager.InjectorPrices = InjectorPriceManager.InjectorPrices(large: nil, small: nil)
     @State private var isLoadingInjectors = true
     @State private var learnedSkills: [Int: CharacterSkill] = [:]  // 添加缓存
     @AppStorage(kShowCompletedSkillsKey) private var showCompletedSkills = true
@@ -27,10 +27,35 @@ struct SkillPlanDetailView: View {
         plan: SkillPlan, characterId: Int, databaseManager: DatabaseManager,
         skillPlans: Binding<[SkillPlan]>
     ) {
-        _plan = State(initialValue: plan)
+        // 在初始化时同步更新技能完成状态
+        let learnedSkills = Self.getLearnedSkillsSync(skillIds: plan.skills.map { $0.skillID }, characterId: characterId)
+        let updatedSkills = plan.skills.map { skill in
+            let learnedSkill = learnedSkills[skill.skillID]
+            let currentLevel = learnedSkill?.trained_skill_level ?? 0
+            let isCompleted = skill.targetLevel <= currentLevel
+            
+            return PlannedSkill(
+                id: skill.id,
+                skillID: skill.skillID,
+                skillName: skill.skillName,
+                currentLevel: skill.currentLevel,
+                targetLevel: skill.targetLevel,
+                trainingTime: skill.trainingTime,
+                requiredSP: skill.requiredSP,
+                prerequisites: skill.prerequisites,
+                currentSkillPoints: skill.currentSkillPoints,
+                isCompleted: isCompleted
+            )
+        }
+        
+        var updatedPlan = plan
+        updatedPlan.skills = updatedSkills
+        
+        _plan = State(initialValue: updatedPlan)
         self.characterId = characterId
         self.databaseManager = databaseManager
         _skillPlans = skillPlans
+        _learnedSkills = State(initialValue: learnedSkills)
     }
 
     var body: some View {
@@ -42,15 +67,15 @@ struct SkillPlanDetailView: View {
             }
 
             // 添加注入器需求部分
-            if !plan.skills.isEmpty && !isLoadingInjectors {
-                if let calculation = injectorCalculation {
+            if !plan.skills.isEmpty && !isLoadingInjectors && filteredSkills.count > 0 {
+                if let calculation = injectorCalculation, calculation.largeInjectorCount + calculation.smallInjectorCount > 0 {
                     Section(
                         header: Text(
                             NSLocalizedString("Main_Skills_Required_Injectors", comment: ""))
                     ) {
                         // 大型注入器
                         if let largeInfo = getInjectorInfo(
-                            typeId: SkillInjectorCalculator.largeInjectorTypeId)
+                            typeId: SkillInjectorCalculator.largeInjectorTypeId), calculation.largeInjectorCount > 0
                         {
                             injectorItemView(
                                 info: largeInfo, count: calculation.largeInjectorCount,
@@ -60,7 +85,7 @@ struct SkillPlanDetailView: View {
 
                         // 小型注入器
                         if let smallInfo = getInjectorInfo(
-                            typeId: SkillInjectorCalculator.smallInjectorTypeId)
+                            typeId: SkillInjectorCalculator.smallInjectorTypeId), calculation.smallInjectorCount > 0
                         {
                             injectorItemView(
                                 info: smallInfo, count: calculation.smallInjectorCount,
@@ -79,7 +104,7 @@ struct SkillPlanDetailView: View {
                     "\(NSLocalizedString("Main_Skills_Plan", comment: ""))(\(filteredSkills.count))"
                 )
             ) {
-                if plan.skills.isEmpty {
+                if plan.skills.isEmpty || filteredSkills.count == 0 {
                     Text(NSLocalizedString("Main_Skills_Plan_Empty", comment: ""))
                         .foregroundColor(.secondary)
                 } else {
@@ -419,6 +444,10 @@ struct SkillPlanDetailView: View {
     }
 
     private func getLearnedSkills(skillIds: [Int]) -> [Int: CharacterSkill] {
+        return Self.getLearnedSkillsSync(skillIds: skillIds, characterId: characterId)
+    }
+    
+    private static func getLearnedSkillsSync(skillIds: [Int], characterId: Int) -> [Int: CharacterSkill] {
         // 从character_skills表获取技能数据
         let skillsQuery = "SELECT skills_data FROM character_skills WHERE character_id = ?"
 
@@ -769,17 +798,11 @@ struct SkillPlanDetailView: View {
             Logger.debug("计算总价失败 - 没有注入器计算结果")
             return nil
         }
-        guard let largePrice = injectorPrices.large else {
-            Logger.debug("计算总价失败 - 没有大型注入器价格")
-            return nil
-        }
-        guard let smallPrice = injectorPrices.small else {
-            Logger.debug("计算总价失败 - 没有小型注入器价格")
-            return nil
-        }
-
-        return Double(calculation.largeInjectorCount) * largePrice + Double(
-            calculation.smallInjectorCount) * smallPrice
+        
+        return InjectorPriceManager.shared.calculateTotalCost(
+            calculation: calculation,
+            prices: injectorPrices
+        )
     }
 
     private func calculateInjectors() async {
@@ -805,6 +828,14 @@ struct SkillPlanDetailView: View {
 
         // 获取注入器价格
         await loadInjectorPrices()
+    }
+    
+    private func loadInjectorPrices() async {
+        let prices = await InjectorPriceManager.shared.loadInjectorPrices()
+        
+        await MainActor.run {
+            injectorPrices = prices
+        }
     }
 
     private func getCharacterTotalSP() async -> Int {
@@ -857,34 +888,6 @@ struct SkillPlanDetailView: View {
         } catch {
             Logger.error("获取技能点数据失败: \(error)")
             return 0
-        }
-    }
-
-    private func loadInjectorPrices() async {
-        Logger.debug(
-            "开始加载注入器价格 - 大型注入器ID: \(SkillInjectorCalculator.largeInjectorTypeId), 小型注入器ID: \(SkillInjectorCalculator.smallInjectorTypeId)"
-        )
-
-        // 获取大型和小型注入器的价格
-        let prices = await MarketPriceUtil.getMarketPrices(typeIds: [
-            SkillInjectorCalculator.largeInjectorTypeId,
-            SkillInjectorCalculator.smallInjectorTypeId,
-        ])
-
-        Logger.debug("获取到价格数据: \(prices)")
-
-        // 确保两个价格都有值才更新
-        if let largePrice = prices[SkillInjectorCalculator.largeInjectorTypeId],
-            let smallPrice = prices[SkillInjectorCalculator.smallInjectorTypeId]
-        {
-            // 在主线程一次性更新两个价格
-            await MainActor.run {
-                injectorPrices = (large: largePrice, small: smallPrice)
-            }
-        } else {
-            Logger.debug(
-                "价格数据不完整 - large: \(prices[SkillInjectorCalculator.largeInjectorTypeId] as Any), small: \(prices[SkillInjectorCalculator.smallInjectorTypeId] as Any)"
-            )
         }
     }
 

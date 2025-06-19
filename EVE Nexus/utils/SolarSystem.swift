@@ -194,3 +194,71 @@ func getBatchSolarSystemInfo(solarSystemIds: [Int], databaseManager: DatabaseMan
 
     return result
 }
+
+// 星系名称结构
+public struct SolarSystemNames {
+    let systemId: Int
+    let name: String
+    let nameEn: String
+    let nameZh: String
+}
+
+// 批量获取星系中英文名称
+func getBatchSolarSystemNames(solarSystemIds: [Int], databaseManager: DatabaseManager) async
+    -> [Int: SolarSystemNames]
+{
+    // 如果传入的数组为空，直接返回空字典
+    if solarSystemIds.isEmpty {
+        return [:]
+    }
+
+    // 去重并排序
+    let uniqueSortedIds = Array(Set(solarSystemIds)).sorted()
+
+    // 构建IN查询的参数字符串
+    let placeholders = String(repeating: "?,", count: uniqueSortedIds.count).dropLast()
+
+    // 执行批量查询，获取中英文名称
+    let namesQuery = """
+            SELECT solarSystemID, solarSystemName, solarSystemName_en, solarSystemName_zh
+            FROM solarsystems
+            WHERE solarSystemID IN (\(placeholders))
+        """
+
+    // 将ID数组转换为Any类型数组，以便传递给executeQuery
+    let parameters = uniqueSortedIds.map { $0 as Any }
+
+    guard
+        case let .success(rows) = databaseManager.executeQuery(
+            namesQuery, parameters: parameters
+        )
+    else {
+        return [:]
+    }
+
+    // 创建结果字典
+    var result: [Int: SolarSystemNames] = [:]
+
+    // 处理每一行结果
+    for row in rows {
+        guard
+            let systemId = row["solarSystemID"] as? Int,
+            let name = row["solarSystemName"] as? String,
+            let nameEn = row["solarSystemName_en"] as? String,
+            let nameZh = row["solarSystemName_zh"] as? String
+        else {
+            continue
+        }
+
+        let systemNames = SolarSystemNames(
+            systemId: systemId,
+            name: name,
+            nameEn: nameEn,
+            nameZh: nameZh
+        )
+
+        result[systemId] = systemNames
+    }
+
+    return result
+}

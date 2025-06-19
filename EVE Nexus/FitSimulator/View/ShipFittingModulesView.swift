@@ -367,14 +367,21 @@ struct ShipFittingModulesView: View {
             }
         }
         
-        // 查询装备基本信息
-        let infoQuery = "SELECT name, icon_filename, groupID, volume FROM types WHERE type_id = ?"
+        // 查询装备基本信息，包括capacity
+        let infoQuery = "SELECT name, icon_filename, groupID, volume, capacity FROM types WHERE type_id = ?"
         if case let .success(rows) = viewModel.databaseManager.executeQuery(infoQuery, parameters: [typeId]),
            let row = rows.first {
             model_name = row["name"] as? String ?? ""
             model_iconFilename = row["icon_filename"] as? String ?? ""
             groupId = row["groupID"] as? Int ?? 0
             volume = row["volume"] as? Double ?? 0
+            
+            // 添加capacity到属性字典中（如果存在）
+            if let capacity = row["capacity"] as? Double, capacity > 0 {
+                attributes[38] = capacity
+                attributesByName["capacity"] = capacity
+                Logger.info("批量安装装备: \(model_name), capacity=\(capacity)")
+            }
         }
         
         // 添加volume到属性字典中
@@ -665,7 +672,30 @@ struct ShipFittingModulesView: View {
                     // 检查新装备是否可以装载旧弹药
                     let canLoadOldCharge = viewModel.canLoadCharge(moduleTypeId: newTypeId, chargeTypeId: oldCharge.typeId)
                     if canLoadOldCharge {
-                        // 创建带有原有弹药的新模块
+                        // 重新计算弹药数量（基于新装备的容量）
+                        var updatedChargeQuantity: Int? = oldCharge.chargeQuantity
+                        let chargeVolume = oldCharge.attributesByName["volume"] ?? 0
+                        if chargeVolume > 0 {
+                            let newModuleCapacity = attributesByName["capacity"] ?? 0
+                            if newModuleCapacity > 0 {
+                                updatedChargeQuantity = Int(newModuleCapacity / chargeVolume)
+                            }
+                        }
+                        
+                        // 创建更新后的弹药对象
+                        let updatedCharge = SimCharge(
+                            typeId: oldCharge.typeId,
+                            attributes: oldCharge.attributes,
+                            attributesByName: oldCharge.attributesByName,
+                            effects: oldCharge.effects,
+                            groupID: oldCharge.groupID,
+                            chargeQuantity: updatedChargeQuantity, // 使用重新计算的数量
+                            requiredSkills: oldCharge.requiredSkills,
+                            name: oldCharge.name,
+                            iconFileName: oldCharge.iconFileName
+                        )
+                        
+                        // 创建带有更新弹药的新模块
                         let updatedModule = SimModule(
                             instanceId: oldModule.instanceId, // 保留原模块的instanceId
                             typeId: newTypeId,
@@ -674,7 +704,7 @@ struct ShipFittingModulesView: View {
                             effects: effects,
                             groupID: groupId,
                             status: moduleStatus,
-                            charge: oldCharge, // 保留原有弹药
+                            charge: updatedCharge, // 使用更新后的弹药
                             flag: flag,
                             quantity: 1,
                             name: model_name,
@@ -683,7 +713,7 @@ struct ShipFittingModulesView: View {
                         )
                         
                         viewModel.simulationInput.modules[index] = updatedModule
-                        Logger.info("批量替换装备并保留弹药: \(model_name) 到 \(flag.rawValue), 弹药: \(oldCharge.name)")
+                        Logger.info("批量替换装备并保留弹药: \(model_name) 到 \(flag.rawValue), 弹药: \(oldCharge.name), 重新计算数量: \(updatedChargeQuantity ?? 0)")
                     } else {
                         // 如果不能装载原有弹药，使用无弹药的模块
                         let newModule = SimModule(
@@ -1370,7 +1400,7 @@ struct ShipFittingModulesView: View {
                     let maxRange = module.attributesByName["maxRange"] ?? 0
                     let falloff = module.attributesByName["falloff"] ?? 0
                     let empFieldRange = module.attributesByName["empFieldRange"] ?? 0
-                    
+                    let isRemote = isRemoteEquip(module: module)
                     if let charge = module.charge {
                         let baseSensorStrength = charge.attributesByName["baseSensorStrength"] ?? 0
                         let maxFlightTime = charge.attributesByName["explosionDelay"] ?? 0
@@ -1414,7 +1444,199 @@ struct ShipFittingModulesView: View {
                             }
                         }
                     }
+
+                    // 能量中和值   
+                    let energyNeutralizerAmount = module.attributesByName["energyNeutralizerAmount"] ?? 0
+                    if energyNeutralizerAmount > 0 {
+                        HStack(spacing: 4) {
+                            IconManager.shared.loadImage(for: "neut")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 20, height: 20)
+                            
+                            HStack(spacing: 0) {
+                                Text("\(NSLocalizedString("Module_Attribute_energyNeutralizerAmount", comment: "")): ")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text("\(formatNumber(energyNeutralizerAmount, digits: 2)) GJ")
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+
+
+                    // 吸电 / 传电
+                    let powerTransferAmount = module.attributesByName["powerTransferAmount"] ?? 0
+                    if powerTransferAmount > 0 {
+                        HStack(spacing: 4) {
+                            IconManager.shared.loadImage(for: module.groupID == 68 ? "neut_nos" : "cap_trans")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 20, height: 20)
+                            
+                            HStack(spacing: 0) {  // 68 为吸电
+                                Text("\(module.groupID == 68 ? NSLocalizedString("Module_Attribute_powerTransferAmount_nos", comment: "") : NSLocalizedString("Module_Attribute_powerTransferAmount", comment: "")): ")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text("\(formatNumber(powerTransferAmount, digits: 2)) GJ")
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+
+                    // 护盾维修
+                    let shieldBonus = module.attributesByName["shieldBonus"] ?? 0
+                    if shieldBonus > 0 {
+                        HStack(spacing: 4) {
+                            IconManager.shared.loadImage(for: !isRemote ? "shield_glow" : "shield_trans")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 20, height: 20)
+                            
+                            HStack(spacing: 0) {
+                                Text("\(!isRemote ? NSLocalizedString("Module_Attribute_shieldBonus", comment: "") : NSLocalizedString("Module_Attribute_trans_shieldBonus", comment: "")): ")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text("\(formatNumber(shieldBonus, digits: 2)) HP")
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+
+                    // 装甲维修
+                    let armorDamageAmount = module.attributesByName["armorDamageAmount"] ?? 0
+                    if armorDamageAmount > 0 {
+                        HStack(spacing: 4) {
+                            IconManager.shared.loadImage(for: !isRemote ? "armor_repairer_i" : "armor_trans")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 20, height: 20)
+                            
+                            HStack(spacing: 0) {
+                                Text("\(!isRemote ? NSLocalizedString("Module_Attribute_armorBonus", comment: "") : NSLocalizedString("Module_Attribute_trans_armorBonus", comment: "")): ")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text("\(formatNumber(armorDamageAmount, digits: 2)) HP")
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+
+                    // 结构维修
+                    let structureDamageAmount = module.attributesByName["structureDamageAmount"] ?? 0
+                    if structureDamageAmount > 0 {
+                        HStack(spacing: 4) {
+                            IconManager.shared.loadImage(for: !isRemote ? "hull_repairer_i" : "hull_trans")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 20, height: 20)
+                            
+                            HStack(spacing: 0) {
+                                Text("\(!isRemote ? NSLocalizedString("Module_Attribute_hullBonus", comment: "") : NSLocalizedString("Module_Attribute_trans_hullBonus", comment: "")): ")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text("\(formatNumber(structureDamageAmount, digits: 2)) HP")
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+
+                    // 护盾盾扩加成
+                    let capacityBonus = module.attributesByName["capacityBonus"] ?? 0
+                    if capacityBonus > 0 {
+                        HStack(spacing: 4) {
+                            IconManager.shared.loadImage(for: "shield")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 20, height: 20)
+                            
+                            HStack(spacing: 0) {
+                                Text("\(NSLocalizedString("Module_Attribute_shieldHPBonus", comment: "")): ")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text("+\(formatNumber(capacityBonus, digits: 2)) HP")
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
                     
+                    // 钢版加成
+                    let armorHPBonusAdd = module.attributesByName["armorHPBonusAdd"] ?? 0
+                    if armorHPBonusAdd > 0 {
+                        HStack(spacing: 4) {
+                            IconManager.shared.loadImage(for: "armor")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 20, height: 20)
+                            
+                            HStack(spacing: 0) {
+                                Text("\(NSLocalizedString("Module_Attribute_armorHPBonus", comment: "")): ")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text("+\(formatNumber(armorHPBonusAdd, digits: 2)) HP")
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+
+                    // 电容量加成
+                    let capacitorBonus = module.attributesByName["capacitorBonus"] ?? 0
+                    if capacitorBonus > 0 {
+                        HStack(spacing: 4) {
+                            IconManager.shared.loadImage(for: "cap_add")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 20, height: 20)
+                            
+                            HStack(spacing: 0) {
+                                Text("\(NSLocalizedString("Module_Attribute_capBonus", comment: "")): ")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text("+\(formatNumber(capacitorBonus, digits: 2)) GJ")
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+
+                    // 开采量
+                    let miningAmount = module.attributesByName["miningAmount"] ?? 0
+                    let miningWasteProbability = module.attributesByName["miningWasteProbability"] ?? 0
+                    if miningAmount > 0 {
+                        HStack(spacing: 4) {
+                            IconManager.shared.loadImage(for: "miner")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 20, height: 20)
+                            
+                            HStack(spacing: 0) {
+                                Text("\(NSLocalizedString("Module_Attribute_miningAmount", comment: "")): ")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text("\(formatNumber(miningAmount, digits: 2)) m³ + \(formatNumber(miningWasteProbability, digits: 2))%")
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                    
+                    // 立体炸弹范围
                     if empFieldRange > 0 {
                         HStack(spacing: 4) {
                             IconManager.shared.loadImage(for: "items_22_32_15.png")
@@ -1434,6 +1656,7 @@ struct ShipFittingModulesView: View {
                         }
                     }
                     
+                    // 最佳射程
                     if maxRange > 0 || falloff > 0 {
                         HStack(spacing: 4) {
                             if maxRange > 0 {
@@ -1521,7 +1744,7 @@ struct ShipFittingModulesView: View {
                                     .foregroundColor(.secondary)
                             }
                         }
-                    }
+                    }            
                 }
             }
             
@@ -1535,6 +1758,11 @@ struct ShipFittingModulesView: View {
         .padding(.vertical, 2)
         .contentShape(Rectangle())
         .onTapGesture(perform: onTap)
+    }
+    
+    private func isRemoteEquip(module: SimModule) -> Bool {
+        let maxRange = module.attributesByName["maxRange"] ?? 0
+        return maxRange > 0
     }
     
     // 格式化距离显示（自动选择合适的单位：m或km）
@@ -1703,3 +1931,4 @@ class SlotState: ObservableObject, Identifiable {
 extension FittingFlag: Identifiable {
     public var id: String { self.rawValue }
 }
+

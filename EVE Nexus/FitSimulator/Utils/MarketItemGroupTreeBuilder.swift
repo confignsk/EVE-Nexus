@@ -4,15 +4,13 @@ import Foundation
 struct MarketGroupNode: Identifiable {
     let id: Int
     let name: String
-    let description: String
     let iconName: String
     let parentGroupId: Int?
     var children: [MarketGroupNode]
 
-    init(id: Int, name: String, description: String, iconName: String, parentGroupId: Int?) {
+    init(id: Int, name: String, iconName: String, parentGroupId: Int?) {
         self.id = id
         self.name = name
-        self.description = description
         self.iconName = iconName
         self.parentGroupId = parentGroupId
         self.children = []
@@ -86,7 +84,7 @@ class MarketItemGroupTreeBuilder {
     // 从数据库获取所有市场组信息
     private func fetchMarketGroups() -> [MarketGroupNode] {
         let query = """
-                SELECT group_id, name, description, icon_name, parentgroup_id
+                SELECT group_id, name, icon_name, parentgroup_id
                 FROM marketGroups
                 WHERE show = 1
             """
@@ -98,7 +96,6 @@ class MarketItemGroupTreeBuilder {
                 if let groupId = row["group_id"] as? Int,
                     let name = row["name"] as? String
                 {
-                    let description = (row["description"] as? String) ?? ""
                     let iconName = (row["icon_name"] as? String) ?? ""
                     let parentId = row["parentgroup_id"] as? Int
 
@@ -107,7 +104,6 @@ class MarketItemGroupTreeBuilder {
                     let node = MarketGroupNode(
                         id: groupId,
                         name: name,
-                        description: description,
                         iconName: iconName,
                         parentGroupId: parentId
                     )

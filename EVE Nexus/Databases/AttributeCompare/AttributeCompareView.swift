@@ -148,7 +148,7 @@ struct AttributeCompareView: View {
     @ObservedObject var databaseManager: DatabaseManager
     @State private var compares: [AttributeCompare] = []
     @State private var isShowingAddAlert = false
-    @State private var newCompareName = ""
+    @State private var tempCompareName = ""  // 临时变量，用于接收用户输入
     @State private var searchText = ""
 
     private var filteredCompares: [AttributeCompare] {
@@ -162,7 +162,7 @@ struct AttributeCompareView: View {
     }
 
     var body: some View {
-        List {
+        return List {
             if filteredCompares.isEmpty {
                 if searchText.isEmpty {
                     Text(NSLocalizedString("Main_Attribute_Compare_Empty", comment: ""))
@@ -197,7 +197,7 @@ struct AttributeCompareView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
-                    newCompareName = ""
+                    tempCompareName = ""  // 清空临时变量
                     isShowingAddAlert = true
                 } label: {
                     Image(systemName: "plus")
@@ -210,24 +210,25 @@ struct AttributeCompareView: View {
         ) {
             TextField(
                 NSLocalizedString("Main_Attribute_Compare_Name", comment: ""),
-                text: $newCompareName
+                text: $tempCompareName  // 绑定到临时变量
             )
 
             Button(NSLocalizedString("Misc_Done", comment: "")) {
-                if !newCompareName.isEmpty {
+                Logger.info("用户新增对比列表: \(tempCompareName)")
+                if !tempCompareName.isEmpty {
                     let newCompare = AttributeCompare(
-                        name: newCompareName,
+                        name: tempCompareName,  // 使用临时变量的值
                         items: []
                     )
                     compares.append(newCompare)
                     AttributeCompareManager.shared.saveCompare(newCompare)
-                    newCompareName = ""
+                    tempCompareName = ""  // 清空临时变量
                 }
             }
-            .disabled(newCompareName.isEmpty)
+            .disabled(tempCompareName.isEmpty)  // 根据临时变量判断是否禁用
 
             Button(NSLocalizedString("Main_EVE_Mail_Cancel", comment: ""), role: .cancel) {
-                newCompareName = ""
+                tempCompareName = ""  // 取消时清空临时变量
             }
         }
         .task {
@@ -236,7 +237,7 @@ struct AttributeCompareView: View {
     }
 
     private func compareRowView(_ compare: AttributeCompare) -> some View {
-        HStack {
+        return HStack {
             // 显示列表图标
             if !compare.items.isEmpty, let firstItem = compare.items.first {
                 // 直接查询并显示第一个物品的图标
@@ -271,6 +272,7 @@ struct AttributeCompareView: View {
 
     // 获取物品图标的辅助函数
     private func getItemIcon(typeID: Int) -> UIImage {
+        Logger.info("获取物品图标: \(typeID)")
         let itemData = databaseManager.loadMarketItems(
             whereClause: "t.type_id = ?",
             parameters: [typeID]
@@ -304,6 +306,8 @@ struct AttributeCompareDetailView: View {
     @State private var isExpanded: Bool = false
     @State private var compareResult: AttributeCompareUtil.CompareResult?
     @State private var isCalculating: Bool = false
+    @State private var marketPrices: [Int: Double] = [:]
+    @State private var isLoadingPrices: Bool = false
     @AppStorage("showOnlyDifferences") private var showOnlyDifferences: Bool = false
 
     // 允许的顶级市场分组ID
@@ -387,8 +391,9 @@ struct AttributeCompareDetailView: View {
                                 if items.count >= 2 {
                                     calculateCompare()
                                 } else {
-                                    // 如果物品少于2个，清空对比结果
+                                    // 如果物品少于2个，清空对比结果和市场价格
                                     compareResult = nil
+                                    marketPrices = [:]
                                 }
                             }
                         },
@@ -423,6 +428,57 @@ struct AttributeCompareDetailView: View {
                         .font(.system(size: 18))
                         .foregroundColor(.primary)
                         .textCase(.none)
+                }
+
+                // 市场价格部分 - 只在超过2个物品时显示
+                if items.count >= 2 {
+                    Section {
+                        if isLoadingPrices {
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                    .padding()
+                                Spacer()
+                            }
+                        } else {
+                            ForEach(items) { item in
+                                HStack {
+                                    // 物品图标
+                                    Image(uiImage: IconManager.shared.loadUIImage(for: item.iconFileName))
+                                        .resizable()
+                                        .frame(width: 32, height: 32)
+                                        .cornerRadius(4)
+
+                                    // 物品名称
+                                    Text(item.name)
+                                        .font(.body)
+
+                                    Spacer()
+
+                                    // 市场价格
+                                    if let price = marketPrices[item.id] {
+                                        Text(FormatUtil.formatISK(price))
+                                            .font(.body)
+                                            .foregroundColor(getPriceColor(for: item))
+                                    } else {
+                                        Text("N/A")
+                                            .font(.body)
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+                            }
+                        }
+                    } header: {
+                        HStack {
+                            Image("isk")
+                                .resizable()
+                                .frame(width: 24, height: 24)
+                                .cornerRadius(6)
+                            
+                            Text(NSLocalizedString("Main_Market_Price", comment: "市场价格"))
+                                .font(.headline)
+                        }
+                    }
                 }
 
                 // 计算中指示器
@@ -474,7 +530,8 @@ struct AttributeCompareDetailView: View {
                                 values: attributeValues,
                                 typeInfo: result.typeInfo,
                                 items: items,
-                                attributeIcons: result.attributeIcons
+                                attributeIcons: result.attributeIcons,
+                                highIsGood: result.attributeHighIsGood[attributeID] ?? true
                             )
                         }
                     }
@@ -524,8 +581,9 @@ struct AttributeCompareDetailView: View {
                         if items.count >= 2 {
                             calculateCompare()
                         } else {
-                            // 如果物品少于2个，清空对比结果
+                            // 如果物品少于2个，清空对比结果和市场价格
                             compareResult = nil
+                            marketPrices = [:]
                         }
                     }
                 }
@@ -576,6 +634,64 @@ struct AttributeCompareDetailView: View {
         return attributesWithDifferences.sorted { Int($0) ?? 0 < Int($1) ?? 0 }
     }
 
+    // 获取市场价格颜色
+    private func getPriceColor(for item: DatabaseListItem) -> Color {
+        // 如果该物品没有价格信息，返回默认颜色
+        guard let currentPrice = marketPrices[item.id] else {
+            return .secondary
+        }
+        
+        // 获取所有有效价格
+        let allPrices = marketPrices.values.filter { $0 > 0 }
+        
+        // 如果价格数量少于2个，不标颜色
+        if allPrices.count < 2 {
+            return .secondary
+        }
+        
+        // 找到最高价和最低价
+        let maxPrice = allPrices.max() ?? currentPrice
+        let minPrice = allPrices.min() ?? currentPrice
+        
+        // 如果最高价和最低价相同，说明所有价格都一样，不标颜色
+        if maxPrice == minPrice {
+            return .secondary
+        }
+        
+        // 根据价格判断颜色：最贵标橙色，最便宜标绿色
+        if currentPrice == maxPrice {
+            return .green  // 最贵的
+        } else if currentPrice == minPrice {
+            return .orange   // 最便宜的
+        } else {
+            return .secondary
+        }
+    }
+
+    // 获取市场价格
+    private func loadMarketPrices() {
+        if items.count < 2 {
+            Logger.info("需要至少两个物品才能获取市场价格")
+            return
+        }
+
+        let typeIDs = items.map { $0.id }
+        isLoadingPrices = true
+
+        Task {
+            do {
+                Logger.info("开始获取市场价格，物品数量: \(typeIDs.count)")
+                let prices = await MarketPriceUtil.getMarketOrderPrices(typeIds: typeIDs)
+                
+                await MainActor.run {
+                    self.marketPrices = prices
+                    self.isLoadingPrices = false
+                    Logger.info("市场价格获取完成，获得价格数量: \(prices.count)")
+                }
+            }
+        }
+    }
+
     // 计算属性对比
     private func calculateCompare() {
         if items.count < 2 {
@@ -587,6 +703,9 @@ struct AttributeCompareDetailView: View {
         let typeIDs = items.map { $0.id }
 
         isCalculating = true
+
+        // 同时获取市场价格
+        loadMarketPrices()
 
         // 使用后台线程进行计算
         DispatchQueue.global(qos: .userInitiated).async {
@@ -611,6 +730,7 @@ struct AttributeCompareSection: View {
     let typeInfo: [String: String]
     let items: [DatabaseListItem]
     let attributeIcons: [String: String]
+    let highIsGood: Bool
 
     var body: some View {
         // 使用包含图标的自定义标题作为Section header
@@ -634,7 +754,7 @@ struct AttributeCompareSection: View {
                     if let valueInfo = values[typeIDString] {
                         Text(getFormattedValue(valueInfo))
                             .font(.body)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(getValueColor(for: item))
                     } else {
                         Text("N/A")
                             .font(.body)
@@ -666,6 +786,54 @@ struct AttributeCompareSection: View {
             unitID: valueInfo.unitID,
             attributeID: Int(attributeID)
         )
+    }
+
+    // 计算每个物品的颜色
+    private func getValueColor(for item: DatabaseListItem) -> Color {
+        let typeIDString = String(item.id)
+        
+        // 如果该物品没有这个属性值，返回默认颜色
+        guard let currentValueInfo = values[typeIDString] else {
+            return .secondary
+        }
+        
+        // 获取所有存在的属性值
+        let existingValues = values.values.map { $0.value }
+        
+        // 如果只有一个物品有这个属性，不标颜色
+        if existingValues.count <= 1 {
+            return .secondary
+        }
+        
+        let currentValue = currentValueInfo.value
+        
+        // 根据highIsGood确定最好和最差的值
+        let bestValue: Double
+        let worstValue: Double
+        
+        if highIsGood {
+            // 数值越大越好
+            bestValue = existingValues.max() ?? currentValue
+            worstValue = existingValues.min() ?? currentValue
+        } else {
+            // 数值越小越好
+            bestValue = existingValues.min() ?? currentValue
+            worstValue = existingValues.max() ?? currentValue
+        }
+        
+        // 如果最好和最差的值相同，说明所有值都一样，不标颜色
+        if bestValue == worstValue {
+            return .secondary
+        }
+        
+        // 根据当前值判断颜色
+        if currentValue == bestValue {
+            return .green
+        } else if currentValue == worstValue {
+            return .orange
+        } else {
+            return .secondary
+        }
     }
 }
 
@@ -710,7 +878,8 @@ extension AttributeCompareUtil {
                     COALESCE(ta.unitID, a.unitID) as unitID,
                     a.unitName,
                     a.iconID,
-                    COALESCE(a.icon_filename, '') as icon_filename
+                    COALESCE(a.icon_filename, '') as icon_filename,
+                    a.highIsGood
                 FROM
                     typeAttributes ta
                 LEFT JOIN
@@ -735,6 +904,9 @@ extension AttributeCompareUtil {
         // 存储属性图标信息
         var attributeIcons: [String: String] = [:]
 
+        // 存储属性的highIsGood信息
+        var attributeHighIsGood: [String: Bool] = [:]
+
         // 处理查询结果
         for row in rows {
             guard let typeID = row["type_id"] as? Int,
@@ -749,6 +921,7 @@ extension AttributeCompareUtil {
             // let name = row["name"] as? String
             let iconID = row["iconID"] as? Int
             let iconFileName = (row["icon_filename"] as? String) ?? ""
+            let highIsGood = (row["highIsGood"] as? Int) == 1
 
             // 属性名称处理
             let attributeName = displayName ?? "Unknown Attribute"
@@ -771,6 +944,11 @@ extension AttributeCompareUtil {
                 let finalIconFileName =
                     iconFileName.isEmpty ? DatabaseConfig.defaultIcon : iconFileName
                 attributeIcons[attributeIDString] = finalIconFileName
+            }
+
+            // 保存属性的highIsGood信息（只需保存一次）
+            if !attributeHighIsGood.keys.contains(attributeIDString) {
+                attributeHighIsGood[attributeIDString] = highIsGood
             }
 
             // 此处可以添加属性名称到日志，用于调试
@@ -810,7 +988,8 @@ extension AttributeCompareUtil {
                 SELECT 
                     attribute_id, 
                     display_name,
-                    name
+                    name,
+                    highIsGood
                 FROM 
                     dogmaAttributes
                 WHERE 
@@ -850,7 +1029,8 @@ extension AttributeCompareUtil {
             typeInfo: typeInfo,
             publishedAttributeInfo: publishedAttributeInfo,
             // unpublishedAttributeInfo: unpublishedAttributeInfo,
-            attributeIcons: attributeIcons
+            attributeIcons: attributeIcons,
+            attributeHighIsGood: attributeHighIsGood
         )
 
         // 使用JSONEncoder直接序列化Codable对象

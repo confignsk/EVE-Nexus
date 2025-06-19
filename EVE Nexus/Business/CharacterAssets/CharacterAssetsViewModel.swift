@@ -3,12 +3,16 @@ import SwiftUI
 
 // 搜索结果
 struct AssetSearchResult: Identifiable {
-    let node: AssetTreeNode  // 目标物品节点
+    let node: AssetTreeNode  // 目标物品节点（用于显示基本信息）
     let itemInfo: ItemInfo  // 物品基本信息
     let locationPath: [AssetTreeNode]  // 从顶层位置到物品的完整路径
     let containerNode: AssetTreeNode  // 直接容器节点
+    let totalQuantity: Int  // 合并后的总数量
 
-    var id: Int64 { node.item_id }
+    var id: String { 
+        // 使用type_id和容器路径组合作为唯一标识
+        "\(node.type_id)_\(containerNode.item_id)_\(formattedPath.hashValue)"
+    }
 
     // 格式化的位置路径字符串，只显示到倒数第二级
     var formattedPath: String {
@@ -211,7 +215,8 @@ class CharacterAssetsViewModel: ObservableObject {
                     node: node,
                     itemInfo: updatedItemInfo,
                     locationPath: path,
-                    containerNode: container
+                    containerNode: container,
+                    totalQuantity: 0
                 ))
         }
 
@@ -396,17 +401,49 @@ class CharacterAssetsViewModel: ObservableObject {
         }
 
         // 在资产数据中查找这些type_id对应的item_id
-        var results: [AssetSearchResult] = []
+        var rawResults: [AssetSearchResult] = []
         for location in assetLocations {
             findItems(
-                in: location, matchingTypeIds: matchingTypeIds, currentPath: [], results: &results)
+                in: location, matchingTypeIds: matchingTypeIds, currentPath: [], results: &rawResults)
         }
 
-        // 按物品名称排序结果
-        results.sort { $0.itemInfo.name < $1.itemInfo.name }
+        // 按位置和物品类型合并结果
+        var mergedResults: [String: AssetSearchResult] = [:]
+        
+        for result in rawResults {
+            // 创建合并键：type_id + 容器ID + 位置路径
+            let mergeKey = "\(result.node.type_id)_\(result.containerNode.item_id)_\(result.formattedPath.hashValue)"
+            
+            if let existingResult = mergedResults[mergeKey] {
+                // 合并数量
+                let newTotalQuantity = existingResult.totalQuantity + result.node.quantity
+                
+                let mergedResult = AssetSearchResult(
+                    node: existingResult.node,  // 保持第一个节点的信息
+                    itemInfo: existingResult.itemInfo,
+                    locationPath: existingResult.locationPath,
+                    containerNode: existingResult.containerNode,
+                    totalQuantity: newTotalQuantity
+                )
+                mergedResults[mergeKey] = mergedResult
+            } else {
+                // 第一次遇到这个物品在这个位置
+                let initialResult = AssetSearchResult(
+                    node: result.node,
+                    itemInfo: result.itemInfo,
+                    locationPath: result.locationPath,
+                    containerNode: result.containerNode,
+                    totalQuantity: result.node.quantity
+                )
+                mergedResults[mergeKey] = initialResult
+            }
+        }
+
+        // 转换为数组并排序
+        let finalResults = Array(mergedResults.values).sorted { $0.itemInfo.name < $1.itemInfo.name }
 
         // 更新搜索结果
-        searchResults = results
+        searchResults = finalResults
     }
 
     // 在内存中填充节点名称

@@ -11,8 +11,16 @@ struct ShipRepairStatsView: View {
         return FormatUtil.formatForUI(value)
     }
     
+    private func isRemoteEquip(module: SimModuleOutput) -> Bool {
+        let maxRange = module.attributesByName["maxRange"] ?? 0
+        return maxRange > 0
+    }
+    
     // 补丁函数，获取模块的维修量，处理特殊情况
     private func getModuleRepair(module: SimModuleOutput) -> (shield: Double, armor: Double, hull: Double) {
+        if isRemoteEquip(module: module) { // 远程维修不纳入计算
+            return (0, 0, 0)
+        }
         let shieldBonus = module.attributesByName["shieldBonus"] ?? 0
         var armorBonus = module.attributesByName["armorDamageAmount"] ?? 0
         let hullBonus = module.attributesByName["structureDamageAmount"] ?? 0

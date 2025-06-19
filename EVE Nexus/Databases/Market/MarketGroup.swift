@@ -1,11 +1,20 @@
 import Foundation
 
-struct MarketGroup: Identifiable {
+struct MarketGroup: Identifiable, Hashable {
     let id: Int  // group_id
     let name: String  // 目录名称
-    let description: String  // 描述
     let iconName: String  // 图标文件名
     let parentGroupID: Int?  // 父目录ID
+    
+    // 实现Hashable协议
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+    
+    // 实现Equatable协议(Hashable继承自Equatable)
+    static func == (lhs: MarketGroup, rhs: MarketGroup) -> Bool {
+        return lhs.id == rhs.id
+    }
 }
 
 class MarketManager {
@@ -15,7 +24,7 @@ class MarketManager {
     // 加载市场组数据
     func loadMarketGroups(databaseManager: DatabaseManager) -> [MarketGroup] {
         let query = """
-                SELECT group_id, name, description, icon_name, parentgroup_id
+                SELECT group_id, name, icon_name, parentgroup_id
                 FROM marketGroups
                 ORDER BY group_id
             """
@@ -26,7 +35,6 @@ class MarketManager {
             for row in rows {
                 if let groupID = row["group_id"] as? Int,
                     let name = row["name"] as? String,
-                    let description = row["description"] as? String,
                     let iconName = row["icon_name"] as? String
                 {
                     let parentGroupID = row["parentgroup_id"] as? Int
@@ -34,7 +42,6 @@ class MarketManager {
                     let group = MarketGroup(
                         id: groupID,
                         name: name,
-                        description: description,
                         iconName: iconName,
                         parentGroupID: parentGroupID
                     )

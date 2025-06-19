@@ -270,34 +270,12 @@ struct ImplantSetDetailView: View {
     let grade: String
     let implants: [ImplantPresetItem]
     let onSelectPreset: ([Int]) -> Void
-    @State private var selectedItemID: Int? = nil
-    @State private var showingItemInfo = false
     
     var body: some View {
         List {
             Section(header: Text(NSLocalizedString("Implant_Set_Items", comment: "套装物品"))) {
                 ForEach(implants) { item in
-                    HStack {
-                        IconManager.shared.loadImage(for: item.iconFileName)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 32, height: 32)
-                        
-                        Text(item.name)
-                            .font(.body)
-                        
-                        Spacer()
-                        
-                        // 添加物品信息按钮
-                        Button {
-                            selectedItemID = item.typeId
-                            showingItemInfo = true
-                        } label: {
-                            Image(systemName: "info.circle")
-                                .foregroundColor(.blue)
-                        }
-                        .buttonStyle(BorderlessButtonStyle())
-                    }
+                    ImplantPresetItemRow(item: item)
                 }
             }
             .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
@@ -319,10 +297,37 @@ struct ImplantSetDetailView: View {
             }
         }
         .navigationTitle("\(localizedImplantString(grade)) \(localizedImplantString(setName))")
-        .sheet(isPresented: $showingItemInfo) {
-            if let itemID = selectedItemID {
+    }
+}
+
+// 植入体预设项行组件
+struct ImplantPresetItemRow: View {
+    let item: ImplantPresetItem
+    @State private var showingItemInfo = false
+    
+    var body: some View {
+        HStack {
+            IconManager.shared.loadImage(for: item.iconFileName)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 32, height: 32)
+            
+            Text(item.name)
+                .font(.body)
+            
+            Spacer()
+            
+            // 添加物品信息按钮
+            Button {
+                showingItemInfo = true
+            } label: {
+                Image(systemName: "info.circle")
+                    .foregroundColor(.blue)
+            }
+            .buttonStyle(BorderlessButtonStyle())
+            .sheet(isPresented: $showingItemInfo) {
                 NavigationStack {
-                    ShowItemInfo(databaseManager: DatabaseManager.shared, itemID: itemID)
+                    ShowItemInfo(databaseManager: DatabaseManager.shared, itemID: item.typeId)
                 }
                 .presentationDragIndicator(.visible)
             }

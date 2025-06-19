@@ -766,8 +766,13 @@ class FittingEditorViewModel: ObservableObject {
                     let capacity = currentModule.attributesByName["capacity"] ?? 0
                     if capacity > 0 {
                         chargeQuantity = Int(capacity / volume)
+                        Logger.info("批量安装弹药计算: 装备=\(currentModule.name), 容量=\(capacity), 弹药体积=\(volume), 计算数量=\(chargeQuantity!)")
+                    } else {
+                        Logger.warning("批量安装弹药失败: 装备=\(currentModule.name), 容量为0")
                     }
-                }
+                } else {
+                    Logger.warning("批量安装弹药失败: 弹药体积为0")
+                 }
                 
                 // 创建弹药对象
                 let charge = SimCharge(
@@ -935,7 +940,12 @@ class FittingEditorViewModel: ObservableObject {
                 let capacity = currentModule.attributesByName["capacity"] ?? 0
                 if capacity > 0 {
                     chargeQuantity = Int(capacity / volume)
+                    Logger.info("单独安装弹药计算: 装备=\(currentModule.name), 容量=\(capacity), 弹药体积=\(volume), 计算数量=\(chargeQuantity!)")
+                } else {
+                    Logger.warning("单独安装弹药失败: 装备=\(currentModule.name), 容量为0")
                 }
+            } else {
+                Logger.warning("单独安装弹药失败: 弹药体积为0")
             }
             
             // 创建弹药对象
@@ -1102,8 +1112,10 @@ class FittingEditorViewModel: ObservableObject {
                     attributesByName["volume"] = volume
                 }
                 // 获取capacity字段
-                if let capacity = row["capacity"] as? Double {
+                if let capacity = row["capacity"] as? Double, capacity > 0 {
+                    attributes[38] = capacity
                     attributesByName["capacity"] = capacity
+                    Logger.info("单独安装装备: \(model_name), capacity=\(capacity)")
                 }
             }
         }
@@ -1317,8 +1329,10 @@ class FittingEditorViewModel: ObservableObject {
                     attributesByName["volume"] = volume
                 }
                 // 获取capacity字段
-                if let capacity = row["capacity"] as? Double {
+                if let capacity = row["capacity"] as? Double, capacity > 0 {
+                    attributes[38] = capacity
                     attributesByName["capacity"] = capacity
+                    Logger.info("替换装备: \(model_name), capacity=\(capacity)")
                 }
             }
         }
@@ -1417,7 +1431,30 @@ class FittingEditorViewModel: ObservableObject {
             // 检查新装备是否可以装载旧弹药
             let canLoadOldCharge = canLoadCharge(moduleTypeId: typeId, chargeTypeId: oldCharge.typeId)
             if canLoadOldCharge {
-                // 创建带有原有弹药的新模块
+                // 重新计算弹药数量（基于新装备的容量）
+                var updatedChargeQuantity: Int? = oldCharge.chargeQuantity
+                let chargeVolume = oldCharge.attributesByName["volume"] ?? 0
+                if chargeVolume > 0 {
+                    let newModuleCapacity = attributesByName["capacity"] ?? 0
+                    if newModuleCapacity > 0 {
+                        updatedChargeQuantity = Int(newModuleCapacity / chargeVolume)
+                    }
+                }
+                
+                // 创建更新后的弹药对象
+                let updatedCharge = SimCharge(
+                    typeId: oldCharge.typeId,
+                    attributes: oldCharge.attributes,
+                    attributesByName: oldCharge.attributesByName,
+                    effects: oldCharge.effects,
+                    groupID: oldCharge.groupID,
+                    chargeQuantity: updatedChargeQuantity, // 使用重新计算的数量
+                    requiredSkills: oldCharge.requiredSkills,
+                    name: oldCharge.name,
+                    iconFileName: oldCharge.iconFileName
+                )
+                
+                // 创建带有更新弹药的新模块
                 let updatedModule = SimModule(
                     instanceId: oldModule?.instanceId ?? UUID(), // 保留原模块的instanceId
                     typeId: typeId,
@@ -1426,7 +1463,7 @@ class FittingEditorViewModel: ObservableObject {
                     effects: effects,
                     groupID: groupId,
                     status: moduleStatus,
-                    charge: oldCharge, // 保留原有弹药
+                    charge: updatedCharge, // 使用更新后的弹药
                     flag: flag,
                     quantity: 1,
                     name: model_name,
@@ -1436,7 +1473,7 @@ class FittingEditorViewModel: ObservableObject {
                 
                 // 使用带有弹药的模块
                 simulationInput.modules.append(updatedModule)
-                Logger.info("替换装备成功并保留了原有弹药: \(model_name) 到 \(flag.rawValue), 弹药: \(oldCharge.name)")
+                Logger.info("替换装备成功并保留弹药: \(model_name) 到 \(flag.rawValue), 弹药: \(oldCharge.name), 重新计算数量: \(updatedChargeQuantity ?? 0)")
             } else {
                 // 如果不能装载原有弹药，使用无弹药的模块
                 simulationInput.modules.append(newModule)

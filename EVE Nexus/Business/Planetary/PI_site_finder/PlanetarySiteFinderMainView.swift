@@ -12,16 +12,7 @@ struct PlanetaryProduct: Identifiable {
     }
 }
 
-// 主权势力信息
-struct SovereigntyInfo: Identifiable {
-    let id: Int
-    let name: String
-    let en_name: String
-    let zh_name: String
-    let icon: Image?
-    let systemCount: Int
-    let isAlliance: Bool  // true为联盟，false为派系
-}
+// SovereigntyInfo 现在定义在 SovereigntyModels.swift 中
 
 // 图标加载器
 class AllianceIconLoader: ObservableObject {

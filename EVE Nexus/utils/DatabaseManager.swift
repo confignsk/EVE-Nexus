@@ -365,6 +365,9 @@ class DatabaseManager: ObservableObject {
 
     // 加载 MetaGroup 名称
     func loadMetaGroupNames(for metaGroupIDs: [Int]) -> [Int: String] {
+        if metaGroupIDs.isEmpty {
+            return [:]
+        }
         let placeholders = String(repeating: "?,", count: metaGroupIDs.count).dropLast()
         let query = """
                 SELECT metagroup_id, name

@@ -20,6 +20,7 @@
 "Main_Skills_Queue_Paused" = "已暂停: %d个技能";
 "Main_Skills_Queue_Complete" = "已完成";
 "Main_Skills_Queue_Empty" = "技能队列为空";
+"Main_Skills_Queue_All_Completed" = "所有技能已完成";
 
 "Main_EVE_Mail" = "EVE 邮件";
 "Main_Calendar" = "日历";
@@ -143,6 +144,7 @@
 "Misc_Need" = "缺少";
 "Misc_Qty" = "数量";
 "Misc_Null" = "无";
+"Misc_Items" = "%d 个物品";
 
 // 蓝图详情
 "Blueprint_Product" = "产品";
@@ -449,6 +451,7 @@
 "Contract_Location" = "地点";
 "Contract_Start_Location" = "起点";
 "Contract_End_Location" = "终点";
+"Contract_Select1" = "需要选择至少一项";
 
 "Industry_Status_active" = "进行中";
 "Industry_Status_cancelled" = "已取消";
@@ -548,9 +551,8 @@
 "Main_Skills_Queue_Count" = "技能队列 (%d)";
 "Main_Skills_Queue_Count_Time" = "技能队列 (%d) - 剩余%@";
 "Main_Skills_Queue_Count_Paused" = "技能队列 (%d) - 已暂停";
-"Main_Skills_Points_Progress" = "%@ / %@ SP";
-"Main_Skills_Time_Remaining" = "剩余: %@";
-"Main_Skills_Time_Required" = "需要: %@";
+"Main_Skills_Points_Progress" = "%@/%@ SP";
+"Main_Skills_Time_Required" = "%@";
 "Main_Skills_Categories" = "技能目录";
 "Main_Skills_Not_Injected" = "未吸收";
 "Main_Skills_Completed" = "已完成";
@@ -561,13 +563,20 @@
 "Main_Skills_number" = "个技能";
 
 // 时间显示
-"Time_Days_Hours" = "%d天%d小时";
 "Time_Days" = "%d天";
 "Time_Days_Long" = "%d 天";
+"Time_Days_Hours" = "%d天%d小时";
+"Time_Days_Minutes" = "%d天%d分";
+"Time_Days_Seconds" = "%d天%d秒";
+
 "Time_Hours" = "%d小时";
+"Time_Hours_Minutes" = "%d小时%d分";
+"Time_Hours_Seconds" = "%d小时%d秒";
+
+"Time_Minutes" = "%d分";
+"Time_Minutes_Seconds" = "%d分%d秒";
+
 "Time_Seconds" = "%d秒";
-"Time_Hours_Minutes" = "%d小时%d分钟";
-"Time_Minutes" = "%d分钟";
 
 // Character Attributes
 "Character_Attributes_Title" = "人物属性";
@@ -592,8 +601,8 @@
 "Main_Skills_No_Skills" = "暂无技能";
 
 "Main_Skills_Required_Injectors" = "完成队列所需注入器";
-"Main_Skills_Total_Required_SP" = "总计所需技能点：%@";
-"Main_Skills_Total_Injector_Cost" = "预估注入器价值：%@ ISK";
+"Main_Skills_Total_Required_SP" = "预估所需技能点：%@ 点";
+"Main_Skills_Total_Injector_Cost" = "预估注入器价值：%@";
 
 // 财富视图
 "Wealth_Total" = "总资产";
@@ -874,12 +883,6 @@
 "Creator" = "创建者";
 "Executor" = "执行军团";
 "Unknown" = "未知";
-
-"Main_Market_Watch_List_Empty" = "暂无关注物品";
-"Main_Market_Watch_List_Add" = "添加关注列表";
-"Main_Market_Watch_List_Name" = "列表名称";
-"Main_Market_Watch_List_Add_Item" = "添加物品";
-"Main_Market_Watch_List_Items" = "%d 个物品";
 
 // Market Watch List
 "Main_Market_Watch_List" = "市场关注列表";
@@ -1385,6 +1388,9 @@
 "Insurgency_info" = "介绍";
 "Insurgency_stage" = "阶段 %d";
 "Misc_No_Insurgency" = "读取数据失败，请刷新重试";
+"FW_Occupier" = "控制者";
+"FW_Owner" = "拥有者";
+"FW_Occupier_And_Owner" = "控制者与拥有者";
 
 "Insurgency_info_text" = "腐蚀属性代表的是恒星系中犯罪活动的猖狂程度，而镇压属性代表的是执法程度。当这两种属性达到特定阶段时，就会产生不同效果。叛乱活动会影响这两种属性，而叛乱引发的活动会导致镇压值或腐蚀值随着克隆飞行员活动而变化。";
 
@@ -1507,7 +1513,7 @@
 "Sovereignty_All" = "所有主权";
 "Sovereignty_List" = "主权列表";
 "Sovereignty_Search_Title" = "选择主权";
-"Sovereignty_Search_Placeholder" = "搜索主权势力...";
+"Sovereignty_Search_Placeholder" = "搜索主权势力或星系...";
 "Sovereignty_Systems" = "个星系";
 "Sovereignty_Loading" = "加载中...";
 "Sovereignty_No_Data" = "暂无主权数据";
@@ -1700,6 +1706,21 @@
 "Module_Attribute_empFieldRange" = "作用范围";
 "Module_Attribute_Tracking" = "跟踪速度";
 "Module_Attribute_Rate_of_Fire" = "运转周期";
+"Module_Attribute_energyNeutralizerAmount" = "能量中和值";
+"Module_Attribute_powerTransferAmount" = "电容传输量";
+"Module_Attribute_powerTransferAmount_nos" = "能量吸收值";
+"Module_Attribute_shieldBonus" = "护盾维修量";
+"Module_Attribute_armorBonus" = "装甲维修量";
+"Module_Attribute_hullBonus" = "结构维修量";
+
+"Module_Attribute_trans_shieldBonus" = "护盾传输量";
+"Module_Attribute_trans_armorBonus" = "装甲传输量";
+"Module_Attribute_trans_hullBonus" = "结构传输量";
+
+"Module_Attribute_shieldHPBonus" = "护盾量加成";
+"Module_Attribute_armorHPBonus" = "装甲量加成";
+"Module_Attribute_capBonus" = "电容量加成";
+"Module_Attribute_miningAmount" = "采矿量+损耗";
 "Module_Attribute_Speed" = "飞行速度";
 "Module_Attribute_ProbeStrength" = "探针强度";
 
@@ -1743,3 +1764,49 @@
 "Implant_Nirvana" = "极乐";
 "Implant_Rapture" = "销魂";
 "Implant_Virtue" = "美德";
+
+// Fitting Price View
+"Fitting_Price" = "配装价格";
+"Fitting_Total_Price" = "配装总价(吉他)";
+"Fitting_Calculating" = "正在计算...";
+"Fitting_Price_Failed" = "计算失败:";
+"Fitting_No_Price_Data" = "暂无价格数据";
+"Fitting_Refresh" = "刷新";
+"Fitting_Ship" = "舰船";
+"Fitting_Modules_And_Charges" = "装备和弹药";
+"Fitting_Drones_And_Fighters" = "无人机/舰载机";
+"Fitting_Cargo" = "货舱";
+"Fitting_Implants" = "植入体";
+
+// 日志管理
+"Main_Setting_Logs_Section" = "调试日志";
+"Main_Setting_Enable_Logging" = "启用调试模式";
+"Main_Setting_Enable_Logging_Detail" = "开启并重启APP后会将应用日志和系统日志保存到文件中";
+"Main_Setting_View_Logs" = "查看调试日志";
+"Main_Setting_View_Logs_Detail" = "浏览和查看调试日志文件";
+"Main_Setting_Logs_Browser_Title" = "日志浏览器";
+"Main_Setting_Logs_Loading" = "加载日志文件...";
+"Main_Setting_Logs_Load_Failed" = "加载失败";
+"Main_Setting_Logs_No_Files" = "暂无日志文件";
+"Main_Setting_Logs_No_Files_Detail" = "启用日志功能并重启APP后会生成日志文件";
+"Main_Setting_Logs_Refresh" = "刷新";
+"Main_Setting_Logs_Select" = "选择";
+"Main_Setting_Logs_Done" = "完成";
+"Main_Setting_Logs_Cancel" = "取消";
+"Main_Setting_Logs_Delete_Confirm_Title" = "确认删除";
+"Main_Setting_Logs_Delete_Confirm_Message" = "确定要删除选中的 %d 个日志文件吗？此操作无法撤销。";
+"Main_Setting_Logs_Delete_Success" = "成功删除 %d 个日志文件";
+"Main_Setting_Logs_Delete_Failed" = "删除日志文件失败: %@ - %@";
+"Main_Setting_Logs_Unknown_Date" = "未知日期";
+"Main_Setting_Logs_Unknown_Size" = "未知大小";
+
+// 虫洞生命周期
+"WH_time_life" = "时间状态";
+"WH_life_Notyet" = "该虫洞尚未进入自然周期的衰退阶段，它还能敞开至少一天";
+"WH_life_beginning" = "该虫洞已开始衰退，可能撑不了一天了";
+"WH_life_reaching" = "该虫洞即将到达它自然生命周期的终点";
+"WH_Mass_life" = "质量状态";
+"WH_Mass_Notyet" = "该虫洞的稳定性尚未受到穿越舰船的影响";
+"WH_Mass_Notcritical" = "该虫洞的稳定性已遭到穿越舰船的影响，但尚未达到严重程度";
+"WH_Mass_critically" = "该虫洞的稳定性已遭到穿越舰船的严重影响，即将崩塌";
+

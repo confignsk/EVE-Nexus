@@ -427,6 +427,9 @@ struct ContentView: View {
                         Text(NSLocalizedString("Select_Item", comment: ""))
                             .foregroundColor(.gray)
                     } else {
+                        // 记录用户访问的功能
+                        let _ = logSelectedItem(selectedItem)
+                        
                         switch selectedItem {
                         case "accounts":
                             AccountsView(
@@ -570,6 +573,10 @@ struct ContentView: View {
                             FittingMainView(
                                 characterId: viewModel.selectedCharacter?.CharacterID,
                                 databaseManager: databaseManager)
+                        case "settings":
+                            SettingView(databaseManager: databaseManager)
+                        case "about":
+                            AboutView()
                         default:
                             Text(NSLocalizedString("Select_Item", comment: ""))
                                 .foregroundColor(.gray)
@@ -611,6 +618,13 @@ struct ContentView: View {
         .task {
             await viewModel.refreshAllData()
         }
+    }
+
+    // MARK: - 辅助函数
+    
+    private func logSelectedItem(_ item: String?) -> Void {
+        guard let item = item else { return }
+        Logger.info("\n\n=== 用户访问功能: \(item) ===")
     }
 
     // MARK: - 视图组件
@@ -975,18 +989,14 @@ struct ContentView: View {
     }
     private var otherSection: some View {
         Section {
-            NavigationLink {
-                SettingView(databaseManager: databaseManager)
-            } label: {
+            NavigationLink(value: "settings") {
                 RowView(
                     title: NSLocalizedString("Main_Setting", comment: ""),
                     icon: "Settings"
                 )
             }
 
-            NavigationLink {
-                AboutView()
-            } label: {
+            NavigationLink(value: "about") {
                 RowView(
                     title: NSLocalizedString("Main_About", comment: ""),
                     icon: "info"

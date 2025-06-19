@@ -20,7 +20,7 @@ struct CharacterSkillsView: View {
     @State private var isLoadingInjectors = true
     @State private var skillIcon: Image?
     @State private var injectorCalculation: InjectorCalculation?
-    @State private var injectorPrices: (large: Double?, small: Double?) = (nil, nil)
+    @State private var injectorPrices: InjectorPriceManager.InjectorPrices = InjectorPriceManager.InjectorPrices(large: nil, small: nil)
     @State private var characterAttributes: CharacterAttributes?
     @State private var implantBonuses: ImplantAttributes?
     @State private var trainingRates: [Int: Int] = [:]  // [skillId: pointsPerHour]
@@ -30,6 +30,8 @@ struct CharacterSkillsView: View {
     @State private var isDataReady = false  // 新增：用于控制整体内容的显示
     @State private var hasInitialized = false  // 追踪是否已执行初始化
     @State private var currentLoadTask: Task<Void, Never>?  // 追踪当前加载任务
+    @State private var skillListUpdateTrigger: Int = 0  // 用于触发技能列表更新
+    @State private var cachedCharacterTotalSP: Int = 0  // 缓存的角色总技能点数
 
     private func updateAttributeComparisons() {
         guard let attrs = characterAttributes,
@@ -85,7 +87,7 @@ struct CharacterSkillsView: View {
         let isPaused = isQueuePaused
 
         // 根据队列状态过滤技能
-        let activeQueue =
+        let filteredQueue =
             skillQueue
             .filter { skill in
                 // 如果队列暂停，显示所有技能
@@ -93,22 +95,34 @@ struct CharacterSkillsView: View {
                     return true
                 }
 
-                // 如果队列在训练，只显示正在训练和等待训练的技能
+                // 如果队列在训练，过滤掉已完成的技能
                 guard let startDate = skill.start_date,
                     let finishDate = skill.finish_date
                 else {
                     return false
                 }
-                return (now >= startDate && now <= finishDate) || startDate > now
+                
+                // 只显示未完成的技能（正在训练或等待训练）
+                return finishDate > now || startDate > now
             }
             .sorted { $0.queue_position < $1.queue_position }
 
-        // 将正在训练的技能移到第一位
-        if let trainingIndex = activeQueue.firstIndex(where: { $0.isCurrentlyTraining }) {
-            var reorderedQueue = activeQueue
-            let trainingSkill = reorderedQueue.remove(at: trainingIndex)
-            reorderedQueue.insert(trainingSkill, at: 0)
-            return reorderedQueue
+        // 动态确定当前正在训练的技能
+        var activeQueue = filteredQueue
+        
+        // 找到第一个应该正在训练的技能（开始时间已到但未完成）
+        if let currentTrainingSkill = activeQueue.first(where: { skill in
+            guard let startDate = skill.start_date,
+                  let finishDate = skill.finish_date else {
+                return false
+            }
+            return now >= startDate && now < finishDate
+        }) {
+            // 将正在训练的技能移到第一位
+            if let trainingIndex = activeQueue.firstIndex(where: { $0.skill_id == currentTrainingSkill.skill_id }) {
+                let trainingSkill = activeQueue.remove(at: trainingIndex)
+                activeQueue.insert(trainingSkill, at: 0)
+            }
         }
 
         return activeQueue
@@ -124,16 +138,6 @@ struct CharacterSkillsView: View {
         return false
     }
 
-    private var totalRemainingTime: TimeInterval? {
-        guard let lastSkill = activeSkills.last,
-            let finishDate = lastSkill.finish_date,
-            finishDate.timeIntervalSinceNow > 0
-        else {
-            return nil
-        }
-        return finishDate.timeIntervalSinceNow
-    }
-
     // 获取技能的当前等级（队列中最低等级-1）
     private func getCurrentLevel(for skillId: Int) -> Int {
         let minLevel =
@@ -144,23 +148,105 @@ struct CharacterSkillsView: View {
         return minLevel - 1
     }
 
-    // 计算注入器总价值
-    private var totalInjectorCost: Double? {
-        guard let calculation = injectorCalculation else {
-            Logger.debug("计算总价失败 - 没有注入器计算结果")
-            return nil
+    // 动态判断技能是否正在训练
+    private func isSkillCurrentlyTraining(_ item: SkillQueueItem) -> Bool {
+        let now = Date()
+        guard let startDate = item.start_date,
+              let finishDate = item.finish_date else {
+            return false
         }
-        guard let largePrice = injectorPrices.large else {
-            Logger.debug("计算总价失败 - 没有大型注入器价格")
-            return nil
-        }
-        guard let smallPrice = injectorPrices.small else {
-            Logger.debug("计算总价失败 - 没有小型注入器价格")
-            return nil
-        }
+        return now >= startDate && now < finishDate
+    }
 
-        return Double(calculation.largeInjectorCount) * largePrice + Double(
-            calculation.smallInjectorCount) * smallPrice
+    // 计算活跃技能列表的总剩余时间
+    private func calculateTotalRemainingTime(for skills: [SkillQueueItem]) -> TimeInterval? {
+        guard let lastSkill = skills.last,
+              let finishDate = lastSkill.finish_date,
+              finishDate.timeIntervalSinceNow > 0 else {
+            return nil
+        }
+        return finishDate.timeIntervalSinceNow
+    }
+
+    // 触发技能列表更新
+    private func triggerSkillListUpdate() {
+        // 使用延迟避免频繁触发
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            skillListUpdateTrigger += 1
+        }
+    }
+
+    // 动态计算当前剩余技能点需求
+    private var currentRequiredSP: Int {
+        var totalRequiredSP = 0
+        let now = Date()
+        
+        for item in activeSkills {
+            guard let endSP = item.level_end_sp,
+                  let startSP = item.training_start_sp else {
+                continue
+            }
+            
+            if isSkillCurrentlyTraining(item) {
+                // 对于正在训练的技能，计算实时剩余技能点
+                if let startDate = item.start_date,
+                   let rate = trainingRates[item.skill_id] {
+                    
+                    let trainedTime = now.timeIntervalSince(startDate)
+                    let trainedHours = trainedTime / 3600.0
+                    let trainedSP = Int(Double(rate) * trainedHours)
+                    let currentSP = startSP + trainedSP
+                    let remainingSP = max(0, endSP - currentSP)
+                    totalRequiredSP += remainingSP
+                } else {
+                    // 如果没有训练速度数据，使用时间比例
+                    if let finishDate = item.finish_date,
+                       let startDate = item.start_date {
+                        let totalTrainingTime = finishDate.timeIntervalSince(startDate)
+                        let trainedTime = now.timeIntervalSince(startDate)
+                        let timeProgress = min(1.0, trainedTime / totalTrainingTime)
+                        
+                        let totalSP = endSP - startSP
+                        let trainedSP = Int(Double(totalSP) * timeProgress)
+                        let remainingSP = max(0, totalSP - trainedSP)
+                        totalRequiredSP += remainingSP
+                    } else {
+                        totalRequiredSP += endSP - startSP
+                    }
+                }
+            } else {
+                // 对于未开始训练的技能，计算全部所需点数
+                totalRequiredSP += endSP - startSP
+            }
+        }
+        
+        return totalRequiredSP
+    }
+    
+    // 动态计算注入器需求
+    private var currentInjectorCalculation: InjectorCalculation? {
+        guard !activeSkills.isEmpty else { return nil }
+        
+        // 使用动态计算的剩余技能点
+        let requiredSP = currentRequiredSP
+        
+        // 使用缓存的角色总技能点数
+        return SkillInjectorCalculator.calculate(
+            requiredSkillPoints: requiredSP,
+            characterTotalSP: cachedCharacterTotalSP
+        )
+    }
+
+    // 计算注入器总价值（使用动态计算）
+    private var totalInjectorCost: Double? {
+        guard let calculation = currentInjectorCalculation else {
+            return nil
+        }
+        
+        return InjectorPriceManager.shared.calculateTotalCost(
+            calculation: calculation,
+            prices: injectorPrices
+        )
     }
 
     var body: some View {
@@ -252,12 +338,17 @@ struct CharacterSkillsView: View {
 
     @ViewBuilder
     private var skillQueueSection: some View {
+        let currentActiveSkills = activeSkills // 根据触发器重新计算
+        
         Section {
             if skillQueue.isEmpty {
                 Text(NSLocalizedString("Main_Skills_Queue_Empty", comment: ""))
                 .foregroundColor(.secondary)
+            } else if currentActiveSkills.isEmpty {
+                Text(NSLocalizedString("Main_Skills_Queue_All_Completed", comment: "所有技能已完成"))
+                .foregroundColor(.secondary)
             } else {
-                ForEach(activeSkills) { item in
+                ForEach(currentActiveSkills) { item in
                     NavigationLink {
                         ShowItemInfo(
                             databaseManager: databaseManager,
@@ -269,18 +360,19 @@ struct CharacterSkillsView: View {
                 }
             }
         } header: {
-            skillQueueHeader
+            skillQueueHeaderView(activeSkills: currentActiveSkills)
         }
         .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+        .id(skillListUpdateTrigger) // 当触发器改变时重新计算
     }
 
     @ViewBuilder
     private var injectorSection: some View {
-        if !skillQueue.isEmpty, !isLoadingInjectors, let calculation = injectorCalculation {
+        if !skillQueue.isEmpty, !isLoadingInjectors, let calculation = currentInjectorCalculation, calculation.largeInjectorCount + calculation.smallInjectorCount > 0  {
             Section {
                 // 大型注入器
                 if let largeInfo = getInjectorInfo(
-                    typeId: SkillInjectorCalculator.largeInjectorTypeId)
+                    typeId: SkillInjectorCalculator.largeInjectorTypeId), calculation.largeInjectorCount > 0
                 {
                     injectorItemView(
                         info: largeInfo, count: calculation.largeInjectorCount,
@@ -290,7 +382,7 @@ struct CharacterSkillsView: View {
 
                 // 小型注入器
                 if let smallInfo = getInjectorInfo(
-                    typeId: SkillInjectorCalculator.smallInjectorTypeId)
+                    typeId: SkillInjectorCalculator.smallInjectorTypeId), calculation.smallInjectorCount > 0
                 {
                     injectorItemView(
                         info: smallInfo, count: calculation.smallInjectorCount,
@@ -298,8 +390,8 @@ struct CharacterSkillsView: View {
                     )
                 }
 
-                // 总计所需技能点和预计价格
-                injectorSummaryView(calculation: calculation)
+                // 总计所需技能点和预计价格（使用实时更新）
+                dynamicInjectorSummaryView(calculation: calculation)
             } header: {
                 Text(NSLocalizedString("Main_Skills_Required_Injectors", comment: ""))
             }
@@ -348,7 +440,7 @@ struct CharacterSkillsView: View {
     }
 
     @ViewBuilder
-    private var skillQueueHeader: some View {
+    private func skillQueueHeaderView(activeSkills: [SkillQueueItem]) -> some View {
         if skillQueue.isEmpty {
             Text(String(format: NSLocalizedString("Main_Skills_Queue_Count", comment: ""), 0))
         } else if isQueuePaused {
@@ -357,7 +449,7 @@ struct CharacterSkillsView: View {
                     format: NSLocalizedString("Main_Skills_Queue_Count_Paused", comment: ""),
                     activeSkills.count
                 ))
-        } else if let totalTime = totalRemainingTime {
+        } else if let totalTime = calculateTotalRemainingTime(for: activeSkills) {
             Text(
                 String(
                     format: NSLocalizedString("Main_Skills_Queue_Count_Time", comment: ""),
@@ -403,7 +495,7 @@ struct CharacterSkillsView: View {
                     SkillLevelIndicator(
                         currentLevel: getCurrentLevel(for: item.skill_id),
                         trainingLevel: item.finished_level,
-                        isTraining: item.isCurrentlyTraining
+                        isTraining: isSkillCurrentlyTraining(item)
                     )
                     .padding(.trailing, 4)
                 }
@@ -418,40 +510,145 @@ struct CharacterSkillsView: View {
     @ViewBuilder
     private func skillProgressView(item: SkillQueueItem, progress: ProgressInfo) -> some View {
         VStack(spacing: 2) {
-            HStack(spacing: 2) {
-                Text(
-                    String(
-                        format: NSLocalizedString("Main_Skills_Points_Progress", comment: ""),
-                        formatNumber(Int(progress.current)),
-                        formatNumber(progress.total)
-                    )
-                )
-                .font(.caption)
-                .foregroundColor(.secondary)
-                if let rate = trainingRates[item.skill_id] {
-                    Text("(\(formatNumber(rate))/h)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+            if isSkillCurrentlyTraining(item) {
+                // 正在训练的技能使用实时更新
+                TimelineView(.periodic(from: Date(), by: 1.0)) { timeline in
+                    let now = timeline.date
+                    let realtimeProgress = calculateRealtimeProgress(item, at: now)
+                    VStack(spacing: 2) {
+                        HStack(spacing: 2) {
+                            Text(
+                                String(
+                                    format: NSLocalizedString("Main_Skills_Points_Progress", comment: ""),
+                                    formatNumber(Int(realtimeProgress.current)),
+                                    formatNumber(realtimeProgress.total)
+                                )
+                            )
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            
+                            if let rate = trainingRates[item.skill_id] {
+                                Text("(\(formatNumber(rate))/h)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            Spacer()
+                            
+                            // 实时倒计时
+                            if let finishDate = item.finish_date {
+                                let remainingTime = finishDate.timeIntervalSince(now)
+                                if remainingTime > 0 {
+                                    Text(
+                                        String(
+                                            format: NSLocalizedString("Main_Skills_Time_Required", comment: ""),
+                                            formatTimeInterval(remainingTime)
+                                        )
+                                    )
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                } else {
+                                    Text(NSLocalizedString("Main_Skills_Completed", comment: "完成"))
+                                        .font(.caption)
+                                        .foregroundColor(.green)
+                                        .onAppear {
+                                            // 技能完成时触发列表更新
+                                            triggerSkillListUpdate()
+                                        }
+                                }
+                            }
+                        }
+                        
+                        ProgressView(value: realtimeProgress.percentage)
+                            .progressViewStyle(LinearProgressViewStyle())
+                            .padding(.top, 1)
+                    }
                 }
-                Spacer()
-                skillTimeView(item: item, progress: progress)
-            }
-
-            if item.isCurrentlyTraining {
-                ProgressView(value: progress.percentage)
-                    .progressViewStyle(LinearProgressViewStyle())
-                    .padding(.top, 1)
+            } else {
+                // 非训练技能使用静态显示
+                HStack(spacing: 2) {
+                    Text(
+                        String(
+                            format: NSLocalizedString("Main_Skills_Points_Progress", comment: ""),
+                            formatNumber(Int(progress.current)),
+                            formatNumber(progress.total)
+                        )
+                    )
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    
+                    if let rate = trainingRates[item.skill_id] {
+                        Text("(\(formatNumber(rate))/h)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    skillTimeView(item: item, progress: progress)
+                }
             }
         }
+    }
+    
+    // 新增：计算实时进度的函数
+    private func calculateRealtimeProgress(_ item: SkillQueueItem, at currentTime: Date) -> ProgressInfo {
+        guard let levelEndSp = item.level_end_sp,
+              let trainingStartSp = item.training_start_sp,
+              let levelStartSp = item.level_start_sp,
+              let startDate = item.start_date,
+              let finishDate = item.finish_date else {
+            return ProgressInfo(current: 0, total: 0, percentage: 0)
+        }
+        
+        var currentSP = Double(trainingStartSp)
+        
+        if currentTime < startDate {
+            // 还未开始训练
+            currentSP = Double(trainingStartSp)
+        } else if currentTime > finishDate {
+            // 已完成训练
+            currentSP = Double(levelEndSp)
+        } else {
+            // 正在训练中，使用时间比例和训练速度计算当前进度
+            if let rate = trainingRates[item.skill_id] {
+                let trainedTime = currentTime.timeIntervalSince(startDate)
+                let trainedHours = trainedTime / 3600.0
+                let trainedSP = Double(rate) * trainedHours
+                currentSP = Double(trainingStartSp) + trainedSP
+                
+                // 确保不超过目标值
+                currentSP = min(currentSP, Double(levelEndSp))
+            } else {
+                // 如果没有训练速度数据，使用时间比例
+                let totalTrainingTime = finishDate.timeIntervalSince(startDate)
+                let trainedTime = currentTime.timeIntervalSince(startDate)
+                let timeProgress = trainedTime / totalTrainingTime
+                
+                let remainingSP = levelEndSp - trainingStartSp
+                let trainedSP = Double(remainingSP) * timeProgress
+                currentSP = Double(trainingStartSp) + trainedSP
+            }
+        }
+        
+        // 计算当前等级的进度
+        let levelTotalSP = levelEndSp - levelStartSp
+        let levelCurrentSP = currentSP - Double(levelStartSp)
+        
+        return ProgressInfo(
+            current: currentSP,
+            total: levelEndSp,
+            percentage: levelCurrentSP / Double(levelTotalSP)
+        )
     }
 
     @ViewBuilder
     private func skillTimeView(item: SkillQueueItem, progress: ProgressInfo) -> some View {
-        if item.isCurrentlyTraining {
+        if isSkillCurrentlyTraining(item) {
             if let remainingTime = item.remainingTime {
                 Text(
                     String(
-                        format: NSLocalizedString("Main_Skills_Time_Remaining", comment: ""),
+                        format: NSLocalizedString("Main_Skills_Time_Required", comment: ""),
                         formatTimeInterval(remainingTime)
                     )
                 )
@@ -510,25 +707,29 @@ struct CharacterSkillsView: View {
             }
         }
     }
-
+    
     @ViewBuilder
-    private func injectorSummaryView(calculation: InjectorCalculation) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(
-                String(
-                    format: NSLocalizedString("Main_Skills_Total_Required_SP", comment: ""),
-                    FormatUtil.format(Double(calculation.totalSkillPoints))
-                ))
-            if let totalCost = totalInjectorCost {
+    private func dynamicInjectorSummaryView(calculation: InjectorCalculation) -> some View {
+        // 使用 TimelineView 实现实时更新，每秒更新一次
+        TimelineView(.periodic(from: Date(), by: 1.0)) { timeline in
+            let currentSP = currentRequiredSP
+            VStack(alignment: .leading, spacing: 4) {
                 Text(
                     String(
-                        format: NSLocalizedString("Main_Skills_Total_Injector_Cost", comment: ""),
-                        FormatUtil.formatISK(totalCost)
+                        format: NSLocalizedString("Main_Skills_Total_Required_SP", comment: ""),
+                        FormatUtil.format(Double(currentSP))
                     ))
+                if let totalCost = totalInjectorCost {
+                    Text(
+                        String(
+                            format: NSLocalizedString("Main_Skills_Total_Injector_Cost", comment: ""),
+                            FormatUtil.formatISK(totalCost)
+                        ))
+                }
             }
+            .font(.caption)
+            .foregroundColor(.secondary)
         }
-        .font(.caption)
-        .foregroundColor(.secondary)
     }
 
     @ViewBuilder
@@ -771,6 +972,11 @@ struct CharacterSkillsView: View {
 
         // 获取角色总技能点数
         let characterTotalSP = await getCharacterTotalSP()
+        
+        // 缓存角色总技能点数供动态计算使用
+        await MainActor.run {
+            cachedCharacterTotalSP = characterTotalSP
+        }
 
         // 计算注入器需求
         injectorCalculation = SkillInjectorCalculator.calculate(
@@ -840,31 +1046,11 @@ struct CharacterSkillsView: View {
         }
     }
 
-    private func loadInjectorPrices() async {
-        Logger.debug(
-            "开始加载注入器价格 - 大型注入器ID: \(SkillInjectorCalculator.largeInjectorTypeId), 小型注入器ID: \(SkillInjectorCalculator.smallInjectorTypeId)"
-        )
-
-        // 获取大型和小型注入器的价格
-        let prices = await MarketPriceUtil.getMarketPrices(typeIds: [
-            SkillInjectorCalculator.largeInjectorTypeId,
-            SkillInjectorCalculator.smallInjectorTypeId,
-        ])
-
-        Logger.debug("获取到价格数据: \(prices)")
-
-        // 确保两个价格都有值才更新
-        if let largePrice = prices[SkillInjectorCalculator.largeInjectorTypeId],
-            let smallPrice = prices[SkillInjectorCalculator.smallInjectorTypeId]
-        {
-            // 在主线程一次性更新两个价格
-            await MainActor.run {
-                injectorPrices = (large: largePrice, small: smallPrice)
-            }
-        } else {
-            Logger.debug(
-                "价格数据不完整 - large: \(prices[SkillInjectorCalculator.largeInjectorTypeId] as Any), small: \(prices[SkillInjectorCalculator.smallInjectorTypeId] as Any)"
-            )
+    func loadInjectorPrices() async {
+        let prices = await InjectorPriceManager.shared.loadInjectorPrices()
+        
+        await MainActor.run {
+            injectorPrices = prices
         }
     }
 
@@ -942,35 +1128,75 @@ struct CharacterSkillsView: View {
     }
 
     private func formatTimeInterval(_ interval: TimeInterval) -> String {
-        // 先转换为分钟
-        let totalMinutes = Int(ceil(interval / 60))
-        let days = totalMinutes / (24 * 60)
-        let remainingMinutes = totalMinutes % (24 * 60)
-        let hours = remainingMinutes / 60
-        let minutes = remainingMinutes % 60
+        // 转换为秒，保留精度
+        let totalSeconds = Int(ceil(interval))
+        let days = totalSeconds / (24 * 60 * 60)
+        let remainingSeconds = totalSeconds % (24 * 60 * 60)
+        let hours = remainingSeconds / (60 * 60)
+        let remainingAfterHours = remainingSeconds % (60 * 60)
+        let minutes = remainingAfterHours / 60
+        let seconds = remainingAfterHours % 60
 
         if days > 0 {
-            // 如果有剩余分钟，小时数要加1
-            let adjustedHours = (remainingMinutes % 60 > 0) ? hours + 1 : hours
-            if adjustedHours > 0 {
+            // 显示天 + 下一个非零单位（第二个单位向上取整）
+            if hours > 0 || minutes > 0 || seconds > 0 {
+                // 如果有剩余的分钟或秒，小时数向上取整
+                let adjustedHours = (minutes > 0 || seconds > 0) ? hours + 1 : hours
+                if adjustedHours > 0 {
+                    return String(
+                        format: NSLocalizedString("Time_Days_Hours", comment: ""),
+                        days, adjustedHours
+                    )
+                }
+            }
+            if minutes > 0 || seconds > 0 {
+                // 如果有剩余的秒，分钟数向上取整
+                let adjustedMinutes = seconds > 0 ? minutes + 1 : minutes
+                if adjustedMinutes > 0 {
+                    return String(
+                        format: NSLocalizedString("Time_Days_Minutes", comment: ""),
+                        days, adjustedMinutes
+                    )
+                }
+            }
+            if seconds > 0 {
                 return String(
-                    format: NSLocalizedString("Time_Days_Hours", comment: ""),
-                    days, adjustedHours
+                    format: NSLocalizedString("Time_Days_Seconds", comment: ""),
+                    days, seconds
                 )
             }
             return String(format: NSLocalizedString("Time_Days", comment: ""), days)
         } else if hours > 0 {
-            // 如果有剩余分钟，分钟数要向上取整
-            if minutes > 0 {
+            // 显示小时 + 下一个非零单位（第二个单位向上取整）
+            if minutes > 0 || seconds > 0 {
+                // 如果有剩余的秒，分钟数向上取整
+                let adjustedMinutes = seconds > 0 ? minutes + 1 : minutes
+                if adjustedMinutes > 0 {
+                    return String(
+                        format: NSLocalizedString("Time_Hours_Minutes", comment: ""),
+                        hours, adjustedMinutes
+                    )
+                }
+            }
+            if seconds > 0 {
                 return String(
-                    format: NSLocalizedString("Time_Hours_Minutes", comment: ""),
-                    hours, minutes
+                    format: NSLocalizedString("Time_Hours_Seconds", comment: ""),
+                    hours, seconds
                 )
             }
             return String(format: NSLocalizedString("Time_Hours", comment: ""), hours)
+        } else if minutes > 0 {
+            // 显示分钟 + 秒
+            if seconds > 0 {
+                return String(
+                    format: NSLocalizedString("Time_Minutes_Seconds", comment: ""),
+                    minutes, seconds
+                )
+            }
+            return String(format: NSLocalizedString("Time_Minutes", comment: ""), minutes)
         }
-        // 分钟数已经在一开始就向上取整了
-        return String(format: NSLocalizedString("Time_Minutes", comment: ""), minutes)
+        // 只有秒
+        return String(format: NSLocalizedString("Time_Seconds", comment: ""), seconds)
     }
 
     private func formatNumber(_ number: Int) -> String {

@@ -908,6 +908,11 @@ class FitConvert {
         
         // 从模块数据中恢复装备项
         let items = input.modules.map { module -> LocalFittingItem in
+            // 添加调试日志，记录弹药信息
+            if let charge = module.charge {
+                Logger.info("转换装备弹药: 装备=\(module.name), 弹药=\(charge.name), 弹药数量=\(charge.chargeQuantity ?? -1)")
+            }
+            
             return LocalFittingItem(
                 flag: module.flag ?? .invalid,
                 quantity: module.quantity,

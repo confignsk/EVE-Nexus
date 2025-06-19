@@ -273,34 +273,47 @@ struct MarketItemTreeSelectorView: View {
     }
     
     private func navigateToGroup(id: Int) {
-        Logger.info("开始导航到指定目录：ID=\(id)")
+        Logger.info("开始直接导航到指定目录：ID=\(id)")
         
-        if navigationPath.count > 0 {
-            navigationPath.removeLast(navigationPath.count)
-        }
+        // 清空当前路径
+        navigationPath.removeLast(navigationPath.count)
         
+        // 查找目标节点的完整路径
         let nodePath = findNodePath(id: id, in: marketGroupTree)
         
         if !nodePath.isEmpty {
+            // 构建完整的导航路径（跳过根节点）
             let pathToNavigate = nodePath.dropFirst()
-            Logger.info("找到路径，共\(nodePath.count)级，需要导航\(pathToNavigate.count)级")
+            Logger.info("找到路径，直接导航到：\(nodePath.map { $0.name }.joined(separator: " -> "))")
             
+            // 一次性构建完整的NavigationPath，避免逐级跳转动画
+            var newPath = NavigationPath()
             for (index, node) in pathToNavigate.enumerated() {
                 if node.children.isEmpty || index == pathToNavigate.count - 1 {
-                    navigationPath.append(MarketNodeItemsViewDestination(group: node))
+                    // 最后一级或叶子节点 - 物品列表
+                    newPath.append(MarketNodeItemsViewDestination(group: node))
                 } else {
-                    navigationPath.append(MarketNodeSubViewDestination(group: node))
+                    // 中间节点 - 子目录
+                    newPath.append(MarketNodeSubViewDestination(group: node))
                 }
             }
+            
+            // 一次性设置完整路径，实现直接跳转
+            navigationPath = newPath
             currentGroupID = id
+            
         } else if let node = findNodeById(marketGroupTree, id: id) {
             Logger.info("在顶层找到目标节点：\(node.name)")
+            var newPath = NavigationPath()
             if node.children.isEmpty {
-                navigationPath.append(MarketNodeItemsViewDestination(group: node))
+                newPath.append(MarketNodeItemsViewDestination(group: node))
             } else {
-                navigationPath.append(MarketNodeSubViewDestination(group: node))
+                newPath.append(MarketNodeSubViewDestination(group: node))
             }
+            navigationPath = newPath
             currentGroupID = id
+        } else {
+            Logger.warning("未找到ID为\(id)的节点")
         }
     }
     

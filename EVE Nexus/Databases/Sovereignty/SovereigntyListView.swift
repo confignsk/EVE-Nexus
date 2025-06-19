@@ -5,6 +5,7 @@ struct SovereigntyListView: View {
     @ObservedObject var databaseManager: DatabaseManager
     @State private var searchText = ""
     @State private var sovereignties: [SovereigntyInfo] = []
+    @State private var sovereigntyControlledSystems: [Int: [(systemId: Int, name: String, nameEn: String, nameZh: String)]] = [:] // 主权势力ID -> 控制的星系信息列表
     @State private var isLoading = true
     @State private var isSearchActive = false
     @State private var errorMessage: String? = nil
@@ -29,29 +30,39 @@ struct SovereigntyListView: View {
                 List {
                     // 过滤并显示主权列表
                     ForEach(filteredSovereignties, id: \.id) { sovereignty in
-                        HStack {
-                            if let icon = iconLoader.icons[sovereignty.id] ?? sovereignty.icon {
-                                icon
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 32, height: 32)
-                                    .cornerRadius(6)
-                            } else {
-                                // 显示加载中的图标
-                                ProgressView()
-                                    .frame(width: 32, height: 32)
-                                    .background(Color.gray.opacity(0.1))
-                                    .cornerRadius(6)
-                            }
+                        NavigationLink(
+                            destination: SovereigntySystemsView(
+                                databaseManager: databaseManager,
+                                sovereigntyInfo: sovereignty
+                            )
+                        ) {
+                            HStack {
+                                if let icon = iconLoader.icons[sovereignty.id] ?? sovereignty.icon {
+                                    icon
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 32, height: 32)
+                                        .cornerRadius(6)
+                                } else {
+                                    // 显示加载中的图标
+                                    ProgressView()
+                                        .frame(width: 32, height: 32)
+                                        .background(Color.gray.opacity(0.1))
+                                        .cornerRadius(6)
+                                }
 
-                            VStack(alignment: .leading) {
-                                Text(sovereignty.name)
-                                    .foregroundColor(.primary)
-                                Text(
-                                    "\(sovereignty.systemCount) \(NSLocalizedString("Sovereignty_Systems", comment: "个星系"))"
-                                )
-                                .font(.caption)
-                                .foregroundColor(.gray)
+                                VStack(alignment: .leading) {
+                                    Text(sovereignty.name)
+                                        .foregroundColor(.primary)
+                                        .textSelection(.enabled)
+                                    Text(
+                                        "\(sovereignty.systemCount) \(NSLocalizedString("Sovereignty_Systems", comment: "个星系"))"
+                                    )
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                                }
+                                
+                                Spacer()
                             }
                         }
                     }.listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
@@ -94,12 +105,31 @@ struct SovereigntyListView: View {
     private var filteredSovereignties: [SovereigntyInfo] {
         if searchText.isEmpty {
             return sovereignties
-        } else {
-            return sovereignties.filter { sovereignty in
-                sovereignty.name.localizedCaseInsensitiveContains(searchText) ||
-                sovereignty.en_name.localizedCaseInsensitiveContains(searchText) ||
-                sovereignty.zh_name.localizedCaseInsensitiveContains(searchText)
+        } else {            
+            let filtered = sovereignties.filter { sovereignty in
+                // 搜索主权势力名称
+                let nameMatch = sovereignty.name.localizedCaseInsensitiveContains(searchText) ||
+                    sovereignty.en_name.localizedCaseInsensitiveContains(searchText) ||
+                    sovereignty.zh_name.localizedCaseInsensitiveContains(searchText)
+                
+                // 搜索该势力控制的星系名称（中英文）
+                let systemMatch = sovereigntyControlledSystems[sovereignty.id]?.contains { systemInfo in
+                    let nameMatches = systemInfo.name.localizedCaseInsensitiveContains(searchText)
+                    let enMatches = systemInfo.nameEn.localizedCaseInsensitiveContains(searchText)
+                    let zhMatches = systemInfo.nameZh.localizedCaseInsensitiveContains(searchText)
+                    
+                    return nameMatches || enMatches || zhMatches
+                } == true
+                
+                // 如果搜索"吉他"时有匹配，输出调试信息
+                if searchText.contains("吉他") && (nameMatch || systemMatch) {
+                    Logger.info("搜索'吉他'匹配到主权势力: \(sovereignty.name), 星系数量: \(sovereigntyControlledSystems[sovereignty.id]?.count ?? 0)")
+                }
+                
+                return nameMatch || systemMatch
             }
+            
+            return filtered
         }
     }
 
@@ -126,6 +156,9 @@ struct SovereigntyListView: View {
     private func refreshSovereigntyData() async {
         // 重置状态
         iconLoader.cancelAllTasks()
+        await MainActor.run {
+            sovereigntyControlledSystems.removeAll()
+        }
         do {
             try await loadSovereigntyDataInternal(forceRefresh: true)
         } catch {
@@ -217,9 +250,45 @@ struct SovereigntyListView: View {
         // 按星系数量排序
         tempSovereignties.sort { $0.systemCount > $1.systemCount }
 
+        // 建立主权势力到星系信息的映射关系
+        var sovereigntyToSystems: [Int: [(systemId: Int, name: String, nameEn: String, nameZh: String)]] = [:]
+        
+        // 获取所有星系ID
+        let allSystemIds = sovereigntyData.map { $0.systemId }
+        
+        // 批量查询星系中英文名称
+        if !allSystemIds.isEmpty {
+            let systemNamesMap = await getBatchSolarSystemNames(
+                solarSystemIds: allSystemIds,
+                databaseManager: databaseManager
+            )
+            
+            Logger.info("获取到 \(systemNamesMap.count) 个星系名称数据")
+            
+            // 为每个主权势力建立其控制的星系信息列表
+            for data in sovereigntyData {
+                if let systemNames = systemNamesMap[data.systemId] {
+                    let systemInfo = (
+                        systemId: data.systemId,
+                        name: systemNames.name,
+                        nameEn: systemNames.nameEn,
+                        nameZh: systemNames.nameZh
+                    )
+                    
+                    if let allianceId = data.allianceId {
+                        sovereigntyToSystems[allianceId, default: []].append(systemInfo)
+                    }
+                    if let factionId = data.factionId {
+                        sovereigntyToSystems[factionId, default: []].append(systemInfo)
+                    }
+                }
+            }
+        }
+
         // 更新UI显示主权列表（可能部分联盟图标尚未加载）
         await MainActor.run {
             sovereignties = tempSovereignties
+            sovereigntyControlledSystems = sovereigntyToSystems
 
             // 开始加载图标
             iconLoader.loadIcons(for: allianceIds)

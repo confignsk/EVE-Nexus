@@ -72,11 +72,7 @@ struct ShipFittingDronesView: View {
     private func getDroneMaxRange(_ droneOutput: SimDroneOutput) -> Double {
         let rangeAttributes = [
             "maxRange",
-            "shieldTransferRange", 
-            "armorRepairRange",
-            "energyTransferRange",
-            "remoteHullRepairRange",
-            "remoteCapacitorTransmitterRange"
+            "shieldTransferRange"
         ]
         
         var maxRange: Double = 0

@@ -1,5 +1,10 @@
 import SwiftUI
 
+// 创建一个环境键，用于存储返回到根视图的函数
+private struct RootPresentationModeKey: EnvironmentKey {
+    static let defaultValue: Binding<Bool> = .constant(false)
+}
+
 // 基础市场视图
 struct MarketBaseView<Content: View>: View {
     @ObservedObject var databaseManager: DatabaseManager
@@ -200,16 +205,18 @@ struct MarketBaseView<Content: View>: View {
 struct MarketBrowserView: View {
     @ObservedObject var databaseManager: DatabaseManager
     @State private var marketGroups: [MarketGroup] = []
+    @State private var path = NavigationPath()
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             MarketBaseView(
                 databaseManager: databaseManager,
                 title: NSLocalizedString("Main_Market", comment: ""),
                 content: {
                     ForEach(MarketManager.shared.getRootGroups(marketGroups)) { group in
                         MarketGroupRow(
-                            group: group, allGroups: marketGroups, databaseManager: databaseManager
+                            group: group, allGroups: marketGroups, databaseManager: databaseManager,
+                            path: $path
                         )
                     }
                 },
@@ -220,6 +227,22 @@ struct MarketBrowserView: View {
                     ["%\(text)%", "%\(text)%", "\(text)"]
                 }
             )
+            .navigationDestination(for: MarketGroup.self) { group in
+                MarketGroupView(
+                    databaseManager: databaseManager,
+                    group: group,
+                    allGroups: marketGroups,
+                    path: $path
+                )
+            }
+            .navigationDestination(for: MarketItemDestination.self) { destination in
+                MarketItemListView(
+                    databaseManager: databaseManager,
+                    marketGroupID: destination.marketGroupID,
+                    title: destination.title,
+                    path: $path
+                )
+            }
             .onAppear {
                 marketGroups = MarketManager.shared.loadMarketGroups(
                     databaseManager: databaseManager)
@@ -228,11 +251,18 @@ struct MarketBrowserView: View {
     }
 }
 
+// 为物品列表创建目的地类型
+struct MarketItemDestination: Hashable {
+    let marketGroupID: Int
+    let title: String
+}
+
 // 重构后的MarketGroupView
 struct MarketGroupView: View {
     @ObservedObject var databaseManager: DatabaseManager
     let group: MarketGroup
     let allGroups: [MarketGroup]
+    @Binding var path: NavigationPath
 
     var body: some View {
         MarketBaseView(
@@ -241,7 +271,8 @@ struct MarketGroupView: View {
             content: {
                 ForEach(MarketManager.shared.getSubGroups(allGroups, for: group.id)) { subGroup in
                     MarketGroupRow(
-                        group: subGroup, allGroups: allGroups, databaseManager: databaseManager
+                        group: subGroup, allGroups: allGroups, databaseManager: databaseManager,
+                        path: $path
                     )
                 }
             },
@@ -257,6 +288,16 @@ struct MarketGroupView: View {
                 ["%\(text)%", "%\(text)%"]
             }
         )
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: {
+                    // 清空导航路径，返回到根视图
+                    path.removeLast(path.count)
+                }) {
+                    Image(systemName: "house")
+                }
+            }
+        }
     }
 }
 
@@ -267,6 +308,7 @@ struct MarketItemListView: View {
     let title: String
     @State private var items: [DatabaseListItem] = []
     @State private var metaGroupNames: [Int: String] = [:]
+    @Binding var path: NavigationPath
 
     var groupedItems: [(id: Int, name: String, items: [DatabaseListItem])] {
         let publishedItems = items.filter { $0.published }
@@ -364,6 +406,16 @@ struct MarketItemListView: View {
                 [marketGroupID, "%\(text)%", "%\(text)%"]
             }
         )
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: {
+                    // 清空导航路径，返回到根视图
+                    path.removeLast(path.count)
+                }) {
+                    Image(systemName: "house")
+                }
+            }
+        }
         .onAppear {
             loadItems()
         }
@@ -385,28 +437,17 @@ struct MarketGroupRow: View {
     let group: MarketGroup
     let allGroups: [MarketGroup]
     let databaseManager: DatabaseManager
+    @Binding var path: NavigationPath
 
     var body: some View {
         if MarketManager.shared.isLeafGroup(group, in: allGroups) {
             // 最后一级目录，显示物品列表
-            NavigationLink {
-                MarketItemListView(
-                    databaseManager: databaseManager,
-                    marketGroupID: group.id,
-                    title: group.name
-                )
-            } label: {
+            NavigationLink(value: MarketItemDestination(marketGroupID: group.id, title: group.name)) {
                 MarketGroupLabel(group: group)
             }
         } else {
             // 非最后一级目录，显示子目录
-            NavigationLink {
-                MarketGroupView(
-                    databaseManager: databaseManager,
-                    group: group,
-                    allGroups: allGroups
-                )
-            } label: {
+            NavigationLink(value: group) {
                 MarketGroupLabel(group: group)
             }
         }
@@ -425,6 +466,9 @@ struct MarketGroupLabel: View {
 
             Text(group.name)
                 .font(.body)
+                .foregroundColor(.primary)
+            
+            Spacer()
         }
     }
 }

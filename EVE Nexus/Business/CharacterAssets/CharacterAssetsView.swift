@@ -104,9 +104,16 @@ private struct SearchResultRowView: View {
                 AssetIconView(iconName: result.itemInfo.iconFileName)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    // 物品名称
-                    Text(result.itemInfo.name)
-                        .font(.headline)
+                    // 物品名称和数量
+                    HStack(spacing: 4) {
+                        Text(result.itemInfo.name)
+                        
+                        // 显示数量（如果大于1）
+                        if result.totalQuantity > 1 {
+                            Text("×\(result.totalQuantity)")
+                                .foregroundColor(.secondary)
+                        }
+                    }
 
                     // 完整位置路径
                     Text(result.formattedPath)

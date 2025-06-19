@@ -1,5 +1,24 @@
 import SwiftUI
 
+// 扩展Set以支持AppStorage
+extension Set: @retroactive RawRepresentable where Element: Codable {
+    public init?(rawValue: String) {
+        guard let data = rawValue.data(using: .utf8),
+              let result = try? JSONDecoder().decode(Set<Element>.self, from: data) else {
+            return nil
+        }
+        self = result
+    }
+
+    public var rawValue: String {
+        guard let data = try? JSONEncoder().encode(self),
+              let result = String(data: data, encoding: .utf8) else {
+            return "[]"
+        }
+        return result
+    }
+}
+
 // 按日期分组的合同
 struct ContractGroup: Identifiable {
     let id = UUID()
@@ -356,14 +375,16 @@ struct PersonalContractsView: View {
     @StateObject private var viewModel: PersonalContractsViewModel
     @State private var showSettings = false
 
-    // 使用@AppStorage并使用动态key
-    @AppStorage("") private var showActiveOnly: Bool = false
-    @AppStorage("") private var showAttentionOnly: Bool = false
-    @AppStorage("") private var showCourierContracts: Bool = true
-    @AppStorage("") private var showItemExchangeContracts: Bool = true
-    @AppStorage("") private var showAuctionContracts: Bool = true
+    // 新的过滤设置，使用Set来存储选中的类型和状态
+    // 首次使用时默认全选，后续使用缓存值
+    @AppStorage("") private var selectedContractTypes: Set<String> = []
+    @AppStorage("") private var selectedContractStatuses: Set<String> = []
     @AppStorage("") private var maxContracts: Int = 300
     @AppStorage("") private var courierMode: Bool = false
+
+    // 定义所有可能的合同类型和状态
+    private let allContractTypes = ["courier", "item_exchange", "auction"]
+    private let allContractStatuses = ["outstanding", "in_progress", "finished", "cancelled", "rejected", "failed", "deleted", "reversed"]
 
     private let displayDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -378,18 +399,19 @@ struct PersonalContractsView: View {
         let vm = PersonalContractsViewModel(characterId: characterId)
         _viewModel = StateObject(wrappedValue: vm)
 
+        // 检查是否是首次使用（没有缓存）
+        let typesKey = "selectedContractTypes_\(characterId)"
+        let statusesKey = "selectedContractStatuses_\(characterId)"
+        let hasTypesCache = UserDefaults.standard.object(forKey: typesKey) != nil
+        let hasStatusesCache = UserDefaults.standard.object(forKey: statusesKey) != nil
+        
+        // 如果是首次使用，默认全选；否则使用缓存值
+        let defaultTypes: Set<String> = hasTypesCache ? [] : Set(["courier", "item_exchange", "auction"])
+        let defaultStatuses: Set<String> = hasStatusesCache ? [] : Set(["outstanding", "in_progress", "finished", "cancelled", "rejected", "failed", "deleted", "reversed"])
+        
         // 初始化@AppStorage的key
-        _showActiveOnly = AppStorage(wrappedValue: false, "showActiveOnly_\(characterId)")
-        _showAttentionOnly = AppStorage(wrappedValue: false, "showAttentionOnly_\(characterId)")
-        _showCourierContracts = AppStorage(
-            wrappedValue: true, "showCourierContracts_\(characterId)"
-        )
-        _showItemExchangeContracts = AppStorage(
-            wrappedValue: true, "showItemExchangeContracts_\(characterId)"
-        )
-        _showAuctionContracts = AppStorage(
-            wrappedValue: true, "showAuctionContracts_\(characterId)"
-        )
+        _selectedContractTypes = AppStorage(wrappedValue: defaultTypes, typesKey)
+        _selectedContractStatuses = AppStorage(wrappedValue: defaultStatuses, statusesKey)
         _maxContracts = AppStorage(wrappedValue: 300, "maxContracts_\(characterId)")
         _courierMode = AppStorage(wrappedValue: false, "courierMode_\(characterId)")
 
@@ -430,29 +452,26 @@ struct PersonalContractsView: View {
                 $0.contracts[0].reward > $1.contracts[0].reward
             }
         } else {
-            // 先按照设置过滤合同
+            // 使用新的过滤逻辑
             let filteredGroups = viewModel.contractGroups.compactMap { group -> ContractGroup? in
                 // 过滤每个组内的合同
                 let filteredContracts = group.contracts.filter { contract in
-                    // 根据设置过滤合同
-                    let showByType =
-                        (contract.type == "courier" && showCourierContracts)
-                        || (contract.type == "item_exchange" && showItemExchangeContracts)
-                        || (contract.type == "auction" && showAuctionContracts)
-
-                    let showByStatus: Bool
-                    if showAttentionOnly {
-                        // 只显示需要注意的状态
-                        showByStatus = ["rejected", "failed", "reversed"].contains(contract.status)
-                    } else if showActiveOnly {
-                        // 只显示活跃状态
-                        showByStatus = contract.status == "outstanding"
-                    } else {
-                        // 显示所有状态
-                        showByStatus = true
+                    // 根据选中的类型和状态过滤合同
+                    // 如果没有选中任何类型，则不显示任何合同
+                    let typeMatches = !selectedContractTypes.isEmpty && selectedContractTypes.contains(contract.type)
+                    
+                    // 将所有finished相关状态统一为"finished"
+                    let normalizedStatus: String
+                    switch contract.status {
+                    case "finished", "finished_issuer", "finished_contractor":
+                        normalizedStatus = "finished"
+                    default:
+                        normalizedStatus = contract.status
                     }
-
-                    return showByType && showByStatus
+                    // 如果没有选中任何状态，则不显示任何合同
+                    let statusMatches = !selectedContractStatuses.isEmpty && selectedContractStatuses.contains(normalizedStatus)
+                    
+                    return typeMatches && statusMatches
                 }
 
                 // 如果过滤后该组没有合同，返回nil（这样compactMap会自动移除这个组）
@@ -634,25 +653,19 @@ struct PersonalContractsView: View {
                             let filteredCount = viewModel.contractGroups.reduce(0) { count, group in
                                 count
                                     + group.contracts.filter { contract in
-                                        let showByType =
-                                            (contract.type == "courier" && showCourierContracts)
-                                            || (contract.type == "item_exchange"
-                                                && showItemExchangeContracts)
-                                            || (contract.type == "auction" && showAuctionContracts)
-
-                                        let showByStatus: Bool
-                                        if showAttentionOnly {
-                                            // 只显示需要注意的状态
-                                            showByStatus = ["rejected", "failed", "reversed"].contains(contract.status)
-                                        } else if showActiveOnly {
-                                            // 只显示活跃状态
-                                            showByStatus = contract.status == "outstanding"
-                                        } else {
-                                            // 显示所有状态
-                                            showByStatus = true
+                                        // 如果没有选中任何类型，则不显示任何合同
+                                        let typeMatches = !selectedContractTypes.isEmpty && selectedContractTypes.contains(contract.type)
+                                        // 将所有finished相关状态统一为"finished"
+                                        let normalizedStatus: String
+                                        switch contract.status {
+                                        case "finished", "finished_issuer", "finished_contractor":
+                                            normalizedStatus = "finished"
+                                        default:
+                                            normalizedStatus = contract.status
                                         }
-
-                                        return showByType && showByStatus
+                                        // 如果没有选中任何状态，则不显示任何合同
+                                        let statusMatches = !selectedContractStatuses.isEmpty && selectedContractStatuses.contains(normalizedStatus)
+                                        return typeMatches && statusMatches
                                     }.count
                             }
 
@@ -723,23 +736,7 @@ struct PersonalContractsView: View {
                             }
                         }
                     }
-
-                    if !courierMode {
-                        Section {
-                            Toggle(isOn: $showCourierContracts) {
-                                Text(NSLocalizedString("Contract_Show_Courier", comment: ""))
-                            }
-                            Toggle(isOn: $showItemExchangeContracts) {
-                                Text(NSLocalizedString("Contract_Show_ItemExchange", comment: ""))
-                            }
-                            Toggle(isOn: $showAuctionContracts) {
-                                Text(NSLocalizedString("Contract_Show_Auction", comment: ""))
-                            }
-                        } header: {
-                            Text(NSLocalizedString("Contract_Type_Filter", comment: ""))
-                        }
-                    }
-
+                    
                     Section {
                         Picker(
                             NSLocalizedString("Contract_Max_Display", comment: ""),
@@ -758,6 +755,138 @@ struct PersonalContractsView: View {
                     } footer: {
                         Text(NSLocalizedString("Contract_Display_Limit_Warning", comment: ""))
                     }
+
+                    if !courierMode {
+                        // 合同类型过滤
+                        Section {
+                            // 各个合同类型选项
+                            ForEach(allContractTypes, id: \.self) { contractType in
+                                Button(action: {
+                                    if selectedContractTypes.contains(contractType) {
+                                        selectedContractTypes.remove(contractType)
+                                    } else {
+                                        selectedContractTypes.insert(contractType)
+                                    }
+                                }) {
+                                    HStack {
+                                        Text(NSLocalizedString("Contract_Type_\(contractType)", comment: ""))
+                                            .foregroundColor(.primary)
+                                        Spacer()
+                                        if selectedContractTypes.contains(contractType) {
+                                            Image(systemName: "checkmark")
+                                                .foregroundColor(.blue)
+                                        }
+                                    }
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                        } header: {
+                            HStack {
+                                Text(NSLocalizedString("Contract_Type_Filter", comment: ""))
+                                Spacer()
+                                Button(action: {
+                                    if selectedContractTypes.count == allContractTypes.count {
+                                        // 如果已全选，则清空
+                                        selectedContractTypes = []
+                                    } else {
+                                        // 否则全选
+                                        selectedContractTypes = Set(allContractTypes)
+                                    }
+                                }) {
+                                    HStack(spacing: 4) {
+                                        Text(NSLocalizedString("Contract_Show_All_Status", comment: ""))
+                                            .font(.caption)
+                                        if selectedContractTypes.count == allContractTypes.count {
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .foregroundColor(.blue)
+                                        } else {
+                                            Image(systemName: "circle")
+                                                .foregroundColor(.secondary)
+                                        }
+                                    }
+                                    .foregroundColor(.blue)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                        } footer: {
+                            if selectedContractTypes.isEmpty {
+                                Text(NSLocalizedString("Contract_Select1", comment: ""))
+                                    .foregroundColor(.red)
+                                    .font(.caption)
+                            }
+                        }
+
+                        // 合同状态过滤
+                        Section {
+                            // 各个合同状态选项
+                            ForEach(allContractStatuses, id: \.self) { contractStatus in
+                                Button(action: {
+                                    if selectedContractStatuses.contains(contractStatus) {
+                                        selectedContractStatuses.remove(contractStatus)
+                                    } else {
+                                        selectedContractStatuses.insert(contractStatus)
+                                    }
+                                }) {
+                                    HStack {
+                                        // 状态标签，类似合同列表中的显示
+                                        Text(NSLocalizedString("Contract_Status_\(contractStatus)", comment: ""))
+                                            .font(.caption)
+                                            .foregroundColor(getStatusColor(contractStatus))
+                                            .padding(.horizontal, 6)
+                                            .padding(.vertical, 2)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 4)
+                                                    .fill(Color.gray.opacity(0.2))
+                                            )
+                                        
+                                        Spacer()
+                                        
+                                        if selectedContractStatuses.contains(contractStatus) {
+                                            Image(systemName: "checkmark")
+                                                .foregroundColor(.blue)
+                                        }
+                                    }
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                        } header: {
+                            HStack {
+                                Text(NSLocalizedString("Contract_Status_Filter", comment: ""))
+                                Spacer()
+                                Button(action: {
+                                    if selectedContractStatuses.count == allContractStatuses.count {
+                                        // 如果已全选，则清空
+                                        selectedContractStatuses = []
+                                    } else {
+                                        // 否则全选
+                                        selectedContractStatuses = Set(allContractStatuses)
+                                    }
+                                }) {
+                                    HStack(spacing: 4) {
+                                        Text(NSLocalizedString("Contract_Show_All_Status", comment: ""))
+                                            .font(.caption)
+                                        if selectedContractStatuses.count == allContractStatuses.count {
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .foregroundColor(.blue)
+                                        } else {
+                                            Image(systemName: "circle")
+                                                .foregroundColor(.secondary)
+                                        }
+                                    }
+                                    .foregroundColor(.blue)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                        } footer: {
+                            if selectedContractStatuses.isEmpty {
+                                Text(NSLocalizedString("Contract_Select1", comment: ""))
+                                    .foregroundColor(.red)
+                                    .font(.caption)
+                            }
+                        }
+                    }
                 }
                 .navigationTitle(NSLocalizedString("Contract_Settings", comment: ""))
                 .navigationBarTitleDisplayMode(.inline)
@@ -773,49 +902,6 @@ struct PersonalContractsView: View {
         .navigationTitle(NSLocalizedString("Main_Contracts", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Menu {     
-                    Button(action: {
-                        showActiveOnly = false
-                        showAttentionOnly = false
-                    }) {
-                        HStack {
-                            Text(NSLocalizedString("Contract_Show_All_Status", comment: ""))
-                            if (!showActiveOnly && !showAttentionOnly) {
-                                Image(systemName: "checkmark")
-                            }
-                        }
-                    }
-                    Divider()
-                    Button(action: {
-                        showActiveOnly = true
-                        showAttentionOnly = false
-                    }) {
-                        HStack {
-                            Text(NSLocalizedString("Contract_Show_Active_Only", comment: ""))
-                            if showActiveOnly {
-                                Image(systemName: "checkmark")
-                            }
-                        }
-                    }
-                    
-                    Button(action: {
-                        showAttentionOnly = true
-                        showActiveOnly = false
-                    }) {
-                        HStack {
-                            Text(NSLocalizedString("Contract_Show_Attention_Only", comment: ""))
-                            if showAttentionOnly {
-                                Image(systemName: "checkmark")
-                            }
-                        }
-                    }
-                    
-                } label: {
-                    Image(systemName: "line.3.horizontal.decrease.circle")
-                }
-            }
-            
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: {
                     showSettings = true
@@ -843,6 +929,22 @@ struct PersonalContractsView: View {
     private var emptyView: some View {
         NoDataSection()
     }
+    
+    // 根据状态返回对应的颜色，与ContractRow中的逻辑保持一致
+    private func getStatusColor(_ status: String) -> Color {
+        switch status {
+        case "deleted":
+            return .secondary
+        case "rejected", "failed", "reversed":
+            return .red
+        case "outstanding", "in_progress":
+            return .blue  // 进行中和待处理状态显示为蓝色
+        case "finished", "finished_issuer", "finished_contractor":
+            return .green  // 所有完成状态显示为绿色
+        default:
+            return .primary  // 其他状态使用主色调
+        }
+    }
 }
 
 struct ContractRow: View {
@@ -864,7 +966,15 @@ struct ContractRow: View {
     }
 
     private func formatContractStatus(_ status: String) -> String {
-        return NSLocalizedString("Contract_Status_\(status)", comment: "")
+        // 将所有finished相关状态统一显示为"finished"
+        let normalizedStatus: String
+        switch status {
+        case "finished", "finished_issuer", "finished_contractor":
+            normalizedStatus = "finished"
+        default:
+            normalizedStatus = status
+        }
+        return NSLocalizedString("Contract_Status_\(normalizedStatus)", comment: "")
     }
 
     // 根据状态返回对应的颜色

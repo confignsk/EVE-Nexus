@@ -398,7 +398,8 @@ struct SkillCellView: View {
                             String(
                                 format: NSLocalizedString("Main_Skills_Time_Required", comment: ""),
                                 formatTimeInterval(trainingTime)
-                            ))
+                            )
+                        )
                     }
                 }
             }

@@ -585,7 +585,7 @@ class RequestRetrier {
     private var noRetryKeywords: [String]
 
     init(
-        defaultTimeouts: [TimeInterval] = [1.5, 3, 5, 5, 5, 5], retryDelay: TimeInterval = 0,
+        defaultTimeouts: [TimeInterval] = [1.5, 3, 5, 20, 20, 20], retryDelay: TimeInterval = 0,
         noRetryKeywords: [String] = []
     ) {
         self.defaultTimeouts = defaultTimeouts

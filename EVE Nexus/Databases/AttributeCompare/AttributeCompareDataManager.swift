@@ -25,6 +25,9 @@ enum AttributeCompareUtil {
         // 属性图标信息 - 格式: [attributeID: iconFileName]
         let attributeIcons: [String: String]
 
+        // 属性的highIsGood信息 - 格式: [attributeID: highIsGood]
+        let attributeHighIsGood: [String: Bool]
+
         // 编码键名映射
         enum CodingKeys: String, CodingKey {
             case compareResult = "compare_result"
@@ -32,6 +35,7 @@ enum AttributeCompareUtil {
             case publishedAttributeInfo = "published_attribute_info"
             // case unpublishedAttributeInfo = "unpublished_attribute_info"
             case attributeIcons = "attribute_icons"
+            case attributeHighIsGood = "attribute_high_is_good"
         }
     }
 }

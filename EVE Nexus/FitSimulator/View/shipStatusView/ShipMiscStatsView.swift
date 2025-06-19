@@ -127,7 +127,7 @@ struct StatRow: View {
         HStack {
             Text(label + ":")
                 .foregroundColor(.secondary)
-                .frame(width: 65, alignment: .leading)
+                .frame(width: 72, alignment: .leading)
             Text(value)
                 .foregroundColor(.primary)
         }

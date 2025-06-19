@@ -548,7 +548,7 @@ struct AgentSearchView: View {
                     return nil
                 }
 
-                let locationName = row["locationName"] as? String ?? "未知位置"
+                let locationName = row["locationName"] as? String ?? NSLocalizedString("Unknown_Location", comment: "未知位置")
                 let solarSystemID = row["solarSystemID"] as? Int
                 let solarSystemName = row["solarSystemName"] as? String
                 let agentType = row["agent_type"] as? Int ?? 0

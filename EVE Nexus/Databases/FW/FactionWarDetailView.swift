@@ -424,9 +424,56 @@ struct FWSystemCell: View {
                     .font(.caption)
                     .fontWeight(.semibold)
                     .foregroundColor(system.systemType == .frontline ? .red : .secondary)
+                
+                // 拥有者和占领者信息
+                if system.system.occupier_faction_id == system.system.owner_faction_id {
+                    // 占领者与拥有者相同
+                    HStack(spacing: 4) {
+                        Text(NSLocalizedString("FW_Occupier_And_Owner", comment: "占领者与拥有者") + ":")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        if let faction = allFactions.first(where: { $0.id == system.system.owner_faction_id }) {
+                            IconManager.shared.loadImage(for: faction.iconName)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 16, height: 16)
+                                .cornerRadius(2)
+                        }
+                    }
+                } else {
+                    // 占领者与拥有者不同
+                    HStack(spacing: 8) {
+                        HStack(spacing: 4) {
+                            Text(NSLocalizedString("FW_Owner", comment: "拥有者") + ":")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            if let ownerFaction = allFactions.first(where: { $0.id == system.system.owner_faction_id }) {
+                                IconManager.shared.loadImage(for: ownerFaction.iconName)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 16, height: 16)
+                                    .cornerRadius(2)
+                            }
+                        }
+                        
+                        HStack(spacing: 4) {
+                            Text(NSLocalizedString("FW_Occupier", comment: "占领者") + ":")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            if let occupierFaction = allFactions.first(where: { $0.id == system.system.occupier_faction_id }) {
+                                IconManager.shared.loadImage(for: occupierFaction.iconName)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 16, height: 16)
+                                    .cornerRadius(2)
+                            }
+                        }
+                    }
+                }
+
             }
 
-            Spacer()
+
         }
         .padding(.vertical, 8)
     }
