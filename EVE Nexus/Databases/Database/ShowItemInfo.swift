@@ -11,6 +11,7 @@ struct ShowItemInfo: View {
     }()
 
     var itemID: Int
+    var modifiedAttributes: [Int: Double]? // 新增：修改后的属性值
 
     @State private var itemDetails: ItemDetails?
     @State private var attributeGroups: [AttributeGroup] = []
@@ -81,7 +82,8 @@ struct ShowItemInfo: View {
             if let itemDetails = itemDetails {
                 ItemBasicInfoView(
                     itemDetails: itemDetails,
-                    databaseManager: databaseManager
+                    databaseManager: databaseManager,
+                    modifiedAttributes: modifiedAttributes
                 )
 
                 // 变体 Section
@@ -172,7 +174,7 @@ struct ShowItemInfo: View {
 
     // 加载属性
     private func loadAttributes(for itemID: Int) {
-        attributeGroups = databaseManager.loadAttributeGroups(for: itemID)
+        attributeGroups = databaseManager.loadAttributeGroups(for: itemID, modifiedAttributes: modifiedAttributes)
         // 初始化属性单位
         let units = databaseManager.loadAttributeUnits()
         AttributeDisplayConfig.initializeUnits(with: units)

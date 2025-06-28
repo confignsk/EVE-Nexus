@@ -3,18 +3,21 @@ import SwiftUI
 struct MarketOrdersView: View {
     let itemID: Int
     let itemName: String
-    let orders: [MarketOrder]
+    let regionID: Int
     @ObservedObject var databaseManager: DatabaseManager
+    @State private var orders: [MarketOrder] = []
     @State private var showBuyOrders = false
     @State private var locationInfos: [Int64: LocationInfoDetail] = [:]
-    @State private var isLoading = false
+    @State private var isLoadingOrders = false
+    @State private var isLoadingLocations = false
     let locationInfoLoader: LocationInfoLoader
 
-    init(itemID: Int, itemName: String, orders: [MarketOrder], databaseManager: DatabaseManager) {
+    init(itemID: Int, itemName: String, regionID: Int, initialOrders: [MarketOrder] = [], databaseManager: DatabaseManager) {
         self.itemID = itemID
         self.itemName = itemName
-        self.orders = orders
+        self.regionID = regionID
         self.databaseManager = databaseManager
+        self._orders = State(initialValue: initialOrders)
 
         // 从 UserDefaults 获取当前选择的角色ID
         let currentCharacterId = UserDefaults.standard.integer(forKey: "currentCharacterId")
@@ -43,25 +46,27 @@ struct MarketOrdersView: View {
                 OrderListView(
                     orders: orders.filter { !$0.isBuyOrder },
                     locationInfos: locationInfos,
-                    isLoadingLocations: isLoading
+                    isLoadingLocations: isLoadingLocations
                 )
                 .tag(false)
 
                 OrderListView(
                     orders: orders.filter { $0.isBuyOrder },
                     locationInfos: locationInfos,
-                    isLoadingLocations: isLoading
+                    isLoadingLocations: isLoadingLocations
                 )
                 .tag(true)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
             .ignoresSafeArea(edges: .bottom)
 
-            if isLoading {
+            if isLoadingOrders || isLoadingLocations {
                 HStack {
                     ProgressView()
                         .scaleEffect(0.7)
-                    Text(NSLocalizedString("Loading_Location_Info", comment: "正在加载地点信息..."))
+                    Text(isLoadingOrders ? 
+                         NSLocalizedString("Loading_Orders", comment: "正在加载订单...") :
+                         NSLocalizedString("Loading_Location_Info", comment: "正在加载地点信息..."))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -75,62 +80,113 @@ struct MarketOrdersView: View {
         .navigationBarTitleDisplayMode(.inline)
         .ignoresSafeArea(edges: .bottom)
         .task {
-            // 立即显示订单列表，同时异步加载地点信息
-            isLoading = true
-
-            // 收集所有订单的位置ID
-            let locationIds = Set(orders.map { $0.locationId })
-
-            // 按类型分组位置ID
-            let groupedIds = Dictionary(grouping: locationIds) { LocationType.from(id: $0) }
-
-            // 先同步加载空间站信息（通常在本地数据库中，加载速度快）
-            if let stationIds = groupedIds[.station] {
-                let stationInfos = await locationInfoLoader.loadLocationInfo(
-                    locationIds: Set(stationIds))
-                locationInfos = stationInfos
+            // 如果没有初始订单数据，先加载订单
+            if orders.isEmpty {
+                await loadOrdersData()
             }
-
-            // 异步加载其他类型的位置信息（星系、建筑物等）
-            Task {
-                var otherIds = locationIds
-                if let stationIds = groupedIds[.station] {
-                    // 从总ID集合中移除已加载的空间站ID
-                    otherIds.subtract(stationIds)
-                }
-
-                if !otherIds.isEmpty {
-                    let otherInfos = await locationInfoLoader.loadLocationInfo(
-                        locationIds: otherIds)
-
-                    // 在主线程更新UI
-                    await MainActor.run {
-                        // 合并空间站信息和其他位置信息
-                        locationInfos.merge(otherInfos) { _, new in new }
-                        isLoading = false
-                    }
-                } else {
-                    // 如果没有其他ID需要加载，直接结束加载状态
-                    await MainActor.run {
-                        isLoading = false
-                    }
-                }
-            }
+            
+            // 加载位置信息
+            await loadLocationInfo()
         }
         .refreshable {
-            // 添加下拉刷新功能
-            isLoading = true
-
-            // 收集所有订单的位置ID
-            let locationIds = Set(orders.map { $0.locationId })
-
-            // 重新加载所有位置信息
-            let refreshedInfos = await locationInfoLoader.loadLocationInfo(
-                locationIds: locationIds)
-
-            // 更新UI
-            locationInfos = refreshedInfos
-            isLoading = false
+            // 同时刷新订单数据和位置信息
+            await loadOrdersData(forceRefresh: true)
+            await loadLocationInfo()
+        }
+    }
+    
+    // MARK: - 数据加载方法
+    
+    private func loadOrdersData(forceRefresh: Bool = false) async {
+        isLoadingOrders = true
+        defer { isLoadingOrders = false }
+        
+        do {
+            let newOrders = try await MarketOrdersAPI.shared.fetchMarketOrders(
+                typeID: itemID,
+                regionID: regionID,
+                forceRefresh: forceRefresh
+            )
+            
+            await MainActor.run {
+                orders = newOrders
+            }
+        } catch {
+            Logger.error("加载市场订单失败: \(error)")
+            await MainActor.run {
+                orders = []
+            }
+        }
+    }
+    
+    private func loadLocationInfo() async {
+        guard !orders.isEmpty else { return }
+        
+        isLoadingLocations = true
+        defer { isLoadingLocations = false }
+        
+        // 收集所有订单的位置ID
+        let locationIds = Set(orders.map { $0.locationId })
+        
+        // 按类型分组位置ID
+        let groupedIds = Dictionary(grouping: locationIds) { LocationType.from(id: $0) }
+        
+        // 清空之前的位置信息
+        await MainActor.run {
+            locationInfos = [:]
+        }
+        
+        // 1. 立即处理PLEX建筑物（如果适用）
+        if itemID == 44992, let structureIds = groupedIds[.structure] {
+            var plexStructureInfos: [Int64: LocationInfoDetail] = [:]
+            for structureId in structureIds {
+                plexStructureInfos[structureId] = LocationInfoDetail(
+                    stationName: NSLocalizedString("Location_Player_Structure", comment: ""),
+                    solarSystemName: NSLocalizedString("Unknown_System", comment: ""),
+                    security: 0.0
+                )
+            }
+            
+            await MainActor.run {
+                locationInfos.merge(plexStructureInfos) { _, new in new }
+            }
+        }
+        
+        // 2. 优先加载空间站信息（通常在本地数据库中，速度快）
+        if let stationIds = groupedIds[.station], !stationIds.isEmpty {
+            let stationInfos = await locationInfoLoader.loadLocationInfo(
+                locationIds: Set(stationIds))
+            
+            await MainActor.run {
+                locationInfos.merge(stationInfos) { _, new in new }
+            }
+        }
+        
+        // 3. 优先加载星系信息（通常在本地数据库中，速度快）
+        if let systemIds = groupedIds[.solarSystem], !systemIds.isEmpty {
+            let systemInfos = await locationInfoLoader.loadLocationInfo(
+                locationIds: Set(systemIds))
+            
+            await MainActor.run {
+                locationInfos.merge(systemInfos) { _, new in new }
+            }
+        }
+        
+        // 4. 最后加载建筑物信息（需要API查询，速度慢）
+        if let structureIds = groupedIds[.structure], !structureIds.isEmpty {
+            // PLEX特殊处理：跳过建筑物API查询
+            if itemID == 44992 {
+                // PLEX的建筑物已经在步骤1中处理了
+                return
+            }
+            
+            // 正常物品：查询建筑物信息
+            let structureInfos = await locationInfoLoader.loadLocationInfo(
+                locationIds: Set(structureIds))
+            
+            await MainActor.run {
+                locationInfos.merge(structureInfos) { _, new in new }
+            }
         }
     }
 

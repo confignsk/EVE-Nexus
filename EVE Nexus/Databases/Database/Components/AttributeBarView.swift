@@ -175,6 +175,50 @@ struct AttributeItemView: View {
             return ""
         }
     }
+    
+    // 获取修改后的格式化显示值
+    private var formattedModifiedValue: String? {
+        guard let modifiedValue = attribute.modifiedValue else { return nil }
+        
+        // 创建临时字典用于格式化修改后的值
+        var tempAttributes = allAttributes
+        tempAttributes[attribute.id] = modifiedValue
+        
+        let result = AttributeDisplayConfig.transformValue(
+            attribute.id, allAttributes: tempAttributes, unitID: attribute.unitID
+        )
+        switch result {
+        case let .number(value, unit):
+            if attribute.unitID == 115 || attribute.unitID == 116 {
+                return ""
+            }
+            return unit.map { "\(FormatUtil.format(value))\($0)" } ?? FormatUtil.format(value)
+        case let .text(str):
+            return str
+        case .resistance:
+            return nil
+        }
+    }
+    
+    // 判断修改后的值是否更好
+    private var isModifiedValueBetter: Bool? {
+        guard let modifiedValue = attribute.modifiedValue else { return nil }
+        let originalValue = attribute.value
+        if originalValue == modifiedValue{
+            return nil
+        }
+        if attribute.highIsGood {
+            return modifiedValue > originalValue
+        } else {
+            return modifiedValue < originalValue
+        }
+    }
+    
+    // 获取修改后值的颜色
+    private var modifiedValueColor: Color {
+        guard let isBetter = isModifiedValueBetter else { return .secondary }
+        return isBetter ? .green : .red
+    }
 
     var body: some View {
         if AttributeDisplayConfig.shouldShowAttribute(attribute.id, attribute: attribute) {
@@ -223,10 +267,18 @@ struct AttributeItemView: View {
                 }
                 .buttonStyle(.plain)
             } else {
-                Text(formattedValue)
-                    .font(.body)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.trailing)
+                // 如果有修改后的值，显示修改后的值，否则显示原始值
+                if let modifiedFormattedValue = formattedModifiedValue {
+                    Text(modifiedFormattedValue)
+                        .font(.body)
+                        .foregroundColor(modifiedValueColor)
+                        .multilineTextAlignment(.trailing)
+                } else {
+                    Text(formattedValue)
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.trailing)
+                }
             }
         }
     }
@@ -329,7 +381,8 @@ struct AttributesView: View {
         var dict: [Int: Double] = [:]
         for group in attributeGroups {
             for attribute in group.attributes {
-                dict[attribute.id] = attribute.value
+                // 优先使用修改后的值，如果没有则使用原始值
+                dict[attribute.id] = attribute.modifiedValue ?? attribute.value
             }
         }
         return dict

@@ -4,11 +4,43 @@ struct ItemBasicInfoView: View {
     let itemDetails: ItemDetails
     @State private var renderImage: UIImage?
     @ObservedObject var databaseManager: DatabaseManager
+    let modifiedAttributes: [Int: Double]?
 
     // iOS 标准圆角半径
     private let cornerRadius: CGFloat = 10
     // 标准边距
     private let standardPadding: CGFloat = 16
+
+    // 获取修改后的属性值，如果没有则返回原始值
+    private func getAttributeValue(attributeId: Int, originalValue: Double?) -> Double? {
+        if let modifiedValue = modifiedAttributes?[attributeId] {
+            return modifiedValue
+        }
+        return originalValue
+    }
+    
+    // 获取属性值的颜色
+    private func getAttributeColor(attributeId: Int, originalValue: Double?) -> Color {
+        guard let originalValue = originalValue,
+              let modifiedValue = modifiedAttributes?[attributeId] else {
+            return .secondary
+        }
+        
+        if abs(modifiedValue - originalValue) < 0.0001 {
+            return .secondary // 没有变化
+        }
+        
+        // 对于 mass 和 capacity，通常值越大越好（capacity）或越小越好（mass）
+        // mass(4): 质量，越小越好，所以 highIsGood = false
+        // capacity(38): 容量，越大越好，所以 highIsGood = true
+        let highIsGood = (attributeId == 38) // capacity 是 highIsGood
+        
+        if highIsGood {
+            return modifiedValue > originalValue ? .green : .red
+        } else {
+            return modifiedValue < originalValue ? .green : .red
+        }
+    }
 
     var body: some View {
         Section {
@@ -139,6 +171,9 @@ struct ItemBasicInfoView: View {
                 }
 
                 if let capacity = itemDetails.capacity {
+                    let finalCapacity = getAttributeValue(attributeId: 38, originalValue: Double(capacity)) ?? Double(capacity)
+                    let capacityColor = getAttributeColor(attributeId: 38, originalValue: Double(capacity))
+                    
                     HStack {
                         Image("cargo_fit")
                             .resizable()
@@ -146,13 +181,16 @@ struct ItemBasicInfoView: View {
                             .cornerRadius(6)
                         Text(NSLocalizedString("Item_Capacity", comment: ""))
                         Spacer()
-                        Text("\(FormatUtil.format(Double(capacity))) m3")
-                            .foregroundColor(.secondary)
+                        Text("\(FormatUtil.format(finalCapacity)) m3")
+                            .foregroundColor(capacityColor)
                             .frame(alignment: .trailing)
                     }
                 }
 
                 if let mass = itemDetails.mass {
+                    let finalMass = getAttributeValue(attributeId: 4, originalValue: Double(mass)) ?? Double(mass)
+                    let massColor = getAttributeColor(attributeId: 4, originalValue: Double(mass))
+                    
                     HStack {
                         Image("hull")
                             .resizable()
@@ -160,8 +198,8 @@ struct ItemBasicInfoView: View {
                             .cornerRadius(6)
                         Text(NSLocalizedString("Item_Mass", comment: ""))
                         Spacer()
-                        Text("\(FormatUtil.format(Double(mass))) Kg")
-                            .foregroundColor(.secondary)
+                        Text("\(FormatUtil.format(finalMass)) Kg")
+                            .foregroundColor(massColor)
                             .frame(alignment: .trailing)
                     }
                 }

@@ -60,10 +60,27 @@ struct SkillPlanDetailView: View {
 
     var body: some View {
         List {
-            Section(header: Text(NSLocalizedString("Main_Skills_Plan_Total_SP", comment: ""))) {
-                Text(
-                    "\(FormatUtil.format(Double(plan.totalSkillPoints))) SP(\(formatTimeInterval(plan.totalTrainingTime)))"
-                )
+            Section(header: Text(NSLocalizedString("Main_Skills_Points", comment: "技能点数"))) {
+                HStack {
+                    Text(NSLocalizedString("Main_Skills_To_Learn", comment: "需要学习"))
+                    Spacer()
+                    Text("\(FormatUtil.format(Double(plan.totalSkillPoints))) SP")
+                        .foregroundColor(.secondary)
+                }
+                
+                HStack {
+                    Text(NSLocalizedString("Main_Skills_Required_Time", comment: "需要时间"))
+                    Spacer()
+                    Text(formatTimeInterval(plan.totalTrainingTime))
+                        .foregroundColor(.secondary)
+                }
+                
+                HStack {
+                    Text(NSLocalizedString("Main_Skills_All_Points", comment: "全部点数"))
+                    Spacer()
+                    Text("\(FormatUtil.format(Double(calculateAllSkillPoints()))) SP")
+                        .foregroundColor(.secondary)
+                }
             }
 
             // 添加注入器需求部分
@@ -946,5 +963,13 @@ struct SkillPlanDetailView: View {
             currentSkillPoints: skill.currentSkillPoints,
             isCompleted: isCompleted
         )
+    }
+
+    private func calculateAllSkillPoints() -> Int {
+        // 计算所有技能点数，不考虑已学会的技能
+        return plan.skills.reduce(0) { total, skill in
+            let spRange = getSkillPointRange(skill)
+            return total + (spRange.end - spRange.start)
+        }
     }
 }

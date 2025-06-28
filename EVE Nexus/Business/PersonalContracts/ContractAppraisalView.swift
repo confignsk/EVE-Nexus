@@ -11,6 +11,7 @@ struct ContractAppraisalView: View {
     @State private var esiResult: ESIAppraisalResult?
     @State private var showFullAmount: Bool = true
     @State private var discountPercentage: Double = 100
+    @State private var safeDiscountPercentage: Double = 10000
     @State private var showDiscountAlert = false
     @State private var hasBlueprint = false
     @State private var hasInsufficientOrders = false
@@ -89,7 +90,7 @@ struct ContractAppraisalView: View {
                     HStack {
                         Text(NSLocalizedString("Contract_Appraisal_Set_Discount", comment: ""))
                         Spacer()
-                        Text("\(Int(discountPercentage))%")
+                        Text("\(min(Int(safeDiscountPercentage), Int(discountPercentage)))%")
                             .foregroundColor(.secondary)
                     }
                 }
@@ -97,9 +98,15 @@ struct ContractAppraisalView: View {
                     NSLocalizedString("Contract_Appraisal_Discount_Title", comment: ""),
                     isPresented: $showDiscountAlert
                 ) {
+                    // 使用绑定转换器来限制输入范围
+                    let boundDiscountPercentage = Binding<Double>(
+                        get: { self.discountPercentage },
+                        set: { self.discountPercentage = max(0, min(safeDiscountPercentage, $0)) }
+                    )
+                    
                     TextField(
                         NSLocalizedString("Contract_Appraisal_Discount_Placeholder", comment: ""),
-                        value: $discountPercentage, format: .number
+                        value: boundDiscountPercentage, format: .number
                     )
                     .keyboardType(.decimalPad)
                     Button(
@@ -123,7 +130,7 @@ struct ContractAppraisalView: View {
                         Spacer()
                         Text(
                             formatPrice(
-                                result.immediatePrices.totalBuyPrice * discountPercentage / 100)
+                                result.immediatePrices.totalBuyPrice * min(safeDiscountPercentage, discountPercentage) / 100)
                         )
                         .foregroundColor(.red)
                         .textSelection(.enabled)
@@ -136,7 +143,7 @@ struct ContractAppraisalView: View {
                         Spacer()
                         Text(
                             formatPrice(
-                                result.immediatePrices.totalSplitPrice * discountPercentage / 100)
+                                result.immediatePrices.totalSplitPrice * min(safeDiscountPercentage, discountPercentage) / 100)
                         )
                         .foregroundColor(.orange)
                         .textSelection(.enabled)
@@ -149,7 +156,7 @@ struct ContractAppraisalView: View {
                         Spacer()
                         Text(
                             formatPrice(
-                                result.immediatePrices.totalSellPrice * discountPercentage / 100)
+                                result.immediatePrices.totalSellPrice * min(safeDiscountPercentage, discountPercentage) / 100)
                         )
                         .foregroundColor(.green)
                         .textSelection(.enabled)
@@ -190,7 +197,7 @@ struct ContractAppraisalView: View {
                     HStack {
                         Text(NSLocalizedString("Contract_Appraisal_Buy_Price", comment: ""))
                         Spacer()
-                        Text(formatPrice(result.totalBuyPrice * discountPercentage / 100))
+                        Text(formatPrice(result.totalBuyPrice * min(safeDiscountPercentage, discountPercentage) / 100))
                             .foregroundColor(.red)
                             .textSelection(.enabled)
                             .font(.system(.body, design: .monospaced))
@@ -200,7 +207,7 @@ struct ContractAppraisalView: View {
                     HStack {
                         Text(NSLocalizedString("Contract_Appraisal_Middle_Price", comment: ""))
                         Spacer()
-                        Text(formatPrice(result.totalMiddlePrice * discountPercentage / 100))
+                        Text(formatPrice(result.totalMiddlePrice * min(safeDiscountPercentage, discountPercentage) / 100))
                             .foregroundColor(.orange)
                             .textSelection(.enabled)
                             .font(.system(.body, design: .monospaced))
@@ -210,7 +217,7 @@ struct ContractAppraisalView: View {
                     HStack {
                         Text(NSLocalizedString("Contract_Appraisal_Sell_Price", comment: ""))
                         Spacer()
-                        Text(formatPrice(result.totalSellPrice * discountPercentage / 100))
+                        Text(formatPrice(result.totalSellPrice * min(safeDiscountPercentage, discountPercentage) / 100))
                             .foregroundColor(.green)
                             .textSelection(.enabled)
                             .font(.system(.body, design: .monospaced))

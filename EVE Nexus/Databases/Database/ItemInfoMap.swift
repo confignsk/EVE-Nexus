@@ -27,10 +27,12 @@ enum ItemInfoMap {
     /// - Parameters:
     ///   - itemID: 物品ID
     ///   - databaseManager: 数据库管理器
+    ///   - modifiedAttributes: 可选的修改后属性值
     /// - Returns: 对应的详情视图类型
     static func getItemInfoView(
         itemID: Int,
-        databaseManager: DatabaseManager
+        databaseManager: DatabaseManager,
+        modifiedAttributes: [Int: Double]? = nil
     ) -> AnyView {
         // 从缓存中获取分类信息
         guard let itemCategory = categoryCache[itemID] else {
@@ -59,7 +61,7 @@ enum ItemInfoMap {
             return AnyView(ShowPlanetaryInfo(itemID: itemID, databaseManager: databaseManager))
 
         default:  // 普通物品
-            return AnyView(ShowItemInfo(databaseManager: databaseManager, itemID: itemID))
+            return AnyView(ShowItemInfo(databaseManager: databaseManager, itemID: itemID, modifiedAttributes: modifiedAttributes))
         }
     }
 }

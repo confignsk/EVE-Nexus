@@ -182,6 +182,8 @@ struct DogmaAttribute: Identifiable {
     let iconFileName: String
     let value: Double
     let unitID: Int?
+    let highIsGood: Bool
+    let modifiedValue: Double?
 
     // 修改显示名称逻辑
     var displayTitle: String {

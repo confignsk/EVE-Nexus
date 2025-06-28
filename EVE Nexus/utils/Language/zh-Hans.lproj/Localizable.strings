@@ -12,7 +12,12 @@
 "Main_Jump_Clones" = "克隆体";
 "Main_Jump_Clones_Available" = "跳跃克隆可用: ";
 "Main_Skills" = "技能";
-"Main_Skills_Ponits" = "$num SP";
+"Main_Skills_Ponits" = "%@ SP";
+"Main_Skills_Points" = "技能点数";
+"Main_Skills_To_Learn" = "需要学习";
+"Main_Skills_Required_Time" = "需要时间";
+"Main_Skills_All_Points" = "全部点数";
+"Main_Skills_Points_Format" = "%@ 点";
 // 技能队列倒计时
 "Main_Skills_Queue_Training_Days" = "训练中: %d个技能(%d天%d小时%d分)";
 "Main_Skills_Queue_Training_Hours" = "训练中: %d个技能(%d小时%d分%d秒)";
@@ -25,7 +30,7 @@
 "Main_EVE_Mail" = "EVE 邮件";
 "Main_Calendar" = "日历";
 "Main_Wealth" = "个人财产";
-"Main_Wealth_ISK" = "钱包余额: $num ISK";
+"Main_Wealth_ISK" = "钱包余额: %@";
 "Main_Loyalty_Points" = "忠诚点";
 "Main_Databases" = "数据";
 "Main_Database" = "数据库";
@@ -131,7 +136,7 @@
 "Misc_number_item" = "个";
 "Misc_number_item_x" = "×";
 "Misc_number_point" = "点";
-"Misc_number_types" = "种";
+"Misc_number_items" = "种";
 "Misc_per" = "每";
 "Misc_unit" = "单位";
 "Misc_Calculating" = "计算中...";
@@ -150,7 +155,7 @@
 "Blueprint_Product" = "产品";
 "Blueprint_Success_Rate" = "成功率: %d%%";
 "Blueprint_Copy_Materials" = "复制材料";
-"Blueprint_Copy_Success" = "所需材料已复制到剪贴板.";
+"Blueprint_Copy_Success" = "所需材料已复制到剪贴板";
 "Time_Year" = "年";
 "Time_Month" = "月";
 "Time_Day" = "日";
@@ -180,6 +185,16 @@
 "Planetary_Facilities" = "加工设施";
 "Planetary_Harvest_from" = "采集来源";
 "Planet_Detail_Last_Update" = "行星布局提交于";
+"Planet_All-in-One_Calc" = "单球计算器";
+
+// All-in-One Calculator
+"All_in_One_No_Products_Found" = "没有找到单星球产品";
+"All_in_One_No_Products_Description" = "该星系中没有可以在单颗行星上完成完整生产链的产品";
+"All_in_One_Compatible_Planets" = "支持行星: %@";
+"All_in_One_Available_Planets" = "可用行星: %d 颗";
+"All_in_One_No_Planets_Found" = "没有找到行星";
+"All_in_One_No_Planets_Description" = "该星系中没有行星数据";
+"All_in_One_Planet_Type_Distribution" = "行星类型分布";
 
 // 物品信息
 "Blueprint_Source" = "发明来源";
@@ -189,7 +204,7 @@
 "Item_RepackagesVolume" = "体积(打包后)";
 "Item_Capacity" = "容量";
 "Item_Mass" = "质量";
-"Item_load_error" = "无法加载物品信息.";
+"Item_load_error" = "无法加载物品信息";
 "Item_details_notfound" = "未找到物品详情";
 
 // 静态资源
@@ -1167,6 +1182,10 @@
 
 // Structure Access
 "Structure_No_Access" = "无权限建筑物";
+"Location_Player_Structure" = "玩家建筑";
+
+// Loading States
+"Loading_Orders" = "正在加载订单...";
 
 "Main_Corporation_Members_Sort_By_Name" = "按人名";
 "Main_Corporation_Members_Sort_By_Title" = "按称号";
@@ -1274,7 +1293,7 @@
 "Contract_Appraisal_Show_Full_Amount" = "显示完整金额";
 "Contract_Appraisal_Set_Discount" = "设置合同价格折扣";
 "Contract_Appraisal_Discount_Title" = "设置折扣百分比";
-"Contract_Appraisal_Discount_Message" = "请输入折扣百分比（0或更大），例如90表示九折";
+"Contract_Appraisal_Discount_Message" = "请输入折扣百分比（0-10000），例如90表示九折(90%)";
 "Contract_Appraisal_Discount_Cancel" = "取消";
 "Contract_Appraisal_Discount_Confirm" = "确定";
 "Contract_Appraisal_Discount_Placeholder" = "折扣百分比";
@@ -1488,6 +1507,7 @@
 "Jump_Navigation_Error_No_Waypoints" = "请至少添加一个路径点";
 "Jump_Navigation_Error_Invalid_Route" = "无法找到有效路线";
 "Jump_Navigation_Error_Path_Not_Found" = "无法找到从%@到%@的路径";
+"Jump_Navigation_No_Sovereignty" = "无主权";
 
 "Server_Status_Online" = "服务器在线";
 "Server_Status_Offline" = "服务器离线";
@@ -1734,6 +1754,8 @@
 // Implant and Booster Slots
 "Fitting_Implants_Mode" = "查看 / 选择植入体";
 "Fitting_Setting_Implants" = "植入体设置";
+"Fitting_Export_To_ESI" = "导出到ESI";
+"Fitting_Export_To_Clipboard" = "导出到剪贴板";
 "Implant_Slot_Num" = "植入体槽位 %d";
 "Booster_Slot_Num" = "增效剂槽位 %d";
 "Implant_No_Slots" = "没有可用的植入体槽位";
@@ -1809,4 +1831,46 @@
 "WH_Mass_Notyet" = "该虫洞的稳定性尚未受到穿越舰船的影响";
 "WH_Mass_Notcritical" = "该虫洞的稳定性已遭到穿越舰船的影响，但尚未达到严重程度";
 "WH_Mass_critically" = "该虫洞的稳定性已遭到穿越舰船的严重影响，即将崩塌";
+
+// 装配上传到ESI
+"Fitting_Exporting_To_ESI" = "正在上传到ESI...";
+"Fitting_Export_To_ESI" = "导出到ESI";
+"Fitting_Upload_Confirm_Title" = "确认上传";
+"Fitting_Upload_Confirm_Message" = "将配置 \"%@\" 上传到EVE游戏内？";
+"Fitting_Upload_Cancel" = "取消";
+"Fitting_Upload_Confirm" = "确认上传";
+"Fitting_Upload_Success_Title" = "导出成功";
+"Fitting_Upload_Success_Message" = "配置已成功上传到EVE\n装配ID: %d";
+"Fitting_Upload_Failed_Title" = "导出失败";
+"Fitting_Upload_Failed_Message" = "上传失败: %@";
+"Fitting_Upload_No_Character" = "请先登录角色后再尝试上传配置";
+"Fitting_Unnamed_Fitting" = "未命名配置";
+
+// 主权搜索结果
+"Sovereignty_Search_Results_Factions" = "主权势力";
+"Sovereignty_Search_Results_Systems" = "星系";
+
+// 装配导出
+"Fitting_Export_Clipboard_Success" = "配置已复制到剪贴板";
+
+// 装配导入
+"Fitting_Import_Success_Title" = "导入成功";
+"Fitting_Import_Success_Message" = "配置 \"%@\" 已成功导入";
+"Fitting_Import_Failed_Title" = "导入失败";
+"Fitting_Import_Failed_Message" = "导入配置失败: %@";
+"Fitting_Import_Not_Ship_Error" = "物品 %@ 不是飞船";
+"Fitting_Import_Validation_Failed_Error" = "无法验证物品类型：%@";
+"Fitting_Import_Ship_notfound" = "未找到飞船";
+"Fitting_Import_Multiple_Ships_Error" = "发现多个同名飞船，请选择：%@";
+"Fitting_Import_Multiple_Ships_Header" = "选择飞船";
+"Fitting_Import_Ship_Selection_Title" = "选择飞船";
+
+
+// 装配删除
+"Delete" = "删除";
+"Fitting_Delete_Confirm_Title" = "确认删除";
+"Fitting_Delete_Confirm" = "确认删除";
+"Fitting_Delete_Confirm_Message" = "确定要删除装配配置 \"%@\" 吗？";
+"Fitting_Delete_Failed_Title" = "删除失败";
+"Fitting_Delete_Success" = "装配配置删除成功";
 

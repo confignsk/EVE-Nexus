@@ -177,6 +177,11 @@ struct CharacterPlanetaryView: View {
                 } label: {
                     Text(NSLocalizedString("Main_Planetary_Output", comment: ""))
                 }
+                NavigationLink {
+                    PIAllInOneMainView(characterId: characterId)
+                } label: {
+                    Text(NSLocalizedString("Planet_All-in-One_Calc", comment: ""))
+                }
             }
             if viewModel.isLoading {
                 Section(header: Text(NSLocalizedString("Main_Planetary_of_Mine", comment: ""))) {

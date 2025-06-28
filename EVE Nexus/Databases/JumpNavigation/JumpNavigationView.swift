@@ -985,6 +985,14 @@ struct SystemSelectorSheet: View {
     @State private var systems: [(id: Int, name: String, security: Double, region: String)] = []
     @State private var selectedSystemId: Int?  // 修改为星系ID
     @State private var isLoading = true
+    
+    // 添加主权相关状态
+    @State private var sovereigntyData: [SovereigntyData] = []
+    @State private var isLoadingSovereignty = false
+    @StateObject private var allianceIconLoader = AllianceIconLoader()
+    @State private var factionIcons: [Int: Image] = [:]
+    @State private var allianceNames: [Int: String] = [:]
+    @State private var factionNames: [Int: String] = [:]
 
     // 添加一个从ID到原始星系数据的映射索引，避免每次搜索都要重复查找
     @State private var systemIdToOriginalSystem: [Int: JumpSystemData] = [:]
@@ -1023,27 +1031,67 @@ struct SystemSelectorSheet: View {
                                 selectedSystemId = system.id
                                 onSelect(system.id)
                             }) {
-                                HStack {
-                                    // 安全等级
-                                    Text(formatSystemSecurity(system.security))
-                                        .foregroundColor(getSecurityColor(system.security))
-                                        .font(.system(.body, design: .monospaced))
+                                HStack(spacing: 12) {
+                                    // 左侧：主权势力图标
+                                    if let sovereigntyInfo = getSovereigntyInfo(for: system.id) {
+                                        if let icon = sovereigntyInfo.icon {
+                                            icon
+                                                .resizable()
+                                                .scaledToFit()
+                                                .frame(width: 36, height: 36)
+                                                .cornerRadius(6)
+                                        } else {
+                                            // 有主权但图标未加载，显示加载指示器
+                                            ProgressView()
+                                                .frame(width: 36, height: 36)
+                                        }
+                                    } else {
+                                        // 无主权占位符
+                                        RoundedRectangle(cornerRadius: 6)
+                                            .fill(Color.gray.opacity(0.3))
+                                            .frame(width: 36, height: 36)
+                                    }
+                                    
+                                    // 右侧：星系信息
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        // 第一行：安全等级 + 星系名称 + 星域
+                                        HStack(spacing: 8) {
+                                            Text(formatSystemSecurity(system.security))
+                                                .foregroundColor(getSecurityColor(system.security))
+                                                .font(.system(.body, design: .monospaced))
 
-                                    // 星系名称
-                                    Text("\(system.name) / ")
-                                        .foregroundColor(.primary)
-                                        + Text(system.region)
-                                        .foregroundColor(.secondary)
-
-                                    Spacer()
-
-                                    // 选中状态
-                                    if selectedSystemId == system.id {
-                                        Image(systemName: "checkmark")
-                                            .foregroundColor(.blue)
+                                            Text(system.name)
+                                                .foregroundColor(.primary)
+                                                .fontWeight(.semibold)
+                                                + Text(" / \(system.region)")
+                                                .foregroundColor(.secondary)
+                                                
+                                            Spacer()
+                                            
+                                            // 选中状态
+                                            if selectedSystemId == system.id {
+                                                Image(systemName: "checkmark")
+                                                    .foregroundColor(.blue)
+                                            }
+                                        }
+                                        
+                                        // 第二行：主权势力名称
+                                        if let sovereigntyInfo = getSovereigntyInfo(for: system.id) {
+                                            Text(sovereigntyInfo.name)
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                                .lineLimit(1)
+                                        } else {
+                                            Text(NSLocalizedString("Jump_Navigation_No_Sovereignty", comment: "无主权"))
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                                .lineLimit(1)
+                                        }
                                     }
                                 }
+                                .padding(.vertical, 2)
                             }
+                            .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                         }
                     }
                     .searchable(
@@ -1066,6 +1114,10 @@ struct SystemSelectorSheet: View {
             }
             .onAppear {
                 loadSystems()
+            }
+            .onDisappear {
+                // 取消联盟图标加载任务
+                allianceIconLoader.cancelAllTasks()
             }
         }
     }
@@ -1090,6 +1142,30 @@ struct SystemSelectorSheet: View {
             }.sorted { $0.name < $1.name }
         }
     }
+    
+    // 获取星系的主权信息
+    private func getSovereigntyInfo(for systemId: Int) -> (name: String, icon: Image?)? {
+        // 查找该星系的主权数据
+        guard let systemSovereignty = sovereigntyData.first(where: { $0.systemId == systemId }) else {
+            return nil
+        }
+        
+        // 优先检查联盟主权
+        if let allianceId = systemSovereignty.allianceId {
+            let name = allianceNames[allianceId] ?? "\(allianceId)"
+            let icon = allianceIconLoader.icons[allianceId]
+            return (name: name, icon: icon)
+        }
+        
+        // 检查派系主权
+        if let factionId = systemSovereignty.factionId {
+            let name = factionNames[factionId] ?? "\(factionId)"
+            let icon = factionIcons[factionId]
+            return (name: name, icon: icon)
+        }
+        
+        return nil
+    }
 
     // 加载星系数据
     private func loadSystems() {
@@ -1112,6 +1188,90 @@ struct SystemSelectorSheet: View {
                 systems = filteredSystems.sorted { $0.name < $1.name }
                 systemIdToOriginalSystem = idToSystem
                 isLoading = false
+                
+                // 加载主权数据
+                loadSovereigntyData(for: filteredSystems.map { $0.id })
+            }
+        }
+    }
+    
+    // 加载主权数据
+    private func loadSovereigntyData(for systemIds: [Int]) {
+        isLoadingSovereignty = true
+        
+        Task {
+            do {
+                // 获取主权数据
+                let data = try await SovereigntyDataAPI.shared.fetchSovereigntyData(forceRefresh: false)
+                
+                await MainActor.run {
+                    sovereigntyData = data
+                    
+                    // 提取需要加载的联盟和派系ID
+                    let allianceIds = Set(data.compactMap { $0.allianceId })
+                    let factionIds = Set(data.compactMap { $0.factionId })
+                    
+                    // 加载联盟和派系信息
+                    Task {
+                        await loadAllianceInfo(for: Array(allianceIds))
+                        await loadFactionInfo(for: Array(factionIds))
+                        
+                        await MainActor.run {
+                            isLoadingSovereignty = false
+                        }
+                    }
+                }
+            } catch {
+                Logger.error("加载主权数据失败: \(error)")
+                await MainActor.run {
+                    isLoadingSovereignty = false
+                }
+            }
+        }
+    }
+    
+    // 加载联盟信息
+    private func loadAllianceInfo(for allianceIds: [Int]) async {
+        // 批量获取联盟名称
+        do {
+            let allianceNamesWithCategories = try await UniverseAPI.shared.getNamesWithFallback(ids: allianceIds)
+            
+            await MainActor.run {
+                for (allianceId, nameInfo) in allianceNamesWithCategories {
+                    allianceNames[allianceId] = nameInfo.name
+                }
+                
+                // 使用 AllianceIconLoader 加载联盟图标
+                allianceIconLoader.loadIcons(for: allianceIds)
+            }
+        } catch {
+            Logger.error("加载联盟名称失败: \(error)")
+        }
+    }
+    
+    // 加载派系信息
+    private func loadFactionInfo(for factionIds: [Int]) async {
+        guard !factionIds.isEmpty else { return }
+        
+        // 从数据库查询派系信息
+        let query = """
+            SELECT id, iconName, name, en_name, zh_name 
+            FROM factions 
+            WHERE id IN (\(factionIds.map { String($0) }.joined(separator: ",")))
+        """
+        
+        if case let .success(rows) = DatabaseManager.shared.executeQuery(query) {
+            await MainActor.run {
+                for row in rows {
+                    if let factionId = row["id"] as? Int,
+                       let iconName = row["iconName"] as? String,
+                       let name = row["name"] as? String {
+                        
+                        factionNames[factionId] = name
+                        let icon = IconManager.shared.loadImage(for: iconName)
+                        factionIcons[factionId] = icon
+                    }
+                }
             }
         }
     }

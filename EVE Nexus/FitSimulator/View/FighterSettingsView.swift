@@ -61,7 +61,19 @@ struct FighterSettingsView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section(header: Text(NSLocalizedString("Fitting_Setting_Fighters", comment: "舰载机设置"))) {
+                Section(header: 
+                    HStack {
+                        Text(NSLocalizedString("Fitting_Setting_Fighters", comment: "舰载机设置"))
+                        Spacer()
+                        // 获取计算后的舰载机属性
+                        let currentOutputFighter = viewModel.simulationOutput?.fighters?.first(where: { $0.typeId == currentFighterID && $0.tubeId == selectedFighter.tubeId })
+                        NavigationLink(destination: ShowItemInfo(databaseManager: databaseManager, itemID: currentFighterID, modifiedAttributes: currentOutputFighter?.attributes)) {
+                            Text(NSLocalizedString("View_Details", comment: ""))
+                                .font(.caption)
+                                .foregroundColor(.blue)
+                        }
+                    }
+                ) {
                     if isLoading {
                         HStack {
                             ProgressView()

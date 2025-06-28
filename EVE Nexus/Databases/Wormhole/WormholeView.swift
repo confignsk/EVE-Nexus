@@ -240,7 +240,8 @@ struct WormholeDetailView: View {
                     mass: nil,
                     marketGroupID: nil
                 ),
-                databaseManager: databaseManager
+                databaseManager: databaseManager,
+                modifiedAttributes: nil
             )
 
             // 详细信息部分

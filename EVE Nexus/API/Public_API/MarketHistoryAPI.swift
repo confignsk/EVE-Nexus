@@ -117,6 +117,38 @@ class MarketHistoryAPI {
         typeID: Int, regionID: Int, forceRefresh: Bool = false, interpolate: Bool = true,
         fillToCurrentDate: Bool = true
     ) async throws -> [MarketHistory] {
+        var actualRegionID = regionID
+        
+        // PLEX 特殊处理
+        if typeID == 44992 {
+            actualRegionID = 19000001
+            
+            // 读取本地plex_history.json文件
+            if let plexHistory = loadPlexHistory() {
+                // 获取API数据
+                let apiHistory = try await fetchApiHistory(typeID: typeID, regionID: actualRegionID, forceRefresh: forceRefresh)
+                
+                // 简单合并：本地数据 + API数据
+                let combined = plexHistory + apiHistory
+                
+                return interpolate ? interpolateMarketHistory(combined, fillToCurrentDate: fillToCurrentDate) : combined
+            }
+        }
+        
+        // 普通流程
+        return try await fetchApiHistory(typeID: typeID, regionID: actualRegionID, forceRefresh: forceRefresh, interpolate: interpolate, fillToCurrentDate: fillToCurrentDate)
+    }
+    
+    private func loadPlexHistory() -> [MarketHistory]? {
+        guard let path = Bundle.main.path(forResource: "plex_history", ofType: "json"),
+              let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
+              let history = try? JSONDecoder().decode([MarketHistory].self, from: data) else {
+            return nil
+        }
+        return history
+    }
+    
+    private func fetchApiHistory(typeID: Int, regionID: Int, forceRefresh: Bool, interpolate: Bool = true, fillToCurrentDate: Bool = true) async throws -> [MarketHistory] {
         // 如果不是强制刷新，尝试从缓存获取
         if !forceRefresh {
             if let cached = loadFromCache(typeID: typeID, regionID: regionID) {
@@ -142,16 +174,11 @@ class MarketHistoryAPI {
         let data = try await NetworkManager.shared.fetchData(from: url)
         let history = try JSONDecoder().decode([MarketHistory].self, from: data)
 
-        // 对原始数据进行插值处理
-        let processedHistory =
-            interpolate
-            ? interpolateMarketHistory(history, fillToCurrentDate: fillToCurrentDate) : history
-
-        // 保存原始数据到缓存（不保存插值后的数据，以便后续可以根据需要重新插值）
+        // 保存到缓存
         saveToCache(history, typeID: typeID, regionID: regionID)
 
         // 返回处理后的数据
-        return processedHistory
+        return interpolate ? interpolateMarketHistory(history, fillToCurrentDate: fillToCurrentDate) : history
     }
 
     // MARK: - 数据插值处理

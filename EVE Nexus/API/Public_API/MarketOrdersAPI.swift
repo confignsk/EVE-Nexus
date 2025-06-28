@@ -137,15 +137,22 @@ class MarketOrdersAPI {
     func fetchMarketOrders(typeID: Int, regionID: Int, forceRefresh: Bool = false) async throws
         -> [MarketOrder]
     {
+        var actualRegionID = regionID
+        
+        // PLEX 特殊处理
+        if typeID == 44992 {
+            actualRegionID = 19000001
+        }
+        
         // 如果不是强制刷新，尝试从缓存获取
         if !forceRefresh {
-            if let cached = loadFromCache(typeID: typeID, regionID: regionID) {
+            if let cached = loadFromCache(typeID: typeID, regionID: actualRegionID) {
                 return cached
             }
         }
 
         // 构建URL
-        let baseURL = "https://esi.evetech.net/latest/markets/\(regionID)/orders/"
+        let baseURL = "https://esi.evetech.net/latest/markets/\(actualRegionID)/orders/"
         var components = URLComponents(string: baseURL)
         components?.queryItems = [
             URLQueryItem(name: "type_id", value: "\(typeID)"),
@@ -161,7 +168,7 @@ class MarketOrdersAPI {
         let orders = try JSONDecoder().decode([MarketOrder].self, from: data)
 
         // 保存到缓存
-        saveToCache(orders, typeID: typeID, regionID: regionID)
+        saveToCache(orders, typeID: typeID, regionID: actualRegionID)
 
         return orders
     }

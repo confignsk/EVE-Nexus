@@ -27,13 +27,17 @@ struct MarketHistoryChartView: View {
 
     // 初始化时计算月份第一天和图表数据
     init(history: [MarketHistory], orders: [MarketOrder]) {
-        self.history = history
+        // 只取最新的360个数据点进行显示
+        let sortedHistory = history.sorted { $0.date < $1.date }
+        let displayHistory = Array(sortedHistory.suffix(360))
+        
+        self.history = displayHistory
         self.orders = orders
 
         // 计算图表数据
-        let dates = history.map { $0.date }
-        let priceValues = history.map { $0.average }
-        let volumeValues = history.map { Double($0.volume) }
+        let dates = displayHistory.map { $0.date }
+        let priceValues = displayHistory.map { $0.average }
+        let volumeValues = displayHistory.map { Double($0.volume) }
         let maxVolume = volumeValues.max() ?? 1
 
         // 计算价格范围

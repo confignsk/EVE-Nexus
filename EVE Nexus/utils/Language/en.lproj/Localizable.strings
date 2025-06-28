@@ -12,7 +12,12 @@
 "Main_Jump_Clones" = "Jump Clones";
 "Main_Jump_Clones_Available" = "Jump Clones Available: ";
 "Main_Skills" = "Skills";
-"Main_Skills_Ponits" = "$num SP";
+"Main_Skills_Ponits" = "%@ SP";
+"Main_Skills_Points" = "Skill Points";
+"Main_Skills_To_Learn" = "Required SP";
+"Main_Skills_Required_Time" = "Required Time";
+"Main_Skills_All_Points" = "Total SP";
+"Main_Skills_Points_Format" = "%@ SP";
 // Skill Queue Countdown
 "Main_Skills_Queue_Training_Days" = "Training: %d skills(%dd %dh %dm)";
 "Main_Skills_Queue_Training_Hours" = "Training: %d skills(%dh %dm %ds)";
@@ -23,7 +28,7 @@
 "Main_EVE_Mail" = "EVE Mail";
 "Main_Calendar" = "Calendar";
 "Main_Wealth" = "Wealth";
-"Main_Wealth_ISK" = "Wallet: $num ISK";
+"Main_Wealth_ISK" = "Wallet: %@";
 "Main_Loyalty_Points" = "Loyalty Points";
 "Main_Databases" = "Databases";
 "Main_Database" = "Database";
@@ -110,7 +115,7 @@
 "Misc_number_item" = "×";
 "Misc_number_item_x" = "×";
 "Misc_number_point" = "points";
-"Misc_number_types" = " Items";
+"Misc_number_items" = " Items";
 "Misc_per" = "per";
 "Misc_unit" = "unit(s)";
 "Misc_Done" = "Done";
@@ -133,7 +138,7 @@
 "Blueprint_Product" = "Product";
 "Blueprint_Success_Rate" = "Success Rate: %d%%";
 "Blueprint_Copy_Materials" = "Copy";
-"Blueprint_Copy_Success" = "Materials have been copied to clipboard.";
+"Blueprint_Copy_Success" = "Materials have been copied to clipboard";
 "Time_Year" = "y";
 "Time_Month" = "mon";
 "Time_Day" = "d";
@@ -170,7 +175,7 @@
 "Item_RepackagesVolume" = "Repackaged Volume";
 "Item_Capacity" = "Capacity";
 "Item_Mass" = "Mass";
-"Item_load_error" = "Can not load info.";
+"Item_load_error" = "Can not load info";
 "Item_details_notfound" = "Details not found";
 
 "Main_Setting_Clean_Cache_Title" = "Clean Cache";
@@ -486,6 +491,14 @@
 
 // Industry List Headers
 "Industry_Started_On" = "Started on %@";
+"Industry_In_Progress" = "In Progress";
+
+// Industry Remaining Time
+"Industry_Remaining_Days_Hours" = "%d d %d h";
+"Industry_Remaining_Days" = "%d d";
+"Industry_Remaining_Hours_Minutes" = "%d h %d m";
+"Industry_Remaining_Hours" = "%d h";
+"Industry_Remaining_Minutes" = "%d m";
 
 // Date Formats
 "Date_Format_Month_Day" = "MMM d";
@@ -1137,13 +1150,17 @@
 
 // Structure Access
 "Structure_No_Access" = "No Access Structure";
+"Location_Player_Structure" = "Player Structure";
+
+// Loading States
+"Loading_Orders" = "Loading Orders...";
 
 "Main_Corporation_Members_Sort_By_Name" = "Character Name";
 "Main_Corporation_Members_Sort_By_Title" = "Title";
 "Main_Corporation_Members_Sort_By_System" = "Current System";
 "Main_Corporation_Members_Sort_By_Ship" = "Current Ship";
 
-"Main_Corporation_Members_Search_Placeholder" = "Search by name or ship...";
+"Main_Corporation_Members_Search_Placeholder" = "Search by name or spaceship...";
 "Main_Corporation_Members_No_Search_Results" = "No matching results";
 
 "Main_Corporation_Members_Filtered_Total" = "%d Members Found";
@@ -1240,7 +1257,7 @@
 "Contract_Appraisal_Show_Full_Amount" = "Show Full Amount";
 "Contract_Appraisal_Set_Discount" = "Set Contract Price Discount";
 "Contract_Appraisal_Discount_Title" = "Set Discount Percentage";
-"Contract_Appraisal_Discount_Message" = "Please enter discount percentage (0 or greater), e.g. 90 means 10% off";
+"Contract_Appraisal_Discount_Message" = "Please enter discount (0-10000), e.g. 90 means 10% off(90%)";
 "Contract_Appraisal_Discount_Cancel" = "Cancel";
 "Contract_Appraisal_Discount_Confirm" = "Confirm";
 "Contract_Appraisal_Discount_Placeholder" = "Discount Percentage";
@@ -1326,7 +1343,7 @@
 "Agent_Type_Short_Other" = "Other";
 
 "Main_Language_Map_Supported_Search_Objects" = "Supported search objects:";
-"Main_Language_Map_Search_Object_1" = "1. Items (ships, modules, space entities, etc.)";
+"Main_Language_Map_Search_Object_1" = "1. Items (Spaceships, modules, space entities, etc.)";
 "Main_Language_Map_Search_Object_2" = "2. Solar systems, constellations, regions";
 "Main_Language_Map_Search_Object_3" = "3. NPC factions, corporations";
 "Main_Language_Map_Search_Object_4" = "4. Type ID";
@@ -1448,11 +1465,12 @@
 "Jump_Navigation_Processing" = "Processing...";
 
 // Jump Navigation Errors
-"Jump_Navigation_Error_No_Ship" = "Please select a ship";
+"Jump_Navigation_Error_No_Ship" = "Please select a spaceship";
 "Jump_Navigation_Error_No_Start" = "Please select start point";
 "Jump_Navigation_Error_No_Waypoints" = "Please add at least one waypoint";
 "Jump_Navigation_Error_Invalid_Route" = "Cannot find valid route";
 "Jump_Navigation_Error_Path_Not_Found" = "Cannot find path from %@ to %@";
+"Jump_Navigation_No_Sovereignty" = "No Sovereignty";
 
 "Server_Status_Online" = "Server Online";
 "Server_Status_Offline" = "Server Offline";
@@ -1469,6 +1487,16 @@
 "Main_Planetary_Not_Selected" = "Not Selected";
 "Main_Planetary_calc" = "Planetary Calc";
 "Main_Planetary_Output" = "Show Output of Zone";
+"Planet_All-in-One_Calc" = "All-in-one Calc";
+
+// All-in-One Calculator
+"All_in_One_No_Products_Found" = "No Single-Planet Products Found";
+"All_in_One_No_Products_Description" = "This system has no products that can complete the entire production chain on a single planet";
+"All_in_One_Compatible_Planets" = "Compatible planets: %@";
+"All_in_One_Available_Planets" = "Available planets: %d";
+"All_in_One_No_Planets_Found" = "No Planets Found";
+"All_in_One_No_Planets_Description" = "No planet data available for this system";
+"All_in_One_Planet_Type_Distribution" = "Planet Type Distribution";
 
 // Sovereignty Selection
 "Loading_Sovereignty" = "Loading sovereignty data...";
@@ -1698,6 +1726,8 @@
 // Implant and Booster Slots
 "Fitting_Implants_Mode" = "View / Select Implants";
 "Fitting_Setting_Implants" = "Implants Setting";
+"Fitting_Export_To_ESI" = "Export to ESI";
+"Fitting_Export_To_Clipboard" = "Export to Clipboard";
 "Implant_Slot_Num" = "Implant Slot %d";
 "Booster_Slot_Num" = "Booster Slot %d";
 "Implant_No_Slots" = "No implant slots available";
@@ -1773,3 +1803,44 @@
 "WH_Mass_Notyet" = "This wormhole has not yet had its stability significantly disrupted by ships passing through it";
 "WH_Mass_Notcritical" = "This wormhole has had its stability reduced by ships passing through it, but not to a critical degree yet";
 "WH_Mass_critically" = "This wormhole has had its stability critically disrupted by the mass of numerous ships passing through and is on the verge of collapse";
+
+// Fitting Upload to ESI
+"Fitting_Exporting_To_ESI" = "Uploading to ESI...";
+"Fitting_Export_To_ESI" = "Export to ESI";
+"Fitting_Upload_Confirm_Title" = "Confirm Upload";
+"Fitting_Upload_Confirm_Message" = "Upload fitting \"%@\" to EVE Online?";
+"Fitting_Upload_Cancel" = "Cancel";
+"Fitting_Upload_Confirm" = "Confirm Upload";
+"Fitting_Upload_Success_Title" = "Upload Successful";
+"Fitting_Upload_Success_Message" = "Fitting successfully uploaded to EVE\nFitting ID: %d";
+"Fitting_Upload_Failed_Title" = "Upload Failed";
+"Fitting_Upload_Failed_Message" = "Upload failed: %@";
+"Fitting_Upload_No_Character" = "Please log in a character before uploading fitting";
+"Fitting_Unnamed_Fitting" = "Unnamed Fitting";
+
+// Sovereignty Search Results
+"Sovereignty_Search_Results_Factions" = "Sovereignty";
+"Sovereignty_Search_Results_Systems" = "Solar-Systems";
+
+// Fitting Export
+"Fitting_Export_Clipboard_Success" = "Fitting copied to clipboard";
+
+// Fitting Import
+"Fitting_Import_Success_Title" = "Import Successful";
+"Fitting_Import_Success_Message" = "Fitting \"%@\" has been successfully imported";
+"Fitting_Import_Failed_Title" = "Import Failed";
+"Fitting_Import_Failed_Message" = "Failed to import fitting: %@";
+"Fitting_Import_Not_Ship_Error" = "Item %@ is not a spaceship";
+"Fitting_Import_Validation_Failed_Error" = "Unable to validate item type: %@";
+"Fitting_Import_Ship_notfound" = "Spaceship not found";
+"Fitting_Import_Multiple_Ships_Error" = "Multiple ships found with name: %@, please select one";
+"Fitting_Import_Multiple_Ships_Header" = "Select Ship";
+"Fitting_Import_Ship_Selection_Title" = "Select Ship";
+
+// Fitting Delete
+"Delete" = "Delete";
+"Fitting_Delete_Confirm_Title" = "Confirm Delete";
+"Fitting_Delete_Confirm" = "Confirm Delete";
+"Fitting_Delete_Confirm_Message" = "Are you sure you want to delete fitting \"%@\"?";
+"Fitting_Delete_Failed_Title" = "Delete Failed";
+"Fitting_Delete_Success" = "Fitting deleted successfully";

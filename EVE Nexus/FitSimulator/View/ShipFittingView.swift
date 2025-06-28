@@ -30,6 +30,7 @@ struct ShipFittingView: View {
     @StateObject var viewModel: FittingEditorViewModel
     @State private var showingSettings = false
     @State private var selectedViewType: FittingViewType = .modules
+    @Environment(\.dismiss) private var dismiss
     
     // 构造函数1：新建配置
     init(shipTypeId: Int, shipInfo: (name: String, iconFileName: String), databaseManager: DatabaseManager) {
@@ -152,7 +153,11 @@ struct ShipFittingView: View {
                         
                         Logger.info("技能模式更改为\(skillsMode)，已重新计算属性")
                     },
-                    viewModel: viewModel
+                    viewModel: viewModel,
+                    onDelete: {
+                        // 本地配置和在线配置都可以删除
+                        deleteFitting()
+                    }
                 )
             }
         }
@@ -184,6 +189,87 @@ struct ShipFittingView: View {
         viewTypes.append(.stats)
         
         return viewTypes
+    }
+    
+    /// 删除配置
+    private func deleteFitting() {
+        Logger.info("开始删除配置: \(viewModel.simulationInput.name) (ID: \(viewModel.simulationInput.fittingId))")
+        
+        if viewModel.isLocalFitting {
+            // 删除本地配置
+            deleteLocalFitting()
+        } else {
+            // 删除在线配置
+            deleteOnlineFitting()
+        }
+    }
+    
+    /// 删除本地配置
+    private func deleteLocalFitting() {
+        // 获取文件路径
+        guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            Logger.error("删除本地配置失败: 无法访问文档目录")
+            return
+        }
+        
+        let fittingsDirectory = documentsDirectory.appendingPathComponent("Fitting")
+        let filePath = fittingsDirectory.appendingPathComponent("local_fitting_\(viewModel.simulationInput.fittingId).json")
+        
+        // 删除文件
+        do {
+            try FileManager.default.removeItem(at: filePath)
+            Logger.info("本地配置文件删除成功: \(filePath.path)")
+            
+            // 关闭当前页面
+            dismiss()
+            
+        } catch {
+            Logger.error("删除本地配置文件失败: \(error.localizedDescription)")
+        }
+    }
+    
+    /// 删除在线配置
+    private func deleteOnlineFitting() {
+        // 获取当前角色ID
+        let currentCharacterId = UserDefaults.standard.integer(forKey: "currentCharacterId")
+        guard currentCharacterId != 0 else {
+            Logger.error("删除在线配置失败: 没有当前角色")
+            return
+        }
+        
+        // 立即添加到删除标记容器中（利用删除缓存机制）
+        FittingDeletionCacheManager.shared.addDeletedFitting(
+            fittingId: viewModel.simulationInput.fittingId, 
+            characterId: currentCharacterId
+        )
+        
+        Logger.info("在线装配配置已标记为删除 - ID: \(viewModel.simulationInput.fittingId)，已添加到5分钟删除缓存")
+        
+        // 发送通知以立即刷新配置列表页面
+        NotificationCenter.default.post(
+            name: NSNotification.Name("RefreshOnlineFittings"),
+            object: nil,
+            userInfo: ["characterId": currentCharacterId]
+        )
+        
+        // 立即关闭当前页面
+        dismiss()
+        
+        // 在后台异步执行API删除操作
+        Task {
+            do {
+                try await CharacterFittingAPI.deleteCharacterFitting(
+                    characterID: currentCharacterId,
+                    fittingID: viewModel.simulationInput.fittingId
+                )
+                
+                Logger.info("后台API删除成功 - ID: \(viewModel.simulationInput.fittingId)")
+                
+            } catch {
+                Logger.error("后台API删除失败: \(error)")
+                // 不做任何处理，让删除缓存自然过期（5分钟后重新显示）
+            }
+        }
     }
     
     /// 清除所有装备选择器的缓存状态

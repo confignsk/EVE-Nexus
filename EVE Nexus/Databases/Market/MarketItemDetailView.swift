@@ -540,11 +540,12 @@ struct MarketItemDetailView: View {
 
                 // 市场订单按钮
                 NavigationLink {
-                    if let orders = marketOrders, let details = itemDetails {
+                    if let details = itemDetails {
                         MarketOrdersView(
                             itemID: itemID,
                             itemName: details.name,
-                            orders: orders,
+                            regionID: selectedRegionID,
+                            initialOrders: marketOrders ?? [],
                             databaseManager: databaseManager
                         )
                     }
@@ -558,7 +559,7 @@ struct MarketItemDetailView: View {
                         }
                     }
                 }
-                .disabled(marketOrders == nil || isLoadingPrice || (marketOrders?.isEmpty ?? true))
+.disabled(isLoadingPrice)
             }
 
             // 历史价格图表部分

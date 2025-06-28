@@ -80,7 +80,7 @@ struct IndustrySection: View {
                             }
                             Spacer()
                             Text(
-                                "\(blueprintDest.blueprints.count) \(NSLocalizedString("Misc_number_types", comment: ""))"
+                                "\(blueprintDest.blueprints.count) \(NSLocalizedString("Misc_number_items", comment: ""))"
                             )
                             .foregroundColor(.secondary)
                         }
@@ -111,7 +111,7 @@ struct IndustrySection: View {
                                     Spacer()
 
                                     Text(
-                                        "\(material.outputQuantity) \(NSLocalizedString("Misc_unit", comment: ""))"
+                                        "× \(material.outputQuantity)"
                                     )
                                     .font(.body)
                                     .foregroundColor(.secondary)
@@ -136,7 +136,7 @@ struct IndustrySection: View {
                             }
                             Spacer()
                             Text(
-                                "\(materials.count)\(NSLocalizedString("Misc_number_types", comment: ""))"
+                                "\(materials.count)\(NSLocalizedString("Misc_number_items", comment: ""))"
                             )
                             .foregroundColor(.secondary)
                             .frame(alignment: .trailing)
@@ -185,7 +185,7 @@ struct IndustrySection: View {
                             Text(NSLocalizedString("Main_Database_Source", comment: ""))
                             Spacer()
                             Text(
-                                "\(sourceMaterials.count)\(NSLocalizedString("Misc_number_types", comment: ""))"
+                                "\(sourceMaterials.count)\(NSLocalizedString("Misc_number_items", comment: ""))"
                             )
                             .foregroundColor(.secondary)
                             .frame(alignment: .trailing)

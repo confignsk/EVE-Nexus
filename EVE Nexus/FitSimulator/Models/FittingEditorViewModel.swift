@@ -13,6 +13,7 @@ class FittingEditorViewModel: ObservableObject {
     // 元数据
     @Published var shipInfo: (name: String, iconFileName: String)
     @Published var isNewFitting: Bool
+    @Published var isLocalFitting: Bool = true // 是否为本地配置，默认为true
     @Published var hasUnsavedChanges = false
     @Published var errorMessage: String? // 添加错误消息
     @Published var invalidModules: [(module: SimModule, reason: String)] = [] // 无效的模块列表
@@ -111,6 +112,7 @@ class FittingEditorViewModel: ObservableObject {
         self.databaseManager = databaseManager
         self.shipInfo = shipInfo
         self.isNewFitting = true
+        self.isLocalFitting = true // 新建配置为本地配置
         self.attributeCalculator = AttributeCalculator(databaseManager: databaseManager)
         
         // 创建初始配置
@@ -152,6 +154,7 @@ class FittingEditorViewModel: ObservableObject {
             }
             
             self.isNewFitting = false
+            self.isLocalFitting = true // 本地配置文件
             
             // 获取已保存的技能设置
             let characterSkills = FittingEditorViewModel.getSkillsFromPreferences()
@@ -192,6 +195,7 @@ class FittingEditorViewModel: ObservableObject {
             
             // 初始化为默认值
             self.isNewFitting = true
+            self.isLocalFitting = true // 错误情况下默认为本地配置
             self.shipInfo = (name: "Error", iconFileName: "")
             
             // 使用默认值 - 这里应该更优雅地处理
@@ -230,6 +234,7 @@ class FittingEditorViewModel: ObservableObject {
         }
         
         self.isNewFitting = false
+        self.isLocalFitting = false // 在线配置
         
         // 将在线配置转换为本地配置
         // 创建FittingItem数组
@@ -1140,7 +1145,7 @@ class FittingEditorViewModel: ObservableObject {
         // 如果不能安装，设置错误消息并返回
         if !canInstall {
             errorMessage = "无法安装装备: \(model_name)。该装备不适合当前飞船。"
-            Logger.error("装备安装失败: \(model_name) - 无法安装到当前飞船")
+            Logger.error("[canFit]装备安装失败: \(model_name) - 无法安装到当前飞船")
             return
         }
         
@@ -1357,12 +1362,12 @@ class FittingEditorViewModel: ObservableObject {
         // 如果不能安装，恢复旧模块并返回失败
         if !canInstall {
             errorMessage = "无法安装装备: \(model_name)。该装备不适合当前飞船。"
-            Logger.error("装备替换失败: \(model_name) - 无法安装到当前飞船")
+            Logger.error("[canFit]装备替换失败: \(model_name) - 无法安装到当前飞船")
             
             // 恢复旧模块
             if let oldModule = oldModule {
                 simulationInput.modules.append(oldModule)
-                Logger.info("撤回装备替换，重新计算属性")
+                Logger.info("[canFit]撤回装备替换，重新计算属性")
                 calculateAttributes()
                 objectWillChange.send()
             }

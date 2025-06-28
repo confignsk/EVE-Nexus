@@ -22,7 +22,7 @@ struct ShowMutationInfo: View {
         List {
             // 基础信息部分
             if let itemDetails = itemDetails {
-                ItemBasicInfoView(itemDetails: itemDetails, databaseManager: databaseManager)
+                ItemBasicInfoView(itemDetails: itemDetails, databaseManager: databaseManager, modifiedAttributes: nil)
             }
 
             // 工业相关部分

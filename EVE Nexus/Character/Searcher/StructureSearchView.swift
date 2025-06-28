@@ -289,7 +289,9 @@ struct StructureSearchView {
                                 // 获取建筑物信息
                                 let info = try await UniverseStructureAPI.shared.fetchStructureInfo(
                                     structureId: Int64(structureId),
-                                    characterId: characterId
+                                    characterId: characterId,
+                                    forceRefresh: true,  // 建筑搜索功能总是联网搜索
+                                    cacheTimeOut: 1  // 缓存超时时间改为 1 小时
                                 )
 
                                 return (structureId, info.name, info.type_id, info.solar_system_id)

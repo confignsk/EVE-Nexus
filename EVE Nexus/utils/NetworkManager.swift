@@ -88,8 +88,9 @@ class NetworkManager: NSObject, @unchecked Sendable {
         // 添加基本请求头
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue("tranquility", forHTTPHeaderField: "datasource")
+        request.setValue("gzip", forHTTPHeaderField: "Accept-Encoding")
         request.setValue(
-            "Tritanium_by_EstamelGG_Github_v\(AppConfiguration.Version.fullVersion)",
+            "Tritanium_v\(AppConfiguration.Version.fullVersion)",
             forHTTPHeaderField: "User-Agent")
 
         // 如果是 POST 请求且有请求体，设置 Content-Type
@@ -113,7 +114,7 @@ class NetworkManager: NSObject, @unchecked Sendable {
 
         return try await retrier.execute(noRetryKeywords: noRetryKeywords, timeouts: timeouts) {
             Logger.info(
-                "HTTP \(method) Request to: \(url), User-Agent: \(String(describing: request.value(forHTTPHeaderField: "User-Agent")))"
+                "HTTP \(method) Request to: \(url), User-Agent: \(request.value(forHTTPHeaderField: "User-Agent") ?? "N/A")"
             )
 
             // 使用Task.detached确保在后台线程执行，并设置合适的QoS
@@ -125,7 +126,8 @@ class NetworkManager: NSObject, @unchecked Sendable {
                     throw NetworkError.invalidResponse
                 }
 
-                guard httpResponse.statusCode == 200 else {
+                // 检查成功状态码（200 OK, 201 Created, 204 No Content）
+                guard [200, 201, 204].contains(httpResponse.statusCode) else {
                     // 添加错误日志记录
                     if let responseBody = String(data: data, encoding: .utf8) {
                         Logger.error("HTTP请求失败 - URL: \(url.absoluteString)")
@@ -235,7 +237,8 @@ class NetworkManager: NSObject, @unchecked Sendable {
         to url: URL,
         body: Data,
         characterId: Int,
-        headers: [String: String]? = nil
+        headers: [String: String]? = nil,
+        timeouts: [TimeInterval]? = nil
     ) async throws -> Data {
         // 获取角色的token
         let token = try await AuthTokenManager.shared.getAccessToken(for: characterId)
@@ -258,7 +261,8 @@ class NetworkManager: NSObject, @unchecked Sendable {
             from: url,
             method: "POST",
             body: body,
-            headers: allHeaders
+            headers: allHeaders,
+            timeouts: timeouts
         )
     }
 

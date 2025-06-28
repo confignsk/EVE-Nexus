@@ -1,20 +1,15 @@
 import SwiftUI
 
-// 星系选择器Sheet
+// 星系选择器Sheet - 复用JumpNavigationView中的SystemSelectorSheet
 struct PISolarSystemSelectorSheet: View {
     let title: String
     let onSelect: (Int, String) -> Void  // 接收星系ID和名称
     let onCancel: () -> Void
     let currentSelection: Int?
-
-    @State private var searchText: String = ""
-    @State private var systems:
-        [(
-            id: Int, name: String, name_en: String, name_zh: String, security: Double,
-            region: String
-        )] = []
-    @State private var selectedSystemId: Int?
-    @State private var isLoading = true
+    
+    // 使用懒加载的星系数据
+    @State private var allSystems: [JumpSystemData] = []
+    @State private var isLoadingData = true
 
     private let databaseManager = DatabaseManager.shared
 
@@ -26,143 +21,96 @@ struct PISolarSystemSelectorSheet: View {
         self.onSelect = onSelect
         self.onCancel = onCancel
         self.currentSelection = currentSelection
-        _selectedSystemId = State(initialValue: currentSelection)
     }
 
     var body: some View {
-        NavigationView {
+        if isLoadingData {
             VStack {
-                if isLoading {
-                    ProgressView()
-                        .scaleEffect(1.5)
-                        .padding()
-                    Text(NSLocalizedString("PI_Output_Loading_Systems", comment: ""))
-                        .foregroundColor(.gray)
-                } else {
-                    List {
-                        ForEach(filteredSystems, id: \.id) { system in
-                            Button(action: {
-                                selectedSystemId = system.id
-                                onSelect(system.id, system.name)
-                            }) {
-                                HStack {
-                                    // 添加安全等级显示
-                                    Text(formatSystemSecurity(system.security))
-                                        .foregroundColor(getSecurityColor(system.security))
-                                        .font(.system(.body, design: .monospaced))
-                                        .padding(.trailing, 4)
-
-                                    Text("\(system.name) / ")
-                                        .foregroundColor(.primary)
-                                        + Text(system.region)
-                                        .foregroundColor(.secondary)
-
-                                    Spacer()
-
-                                    // 选中状态
-                                    if selectedSystemId == system.id {
-                                        Image(systemName: "checkmark")
-                                            .foregroundColor(.blue)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    .searchable(
-                        text: $searchText,
-                        placement: .navigationBarDrawer(displayMode: .always),
-                        prompt: NSLocalizedString("PI_Output_Search_Solar_System", comment: "")
-                    )
-                }
-            }
-            .navigationTitle(title)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(
-                        NSLocalizedString("Common_Cancel", comment: ""),
-                        action: {
-                            onCancel()
-                        })
-                }
+                ProgressView()
+                    .scaleEffect(1.5)
+                    .padding()
+                Text(NSLocalizedString("PI_Output_Loading_Systems", comment: ""))
+                    .foregroundColor(.gray)
             }
             .onAppear {
-                loadSystems()
+                loadAllSystemsData()
             }
-        }
-    }
-
-    // 过滤后的星系列表
-    private var filteredSystems:
-        [(
-            id: Int, name: String, name_en: String, name_zh: String, security: Double,
-            region: String
-        )]
-    {
-        if searchText.isEmpty {
-            return systems
         } else {
-            return systems.filter { system in
-                system.name.localizedCaseInsensitiveContains(searchText)
-                    || system.name_en.localizedCaseInsensitiveContains(searchText)
-                    || system.name_zh.localizedCaseInsensitiveContains(searchText)
-            }
-            .sorted { $0.name < $1.name }
+            // 复用SystemSelectorSheet，但包装选择回调
+            SystemSelectorSheet(
+                title: title,
+                currentSelection: currentSelection,
+                onlyLowSec: false,  // PI可以在所有星系进行
+                jumpSystems: allSystems,
+                onSelect: { systemId in
+                    // 找到对应的星系名称
+                    if let system = allSystems.first(where: { $0.id == systemId }) {
+                        onSelect(systemId, system.name)
+                    } else {
+                        onSelect(systemId, "Unknown System")
+                    }
+                },
+                onCancel: onCancel
+            )
         }
     }
-
-    // 加载星系数据
-    private func loadSystems() {
-        isLoading = true
-
+    
+    // 加载所有星系数据
+    private func loadAllSystemsData() {
         DispatchQueue.global(qos: .userInitiated).async {
-            var loadedSystems:
-                [(
-                    id: Int, name: String, name_en: String, name_zh: String, security: Double,
-                    region: String
-                )] = []
-
-            // 查询所有星系，包含中英文名称
+            // 查询所有星系，包含中英文名称，不限制跳跃门条件
             let query = """
-                    SELECT s.solarSystemID, s.solarSystemName, 
-                           s.solarSystemName_en, s.solarSystemName_zh, 
-                           u.system_security, r.regionName 
-                    FROM solarsystems s
-                    JOIN universe u ON s.solarSystemID = u.solarsystem_id
-                    JOIN regions r ON r.regionID = u.region_id
-                    ORDER BY s.solarSystemName
-                """
+                SELECT u.solarsystem_id, s.solarSystemName, s.solarSystemName_en, s.solarSystemName_zh,
+                       u.system_security, r.regionName, u.x, u.y, u.z
+                FROM universe u
+                JOIN solarsystems s ON s.solarSystemID = u.solarsystem_id
+                JOIN regions r ON r.regionID = u.region_id
+                WHERE NOT u.isJSpace -- 排除虫洞星系
+                AND u.region_id NOT IN (10000019, 10000004, 10000017, 10000070) -- 排除朱庇特星域与波赫文星域
+                AND u.solarsystem_id NOT IN (30100000) -- 排除扎尔扎克
+                ORDER BY s.solarSystemName
+            """
 
+            var systems: [JumpSystemData] = []
+            
             if case let .success(rows) = databaseManager.executeQuery(query) {
                 for row in rows {
-                    if let solarSystemID = row["solarSystemID"] as? Int,
-                        let solarSystemName = row["solarSystemName"] as? String,
+                    if let id = row["solarsystem_id"] as? Int,
+                        let name = row["solarSystemName"] as? String,
+                        let nameEN = row["solarSystemName_en"] as? String,
                         let security = row["system_security"] as? Double,
-                        let regionName = row["regionName"] as? String
+                        let region = row["regionName"] as? String,
+                        let x = row["x"] as? Double,
+                        let y = row["y"] as? Double,
+                        let z = row["z"] as? Double
                     {
-                        // 获取中英文名称，如果不存在则使用默认名称
-                        let solarSystemName_en =
-                            row["solarSystemName_en"] as? String ?? solarSystemName
-                        let solarSystemName_zh =
-                            row["solarSystemName_zh"] as? String ?? solarSystemName
+                        // 获取中文名，如果为nil则使用英文名
+                        let nameZH = (row["solarSystemName_zh"] as? String) ?? nameEN
 
-                        loadedSystems.append(
-                            (
-                                id: solarSystemID,
-                                name: solarSystemName,
-                                name_en: solarSystemName_en,
-                                name_zh: solarSystemName_zh,
-                                security: security,
-                                region: regionName
-                            ))
+                        // 计算显示安全等级
+                        let displaySec = calculateDisplaySecurity(security)
+
+                        systems.append(
+                            JumpSystemData(
+                                id: id,
+                                name: name,
+                                nameEN: nameEN,
+                                nameZH: nameZH,
+                                security: displaySec,
+                                region: region,
+                                x: x,
+                                y: y,
+                                z: z
+                            )
+                        )
                     }
                 }
             }
 
             // 在主线程更新UI
             DispatchQueue.main.async {
-                systems = loadedSystems
-                isLoading = false
+                allSystems = systems
+                isLoadingData = false
             }
         }
     }

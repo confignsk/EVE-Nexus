@@ -159,21 +159,17 @@ class MainViewModel: ObservableObject {
 
     private func updateSkillPoints(_ totalSP: Int?) {
         if let sp = totalSP {
-            characterStats.skillPoints = NSLocalizedString("Main_Skills_Ponits", comment: "")
-                .replacingOccurrences(of: "$num", with: FormatUtil.format(Double(sp)))
+            characterStats.skillPoints = String(format: NSLocalizedString("Main_Skills_Ponits", comment: ""), FormatUtil.format(Double(sp)))
         } else {
-            characterStats.skillPoints = NSLocalizedString("Main_Skills_Ponits", comment: "")
-                .replacingOccurrences(of: "$num", with: Constants.emptyValue)
+            characterStats.skillPoints = String(format: NSLocalizedString("Main_Skills_Ponits", comment: ""), Constants.emptyValue)
         }
     }
     
     private func updateWalletBalance(_ balance: Double?) {
         if let bal = balance {
-            characterStats.walletBalance = NSLocalizedString("Main_Wealth_ISK", comment: "")
-                .replacingOccurrences(of: "$num", with: FormatUtil.format(bal))
+            characterStats.walletBalance = String(format: NSLocalizedString("Main_Wealth_ISK", comment: ""), FormatUtil.formatISK(bal))
         } else {
-            characterStats.walletBalance = NSLocalizedString("Main_Wealth_ISK", comment: "")
-                .replacingOccurrences(of: "$num", with: Constants.emptyValue)
+            characterStats.walletBalance = String(format: NSLocalizedString("Main_Wealth_ISK", comment: ""), Constants.emptyValue)
         }
     }
 

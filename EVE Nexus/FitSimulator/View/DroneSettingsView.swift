@@ -24,6 +24,7 @@ struct DroneSettingsView: View {
     @State private var currentDroneID: Int  // 当前无人机ID
     @State private var initialActiveCount: Int // 用于跟踪激活数量是否变化
     @State private var hasActiveCountChanged = false // 跟踪激活数量是否发生了变化
+    @State private var hasQuantityChanged = false // 跟踪总数量是否发生了变化
     
     // 初始化方法
     init(
@@ -51,7 +52,19 @@ struct DroneSettingsView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section(header: Text(NSLocalizedString("Fitting_Setting_Drones", comment: ""))) {
+                Section(header: 
+                    HStack {
+                        Text(NSLocalizedString("Fitting_Setting_Drones", comment: ""))
+                        Spacer()
+                        // 获取计算后的无人机属性
+                        let currentOutputDrone = viewModel.simulationOutput?.drones.first(where: { $0.typeId == currentDroneID })
+                        NavigationLink(destination: ShowItemInfo(databaseManager: databaseManager, itemID: currentDroneID, modifiedAttributes: currentOutputDrone?.attributes)) {
+                            Text(NSLocalizedString("View_Details", comment: ""))
+                                .font(.caption)
+                                .foregroundColor(.blue)
+                        }
+                    }
+                ) {
                     if isLoading {
                         HStack {
                             ProgressView()
@@ -121,6 +134,9 @@ struct DroneSettingsView: View {
                             }
                         }
                         
+                        // 标记数量已更改
+                        hasQuantityChanged = true
+                        
                         // 更新无人机数量
                         onUpdateQuantity(newValue, activeCount)
                     }
@@ -174,9 +190,9 @@ struct DroneSettingsView: View {
                 checkVariations()
             }
             .onDisappear {
-                // 无人机设置视图消失时，如果激活数量有变化，重新计算整个配置
-                if hasActiveCountChanged {
-                    Logger.info("无人机激活数量发生变化，重新计算属性")
+                // 无人机设置视图消失时，如果激活数量或总数量有变化，重新计算整个配置
+                if hasActiveCountChanged || hasQuantityChanged {
+                    Logger.info("无人机数量或激活数量发生变化，重新计算属性")
                     viewModel.calculateAttributes()
                 }
             }

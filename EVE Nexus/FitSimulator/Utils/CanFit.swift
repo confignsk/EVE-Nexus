@@ -113,7 +113,7 @@ private func duplicateSubSysCheck(
         // 获取已安装装备的1366属性
         if let existingValue = module.attributesByName["subSystemSlot"] {
             Logger.info(
-                "发现已安装的子系统，槽位类型: \(module.flag?.rawValue ?? "未知"), 属性值: \(existingValue)"
+                "发现已安装的子系统，槽位类型: \(module.flag?.rawValue ?? "未知"), 装备名: \(module.name), 属性值: \(existingValue)"
             )
 
             // 如果1366属性值相同，则不允许安装
@@ -350,6 +350,7 @@ func canFit(
         itemAttributes: itemAttributes,
         databaseManager: databaseManager
     ) {
+        Logger.warning("[canFit] 装备无法安装：不可以装配到指定类型的飞船上")
         return false
     }
 
@@ -361,6 +362,7 @@ func canFit(
         typeId: typeId,
         groupID: itemGroupID
     ) {
+        Logger.warning("[canFit] 装备无法安装：存在最大安装数量限制")
         return false
     }
 
@@ -372,6 +374,7 @@ func canFit(
         itemEffects: itemEffects,
         currentModules: currentModules
     ) {
+        Logger.warning("[canFit] 装备无法安装：子系统与船体不兼容")
         return false
     }
 
@@ -380,6 +383,7 @@ func canFit(
         shipAttributes: shipAttributes,
         moduleVolume: volume
     ) {
+        Logger.warning("[canFit] 装备无法安装：旗舰装备无法安装到非旗舰飞船")
         return false
     }
 
@@ -391,9 +395,11 @@ func canFit(
         turretSlotsNum: turretSlotsNum,
         launcherSlotsNum: launcherSlotsNum
     ) {
+        Logger.warning("[canFit] 装备无法安装：超出炮台和发射器数")
         return false
     }
 
     /// 无特殊情况，允许安装
+    Logger.info("[canFit]装备 \(typeId) 可以安装")
     return true
 } 

@@ -134,6 +134,7 @@ struct ModuleSettingsView: View {
     @State private var availableModuleStates: [Int] = []
     @State private var chargeGroupIDs: [Int] = []  // 可装载的弹药组ID
     @State private var currentModuleID: Int  // 添加当前模块ID状态变量
+    @State private var currentModule: SimModuleOutput?
     
     // 计算属性：是否为批量操作模式
     private var isBatchMode: Bool {
@@ -198,7 +199,8 @@ struct ModuleSettingsView: View {
                         Text(NSLocalizedString("Fitting_Setting_Module", comment: ""))
                         Spacer()
                         if !isLoading, let _ = moduleDetails {
-                            NavigationLink(destination: ShowItemInfo(databaseManager: databaseManager, itemID: currentModuleID)) {
+                            let currentModule = viewModel.simulationOutput?.modules.first(where: { $0.flag == slotFlag })
+                            NavigationLink(destination: ShowItemInfo(databaseManager: databaseManager, itemID: currentModuleID, modifiedAttributes: currentModule?.attributes)) {
                                 Text(NSLocalizedString("View_Details", comment: ""))
                                     .font(.caption)
                                     .foregroundColor(.blue)
@@ -374,7 +376,21 @@ struct ModuleSettingsView: View {
                 
                 // 如果模块可以装载弹药，显示弹药设置
                 if canLoadCharge() {
-                    Section(header: Text(NSLocalizedString("Fitting_Setting_Ammo", comment: ""))) {
+                    Section(header: 
+                        HStack {
+                            Text(NSLocalizedString("Fitting_Setting_Ammo", comment: ""))
+                            Spacer()
+                            if let charge = currentModuleCharge {
+                                // 获取计算后的弹药属性
+                                let currentOutputModule = viewModel.simulationOutput?.modules.first(where: { $0.flag == slotFlag })
+                                NavigationLink(destination: ShowItemInfo(databaseManager: databaseManager, itemID: charge.typeId, modifiedAttributes: currentOutputModule?.charge?.attributes)) {
+                                    Text(NSLocalizedString("View_Details", comment: ""))
+                                        .font(.caption)
+                                        .foregroundColor(.blue)
+                                }
+                            }
+                        }
+                    ) {
                         NavigationLink(
                             destination: ChargeSelectionView(
                                 databaseManager: databaseManager,

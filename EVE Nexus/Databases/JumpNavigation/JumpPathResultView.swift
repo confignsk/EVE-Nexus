@@ -227,7 +227,7 @@ class JumpResultViewModel: ObservableObject {
     @Published var isLoadingSovereignty: Bool = false
 
     // 图标和名称缓存
-    @Published var allianceIcons: [Int: Image] = [:]
+    @Published var allianceIconLoader = AllianceIconLoader()
     @Published var factionIcons: [Int: Image] = [:]
     @Published var allianceNames: [Int: String] = [:]
     @Published var factionNames: [Int: String] = [:]
@@ -297,10 +297,13 @@ class JumpResultViewModel: ObservableObject {
 
     func loadAllIcons() async {
         // 加载联盟图标和名称
-        for (allianceId, systems) in allianceToSystems {
+        let allianceIds = Array(allianceToSystems.keys)
+        
+        // 加载联盟名称
+        for allianceId in allianceIds {
             let task = Task {
                 do {
-                    Logger.debug("开始加载联盟图标: \(allianceId)，影响 \(systems.count) 个星系")
+                    Logger.debug("开始加载联盟名称: \(allianceId)")
 
                     // 加载联盟名称
                     if let allianceInfo = try? await AllianceAPI.shared.fetchAllianceInfo(
@@ -312,27 +315,8 @@ class JumpResultViewModel: ObservableObject {
                         Logger.debug("联盟名称加载成功: \(allianceId)")
                     }
 
-                    // 加载联盟图标
-                    do {
-                        let uiImage = try await AllianceAPI.shared.fetchAllianceLogo(
-                            allianceID: allianceId,
-                            size: 64
-                        )
-
-                        // 在主线程处理结果和更新UI
-                        await MainActor.run {
-                            // 保存图标到缓存
-                            self.allianceIcons[allianceId] = Image(uiImage: uiImage)
-
-                            // 更新所有使用这个联盟图标的星系的加载状态
-                            for systemId in systems {
-                                self.loadingSystemIcons.remove(systemId)
-                            }
-                            Logger.debug("联盟图标加载成功: \(allianceId)")
-                        }
-                    } catch {
-                        Logger.error("加载联盟图标失败: \(allianceId), error: \(error)")
-                        // 更新加载状态
+                    // 更新所有使用这个联盟的星系的加载状态
+                    if let systems = allianceToSystems[allianceId] {
                         await MainActor.run {
                             for systemId in systems {
                                 self.loadingSystemIcons.remove(systemId)
@@ -342,6 +326,11 @@ class JumpResultViewModel: ObservableObject {
                 }
             }
             loadingTasks[allianceId] = task
+        }
+        
+        // 使用 AllianceIconLoader 加载联盟图标
+        await MainActor.run {
+            allianceIconLoader.loadIcons(for: allianceIds)
         }
 
         // 加载派系图标和名称
@@ -406,7 +395,7 @@ class JumpResultViewModel: ObservableObject {
     func getIconForSystem(_ systemId: Int) -> Image? {
         if let sovereignty = getSovereigntyForSystem(systemId) {
             if let allianceId = sovereignty.allianceId {
-                return allianceIcons[allianceId]
+                return allianceIconLoader.icons[allianceId]
             } else if let factionId = sovereignty.factionId {
                 return factionIcons[factionId]
             }
@@ -429,6 +418,7 @@ class JumpResultViewModel: ObservableObject {
     deinit {
         // 取消所有加载任务
         loadingTasks.values.forEach { $0.cancel() }
+        allianceIconLoader.cancelAllTasks()
     }
 }
 

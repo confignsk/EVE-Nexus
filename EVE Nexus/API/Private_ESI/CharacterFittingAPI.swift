@@ -56,6 +56,94 @@ public class CharacterFittingAPI {
         }
     }
 
+    /// 上传装配配置到EVE服务器
+    /// - Parameters:
+    ///   - characterID: 角色ID
+    ///   - fitting: 要上传的装配配置
+    /// - Returns: 上传成功后返回的装配ID
+    public static func uploadCharacterFitting(characterID: Int, fitting: CharacterFitting) async throws -> Int {
+        Logger.info("开始上传装配配置 - 角色ID: \(characterID), 装配名称: \(fitting.name)")
+        
+        // 构建URL
+        let urlString = "https://esi.evetech.net/latest/characters/\(characterID)/fittings/?datasource=tranquility"
+        guard let url = URL(string: urlString) else {
+            Logger.error("无效的URL: \(urlString)")
+            throw APIError.invalidURL
+        }
+
+        do {
+            // 确保description有值，如果为nil则使用默认值
+            var fittingToUpload = fitting
+            if fittingToUpload.description == nil || fittingToUpload.description?.isEmpty == true {
+                fittingToUpload.description = "Uploaded from Tritanium"
+            }
+            
+            // 将装配配置编码为JSON
+            let encoder = JSONEncoder()
+            let jsonData = try encoder.encode(fittingToUpload)
+            
+            // 打印请求体内容用于调试
+            if let jsonString = String(data: jsonData, encoding: .utf8) {
+                Logger.debug("上传装配配置请求体: \(jsonString)")
+            }
+
+            // 发送POST请求
+            let responseData = try await NetworkManager.shared.postDataWithToken(
+                to: url,
+                body: jsonData,
+                characterId: characterID,
+                timeouts: [10]  // POST 请求只发送一次，免得重复创建配置
+            )
+
+            // 解析响应，获取装配ID
+            if let responseString = String(data: responseData, encoding: .utf8) {
+                Logger.debug("上传装配配置响应: \(responseString)")
+            }
+            
+            // ESI API返回的是一个包含fitting_id的JSON对象
+            struct FittingUploadResponse: Codable {
+                let fitting_id: Int
+            }
+            
+            let response = try JSONDecoder().decode(FittingUploadResponse.self, from: responseData)
+            Logger.info("成功上传装配配置 - 装配ID: \(response.fitting_id)")
+            
+            return response.fitting_id
+        } catch {
+            Logger.error("上传装配配置失败: \(error)")
+            throw error
+        }
+    }
+
+    /// 删除EVE服务器上的装配配置
+    /// - Parameters:
+    ///   - characterID: 角色ID
+    ///   - fittingID: 要删除的装配配置ID
+    public static func deleteCharacterFitting(characterID: Int, fittingID: Int) async throws {
+        Logger.info("开始删除装配配置 - 角色ID: \(characterID), 装配ID: \(fittingID)")
+        
+        // 构建URL
+        let urlString = "https://esi.evetech.net/latest/characters/\(characterID)/fittings/\(fittingID)/?datasource=tranquility"
+        guard let url = URL(string: urlString) else {
+            Logger.error("无效的URL: \(urlString)")
+            throw APIError.invalidURL
+        }
+
+        do {
+            // 发送DELETE请求
+            _ = try await NetworkManager.shared.deleteDataWithToken(
+                from: url,
+                characterId: characterID,
+                noRetryKeywords: ["Unhandled internal error encountered"]  // 说明已经删除了
+            )
+            
+            Logger.info("成功删除装配配置 - 角色ID: \(characterID), 装配ID: \(fittingID)")
+        } catch {
+            Logger.error("删除装配配置失败: \(error)")
+            throw error
+        }
+    }
+
     // MARK: - Cache Methods
 
     private static func getCacheFilePath(characterID: Int) -> URL {

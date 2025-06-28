@@ -423,7 +423,7 @@ class DatabaseManager: ObservableObject {
     }
 
     // 加载物品的所有属性组
-    func loadAttributeGroups(for typeID: Int) -> [AttributeGroup] {
+    func loadAttributeGroups(for typeID: Int, modifiedAttributes: [Int: Double]? = nil) -> [AttributeGroup] {
         // 1. 首先加载所有属性分类
         let categoryQuery = """
                 SELECT attribute_category_id, name, description
@@ -450,7 +450,7 @@ class DatabaseManager: ObservableObject {
 
         // 2. 加载物品的所有属性值
         let attributeQuery = """
-                SELECT da.attribute_id, da.categoryID, da.name, da.display_name, da.iconID, ta.value, da.unitID,
+                SELECT da.attribute_id, da.categoryID, da.name, da.display_name, da.iconID, ta.value, da.unitID, da.highIsGood,
                        COALESCE(da.icon_filename, '') as icon_filename
                 FROM typeAttributes ta
                 JOIN dogmaAttributes da ON ta.attribute_id = da.attribute_id
@@ -475,7 +475,11 @@ class DatabaseManager: ObservableObject {
                 let displayName = row["display_name"] as? String
                 let iconFileName = (row["icon_filename"] as? String) ?? ""
                 let unitID = row["unitID"] as? Int
-
+                let highIsGood = (row["highIsGood"] as? Int) == 1
+                
+                // 检查是否有修改后的属性值
+                let modifiedValue = modifiedAttributes?[attributeId]
+                
                 let attribute = DogmaAttribute(
                     id: attributeId,
                     categoryID: categoryId,
@@ -484,7 +488,9 @@ class DatabaseManager: ObservableObject {
                     iconID: iconId,
                     iconFileName: iconFileName.isEmpty ? DatabaseConfig.defaultIcon : iconFileName,
                     value: value,
-                    unitID: unitID
+                    unitID: unitID,
+                    highIsGood: highIsGood,
+                    modifiedValue: modifiedValue
                 )
 
                 if attribute.shouldDisplay {
