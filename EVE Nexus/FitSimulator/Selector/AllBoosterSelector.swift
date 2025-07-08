@@ -1,17 +1,20 @@
 import SwiftUI
 
-// 增效剂选择器
-struct BoosterSelectorView: View {
+// 全部增效剂选择器
+struct AllBoosterSelector: View {
     @ObservedObject var databaseManager: DatabaseManager
-    let slotNumber: Int
-    let hasExistingItem: Bool
     @State private var boosterItems: [DatabaseListItem] = []
     @State private var searchText: String = ""
     @State private var isLoading: Bool = true
     @Environment(\.dismiss) private var dismiss
-
-    let onSelect: (DatabaseListItem) -> Void
-    let onRemove: (() -> Void)?
+    
+    // 存储增效剂ID对应的槽位号
+    @State private var boosterSlotMapping: [Int: Int] = [:]
+    
+    // 存储多语言名称用于搜索
+    @State private var multiLanguageNames: [Int: MultiLanguageNames] = [:]
+    
+    let onSelect: (DatabaseListItem, Int) -> Void // 选择回调，包含物品和槽位号
 
     var body: some View {
         NavigationStack {
@@ -21,23 +24,8 @@ struct BoosterSelectorView: View {
                         .padding()
                 } else {
                     List {
-                        if hasExistingItem {
+                        if filteredItems.isEmpty {
                             Section {
-                                Button(action: {
-                                    onRemove?()
-                                    dismiss()
-                                }) {
-                                    HStack {
-                                        Text(NSLocalizedString("Remove_Current_Booster", comment: "移除现有增效剂"))
-                                            .foregroundColor(.red)
-                                        Spacer()
-                                    }
-                                }
-                            }
-                        }
-                        
-                        Section {
-                            if filteredItems.isEmpty {
                                 ContentUnavailableView {
                                     Label(
                                         NSLocalizedString("Misc_No_Data", comment: "无数据"),
@@ -45,11 +33,20 @@ struct BoosterSelectorView: View {
                                 }
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                                 .listRowBackground(Color.clear)
-                            } else {
-                                ForEach(filteredItems.sorted { $0.id < $1.id }) { item in
-                                    ItemRowWithInfo(item: item, databaseManager: databaseManager) {
-                                        onSelect(item)
-                                        dismiss()
+                            }
+                        } else {
+                            // 按槽位分组展示
+                            ForEach(groupedBySlot.keys.sorted(), id: \.self) { slotNumber in
+                                if let items = groupedBySlot[slotNumber] {
+                                    Section(header: Text(String(format: NSLocalizedString("Booster_Slot_Num", comment: "增效剂槽位 %d"), slotNumber))) {
+                                        ForEach(items.sorted { $0.id < $1.id }) { item in
+                                            ItemRowWithInfo(item: item, databaseManager: databaseManager) {
+                                                if let actualSlotNumber = boosterSlotMapping[item.id] {
+                                                    onSelect(item, actualSlotNumber)
+                                                }
+                                                dismiss()
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -62,7 +59,7 @@ struct BoosterSelectorView: View {
                     )
                 }
             }
-            .navigationTitle(String(format: NSLocalizedString("Booster_Slot_Num", comment: "增效剂槽位 %d"), slotNumber))
+            .navigationTitle(NSLocalizedString("Implant_Select_Boosters", comment: "选择增效剂"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -79,7 +76,7 @@ struct BoosterSelectorView: View {
             }
         }
         .onAppear {
-            loadBoosterItems()
+            loadAllBoosters()
         }
     }
     
@@ -89,40 +86,88 @@ struct BoosterSelectorView: View {
             return boosterItems
         } else {
             return boosterItems.filter { item in
-                item.name.localizedCaseInsensitiveContains(searchText)
+                // 首先检查默认名称
+                if item.name.localizedCaseInsensitiveContains(searchText) {
+                    return true
+                }
+                
+                // 然后检查多语言名称
+                if let multiLangNames = multiLanguageNames[item.id] {
+                    return multiLangNames.matchesSearchText(searchText)
+                }
+                
+                return false
             }
         }
     }
     
-    // 加载增效剂物品
-    private func loadBoosterItems() {
+    // 按槽位分组的过滤后物品
+    private var groupedBySlot: [Int: [DatabaseListItem]] {
+        var grouped: [Int: [DatabaseListItem]] = [:]
+        
+        for item in filteredItems {
+            if let slotNumber = boosterSlotMapping[item.id] {
+                if grouped[slotNumber] == nil {
+                    grouped[slotNumber] = []
+                }
+                grouped[slotNumber]?.append(item)
+            }
+        }
+        
+        return grouped
+    }
+    
+    // 加载所有增效剂物品
+    private func loadAllBoosters() {
         isLoading = true
         
-        // 获取指定槽位的增效剂信息
+        // 获取所有增效剂信息，包含槽位号和多语言名称
         let query = """
             SELECT t.type_id as id, t.name, t.published, t.icon_filename as iconFileName,
-                   t.categoryID, t.groupID, t.group_name as groupName
+                   t.categoryID, t.groupID, t.group_name as groupName,
+                   ta.value as slotNumber,
+                   t.de_name, t.en_name, t.es_name, t.fr_name, 
+                   t.ja_name, t.ko_name, t.ru_name, t.zh_name
             FROM types t
             JOIN typeAttributes ta ON t.type_id = ta.type_id
             WHERE ta.attribute_id = 1087
-            AND ta.value = ?
             AND t.published = 1
             AND t.marketGroupID IS NOT NULL
             ORDER BY t.name
         """
         
-        if case let .success(rows) = databaseManager.executeQuery(query, parameters: [slotNumber]) {
+        if case let .success(rows) = databaseManager.executeQuery(query) {
             var items: [DatabaseListItem] = []
+            var slotMapping: [Int: Int] = [:]
+            var multiLangNames: [Int: MultiLanguageNames] = [:]
             
             for row in rows {
                 if let id = row["id"] as? Int,
                    let name = row["name"] as? String,
-                   let categoryId = row["categoryID"] as? Int
+                   let categoryId = row["categoryID"] as? Int,
+                   let slotNumber = row["slotNumber"] as? Double
                 {
                     let iconFileName = (row["iconFileName"] as? String) ?? "not_found"
                     let published = (row["published"] as? Int) ?? 0
                     let groupID = row["groupID"] as? Int
                     let groupName = row["groupName"] as? String
+                    let slotNum = Int(slotNumber)
+                    
+                    // 存储槽位映射
+                    slotMapping[id] = slotNum
+                    
+                    // 存储多语言名称
+                    let multiLangName = MultiLanguageNames(
+                        deName: row["de_name"] as? String,
+                        enName: row["en_name"] as? String,
+                        esName: row["es_name"] as? String,
+                        frName: row["fr_name"] as? String,
+                        jaName: row["ja_name"] as? String,
+                        koName: row["ko_name"] as? String,
+                        ruName: row["ru_name"] as? String,
+                        zhName: row["zh_name"] as? String
+                    )
+                    multiLangNames[id] = multiLangName
                     
                     let item = DatabaseListItem(
                         id: id,
@@ -155,6 +200,8 @@ struct BoosterSelectorView: View {
             }
             
             boosterItems = items
+            boosterSlotMapping = slotMapping
+            multiLanguageNames = multiLangNames
             Logger.info("加载了 \(boosterItems.count) 个增效剂")
         } else {
             Logger.error("加载增效剂信息失败")

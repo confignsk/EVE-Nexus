@@ -1744,6 +1744,9 @@
 "Remove_Current_Implant" = "Remove Current Implant";
 "Remove_Current_Booster" = "Remove Current Booster";
 "Implant_Clear_All" = "Clear Implants and Boosters";
+"Implant_Manual_Select" = "Manual Select";
+"Implant_Select_Implants" = "Select Implant";
+"Implant_Select_Boosters" = "Select Booster";
 
 "View_Details" = "View Details";
 

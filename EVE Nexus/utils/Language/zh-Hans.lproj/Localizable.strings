@@ -1772,6 +1772,9 @@
 "Remove_Current_Implant" = "移除此处植入体";
 "Remove_Current_Booster" = "移除此处增效剂";
 "Implant_Clear_All" = "清空植入体与增效剂";
+"Implant_Manual_Select" = "手动选择";
+"Implant_Select_Implants" = "选择植入体";
+"Implant_Select_Boosters" = "选择增效剂";
 
 "View_Details" = "查看详情";
 

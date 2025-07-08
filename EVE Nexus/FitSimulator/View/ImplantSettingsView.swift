@@ -7,6 +7,8 @@ struct ImplantSettingsView: View {
     @State private var boosterSlots: [Int] = []
     @State private var isLoading = true
     @State private var showingPresetSelector = false
+    @State private var showingImplantSelector = false
+    @State private var showingBoosterSelector = false
     
     // 用于存储所有槽位的植入体和增效剂引用
     @State private var implantRows: [Int: ImplantSlotRowProxy] = [:]
@@ -46,7 +48,44 @@ struct ImplantSettingsView: View {
                 .foregroundColor(.primary)
             }.listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
             
-            // 第二个section：植入体
+            // 第二个section：手动选择
+            Section(header: Text(NSLocalizedString("Implant_Manual_Select", comment: "手动选择"))) {
+                Button {
+                    showingImplantSelector = true
+                } label: {
+                    HStack {
+                        Image("implants")
+                            .resizable()
+                            .frame(width: 32, height: 32)
+                            .clipShape(Circle())
+                        Text(NSLocalizedString("Implant_Select_Implants", comment: "选择植入体"))
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .foregroundColor(.secondary)
+                            .font(.caption)
+                    }
+                }
+                .foregroundColor(.primary)
+                
+                Button {
+                    showingBoosterSelector = true
+                } label: {
+                    HStack {
+                        Image("booster")
+                            .resizable()
+                            .frame(width: 32, height: 32)
+                            .clipShape(Circle())
+                        Text(NSLocalizedString("Implant_Select_Boosters", comment: "选择增效剂"))
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .foregroundColor(.secondary)
+                            .font(.caption)
+                    }
+                }
+                .foregroundColor(.primary)
+            }.listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+            
+            // 第三个section：植入体
             Section(header: Text(NSLocalizedString("Implant_Implants", comment: "植入体"))) {
                 if isLoading {
                     ProgressView()
@@ -67,7 +106,7 @@ struct ImplantSettingsView: View {
                 }
             }.listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
             
-            // 第三个section：增效剂
+            // 第四个section：增效剂
             Section(header: Text(NSLocalizedString("Implant_Boosters", comment: "增效剂"))) {
                 if isLoading {
                     ProgressView()
@@ -102,6 +141,22 @@ struct ImplantSettingsView: View {
                 onSelectPreset: { typeIds in
                     applyImplantPreset(typeIds)
                     showingPresetSelector = false
+                }
+            )
+        }
+        .sheet(isPresented: $showingImplantSelector) {
+            AllImplantsSelector(
+                databaseManager: databaseManager,
+                onSelect: { item, slotNumber in
+                    handleImplantSelection(item: item, slotNumber: slotNumber)
+                }
+            )
+        }
+        .sheet(isPresented: $showingBoosterSelector) {
+            AllBoosterSelector(
+                databaseManager: databaseManager,
+                onSelect: { item, slotNumber in
+                    handleBoosterSelection(item: item, slotNumber: slotNumber)
                 }
             )
         }
@@ -489,6 +544,22 @@ struct ImplantSettingsView: View {
                     }
                 }
             }
+        }
+    }
+    
+    // 处理植入体选择
+    private func handleImplantSelection(item: DatabaseListItem, slotNumber: Int) {
+        if let proxy = implantRows[slotNumber] {
+            proxy.selectedImplant = item
+            Logger.info("选择植入体: \(item.name), 槽位: \(slotNumber)")
+        }
+    }
+    
+    // 处理增效剂选择
+    private func handleBoosterSelection(item: DatabaseListItem, slotNumber: Int) {
+        if let proxy = boosterRows[slotNumber] {
+            proxy.selectedBooster = item
+            Logger.info("选择增效剂: \(item.name), 槽位: \(slotNumber)")
         }
     }
 }
