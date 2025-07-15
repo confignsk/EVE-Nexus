@@ -395,6 +395,7 @@ struct CharacterSkillsView: View {
             } header: {
                 Text(NSLocalizedString("Main_Skills_Required_Injectors", comment: ""))
             }
+            .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
         }
     }
 
@@ -700,7 +701,21 @@ struct CharacterSkillsView: View {
                     .resizable()
                     .frame(width: 32, height: 32)
                     .cornerRadius(6)
-                Text(info.name)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(info.name)
+                    
+                    // 显示每个注入器在当前技能情况下的实际注入量
+                    let isLarge = typeId == SkillInjectorCalculator.largeInjectorTypeId
+                    let actualSP = SkillInjectorCalculator.getInjectorSkillPoints(
+                        isLarge: isLarge,
+                        characterTotalSP: cachedCharacterTotalSP
+                    )
+                    Text(String(format: NSLocalizedString("Main_Skills_Injector_Actual_SP", comment: "每个+%@ SP"), FormatUtil.format(Double(actualSP))))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
                 Spacer()
                 Text("\(count)")
                     .foregroundColor(.secondary)

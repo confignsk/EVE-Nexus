@@ -97,7 +97,7 @@
 "Main_Database_Misc_Bonuses" = "Misc Bonuses";
 "Main_Database_Bonuses_Per_Level" = "bonuses per level";
 "Main_Database_Show_Important_Only" = "Important Attributes Only";
-"Main_Database_Show_Important_Only_Detail" = "Only show important attributes in database function.";
+"Main_Database_Show_Important_Only_Detail" = "Only show important attributes in database function";
 
 "Main_About" = "About";
 "Main_About_Database_Version" = "Database Version";
@@ -106,6 +106,7 @@
 "Main_About_Report_Bug" = "Report Bug";
 "Main_About_copyright_Title" = "Copy Right And Privacy Statement";
 
+"Misc_Now" = "Now";
 "Misc_true" = "True";
 "Misc_false" = "False";
 "Misc_Yes" = "Yes";
@@ -124,7 +125,7 @@
 "Misc_Not_Found" = "Not found";
 "Misc_Level" = "Level %d";
 "Misc_Level_Short" = "Lv %d";
-"Misc_No_Data" = "No Data.";
+"Misc_No_Data" = "No Data";
 "Misc_Clear" = "Clear";
 "Misc_Filter" = "Filter";
 "Misc_OpenLink" = "Open Link";
@@ -133,6 +134,15 @@
 "Misc_Qty" = "Qty";
 "Misc_Null" = "Null";
 "Misc_Items" = "%d items";
+"Misc_Copy" = "Copy";
+
+"Misc_Copy_CharID" = "Copy Char Name";
+"Misc_Copy_CEO_CharID" = "Copy CEO Name";
+"Misc_Copy_CorpID" = "Copy Corp Name";
+"Misc_Copy_FactionID" = "Copy Alliance Name";
+"Misc_Copy_Location" = "Copy Location";
+"Misc_Copy_Name" = "Copy Name";
+"Misc_Copy_Title" = "Copy Title";
 
 // Blueprint Details
 "Blueprint_Product" = "Product";
@@ -235,6 +245,7 @@
 "Time_Days_Minutes" = "%dd %dm";
 "Time_Days_Seconds" = "%dd %ds";
 "Time_Hours" = "%dh";
+"Time_Hours_Long" = "%d Hours";
 "Time_Hours_Seconds" = "%dh %ds";
 "Time_Seconds" = "%ds";
 "Time_Hours_Minutes" = "%dh %dm";
@@ -400,7 +411,7 @@
 "Wallet_Transaction_Category" = "Category";
 "Wallet_Income" = "Income";
 "Wallet_Expense" = "Expense";
-"Wallet_Partial_Data_Notice" = "Too many records, only showing partial transaction journal.";
+"Wallet_Partial_Data_Notice" = "Too many records, only showing partial transaction journal";
 
 // Market Orders
 "Orders_Remaining" = "remaining";
@@ -516,7 +527,7 @@
 "Main_Setting_Reset_Database_Title" = "Reset Database";
 "Main_Setting_Reset_Database_Message" = "This will delete all character database content and reinitialize it. This action cannot be undone. Do you want to continue?";
 "Main_Setting_Reset_Database_Success_Title" = "Reset Complete";
-"Main_Setting_Reset_Database_Success_Message" = "Database has been successfully reset.";
+"Main_Setting_Reset_Database_Success_Message" = "Database has been successfully reset";
 "Common_info" = "Basic info";
 "Timer" = "Timer";
 
@@ -608,6 +619,7 @@
 "Main_Skills_Required_Injectors" = "Required Skill Injectors";
 "Main_Skills_Total_Required_SP" = "Estimated Skill Points: %@ SP";
 "Main_Skills_Total_Injector_Cost" = "Estimated Injector Cost: %@";
+"Main_Skills_Injector_Actual_SP" = "Each +%@ SP";
 
 // Wealth View
 "Wealth_Total" = "Total Wealth";
@@ -690,6 +702,8 @@
 "Main_EVE_Mail_Forward_Date" = "Date: %@";
 "Main_EVE_Mail_Forward_Subject" = "Subject: %@";
 "Main_EVE_Mail_Forward_To" = "To: %@";
+"Main_EVE_Mail_Copy_Sender" = "Copy Sender";
+"Main_EVE_Mail_Copy_Recipients" = "Copy Recipients";
 
 // Mail Recipient Types
 "Main_EVE_Mail_Recipient_Character" = "Character";
@@ -808,7 +822,7 @@
 "Main_No_Title" = "No title";
 
 // Search Filters
-"Main_Search_Filter_Title" = "Filters(can be empty)";
+"Main_Search_Filter_Title" = "Filters (can be empty)";
 "Main_Search_Filter_Corporation" = "Corporation";
 "Main_Search_Filter_Alliance" = "Alliance";
 "Main_Search_Filter_Ticker" = "Ticker";
@@ -877,6 +891,7 @@
 "Tax Rate" = "Tax Rate";
 "Description" = "Description";
 "Creator Corp" = "Creator Corp";
+"Executor Corp" = "Executor Corp";
 "Creator" = "Creator";
 "Unknown" = "Unknown";
 "Executor" = "Executor";
@@ -1108,7 +1123,7 @@
 "Factory_Stopped" = "Stopped";
 "Factory_Not_Started" = "Not Started";
 "Factory_No_Recipe" = "No Schematic";
-"Planet_Detail_No_Data" = "No Data.";
+"Planet_Detail_No_Data" = "No Data";
 
 "Contracts_Personal" = "Personal";
 "Contracts_Corporation" = "Corporation";
@@ -1257,7 +1272,7 @@
 "Contract_Appraisal_Show_Full_Amount" = "Show Full Amount";
 "Contract_Appraisal_Set_Discount" = "Set Contract Price Discount";
 "Contract_Appraisal_Discount_Title" = "Set Discount Percentage";
-"Contract_Appraisal_Discount_Message" = "Please enter discount (0-10000), e.g. 90 means 10% off(90%)";
+"Contract_Appraisal_Discount_Message" = "Please enter discount (0-99999), e.g. 90 means 10% off(90%)";
 "Contract_Appraisal_Discount_Cancel" = "Cancel";
 "Contract_Appraisal_Discount_Confirm" = "Confirm";
 "Contract_Appraisal_Discount_Placeholder" = "Discount Percentage";
@@ -1307,8 +1322,8 @@
 "Agent_Unknown_Division" = "Unknown Division";
 "Agent_Loading" = "Loading...";
 "Agent_Not_Found" = "No agents found.";
-"Agent_Search_Locator_Description" = "Agents can find another player character.";
-"Agent_inspace_Description" = "Including COSMOS, Epic Arc etc.";
+"Agent_Search_Locator_Description" = "Agents can find another player character";
+"Agent_inspace_Description" = "Including COSMOS, Epic Arc etc";
 
 // Agent Types
 "Agent_Type_NonAgent" = "Non-Agent";
@@ -1504,7 +1519,7 @@
 "Sovereignty_List" = "Sovereignty List";
 "Sovereignty_Search_Title" = "Select Sovereignty";
 "Sovereignty_Search_Placeholder" = "Search sovereignty or systems...";
-"Sovereignty_Systems" = " systems";
+"Sovereignty_Systems" = " system(s)";
 "Sovereignty_Loading" = "Loading...";
 "Sovereignty_No_Data" = "No sovereignty data";
 "Sovereignty_Error" = "Loading failed";
@@ -1548,6 +1563,7 @@
 "PI_Output_No_Resources" = "No Resource Available";
 "PI_Output_Loading_Systems" = "Loading Systems...";
 "Common_Cancel" = "Cancel";
+"Misc_Cancel" = "Cancel";
 "Planetary_System_Description" = "Select system as production center";
 
 "PI_Output_View_Systems" = "Show Systems";
@@ -1847,3 +1863,93 @@
 "Fitting_Delete_Confirm_Message" = "Are you sure you want to delete fitting \"%@\"?";
 "Fitting_Delete_Failed_Title" = "Delete Failed";
 "Fitting_Delete_Success" = "Fitting deleted successfully";
+
+// 更新
+"Update_Notification_Title" = "Update";
+"Update_Notification_Version" = "Version %@ - %@";
+"Update_Notification_Got_It" = "OK";
+"whats_new" = "whats_new_en";
+
+// 更新历史
+"Update_Log_Version" = "Version";
+"Update_Log_Changes_Count" = "%d updates";
+"Update_Log_History" = "Update history";
+"Update_Log_Details" = "Update info";
+"Main_Update_History" = "Update history";
+
+// All-in-One System Finder
+"AllInOne_SystemFinder_Title" = "All-in-one Finder";
+"AllInOne_SystemFinder_Description" = "Find systems that can produce multiple PI products";
+"AllInOne_SystemFinder_Select_Products" = "Select Products";
+"AllInOne_SystemFinder_Select_Region" = "Select Region";
+"AllInOne_SystemFinder_Select_Sovereignty" = "Select Sovereignty";
+"AllInOne_SystemFinder_Not_Selected" = "Not Selected";
+"AllInOne_SystemFinder_Calculate" = "Calculate";
+"AllInOne_SystemFinder_Calculating" = "Calculating...";
+"AllInOne_SystemFinder_Products_Description" = "Select multiple PI products to produce";
+"AllInOne_SystemFinder_Region_Description" = "Select region for production";
+"AllInOne_SystemFinder_Sovereignty_Description" = "Select sovereignty for production";
+"AllInOne_SystemFinder_Constraint_Warning" = "At least one of Region or Sovereignty must be selected";
+"AllInOne_SystemFinder_No_Products_Selected" = "No products selected";
+"AllInOne_SystemFinder_Products_Count" = "%d products selected";
+"AllInOne_SystemFinder_Selected_Products" = "Selected Products";
+
+// All-in-One System Finder Results
+"AllInOne_SystemFinder_Result_Tip_1" = "The following systems can support all your selected products for single-planet production";
+"AllInOne_SystemFinder_Result_Tip_2" = "Higher scoring systems have more available planets and better resource distribution";
+"AllInOne_SystemFinder_No_Results" = "No systems found";
+"AllInOne_SystemFinder_No_Results_Description" = "No systems found that can support all selected products for single-planet production";
+"AllInOne_SystemFinder_System_Score" = "System Score: %.1f";
+"AllInOne_SystemFinder_Product_Support" = "Product Support";
+"AllInOne_SystemFinder_Planet_Count" = "%d planets available";
+"AllInOne_SystemFinder_Multiple_Planets" = "Multiple planets available";
+"AllInOne_SystemFinder_Single_Planet" = "Single planet available";
+"AllInOne_SystemFinder_Results" = "System Search Results";
+"AllInOne_SystemFinder_Score" = "Score";
+"AllInOne_SystemFinder_Planet_Distribution" = "Planet Distribution";
+"AllInOne_SystemFinder_Available_Planets" = "Available planets: %d";
+"AllInOne_SystemFinder_Used_By_Products" = "Used by:";
+"AllInOne_SystemFinder_No_Results_Tips" = "Please consider the following adjustments:\n• Reduce the number of selected products\n• Select different regions or sovereignty\n• Choose products with better compatibility";
+
+// Multi-Product Requirement Analysis
+"AllInOne_MultiProduct_Analysis" = "Multi-Product Analysis";
+"AllInOne_MultiProduct_Planet_Types" = "Required Planet Types";
+"AllInOne_MultiProduct_Conflicts" = "Planet Type Conflicts";
+"AllInOne_MultiProduct_Solutions" = "Recommended Solutions";
+"AllInOne_MultiProduct_No_Conflicts" = "No conflicts detected";
+"AllInOne_MultiProduct_Conflict_Warning" = "Some products require the same planet types";
+"AllInOne_MultiProduct_Solution_Multiple" = "Systems with multiple %@ planets";
+"AllInOne_MultiProduct_Solution_Alternative" = "Systems with alternative planet types";
+
+// System Scoring
+"AllInOne_Scoring_Base_Score" = "Base Score";
+"AllInOne_Scoring_Balance_Bonus" = "Balance Bonus";
+"AllInOne_Scoring_Diversity_Bonus" = "Diversity Bonus";
+"AllInOne_Scoring_Total_Score" = "Total Score";
+"AllInOne_Scoring_Explanation" = "Score based on planet availability and distribution";
+
+// Feature Descriptions
+"AllInOne_SystemFinder_Description_Title" = "Find Systems for All-in-One Production";
+"AllInOne_SystemFinder_Description_Text" = "This tool helps you find systems that can support multiple PI products for single-planet production. Select your desired products, choose a region or sovereignty, then calculate to find the best systems.\n\n• Avoids conflicts where one planet is used for multiple products\n• Scores systems based on available planets and resource distribution\n• Prioritizes systems with multiple planets for each product type\n• Some products can not be processed in single planet";
+
+"PI_Output_Description_Title" = "Planetary Industry Output Calculator";
+"PI_Output_Description_Text" = "Calculate what PI products can be produced in a selected system and its surrounding area. Choose a central system and jump range to see all available resources and production possibilities.\n\n• Shows P0-P4 resources available in the region\n• Considers resource dependencies and production chains\n• Helps plan efficient PI operations";
+
+"PI_SiteFinder_Description_Title" = "Planetary Industry Site Finder";
+"PI_SiteFinder_Description_Text" = "Find the best systems to produce a specific PI product. Select your target product, region, sovereignty, and jump range to get ranked recommendations.\n\n• Analyzes resource availability and planet types\n• Considers nearby systems for missing resources\n• Provides detailed scoring and resource coverage information";
+
+"AllInOne_Calculator_Description_Title" = "All-in-One Production Calculator";
+"AllInOne_Calculator_Description_Text" = "Analyze what products can be produced entirely on a single planet within a selected system. This tool identifies complete production chains that don't require inter-planetary transport.\n\n• Shows all single-planet capable products\n• Groups results by product level (P1-P4)\n• Displays compatible planet types and availability";
+
+// Production Chain Analysis
+"PI_Chain_Title" = "Production Chain Analysis";
+"PI_Chain_Select_Product" = "Select Planetary Product";
+"PI_Chain_Tap_To_Change" = "Tap to change";
+"PI_Chain_Loading" = "Loading production chain...";
+"PI_Chain_No_Data" = "Unable to get production chain data";
+"PI_Chain_Select_Product_Hint" = "Please select a planetary product to view production chain";
+"PI_Chain_Final_Product" = "Final Product (P%d)";
+"PI_Chain_Production_Level" = "P%d → P%d Production";
+"PI_Chain_Processing_Round" = "Processing Round %d";
+"PI_Chain_Quantity_Format" = "Quantity: %d";
+"PI_Chain_Level_And_Quantity_Format" = "Level: P%d, Quantity: %d";
