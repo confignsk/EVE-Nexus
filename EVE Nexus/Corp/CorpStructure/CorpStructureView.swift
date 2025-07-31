@@ -378,12 +378,7 @@ struct StructureCell: View {
             return ("error time format", "error time format")
         }
 
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd HH:mm"
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        let localTime =
-            formatter.string(from: date)
-            + NSLocalizedString("Corp_Structure_Time_Format_UTC", comment: "")
+        let localTime = FormatUtil.formatDateToLocalTime(date)
 
         let remainingTime = date.timeIntervalSince(Date())
         let days = Int(remainingTime / (24 * 3600))

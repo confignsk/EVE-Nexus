@@ -87,7 +87,7 @@ final class PersonalContractsViewModel: ObservableObject {
 
     private let calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "UTC")!
+        calendar.timeZone = TimeZone.current  // 使用本地时区
         return calendar
     }()
 
@@ -386,13 +386,7 @@ struct PersonalContractsView: View {
     private let allContractTypes = ["courier", "item_exchange", "auction"]
     private let allContractStatuses = ["outstanding", "in_progress", "finished", "cancelled", "rejected", "failed", "deleted", "reversed"]
 
-    private let displayDateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = TimeZone(identifier: "UTC")!
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        return formatter
-    }()
+    // 使用FormatUtil进行日期处理，无需自定义格式化器
 
     init(characterId: Int) {
         // 先创建ViewModel实例
@@ -578,7 +572,7 @@ struct PersonalContractsView: View {
                                     .textCase(nil)
                                 }
                             } else {
-                                Text(displayDateFormatter.string(from: group.date))
+                                Text(FormatUtil.formatDateToLocalDate(group.date))
                                     .font(.headline)
                                     .foregroundColor(.primary)
                                     .textCase(nil)
@@ -953,13 +947,7 @@ struct ContractRow: View {
     let databaseManager: DatabaseManager
     @AppStorage("currentCharacterId") private var currentCharacterId: Int = 0
 
-    private let timeFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-        formatter.timeZone = TimeZone(identifier: "UTC")!
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        return formatter
-    }()
+    // 使用FormatUtil进行日期处理，无需自定义格式化器
 
     private func formatContractType(_ type: String) -> String {
         return NSLocalizedString("Contract_Type_\(type)", comment: "")
@@ -1146,21 +1134,21 @@ struct ContractRow: View {
                         ).day ?? 0
                         
                         if remainingDays > 0 {
-                            Text("\(timeFormatter.string(from: contract.date_issued)) (\(String(format: NSLocalizedString("Contract_Days_Remaining", comment: ""), remainingDays)))")
+                            Text("\(FormatUtil.formatDateToLocalTime(contract.date_issued)) (\(String(format: NSLocalizedString("Contract_Days_Remaining", comment: ""), remainingDays)))")
                                 .font(.caption)
                                 .foregroundColor(.gray)
                         } else if remainingDays == 0 {
-                            Text("\(timeFormatter.string(from: contract.date_issued)) (\(NSLocalizedString("Contract_Expires_Today", comment: "")))")
+                            Text("\(FormatUtil.formatDateToLocalTime(contract.date_issued)) (\(NSLocalizedString("Contract_Expires_Today", comment: "")))")
                                 .font(.caption)
                                 .foregroundColor(.orange)
                         } else {
-                            Text("\(timeFormatter.string(from: contract.date_issued)) (\(NSLocalizedString("Contract_Expired", comment: "")))")
+                            Text("\(FormatUtil.formatDateToLocalTime(contract.date_issued)) (\(NSLocalizedString("Contract_Expired", comment: "")))")
                                 .font(.caption)
                                 .foregroundColor(.red)
                         }
                     } else {
                         // 非未决合同只显示发布时间
-                        Text("\(timeFormatter.string(from: contract.date_issued))")
+                        Text("\(FormatUtil.formatDateToLocalTime(contract.date_issued))")
                             .font(.caption)
                             .foregroundColor(.gray)
                     }

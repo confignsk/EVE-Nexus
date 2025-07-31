@@ -27,17 +27,11 @@ final class MiningLedgerViewModel: ObservableObject {
     private var itemInfoCache: [Int: (name: String, iconFileName: String)] = [:]
     private var loadingTask: Task<Void, Never>?
 
-    private let dateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = TimeZone(identifier: "UTC")!
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        return formatter
-    }()
+    // 使用FormatUtil进行日期处理，无需自定义格式化器
 
     private let calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "UTC")!
+        calendar.timeZone = TimeZone.current  // 使用本地时区
         return calendar
     }()
 
@@ -138,7 +132,7 @@ final class MiningLedgerViewModel: ObservableObject {
                 var groupedByMonth: [Date: [Int: Int]] = [:]  // [月份: [type_id: 总数量]]
 
                 for entry in entries {
-                    guard let date = dateFormatter.date(from: entry.date) else {
+                    guard let date = FormatUtil.parseUTCDate(entry.date) else {
                         Logger.error("日期格式错误：\(entry.date)")
                         continue
                     }
@@ -209,13 +203,7 @@ final class MiningLedgerViewModel: ObservableObject {
 struct MiningLedgerView: View {
     @StateObject private var viewModel: MiningLedgerViewModel
 
-    private let monthFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM"
-        formatter.timeZone = TimeZone(identifier: "UTC")!
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        return formatter
-    }()
+    // 使用FormatUtil进行日期处理，无需自定义格式化器
 
     init(characterId: Int, databaseManager: DatabaseManager) {
         // 创建ViewModel
@@ -249,7 +237,7 @@ struct MiningLedgerView: View {
                         Text(
                             String(
                                 format: NSLocalizedString("Mining_Monthly_Summary", comment: ""),
-                                monthFormatter.string(from: group.yearMonth)
+                                FormatUtil.formatDateToLocalDate(group.yearMonth)
                             )
                         )
                         .font(.headline)

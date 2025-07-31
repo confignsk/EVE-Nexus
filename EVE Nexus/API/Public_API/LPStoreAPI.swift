@@ -67,7 +67,7 @@ enum LPStoreAPIError: LocalizedError {
 @LPStoreAPIActor
 class LPStoreAPI {
     static let shared = LPStoreAPI()
-    private let cacheDuration: TimeInterval = 3600 * 24 * 7 // 7 天缓存
+    private let cacheDuration: TimeInterval = 3600 * 24 * 30 // 30 天缓存
 
     private init() {}
 
@@ -102,54 +102,41 @@ class LPStoreAPI {
     /// - Parameter corporationIds: 军团ID数组
     /// - Returns: 如果缓存有效则返回数据，否则返回nil
     private func loadMultipleCorporationsFromDatabase(corporationIds: [Int]) -> [Int: [LPStoreOffer]]? {
+        // 首先检查UserDefaults中的更新时间
+        guard let lastUpdateTime = UserDefaultsManager.shared.LPStoreUpdatetime else {
+            Logger.info("未找到LP商店数据更新时间记录")
+            return nil
+        }
+        
+        let currentDate = Date()
+        let timeSinceUpdate = currentDate.timeIntervalSince(lastUpdateTime)
+        
+        // 转换为本地时间用于日志显示
+        let localDateFormatter = DateFormatter()
+        localDateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        localDateFormatter.locale = Locale(identifier: "en_US_POSIX")
+        localDateFormatter.timeZone = TimeZone.current
+        
+        Logger.info("当前时间: \(localDateFormatter.string(from: currentDate))")
+        Logger.info("最后更新时间: \(localDateFormatter.string(from: lastUpdateTime))")
+        Logger.info("缓存时间: \(Int(timeSinceUpdate))秒, 缓存期限: \(Int(cacheDuration))秒")
+        
+        if timeSinceUpdate >= cacheDuration {
+            Logger.info("LP商店数据缓存已过期 - 最后更新时间: \(localDateFormatter.string(from: lastUpdateTime)), 距离上次更新: \(Int(timeSinceUpdate))秒")
+            return nil
+        }
+        
+        Logger.info("LP商店数据缓存有效 - 最后更新时间: \(localDateFormatter.string(from: lastUpdateTime)), 距离上次更新: \(Int(timeSinceUpdate))秒")
+        
         let query = """
-            SELECT corporation_id, offer_id, type_id, offers_data, last_updated
-            FROM LPStoreOffers
+            SELECT corporation_id, offer_id, type_id, offers_data
+            FROM LPStoreOffers_v2
             WHERE corporation_id IN (\(corporationIds.map { String($0) }.joined(separator: ",")))
-            ORDER BY corporation_id, last_updated DESC
+            ORDER BY corporation_id, offer_id
         """
         
         if case let .success(rows) = CharacterDatabaseManager.shared.executeQuery(query) {
             Logger.info("从数据库查询到 \(rows.count) 条LP商店数据")
-            
-            // 找到最老的更新时间
-            var oldestUpdate: Date?
-            for row in rows {
-                // 处理Int64类型的时间戳
-                if let lastUpdated = row["last_updated"] as? Int64 {
-                    let updateDate = Date(timeIntervalSince1970: TimeInterval(lastUpdated))
-                    if oldestUpdate == nil || updateDate < oldestUpdate! {
-                        oldestUpdate = updateDate
-                    }
-                } else {
-                    Logger.error("无法获取时间戳: \(row)")
-                }
-            }
-            
-            // 检查缓存是否过期
-            if let oldestUpdate = oldestUpdate {
-                let currentDate = Date()
-                let timeSinceUpdate = currentDate.timeIntervalSince(oldestUpdate)
-                
-                // 转换为本地时间用于日志显示
-                let localDateFormatter = DateFormatter()
-                localDateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-                localDateFormatter.locale = Locale(identifier: "en_US_POSIX")
-                localDateFormatter.timeZone = TimeZone.current
-                
-                Logger.info("当前时间: \(localDateFormatter.string(from: currentDate))")
-                Logger.info("最老更新时间: \(localDateFormatter.string(from: oldestUpdate))")
-                Logger.info("缓存时间: \(Int(timeSinceUpdate))秒, 缓存期限: \(Int(cacheDuration))秒")
-                
-                if timeSinceUpdate >= cacheDuration {
-                    Logger.info("LP商店数据缓存已过期 - 最老更新时间: \(localDateFormatter.string(from: oldestUpdate)), 距离上次更新: \(Int(timeSinceUpdate))秒")
-                    return nil
-                }
-                Logger.info("LP商店数据缓存有效 - 最老更新时间: \(localDateFormatter.string(from: oldestUpdate)), 距离上次更新: \(Int(timeSinceUpdate))秒")
-            } else {
-                Logger.info("未找到LP商店数据缓存 - 没有有效的时间戳")
-                return nil
-            }
             
             // 加载数据
             var results: [Int: [LPStoreOffer]] = [:]
@@ -273,7 +260,7 @@ class LPStoreAPI {
     
     /// 从ESI API获取LP商店数据
     private func fetchLPStoreDataFromAPI(corporationId: Int) async throws -> Data {
-        let baseURL = "https://esi.evetech.net/latest/loyalty/stores/\(corporationId)/offers/"
+        let baseURL = "https://esi.evetech.net/loyalty/stores/\(corporationId)/offers/"
         var components = URLComponents(string: baseURL)
         components?.queryItems = [
             URLQueryItem(name: "datasource", value: "tranquility")
@@ -309,10 +296,10 @@ class LPStoreAPI {
             let currentBatch = Array(allOffers[batchStart..<batchEnd])
             
             // 构建批量插入语句
-            let placeholders = Array(repeating: "(?, ?, ?, ?, strftime('%s', 'now'))", count: currentBatch.count).joined(separator: ",")
+            let placeholders = Array(repeating: "(?, ?, ?, ?)", count: currentBatch.count).joined(separator: ",")
             let batchInsertQuery = """
-                INSERT OR REPLACE INTO LPStoreOffers (
-                    corporation_id, offer_id, type_id, offers_data, last_updated
+                INSERT OR REPLACE INTO LPStoreOffers_v2 (
+                    corporation_id, offer_id, type_id, offers_data
                 ) VALUES \(placeholders)
             """
             
@@ -336,22 +323,173 @@ class LPStoreAPI {
             }
         }
         
+        // 保存物品索引数据
+        if success {
+            success = await saveLPStoreItemIndex(offers)
+        }
+        
         // 根据执行结果提交或回滚事务
         if success {
             _ = CharacterDatabaseManager.shared.executeQuery("COMMIT")
+            // 更新UserDefaults中的更新时间
+            UserDefaultsManager.shared.LPStoreUpdatetime = Date()
             Logger.info("批量保存LP商店数据到数据库 - 军团数量: \(offers.count), 总记录数: \(allOffers.count)")
         } else {
             _ = CharacterDatabaseManager.shared.executeQuery("ROLLBACK")
             Logger.error("批量保存LP商店数据失败，执行回滚")
         }
     }
+    
+    /// 保存LP商店物品索引数据
+    private func saveLPStoreItemIndex(_ offers: [Int: [LPStoreOffer]]) async -> Bool {
+        // 收集所有物品类型ID
+        var allTypeIds = Set<Int>()
+        var allCorporationIds = Set<Int>()
+        
+        for (corporationId, corpOffers) in offers {
+            allCorporationIds.insert(corporationId)
+            for offer in corpOffers {
+                allTypeIds.insert(offer.typeId)
+            }
+        }
+        
+        // 批量查询物品名称
+        let itemNames = await getItemNames(typeIds: Array(allTypeIds))
+        
+        // 批量查询军团所属势力
+        let corporationFactions = await getCorporationFactions(corporationIds: Array(allCorporationIds))
+        
+        // 删除旧的索引数据
+        let deleteQuery = """
+            DELETE FROM LPStoreItemIndex 
+            WHERE corporation_id IN (\(allCorporationIds.map { String($0) }.joined(separator: ",")))
+        """
+        _ = CharacterDatabaseManager.shared.executeQuery(deleteQuery)
+        
+        // 准备批量插入索引数据
+        let batchSize = 300
+        var indexData: [(typeId: Int, typeNameZh: String?, typeNameEn: String?, offerId: Int, factionId: Int?, corporationId: Int)] = []
+        
+        for (corporationId, corpOffers) in offers {
+            let factionId = corporationFactions[corporationId]
+            for offer in corpOffers {
+                let itemName = itemNames[offer.typeId]
+                indexData.append((
+                    typeId: offer.typeId,
+                    typeNameZh: itemName?.zh,
+                    typeNameEn: itemName?.en,
+                    offerId: offer.offerId,
+                    factionId: factionId,
+                    corporationId: corporationId
+                ))
+            }
+        }
+        
+        // 分批插入索引数据
+        for batchStart in stride(from: 0, to: indexData.count, by: batchSize) {
+            let batchEnd = min(batchStart + batchSize, indexData.count)
+            let currentBatch = Array(indexData[batchStart..<batchEnd])
+            
+            let placeholders = Array(repeating: "(?, ?, ?, ?, ?, ?)", count: currentBatch.count).joined(separator: ",")
+            let batchInsertQuery = """
+                INSERT OR REPLACE INTO LPStoreItemIndex (
+                    type_id, type_name_zh, type_name_en, offer_id, faction_id, corporation_id
+                ) VALUES \(placeholders)
+            """
+            
+            var parameters: [Any] = []
+            for item in currentBatch {
+                parameters.append(contentsOf: [
+                    item.typeId,
+                    item.typeNameZh as Any,
+                    item.typeNameEn as Any,
+                    item.offerId,
+                    item.factionId as Any,
+                    item.corporationId
+                ])
+            }
+            
+            if case let .error(error) = CharacterDatabaseManager.shared.executeQuery(batchInsertQuery, parameters: parameters) {
+                Logger.error("批量插入LP商店物品索引失败: \(error)")
+                return false
+            }
+        }
+        
+        Logger.info("保存LP商店物品索引成功 - 索引记录数: \(indexData.count)")
+        return true
+    }
+    
+    /// 批量获取物品名称
+    private func getItemNames(typeIds: [Int]) async -> [Int: (zh: String, en: String)] {
+        guard !typeIds.isEmpty else { return [:] }
+        
+        let placeholders = Array(repeating: "?", count: typeIds.count).joined(separator: ",")
+        let query = """
+            SELECT type_id, zh_name, en_name
+            FROM types
+            WHERE type_id IN (\(placeholders))
+        """
+        
+        var itemNames: [Int: (zh: String, en: String)] = [:]
+        
+        if case let .success(rows) = DatabaseManager.shared.executeQuery(query, parameters: typeIds) {
+            for row in rows {
+                if let typeId = row["type_id"] as? Int,
+                   let zhName = row["zh_name"] as? String,
+                   let enName = row["en_name"] as? String {
+                    itemNames[typeId] = (zh: zhName, en: enName)
+                }
+            }
+        }
+        
+        return itemNames
+    }
+    
+    /// 批量获取军团所属势力
+    private func getCorporationFactions(corporationIds: [Int]) async -> [Int: Int] {
+        guard !corporationIds.isEmpty else { return [:] }
+        
+        let placeholders = Array(repeating: "?", count: corporationIds.count).joined(separator: ",")
+        let query = """
+            SELECT corporation_id, faction_id
+            FROM npcCorporations
+            WHERE corporation_id IN (\(placeholders))
+        """
+        
+        var corporationFactions: [Int: Int] = [:]
+        
+        if case let .success(rows) = DatabaseManager.shared.executeQuery(query, parameters: corporationIds) {
+            for row in rows {
+                if let corporationId = row["corporation_id"] as? Int,
+                   let factionId = row["faction_id"] as? Int {
+                    corporationFactions[corporationId] = factionId
+                }
+            }
+        }
+        
+        return corporationFactions
+    }
 
     // MARK: - 私有方法
 
     private func loadFromDatabase(corporationId: Int) throws -> [LPStoreOffer]? {
+        // 首先检查UserDefaults中的更新时间
+        guard let lastUpdateTime = UserDefaultsManager.shared.LPStoreUpdatetime else {
+            Logger.info("未找到LP商店数据更新时间记录 - 军团ID: \(corporationId)")
+            return nil
+        }
+        
+        let currentDate = Date()
+        let timeSinceUpdate = currentDate.timeIntervalSince(lastUpdateTime)
+        
+        if timeSinceUpdate >= cacheDuration {
+            Logger.info("缓存已过期 - 军团ID: \(corporationId), 最后更新: \(lastUpdateTime), 已过期: \(Int(timeSinceUpdate))秒")
+            return nil
+        }
+        
         let query = """
-                SELECT offer_id, type_id, offers_data, last_updated 
-                FROM LPStoreOffers 
+                SELECT offer_id, type_id, offers_data
+                FROM LPStoreOffers_v2 
                 WHERE corporation_id = ?
                 ORDER BY offer_id
             """
@@ -359,42 +497,23 @@ class LPStoreAPI {
         if case let .success(rows) = CharacterDatabaseManager.shared.executeQuery(
             query, parameters: [corporationId]
         ),
-            !rows.isEmpty,
-            let lastUpdated = rows.first?["last_updated"] as? String
-        {
-            // 检查是否过期
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-            dateFormatter.locale = Locale(identifier: "en_US_POSIX")
-            dateFormatter.timeZone = TimeZone(identifier: "UTC")  // 使用UTC时区
-            
-            if let updateDate = dateFormatter.date(from: lastUpdated) {
-                let currentDate = Date()
-                let timeSinceUpdate = currentDate.timeIntervalSince(updateDate)
-                
-                if timeSinceUpdate < cacheDuration {
-                    // 解析数据
-                    var offers: [LPStoreOffer] = []
-                    for row in rows {
-                        if let offersData = row["offers_data"] as? String,
-                           let data = offersData.data(using: .utf8),
-                           let offer = try? JSONDecoder().decode(LPStoreOffer.self, from: data) {
-                            offers.append(offer)
-                        } else {
-                            Logger.error("无法解析LP商店数据 - 军团ID: \(corporationId), offer_id: \(row["offer_id"] ?? "unknown")")
-                        }
-                    }
-                    if !offers.isEmpty {
-                        Logger.info("使用缓存的LP商店数据 - 军团ID: \(corporationId), 记录数: \(offers.count), 缓存时间: \(Int(timeSinceUpdate))秒")
-                        return offers
-                    } else {
-                        Logger.warning("缓存数据为空 - 军团ID: \(corporationId)")
-                    }
+            !rows.isEmpty {
+            // 解析数据
+            var offers: [LPStoreOffer] = []
+            for row in rows {
+                if let offersData = row["offers_data"] as? String,
+                   let data = offersData.data(using: .utf8),
+                   let offer = try? JSONDecoder().decode(LPStoreOffer.self, from: data) {
+                    offers.append(offer)
                 } else {
-                    Logger.info("缓存已过期 - 军团ID: \(corporationId), 最后更新: \(lastUpdated), 已过期: \(Int(timeSinceUpdate))秒")
+                    Logger.error("无法解析LP商店数据 - 军团ID: \(corporationId), offer_id: \(row["offer_id"] ?? "unknown")")
                 }
+            }
+            if !offers.isEmpty {
+                Logger.info("使用缓存的LP商店数据 - 军团ID: \(corporationId), 记录数: \(offers.count), 缓存时间: \(Int(timeSinceUpdate))秒")
+                return offers
             } else {
-                Logger.error("无法解析缓存时间 - 军团ID: \(corporationId), 时间字符串: \(lastUpdated)")
+                Logger.warning("缓存数据为空 - 军团ID: \(corporationId)")
             }
         } else {
             Logger.info("未找到缓存数据 - 军团ID: \(corporationId)")
@@ -404,7 +523,7 @@ class LPStoreAPI {
 
     private func saveLPStoreOffers(corporationId: Int, offersData: Data) {
         // 首先删除该军团的所有旧数据
-        let deleteQuery = "DELETE FROM LPStoreOffers WHERE corporation_id = ?"
+        let deleteQuery = "DELETE FROM LPStoreOffers_v2 WHERE corporation_id = ?"
         _ = CharacterDatabaseManager.shared.executeQuery(deleteQuery, parameters: [corporationId])
 
         // 解析数据
@@ -426,10 +545,10 @@ class LPStoreAPI {
             let currentBatch = Array(offers[batchStart..<batchEnd])
 
             // 构建批量插入语句
-            let placeholders = Array(repeating: "(?, ?, ?, ?, strftime('%s', 'now'))", count: currentBatch.count).joined(separator: ",")
+            let placeholders = Array(repeating: "(?, ?, ?, ?)", count: currentBatch.count).joined(separator: ",")
             let batchInsertQuery = """
-                INSERT OR REPLACE INTO LPStoreOffers (
-                    corporation_id, offer_id, type_id, offers_data, last_updated
+                INSERT OR REPLACE INTO LPStoreOffers_v2 (
+                    corporation_id, offer_id, type_id, offers_data
                 ) VALUES \(placeholders)
             """
             
@@ -453,10 +572,23 @@ class LPStoreAPI {
             }
         }
 
-        // 根据执行结果提交或回滚事务
+        // 保存物品索引数据
         if success {
-            _ = CharacterDatabaseManager.shared.executeQuery("COMMIT")
-            Logger.info("保存LP商店数据到数据库 - 军团ID: \(corporationId), 总记录数: \(offers.count)")
+            Task {
+                let offersDict = [corporationId: offers]
+                success = await saveLPStoreItemIndex(offersDict)
+                
+                // 根据执行结果提交或回滚事务
+                if success {
+                    _ = CharacterDatabaseManager.shared.executeQuery("COMMIT")
+                    // 更新UserDefaults中的更新时间
+                    UserDefaultsManager.shared.LPStoreUpdatetime = Date()
+                    Logger.info("保存LP商店数据到数据库 - 军团ID: \(corporationId), 总记录数: \(offers.count)")
+                } else {
+                    _ = CharacterDatabaseManager.shared.executeQuery("ROLLBACK")
+                    Logger.error("保存LP商店数据失败，执行回滚")
+                }
+            }
         } else {
             _ = CharacterDatabaseManager.shared.executeQuery("ROLLBACK")
             Logger.error("保存LP商店数据失败，执行回滚")

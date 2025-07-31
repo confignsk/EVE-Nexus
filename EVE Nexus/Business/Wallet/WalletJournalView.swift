@@ -71,17 +71,11 @@ final class WalletJournalViewModel: ObservableObject {
 
     private let characterId: Int
 
-    private let dateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
-        formatter.timeZone = TimeZone(identifier: "UTC")!
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        return formatter
-    }()
-
+    // 使用FormatUtil进行日期处理，无需自定义格式化器
+    
     private let calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "UTC")!
+        calendar.timeZone = TimeZone.current  // 使用本地时区
         return calendar
     }()
 
@@ -117,7 +111,7 @@ final class WalletJournalViewModel: ObservableObject {
         }
 
         for entry in entries {
-            guard let entryDate = dateFormatter.date(from: entry.date),
+            guard let entryDate = FormatUtil.parseUTCDate(entry.date),
                 entryDate >= startDate
             else {
                 continue
@@ -182,7 +176,7 @@ final class WalletJournalViewModel: ObservableObject {
                 if totalEntries >= 9500 {
                     // 获取最久远的记录日期
                     if let oldestEntry = entries.min(by: { $0.date < $1.date }),
-                        let oldestDate = dateFormatter.date(from: oldestEntry.date)
+                        let oldestDate = FormatUtil.parseUTCDate(oldestEntry.date)
                     {
                         let calendar = Calendar.current
                         let now = Date()
@@ -197,7 +191,7 @@ final class WalletJournalViewModel: ObservableObject {
 
                 var groupedEntries: [Date: [WalletJournalEntry]] = [:]
                 for entry in entries {
-                    guard let date = dateFormatter.date(from: entry.date) else {
+                    guard let date = FormatUtil.parseUTCDate(entry.date) else {
                         Logger.error("Failed to parse date: \(entry.date)")
                         continue
                     }
@@ -276,13 +270,7 @@ struct WalletJournalDayDetailView: View {
     @State private var displayedEntries: [WalletJournalEntry] = []
     @State private var showingCount = 100
 
-    private let displayDateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = TimeZone(identifier: "UTC")!
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        return formatter
-    }()
+    // 使用FormatUtil进行日期处理，无需自定义格式化器
 
     var body: some View {
         List {
@@ -304,7 +292,7 @@ struct WalletJournalDayDetailView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .navigationTitle(displayDateFormatter.string(from: group.date))
+        .navigationTitle(FormatUtil.formatDateToLocalDate(group.date))
         .onAppear {
             // 初始加载前100条
             loadMoreEntries()
@@ -322,13 +310,7 @@ struct WalletJournalView: View {
     @StateObject private var viewModel: WalletJournalViewModel
     @AppStorage("selectedLanguage") private var selectedLanguage: String?
 
-    private let displayDateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = TimeZone(identifier: "UTC")!
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        return formatter
-    }()
+    // 使用FormatUtil进行日期处理，无需自定义格式化器
 
     init(characterId: Int) {
         _viewModel = StateObject(wrappedValue: WalletJournalViewModel(characterId: characterId))
@@ -518,7 +500,7 @@ struct WalletJournalView: View {
                         ForEach(viewModel.filteredJournalGroups) { group in
                             NavigationLink(destination: WalletJournalDayDetailView(group: group)) {
                                 HStack {
-                                    Text(displayDateFormatter.string(from: group.date))
+                                    Text(FormatUtil.formatDateToLocalDate(group.date))
                                         .font(.system(size: 16))
 
                                     Spacer()
@@ -586,29 +568,7 @@ struct WalletJournalEntryRow: View {
     let entry: WalletJournalEntry
     @AppStorage("selectedLanguage") private var selectedLanguage: String?
 
-    private let dateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
-        formatter.timeZone = TimeZone(identifier: "UTC")!
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        return formatter
-    }()
-
-    private let displayDateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = TimeZone(identifier: "UTC")!
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        return formatter
-    }()
-
-    private let timeFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm:ss"
-        formatter.timeZone = TimeZone(identifier: "UTC")!
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        return formatter
-    }()
+    // 使用FormatUtil进行日期处理，无需自定义格式化器
 
     private func formatRefType(_ refType: String) -> String {
         let lowercaseRefType = refType.lowercased()
@@ -651,13 +611,9 @@ struct WalletJournalEntryRow: View {
             .font(.caption)
             .foregroundColor(.gray)
 
-            if let date = dateFormatter.date(from: entry.date) {
-                Text(
-                    "\(displayDateFormatter.string(from: date)) \(timeFormatter.string(from: date)) (UTC+0)"
-                )
+            Text(FormatUtil.formatUTCToLocalTime(entry.date))
                 .font(.caption)
                 .foregroundColor(.gray)
-            }
         }
         .padding(.vertical, 2)
     }

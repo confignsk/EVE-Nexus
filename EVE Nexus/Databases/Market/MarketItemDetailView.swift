@@ -71,6 +71,7 @@ struct MarketRegionPickerView: View {
         "Amarr": "30002187",
         "Rens": "30002510",
         "Hek": "30002053",
+        "Zarzakh": "30100000",
     ]
 
     // 常见星系数据模型

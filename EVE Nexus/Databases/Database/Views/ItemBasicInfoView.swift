@@ -14,6 +14,12 @@ struct ItemBasicInfoView: View {
     
     // 存储市场目录路径
     @State private var marketPath: String = ""
+    
+    // 保存图片状态
+    @State private var showSaveSuccess = false
+    @State private var showSaveError = false
+    
+
 
     // iOS 标准圆角半径
     private let cornerRadius: CGFloat = 10
@@ -64,6 +70,19 @@ struct ItemBasicInfoView: View {
             return modifiedValue > originalValue ? .green : .red
         } else {
             return modifiedValue < originalValue ? .green : .red
+        }
+    }
+    
+    // 保存渲染图到相册
+    private func saveRenderImageToPhotos() {
+        guard let renderImage = renderImage else { return }
+        
+        ImageSaver.saveImage(renderImage) { success in
+            if success {
+                self.showSaveSuccess = true
+            } else {
+                self.showSaveError = true
+            }
         }
     }
     
@@ -168,6 +187,11 @@ struct ItemBasicInfoView: View {
                                 Label(NSLocalizedString("Misc_Copy_Trans", comment: ""), systemImage: "translate")
                             }
                         }
+                        Button {
+                            saveRenderImageToPhotos()
+                        } label: {
+                            Label(NSLocalizedString("Misc_Save_Render_Image", comment: ""), systemImage: "photo")
+                        }
                     }
                 
                 Text("\(NSLocalizedString("Main_Database_Category", comment: "")): \(itemDetails.categoryName) / \(itemDetails.groupName) / ID:\(itemDetails.typeId)")
@@ -223,6 +247,11 @@ struct ItemBasicInfoView: View {
                     } label: {
                         Label(NSLocalizedString("Misc_Copy_Trans", comment: ""), systemImage: "translate")
                     }
+                }
+                Button {
+                    saveRenderImageToPhotos()
+                } label: {
+                    Label(NSLocalizedString("Misc_Save_Render_Image", comment: ""), systemImage: "photo")
                 }
             }
             .padding(.horizontal, standardPadding * 2)
@@ -316,6 +345,16 @@ struct ItemBasicInfoView: View {
         .onDisappear {
             // 移除方向变化通知
             removeOrientationNotification()
+        }
+        .alert(NSLocalizedString("Misc_Save_Render_Image", comment: ""), isPresented: $showSaveSuccess) {
+            Button("OK") { }
+        } message: {
+            Text(NSLocalizedString("Misc_Save_Render_Image_Success", comment: ""))
+        }
+        .alert(NSLocalizedString("Misc_Save_Render_Image_Error_Title", comment: ""), isPresented: $showSaveError) {
+            Button("OK") { }
+        } message: {
+            Text(NSLocalizedString("Misc_Save_Render_Image_Error", comment: ""))
         }
         // 使用布局模式而非方向作为视图ID
         .id(layoutMode)

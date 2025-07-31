@@ -171,18 +171,25 @@ enum FormatUtil {
         let billion = 1_000_000_000.0
         let million = 1_000_000.0
         let thousand = 1000.0
+        
+        // 处理负数：转为正数格式化，然后添加负号
+        let isNegative = value < 0
+        let absoluteValue = abs(value)
 
-        if value >= trillion {
-            return formatWithUnit(value, unit: "T ISK", threshold: trillion, maxFractionDigits: 2)
-        } else if value >= billion {
-            return formatWithUnit(value, unit: "B ISK", threshold: billion, maxFractionDigits: 2)
-        } else if value >= million {
-            return formatWithUnit(value, unit: "M ISK", threshold: million, maxFractionDigits: 2)
-        } else if value >= thousand {
-            return formatWithUnit(value, unit: "K ISK", threshold: thousand, maxFractionDigits: 2)
+        let formattedValue: String
+        if absoluteValue >= trillion {
+            formattedValue = formatWithUnit(absoluteValue, unit: "T ISK", threshold: trillion, maxFractionDigits: 2)
+        } else if absoluteValue >= billion {
+            formattedValue = formatWithUnit(absoluteValue, unit: "B ISK", threshold: billion, maxFractionDigits: 2)
+        } else if absoluteValue >= million {
+            formattedValue = formatWithUnit(absoluteValue, unit: "M ISK", threshold: million, maxFractionDigits: 2)
+        } else if absoluteValue >= thousand {
+            formattedValue = formatWithUnit(absoluteValue, unit: "K ISK", threshold: thousand, maxFractionDigits: 2)
         } else {
-            return formatNumber(value, maxFractionDigits: 1) + " ISK"
+            formattedValue = formatNumber(absoluteValue, maxFractionDigits: 1) + " ISK"
         }
+        
+        return isNegative ? "-\(formattedValue)" : formattedValue
     }
 
     /// 格式化时间（保留毫秒精度）
@@ -336,5 +343,176 @@ enum FormatUtil {
         }
     }
     
+    // MARK: - 日期格式化功能
+    
+    /// 通用的UTC日期解析器
+    private static let utcDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
+        formatter.timeZone = TimeZone(identifier: "UTC")!
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter
+    }()
+    
+    /// 备用UTC日期解析器（支持带时区的格式）
+    private static let utcDateFormatterWithZ: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+        formatter.timeZone = TimeZone(identifier: "UTC")!
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter
+    }()
+    
+    /// ISO8601日期解析器
+    private static let iso8601Formatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+    
+    /// 本地时间显示格式器（短格式）
+    private static let localDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm"
+        formatter.timeZone = TimeZone.current
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter
+    }()
+    
+    /// 本地时间显示格式器（带星期）
+    private static let localDateFormatterWithWeekday: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd EEEE HH:mm"
+        formatter.timeZone = TimeZone.current
+        return formatter
+    }()
+    
+    /// 本地日期显示格式器（仅日期）
+    private static let localDateOnlyFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone.current
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter
+    }()
+    
+    /// 本地时间显示格式器（仅时间）
+    private static let localTimeOnlyFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm:ss"
+        formatter.timeZone = TimeZone.current
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter
+    }()
+    
+    /// 将UTC日期字符串转换为Date对象
+    /// - Parameter utcDateString: UTC格式的日期字符串
+    /// - Returns: Date对象，如果解析失败返回nil
+    /// - Example:
+    ///   ```
+    ///   parseUTCDate("2024-01-15T10:30:00Z")     // Date对象
+    ///   parseUTCDate("2024-01-15T10:30:00+0000") // Date对象
+    ///   ```
+    static func parseUTCDate(_ utcDateString: String) -> Date? {
+        // 首先尝试标准格式
+        if let date = utcDateFormatter.date(from: utcDateString) {
+            return date
+        }
+        
+        // 尝试带时区的格式
+        if let date = utcDateFormatterWithZ.date(from: utcDateString) {
+            return date
+        }
+        
+        // 尝试ISO8601格式
+        if let date = iso8601Formatter.date(from: utcDateString) {
+            return date
+        }
+        
+        return nil
+    }
+    
+    /// 将UTC日期字符串转换为本地时间字符串（短格式）
+    /// - Parameter utcDateString: UTC格式的日期字符串
+    /// - Returns: 本地时间字符串，格式：yyyy-MM-dd HH:mm
+    /// - Example:
+    ///   ```
+    ///   formatUTCToLocalTime("2024-01-15T10:30:00Z") // "2024-01-15 18:30" (假设本地时区为+8)
+    ///   ```
+    static func formatUTCToLocalTime(_ utcDateString: String) -> String {
+        guard let date = parseUTCDate(utcDateString) else {
+            return utcDateString
+        }
+        return localDateFormatter.string(from: date)
+    }
+    
+    /// 将UTC日期字符串转换为本地时间字符串（带星期）
+    /// - Parameter utcDateString: UTC格式的日期字符串
+    /// - Returns: 本地时间字符串，格式：yyyy-MM-dd EEEE HH:mm
+    /// - Example:
+    ///   ```
+    ///   formatUTCToLocalTimeWithWeekday("2024-01-15T10:30:00Z") // "2024-01-15 Monday 18:30"
+    ///   ```
+    static func formatUTCToLocalTimeWithWeekday(_ utcDateString: String) -> String {
+        guard let date = parseUTCDate(utcDateString) else {
+            return utcDateString
+        }
+        
+        // 根据当前语言设置区域
+        localDateFormatterWithWeekday.locale = Locale(
+            identifier: NSLocalizedString("Language_Identifier", comment: "语言标识符")
+        )
+        
+        return localDateFormatterWithWeekday.string(from: date)
+    }
+    
+    /// 将UTC日期字符串转换为本地日期字符串（仅日期）
+    /// - Parameter utcDateString: UTC格式的日期字符串
+    /// - Returns: 本地日期字符串，格式：yyyy-MM-dd
+    /// - Example:
+    ///   ```
+    ///   formatUTCToLocalDate("2024-01-15T10:30:00Z") // "2024-01-15"
+    ///   ```
+    static func formatUTCToLocalDate(_ utcDateString: String) -> String {
+        guard let date = parseUTCDate(utcDateString) else {
+            return utcDateString
+        }
+        return localDateOnlyFormatter.string(from: date)
+    }
+    
+    /// 将UTC日期字符串转换为本地时间字符串（仅时间）
+    /// - Parameter utcDateString: UTC格式的日期字符串
+    /// - Returns: 本地时间字符串，格式：HH:mm:ss
+    /// - Example:
+    ///   ```
+    ///   formatUTCToLocalTimeOnly("2024-01-15T10:30:00Z") // "18:30:00" (假设本地时区为+8)
+    ///   ```
+    static func formatUTCToLocalTimeOnly(_ utcDateString: String) -> String {
+        guard let date = parseUTCDate(utcDateString) else {
+            return utcDateString
+        }
+        return localTimeOnlyFormatter.string(from: date)
+    }
+    
+    /// 将Date对象格式化为本地时间字符串（短格式）
+    /// - Parameter date: Date对象
+    /// - Returns: 本地时间字符串，格式：yyyy-MM-dd HH:mm
+    static func formatDateToLocalTime(_ date: Date) -> String {
+        return localDateFormatter.string(from: date)
+    }
+    
+    /// 将Date对象格式化为本地日期字符串（仅日期）
+    /// - Parameter date: Date对象
+    /// - Returns: 本地日期字符串，格式：yyyy-MM-dd
+    static func formatDateToLocalDate(_ date: Date) -> String {
+        return localDateOnlyFormatter.string(from: date)
+    }
+    
+    /// 将Date对象格式化为本地时间字符串（仅时间）
+    /// - Parameter date: Date对象
+    /// - Returns: 本地时间字符串，格式：HH:mm:ss
+    static func formatDateToLocalTimeOnly(_ date: Date) -> String {
+        return localTimeOnlyFormatter.string(from: date)
+    }
 
 }

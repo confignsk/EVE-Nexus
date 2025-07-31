@@ -11,6 +11,8 @@ struct CharacterLoyaltyPointsStoreView: View {
     @State private var loadingProgress: (current: Int, total: Int)?
     @State private var isForceRefresh = false
     @State private var loadingTask: Task<Void, Never>?
+    @State private var lpSearchResults: [LPSearchResult] = []
+    @State private var isSearchingItems = false
 
     private var searchResults: (factions: [Faction], corporations: [Corporation]) {
         // 如果搜索文本为空，直接返回空结果，不进行任何计算
@@ -125,10 +127,7 @@ struct CharacterLoyaltyPointsStoreView: View {
                                 )
                             ) {
                                 HStack {
-                                    IconManager.shared.loadImage(for: corporation.iconFileName)
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: 36)
+                                    CorporationIconView(corporationId: corporation.id, iconFileName: corporation.iconFileName, size: 36)
                                     Text(corporation.name)
                                         .padding(.leading, 8)
                                 }
@@ -139,7 +138,37 @@ struct CharacterLoyaltyPointsStoreView: View {
                     }
                 }
                 
-                if searchResults.factions.isEmpty && searchResults.corporations.isEmpty {
+                // 显示LP物品搜索结果
+                if !lpSearchResults.isEmpty {
+                    Section(NSLocalizedString("Main_LP_Available_Items", comment: "可用物品")) {
+                        ForEach(lpSearchResults, id: \.categoryId) { category in
+                            NavigationLink(
+                                destination: LPSearchCategoryView(
+                                    categoryName: category.categoryName,
+                                    offers: category.offers
+                                )
+                            ) {
+                                HStack {
+                                    IconManager.shared.loadImage(for: category.categoryIcon)
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 36)
+                                        .cornerRadius(6)
+                                    Text(category.categoryName)
+                                        .padding(.leading, 8)
+                                    
+                                    Spacer()
+                                    Text("\(category.offerCount)")
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding(.vertical, 2)
+                            }
+                        }
+                        .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+                    }
+                }
+                
+                if searchResults.factions.isEmpty && searchResults.corporations.isEmpty && lpSearchResults.isEmpty {
                     Section {
                         HStack {
                             Spacer()
@@ -192,6 +221,7 @@ struct CharacterLoyaltyPointsStoreView: View {
             // 如果搜索框被清空，直接清空搜索结果
             if newValue.isEmpty {
                 debouncedSearchText = ""
+                lpSearchResults = []
                 return
             }
             
@@ -200,6 +230,12 @@ struct CharacterLoyaltyPointsStoreView: View {
                 if !Task.isCancelled {
                     await MainActor.run {
                         debouncedSearchText = newValue
+                        // 如果搜索文本长度大于等于2，则搜索物品
+                        if newValue.count >= 2 {
+                            searchLPItems(searchText: newValue)
+                        } else {
+                            lpSearchResults = []
+                        }
                     }
                 }
             }
@@ -366,6 +402,166 @@ struct CharacterLoyaltyPointsStoreView: View {
             )
             isLoading = false
             loadingProgress = nil
+        }
+    }
+    
+    private func searchLPItems(searchText: String) {
+        isSearchingItems = true
+        
+        Task {
+            do {
+                // 1. 从CharacterDatabaseManager搜索物品
+                let itemSearchQuery = """
+                    SELECT type_id, offer_id, faction_id, corporation_id 
+                    FROM LPStoreItemIndex 
+                    WHERE type_name_zh LIKE '%\(searchText)%' OR type_name_en LIKE '%\(searchText)%'
+                """
+                
+                let itemResult = CharacterDatabaseManager.shared.executeQuery(itemSearchQuery)
+                guard case let .success(itemRows) = itemResult else {
+                    await MainActor.run {
+                        isSearchingItems = false
+                        lpSearchResults = []
+                    }
+                    return
+                }
+                
+                // 收集type_ids
+                var typeIds: Set<Int> = []
+                var categoryIds: Set<Int> = []
+                var searchOffers: [LPSearchOffer] = []
+                
+                for row in itemRows {
+                    guard let typeId = (row["type_id"] as? Int64).map(Int.init) ?? row["type_id"] as? Int,
+                          let offerId = (row["offer_id"] as? Int64).map(Int.init) ?? row["offer_id"] as? Int,
+                          let corporationId = (row["corporation_id"] as? Int64).map(Int.init) ?? row["corporation_id"] as? Int else {
+                        continue
+                    }
+                    
+                    let factionId = (row["faction_id"] as? Int64).map(Int.init) ?? row["faction_id"] as? Int
+                    
+                    typeIds.insert(typeId)
+                    searchOffers.append(LPSearchOffer(
+                        typeId: typeId,
+                        typeName: "",
+                        typeIcon: "",
+                        offerId: offerId,
+                        factionId: factionId,
+                        corporationId: corporationId
+                    ))
+                }
+                
+                if typeIds.isEmpty {
+                    await MainActor.run {
+                        isSearchingItems = false
+                        lpSearchResults = []
+                    }
+                    return
+                }
+                
+                // 2. 从DatabaseManager获取物品详细信息
+                let typeQuery = """
+                    SELECT type_id, name, icon_filename, categoryID 
+                    FROM types 
+                    WHERE type_id IN (\(typeIds.sorted().map { String($0) }.joined(separator: ","))) 
+                    AND categoryID NOT IN (2118, 91)
+                """
+                
+                let typeResult = DatabaseManager.shared.executeQuery(typeQuery)
+                guard case let .success(typeRows) = typeResult else {
+                    await MainActor.run {
+                        isSearchingItems = false
+                        lpSearchResults = []
+                    }
+                    return
+                }
+                
+                var typeInfos: [Int: (name: String, icon: String, categoryId: Int)] = [:]
+                
+                for row in typeRows {
+                    guard let typeId = row["type_id"] as? Int,
+                          let name = row["name"] as? String,
+                          let iconFileName = row["icon_filename"] as? String,
+                          let categoryId = row["categoryID"] as? Int else {
+                        continue
+                    }
+                    
+                    typeInfos[typeId] = (name, iconFileName.isEmpty ? "not_found" : iconFileName, categoryId)
+                    categoryIds.insert(categoryId)
+                }
+                
+                // 3. 获取分类信息
+                var categoryInfos: [Int: (name: String, icon: String)] = [:]
+                if !categoryIds.isEmpty {
+                    let categoryQuery = """
+                        SELECT category_id, name, icon_filename 
+                        FROM categories 
+                        WHERE category_id IN (\(categoryIds.sorted().map { String($0) }.joined(separator: ",")))
+                    """
+                    
+                    if case let .success(categoryRows) = DatabaseManager.shared.executeQuery(categoryQuery) {
+                        for row in categoryRows {
+                            guard let categoryId = row["category_id"] as? Int,
+                                  let name = row["name"] as? String,
+                                  let iconFileName = row["icon_filename"] as? String else {
+                                continue
+                            }
+                            
+                            categoryInfos[categoryId] = (name, iconFileName.isEmpty ? "not_found" : iconFileName)
+                        }
+                    }
+                }
+                
+                // 4. 组织搜索结果
+                var categoryOffersDict: [Int: [LPSearchOffer]] = [:]
+                
+                for var offer in searchOffers {
+                    guard let typeInfo = typeInfos[offer.typeId] else { continue }
+                    
+                    // 更新offer信息
+                    offer = LPSearchOffer(
+                        typeId: offer.typeId,
+                        typeName: typeInfo.name,
+                        typeIcon: typeInfo.icon,
+                        offerId: offer.offerId,
+                        factionId: offer.factionId,
+                        corporationId: offer.corporationId
+                    )
+                    
+                    categoryOffersDict[typeInfo.categoryId, default: []].append(offer)
+                }
+                
+                // 5. 转换为最终结果，按type_id去重
+                let results = categoryOffersDict.compactMap { categoryId, offers -> LPSearchResult? in
+                    guard let categoryInfo = categoryInfos[categoryId] else { return nil }
+                    
+                    // 按type_id去重，每个物品类型只保留一个offer
+                    var uniqueOffers: [Int: LPSearchOffer] = [:]
+                    for offer in offers {
+                        if uniqueOffers[offer.typeId] == nil {
+                            uniqueOffers[offer.typeId] = offer
+                        }
+                    }
+                    
+                    let deduplicatedOffers = Array(uniqueOffers.values).sorted { 
+                        $0.typeName.localizedStandardCompare($1.typeName) == .orderedAscending 
+                    }
+                    
+                    return LPSearchResult(
+                        categoryId: categoryId,
+                        categoryName: categoryInfo.name,
+                        categoryIcon: categoryInfo.icon,
+                        offerCount: deduplicatedOffers.count,
+                        offers: deduplicatedOffers
+                    )
+                }.sorted { $0.categoryName.localizedStandardCompare($1.categoryName) == .orderedAscending }
+                
+                await MainActor.run {
+                    isSearchingItems = false
+                    lpSearchResults = results
+                }
+                
+            }
         }
     }
 }

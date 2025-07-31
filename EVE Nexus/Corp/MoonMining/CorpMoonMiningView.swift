@@ -122,7 +122,7 @@ struct MoonExtractionRow: View {
     let moonName: String
 
     private var daysUntilArrival: String {
-        guard let arrivalDate = extraction.chunk_arrival_time.toUTCDate() else {
+        guard let arrivalDate = FormatUtil.parseUTCDate(extraction.chunk_arrival_time) else {
             return ""
         }
 
@@ -224,7 +224,7 @@ class CorpMoonMiningViewModel: ObservableObject {
         let oneWeekLater = calendar.date(byAdding: .day, value: 7, to: now) ?? now
 
         return moonExtractions.filter { extraction in
-            guard let arrivalDate = extraction.chunk_arrival_time.toUTCDate() else { return false }
+            guard let arrivalDate = FormatUtil.parseUTCDate(extraction.chunk_arrival_time) else { return false }
             return arrivalDate <= oneWeekLater
         }
     }
@@ -236,7 +236,7 @@ class CorpMoonMiningViewModel: ObservableObject {
         let oneWeekLater = calendar.date(byAdding: .day, value: 7, to: now) ?? now
 
         return moonExtractions.filter { extraction in
-            guard let arrivalDate = extraction.chunk_arrival_time.toUTCDate() else { return false }
+            guard let arrivalDate = FormatUtil.parseUTCDate(extraction.chunk_arrival_time) else { return false }
             return arrivalDate > oneWeekLater
         }
     }
@@ -259,7 +259,7 @@ class CorpMoonMiningViewModel: ObservableObject {
         moonExtractions =
             extractions
             .filter { extraction in
-                guard let arrivalDate = extraction.chunk_arrival_time.toUTCDate() else {
+                guard let arrivalDate = FormatUtil.parseUTCDate(extraction.chunk_arrival_time) else {
                     return false
                 }
 
@@ -297,26 +297,9 @@ class CorpMoonMiningViewModel: ObservableObject {
     }
 }
 
-// 日期转换扩展
+// 使用FormatUtil进行日期转换
 extension String {
     func toLocalTime() -> String {
-        guard let date = toUTCDate() else {
-            return self
-        }
-
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd EEEE HH:mm"  // EEEE 表示完整的星期名称
-        dateFormatter.timeZone = TimeZone.current
-        dateFormatter.locale = Locale(
-            identifier: NSLocalizedString("Language_Identifier", comment: ""))  // 根据当前语言设置区域
-        return dateFormatter.string(from: date)
-    }
-
-    func toUTCDate() -> Date? {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
-        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
-        dateFormatter.timeZone = TimeZone(identifier: "UTC")  // 确保使用UTC时区
-        return dateFormatter.date(from: self)
+        return FormatUtil.formatUTCToLocalTimeWithWeekday(self)
     }
 }

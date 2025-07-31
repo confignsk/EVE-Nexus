@@ -481,21 +481,9 @@ struct CharacterMailListView: View {
     }
 }
 
-// 日期格式化扩展
+// 使用FormatUtil进行日期格式化
 extension String {
     func formatDate() -> String {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
-        dateFormatter.timeZone = TimeZone(identifier: "UTC")
-        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
-
-        guard let date = dateFormatter.date(from: self) else { return self }
-
-        let outputFormatter = DateFormatter()
-        outputFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-        outputFormatter.timeZone = TimeZone.current
-        outputFormatter.locale = Locale(identifier: "en_US_POSIX")
-
-        return outputFormatter.string(from: date)
+        return FormatUtil.formatUTCToLocalTime(self)
     }
 }

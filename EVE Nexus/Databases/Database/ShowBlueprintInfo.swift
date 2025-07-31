@@ -210,6 +210,7 @@ struct ShowBluePrintInfo: View {
     @State private var isCopyingSkillsExpanded = false
     @State private var isInventionMaterialsExpanded = false
     @State private var isInventionSkillsExpanded = false
+    @State private var showBlueprintCalculator = false
 
     // 加载蓝图来源
     private func loadBlueprintSource() {
@@ -365,32 +366,29 @@ struct ShowBluePrintInfo: View {
             return
         }
         
-        let skillsQuery = "SELECT skills_data FROM character_skills WHERE character_id = ?"
-        
-        guard
-            case let .success(rows) = CharacterDatabaseManager.shared.executeQuery(
-                skillsQuery, parameters: [currentCharacterId]),
-            let row = rows.first,
-            let skillsJson = row["skills_data"] as? String,
-            let data = skillsJson.data(using: .utf8)
-        else {
-            characterSkills = [:]
-            return
-        }
-        
-        do {
-            let decoder = JSONDecoder()
-            let skillsResponse = try decoder.decode(CharacterSkillsResponse.self, from: data)
-            
-            // 将所有技能映射到字典中
-            var skillsDict = [Int: Int]()
-            for skill in skillsResponse.skills {
-                skillsDict[skill.skill_id] = skill.trained_skill_level
+        Task {
+            do {
+                // 调用API获取技能数据
+                let skillsResponse = try await CharacterSkillsAPI.shared.fetchCharacterSkills(
+                    characterId: currentCharacterId, 
+                    forceRefresh: false
+                )
+                
+                // 将所有技能映射到字典中
+                var skillsDict = [Int: Int]()
+                for skill in skillsResponse.skills {
+                    skillsDict[skill.skill_id] = skill.trained_skill_level
+                }
+                
+                await MainActor.run {
+                    characterSkills = skillsDict
+                }
+            } catch {
+                Logger.error("获取技能数据失败: \(error)")
+                await MainActor.run {
+                    characterSkills = [:]
+                }
             }
-            characterSkills = skillsDict
-        } catch {
-            Logger.error("解析技能数据失败: \(error)")
-            characterSkills = [:]
         }
     }
     
@@ -431,7 +429,19 @@ struct ShowBluePrintInfo: View {
                             }
                         }
                         .buttonStyle(.borderless)
+                    },
+                    footer: Button(action: {
+                        showBlueprintCalculator = true
+                    }) {
+                        HStack(spacing: 4) {
+                            Spacer()
+                            Image(systemName: "compass.drawing")
+                                .font(.system(size: 14))
+                            Text(NSLocalizedString("Blueprint_Calculator_Open_Calculator", comment: "打开计算器"))
+                                .font(.system(size: 14))
+                        }
                     }
+                    .buttonStyle(.borderless)
                 ) {
                     // 产出物
                     if !manufacturing.products.isEmpty {
@@ -998,6 +1008,13 @@ struct ShowBluePrintInfo: View {
         .navigationTitle(NSLocalizedString("Blueprint_Info", comment: ""))
         .alert(NSLocalizedString("Blueprint_Copy_Success", comment: "材料已复制"), isPresented: $showingCopyAlert) {
             Button("OK", role: .cancel) { }
+        }
+        .navigationDestination(isPresented: $showBlueprintCalculator) {
+            BlueprintCalculatorView(
+                initParams: BlueprintCalculatorInitParams(
+                    blueprintId: blueprintID
+                )
+            )
         }
         .onAppear {
             itemDetails = databaseManager.getItemDetails(for: blueprintID)

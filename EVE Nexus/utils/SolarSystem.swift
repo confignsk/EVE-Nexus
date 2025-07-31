@@ -53,9 +53,9 @@ func getSecurityColor(_ trueSec: Double) -> Color {
     case 1.0:
         return Color(red: 65 / 255, green: 115 / 255, blue: 212 / 255)  // 深蓝色
     case 0.9:
-        return Color(red: 85 / 255, green: 154 / 255, blue: 239 / 255)  // 中蓝色
+        return Color(red: 85 / 255, green: 152 / 255, blue: 229 / 255)  // 中蓝色
     case 0.8:
-        return Color(red: 114 / 255, green: 204 / 255, blue: 237 / 255)  // 浅蓝色
+        return Color(red: 115 / 255, green: 203 / 255, blue: 244 / 255)  // 浅蓝色
     case 0.7:
         return Color(red: 129 / 255, green: 216 / 255, blue: 169 / 255)  // 浅绿色
     case 0.6, 0.5:
@@ -64,8 +64,8 @@ func getSecurityColor(_ trueSec: Double) -> Color {
         return Color(red: 208 / 255, green: 113 / 255, blue: 45 / 255)  // 橙色
     case 0.2, 0.1:
         return Color(red: 188 / 255, green: 17 / 255, blue: 23 / 255)  // 深红色
-    case ..<0.0:
-        return .red  // 负数安全等级显示为红色
+    case ...0.0:
+        return Color(red: 130 / 255, green: 55 / 255, blue: 97 / 255)  // 负数安全等级显示为紫色
     default:
         return .red  // 其他情况显示为红色
     }
@@ -261,4 +261,48 @@ func getBatchSolarSystemNames(solarSystemIds: [Int], databaseManager: DatabaseMa
     }
 
     return result
+}
+
+// 简化的星系信息结构，用于快速查询
+public struct SimpleSystemInfo {
+    let name: String?
+    let security: Double?
+}
+
+// 获取简化的星系信息（同步版本）
+func getSystemInfo(systemId: Int, databaseManager: DatabaseManager) -> SimpleSystemInfo {
+    // 使用与 getSolarSystemInfo 相同的查询逻辑，但简化为同步版本
+    let query = """
+        SELECT s.solarSystemName, u.system_security
+        FROM solarsystems s
+        LEFT JOIN universe u ON u.solarsystem_id = s.solarSystemID
+        WHERE s.solarSystemID = ?
+    """
+    if case let .success(rows) = databaseManager.executeQuery(query, parameters: [systemId]),
+       let row = rows.first {
+        let systemName = row["solarSystemName"] as? String
+        let security = row["system_security"] as? Double
+        return SimpleSystemInfo(name: systemName, security: security)
+    }
+    return SimpleSystemInfo(name: nil, security: nil)
+}
+
+// 星系安全类别枚举
+public enum SecurityClass {
+    case highSec    // 高安
+    case lowSec     // 低安
+    case nullSecOrWH // 0.0或虫洞
+}
+
+// 根据安全等级判断星系安全类别
+func getSecurityClass(trueSec: Double) -> SecurityClass {
+    let displaySec = calculateDisplaySecurity(trueSec)
+    
+    if displaySec >= 0.5 {
+        return .highSec
+    } else if displaySec >= 0.0 {
+        return .lowSec
+    } else {
+        return .nullSecOrWH
+    }
 }

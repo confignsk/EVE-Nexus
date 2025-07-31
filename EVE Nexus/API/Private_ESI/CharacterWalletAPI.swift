@@ -22,34 +22,75 @@ class CharacterWalletAPI {
     private let walletCachePrefix = "wallet_cache_"
 
     // 钱包交易记录缓存前缀
-    private let lastJournalQueryKey = "LastWalletJournalQuery_"
     private let lastTransactionQueryKey = "LastWalletTransactionQuery_"
     private let queryInterval: TimeInterval = 3600  // 1小时的查询间隔
+    private let journalCacheTimeout: TimeInterval = 3600  // 1小时的流水缓存超时时间
 
-    // 获取最后查询时间
-    private func getLastQueryTime(characterId: Int, isJournal: Bool) -> Date? {
-        let key =
-            isJournal
-            ? lastJournalQueryKey + String(characterId)
-            : lastTransactionQueryKey + String(characterId)
+    // 获取钱包流水缓存目录
+    private func getWalletJournalCacheDirectory() -> URL {
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let cacheDirectory = documentsPath.appendingPathComponent("CharWallet")
+        
+        // 如果目录不存在，创建它
+        if !FileManager.default.fileExists(atPath: cacheDirectory.path) {
+            Logger.info("创建钱包流水缓存目录: \(cacheDirectory.path)")
+            try? FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
+        }
+        
+        return cacheDirectory
+    }
+
+    // 获取钱包流水缓存文件路径
+    private func getJournalCacheFilePath(characterId: Int) -> URL {
+        let cacheDirectory = getWalletJournalCacheDirectory()
+        return cacheDirectory.appendingPathComponent("Journal_\(characterId).json")
+    }
+
+    // 检查钱包流水缓存是否过期
+    private func isJournalCacheExpired(characterId: Int) -> Bool {
+        let filePath = getJournalCacheFilePath(characterId: characterId)
+        
+        guard FileManager.default.fileExists(atPath: filePath.path) else {
+            Logger.info("钱包流水缓存文件不存在，需要刷新 - 文件路径: \(filePath.path)")
+            return true
+        }
+        
+        do {
+            let attributes = try FileManager.default.attributesOfItem(atPath: filePath.path)
+            if let modificationDate = attributes[.modificationDate] as? Date {
+                let timeInterval = Date().timeIntervalSince(modificationDate)
+                let remainingTime = journalCacheTimeout - timeInterval
+                let remainingMinutes = Int(remainingTime / 60)
+                let remainingSeconds = Int(remainingTime.truncatingRemainder(dividingBy: 60))
+                let isExpired = timeInterval > journalCacheTimeout
+                
+                Logger.info("钱包流水缓存状态检查 - 角色ID: \(characterId), 文件修改时间: \(modificationDate), 当前时间: \(Date()), 时间间隔: \(timeInterval)秒, 剩余时间: \(remainingMinutes)分\(remainingSeconds)秒, 是否过期: \(isExpired)")
+                return isExpired
+            }
+        } catch {
+            Logger.error("获取钱包流水缓存文件属性失败: \(error) - 文件路径: \(filePath.path)")
+        }
+        
+        return true
+    }
+
+    // 获取交易记录最后查询时间（保留原有逻辑）
+    private func getLastTransactionQueryTime(characterId: Int) -> Date? {
+        let key = lastTransactionQueryKey + String(characterId)
         return UserDefaults.standard.object(forKey: key) as? Date
     }
 
-    // 更新最后查询时间
-    private func updateLastQueryTime(characterId: Int, isJournal: Bool) {
-        let key =
-            isJournal
-            ? lastJournalQueryKey + String(characterId)
-            : lastTransactionQueryKey + String(characterId)
+    // 更新交易记录最后查询时间（保留原有逻辑）
+    private func updateLastTransactionQueryTime(characterId: Int) {
+        let key = lastTransactionQueryKey + String(characterId)
         UserDefaults.standard.set(Date(), forKey: key)
     }
 
-    // 检查是否需要刷新数据
-    private func shouldRefreshData(characterId: Int, isJournal: Bool) -> Bool {
-        guard let lastQuery = getLastQueryTime(characterId: characterId, isJournal: isJournal)
-        else {
-            Logger.debug("没有找到上次查询时间记录，需要刷新数据")
-            return true  // 如果没有查询记录，需要刷新
+    // 检查交易记录是否需要刷新
+    private func shouldRefreshTransactionData(characterId: Int) -> Bool {
+        guard let lastQuery = getLastTransactionQueryTime(characterId: characterId) else {
+            Logger.debug("没有找到上次交易记录查询时间记录，需要刷新数据")
+            return true
         }
 
         let timeInterval = Date().timeIntervalSince(lastQuery)
@@ -57,9 +98,7 @@ class CharacterWalletAPI {
         let remainingMinutes = Int(remainingTime / 60)
         let remainingSeconds = Int(remainingTime.truncatingRemainder(dividingBy: 60))
 
-        let dataType = isJournal ? "钱包流水" : "钱包交易记录"
-        Logger.debug("\(dataType)下次刷新剩余时间: \(remainingMinutes)分\(remainingSeconds)秒")
-
+        Logger.debug("钱包交易记录下次刷新剩余时间: \(remainingMinutes)分\(remainingSeconds)秒")
         return timeInterval > queryInterval
     }
 
@@ -186,7 +225,7 @@ class CharacterWalletAPI {
             Logger.info("缓存未命中或已过期,需要从服务器获取钱包数据 - 角色ID: \(characterId)")
         }
 
-        let urlString = "https://esi.evetech.net/latest/characters/\(characterId)/wallet/"
+        let urlString = "https://esi.evetech.net/characters/\(characterId)/wallet/"
         guard let url = URL(string: urlString) else {
             throw NetworkError.invalidURL
         }
@@ -218,126 +257,47 @@ class CharacterWalletAPI {
         return Double(stringValue) ?? 0.0
     }
 
-    // 从数据库获取钱包流水
-    private func getWalletJournalFromDB(characterId: Int) -> [[String: Any]]? {
-        let query = """
-                SELECT id, amount, balance, context_id, context_id_type,
-                       date, description, first_party_id, reason, ref_type,
-                       second_party_id, last_updated
-                FROM wallet_journal 
-                WHERE character_id = ? 
-                ORDER BY date DESC 
-                LIMIT 1000
-            """
-
-        if case let .success(results) = CharacterDatabaseManager.shared.executeQuery(
-            query, parameters: [characterId]
-        ) {
-            return results
+    // 从缓存文件获取钱包流水
+    private func getWalletJournalFromCache(characterId: Int) -> [[String: Any]]? {
+        let filePath = getJournalCacheFilePath(characterId: characterId)
+        
+        guard FileManager.default.fileExists(atPath: filePath.path) else {
+            Logger.info("钱包流水缓存文件不存在 - 角色ID: \(characterId), 文件路径: \(filePath.path)")
+            return nil
         }
-        return nil
+        
+        Logger.info("开始读取钱包流水缓存文件 - 角色ID: \(characterId), 文件路径: \(filePath.path)")
+        
+        do {
+            let data = try Data(contentsOf: filePath)
+            let jsonObject = try JSONSerialization.jsonObject(with: data, options: [])
+            
+            if let journalEntries = jsonObject as? [[String: Any]] {
+                Logger.info("成功从缓存文件读取钱包流水 - 角色ID: \(characterId), 记录数量: \(journalEntries.count), 文件大小: \(data.count) bytes")
+                return journalEntries
+            } else {
+                Logger.error("钱包流水缓存文件格式不正确 - 角色ID: \(characterId), 文件路径: \(filePath.path)")
+                return nil
+            }
+        } catch {
+            Logger.error("读取钱包流水缓存文件失败 - 角色ID: \(characterId), 错误: \(error), 文件路径: \(filePath.path)")
+            return nil
+        }
     }
 
-    // 保存钱包流水到数据库
-    private func saveWalletJournalToDB(characterId: Int, entries: [[String: Any]]) -> Bool {
-        // 如果没有条目需要保存，直接返回成功
-        if entries.isEmpty {
-            Logger.info("没有钱包流水需要保存")
+    // 保存钱包流水到缓存文件
+    private func saveWalletJournalToCache(characterId: Int, entries: [[String: Any]]) -> Bool {
+        let filePath = getJournalCacheFilePath(characterId: characterId)
+        
+        Logger.info("开始保存钱包流水到缓存文件 - 角色ID: \(characterId), 记录数量: \(entries.count), 文件路径: \(filePath.path)")
+        
+        do {
+            let jsonData = try JSONSerialization.data(withJSONObject: entries, options: [.prettyPrinted, .sortedKeys])
+            try jsonData.write(to: filePath)
+            Logger.info("成功保存钱包流水到缓存文件 - 角色ID: \(characterId), 记录数量: \(entries.count), 文件大小: \(jsonData.count) bytes, 文件路径: \(filePath.path)")
             return true
-        }
-
-        // 首先获取已存在的日志ID
-        let checkQuery = "SELECT id FROM wallet_journal WHERE character_id = ?"
-        guard
-            case let .success(existingResults) = CharacterDatabaseManager.shared.executeQuery(
-                checkQuery, parameters: [characterId]
-            )
-        else {
-            Logger.error("查询现有钱包流水失败")
-            return false
-        }
-
-        let existingIds = Set(existingResults.compactMap { ($0["id"] as? Int64) })
-
-        // 过滤出需要插入的新记录
-        let newEntries = entries.filter { entry in
-            let journalId = entry["id"] as? Int64 ?? 0
-            return !existingIds.contains(journalId)
-        }
-
-        // 如果没有新记录，直接返回成功
-        if newEntries.isEmpty {
-            Logger.info("无需新增钱包流水")
-            return true
-        }
-
-        Logger.info("准备插入\(newEntries.count)条新钱包流水记录")
-
-        // 开始事务
-        _ = CharacterDatabaseManager.shared.executeQuery("BEGIN TRANSACTION")
-
-        // 计算每批次的大小（每条记录12个参数）
-        let batchSize = 100  // 每批次处理100条记录
-        var success = true
-
-        // 分批处理数据
-        for batchStart in stride(from: 0, to: newEntries.count, by: batchSize) {
-            let batchEnd = min(batchStart + batchSize, newEntries.count)
-            let currentBatch = Array(newEntries[batchStart..<batchEnd])
-
-            // 构建批量插入语句
-            let placeholders = Array(
-                repeating: "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", count: currentBatch.count
-            ).joined(separator: ",")
-            let insertSQL = """
-                    INSERT OR REPLACE INTO wallet_journal (
-                        id, character_id, amount, balance, context_id, context_id_type,
-                        date, description, first_party_id, reason, ref_type,
-                        second_party_id
-                    ) VALUES \(placeholders)
-                """
-
-            // 准备参数数组
-            var parameters: [Any] = []
-            for entry in currentBatch {
-                let journalId = entry["id"] as? Int64 ?? 0
-                let params: [Any] = [
-                    journalId,
-                    characterId,
-                    entry["amount"] as? Double ?? 0.0,
-                    entry["balance"] as? Double ?? 0.0,
-                    entry["context_id"] as? Int ?? 0,
-                    entry["context_id_type"] as? String ?? "",
-                    entry["date"] as? String ?? "",
-                    entry["description"] as? String ?? "",
-                    entry["first_party_id"] as? Int ?? 0,
-                    entry["reason"] as? String ?? "",
-                    entry["ref_type"] as? String ?? "",
-                    entry["second_party_id"] as? Int ?? 0,
-                ]
-                parameters.append(contentsOf: params)
-            }
-
-            Logger.debug("执行批量插入钱包流水，批次大小: \(currentBatch.count), 参数数量: \(parameters.count)")
-
-            // 执行批量插入
-            if case let .error(message) = CharacterDatabaseManager.shared.executeQuery(
-                insertSQL, parameters: parameters
-            ) {
-                Logger.error("批量插入钱包流水失败: \(message)")
-                success = false
-                break
-            }
-        }
-
-        // 根据执行结果提交或回滚事务
-        if success {
-            _ = CharacterDatabaseManager.shared.executeQuery("COMMIT")
-            Logger.info("成功插入\(newEntries.count)条钱包流水到数据库")
-            return true
-        } else {
-            _ = CharacterDatabaseManager.shared.executeQuery("ROLLBACK")
-            Logger.error("保存钱包流水失败，执行回滚")
+        } catch {
+            Logger.error("保存钱包流水到缓存文件失败 - 角色ID: \(characterId), 错误: \(error), 文件路径: \(filePath.path)")
             return false
         }
     }
@@ -346,48 +306,36 @@ class CharacterWalletAPI {
     func getWalletJournal(characterId: Int, forceRefresh: Bool = false) async throws
         -> String?
     {
-        // 检查数据库中是否有数据，以及是否需要刷新
-        let checkQuery = "SELECT COUNT(*) as count FROM wallet_journal WHERE character_id = ?"
-        let result = CharacterDatabaseManager.shared.executeQuery(
-            checkQuery, parameters: [characterId]
-        )
-        let isEmpty =
-            if case let .success(rows) = result,
-                let row = rows.first,
-                let count = row["count"] as? Int64
-            {
-                count == 0
-            } else {
-                true
-            }
-
-        // 如果数据为空、强制刷新或达到查询间隔，则从网络获取
-        if isEmpty || forceRefresh || shouldRefreshData(characterId: characterId, isJournal: true) {
-            Logger.debug("钱包流水为空或需要刷新，从网络获取数据")
+        Logger.info("开始获取钱包流水 - 角色ID: \(characterId), 强制刷新: \(forceRefresh)")
+        
+        // 如果强制刷新或缓存过期，则从网络获取
+        if forceRefresh || isJournalCacheExpired(characterId: characterId) {
+            Logger.info("钱包流水缓存过期或需要强制刷新，从网络获取数据 - 角色ID: \(characterId)")
             let journalData = try await fetchJournalFromServer(characterId: characterId)
-            if !saveWalletJournalToDB(characterId: characterId, entries: journalData) {
-                Logger.error("保存钱包流水到数据库失败")
+            if !saveWalletJournalToCache(characterId: characterId, entries: journalData) {
+                Logger.error("保存钱包流水到缓存文件失败 - 角色ID: \(characterId)")
             }
-            // 更新最后查询时间
-            updateLastQueryTime(characterId: characterId, isJournal: true)
         } else {
-            Logger.debug("使用数据库中的钱包流水数据")
+            Logger.info("使用缓存文件中的钱包流水数据 - 角色ID: \(characterId)")
         }
 
-        // 从数据库获取数据并返回
-        if let results = getWalletJournalFromDB(characterId: characterId) {
+        // 从缓存文件获取数据并返回
+        if let results = getWalletJournalFromCache(characterId: characterId) {
             let jsonData = try JSONSerialization.data(
                 withJSONObject: results, options: [.prettyPrinted, .sortedKeys]
             )
+            Logger.info("钱包流水数据处理完成 - 角色ID: \(characterId), JSON大小: \(jsonData.count) bytes")
             return String(data: jsonData, encoding: .utf8)
         }
+        
+        Logger.error("无法获取钱包流水数据 - 角色ID: \(characterId)")
         return nil
     }
 
     // 从服务器获取钱包流水
     private func fetchJournalFromServer(characterId: Int) async throws -> [[String: Any]] {
         let baseUrlString =
-            "https://esi.evetech.net/latest/characters/\(characterId)/wallet/journal/?datasource=tranquility"
+            "https://esi.evetech.net/characters/\(characterId)/wallet/journal/?datasource=tranquility"
         guard let baseUrl = URL(string: baseUrlString) else {
             throw NetworkError.invalidURL
         }
@@ -571,7 +519,7 @@ class CharacterWalletAPI {
             }
 
         // 如果数据为空、强制刷新或达到查询间隔，则从网络获取
-        if isEmpty || forceRefresh || shouldRefreshData(characterId: characterId, isJournal: false)
+        if isEmpty || forceRefresh || shouldRefreshTransactionData(characterId: characterId)
         {
             Logger.debug("钱包交易记录为空或需要刷新，从网络获取数据")
             let transactionData = try await fetchTransactionsFromServer(characterId: characterId)
@@ -579,7 +527,7 @@ class CharacterWalletAPI {
                 Logger.error("保存钱包交易记录到数据库失败")
             }
             // 更新最后查询时间
-            updateLastQueryTime(characterId: characterId, isJournal: false)
+            updateLastTransactionQueryTime(characterId: characterId)
         } else {
             Logger.debug("使用数据库中的钱包交易记录数据")
         }
@@ -597,7 +545,7 @@ class CharacterWalletAPI {
     // 从服务器获取交易记录
     private func fetchTransactionsFromServer(characterId: Int) async throws -> [[String: Any]] {
         let urlString =
-            "https://esi.evetech.net/latest/characters/\(characterId)/wallet/transactions/"
+            "https://esi.evetech.net/characters/\(characterId)/wallet/transactions/"
         guard let url = URL(string: urlString) else {
             throw NetworkError.invalidURL
         }

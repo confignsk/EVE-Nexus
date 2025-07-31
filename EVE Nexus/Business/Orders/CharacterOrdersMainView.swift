@@ -306,7 +306,7 @@ struct CharacterOrdersView: View {
         @StateObject private var databaseManager = DatabaseManager()
 
         private func calculateRemainingTime() -> String {
-            guard let issuedDate = dateFormatter.date(from: order.issued) else {
+            guard let issuedDate = FormatUtil.parseUTCDate(order.issued) else {
                 return ""
             }
 
@@ -351,29 +351,7 @@ struct CharacterOrdersView: View {
             }
         }
 
-        private let dateFormatter: DateFormatter = {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
-            formatter.timeZone = TimeZone(identifier: "UTC")!
-            formatter.locale = Locale(identifier: "en_US_POSIX")
-            return formatter
-        }()
-
-        private let displayDateFormatter: DateFormatter = {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "yyyy-MM-dd"
-            formatter.timeZone = TimeZone(identifier: "UTC")!
-            formatter.locale = Locale(identifier: "en_US_POSIX")
-            return formatter
-        }()
-
-        private let timeFormatter: DateFormatter = {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "HH:mm:ss"
-            formatter.timeZone = TimeZone(identifier: "UTC")!
-            formatter.locale = Locale(identifier: "en_US_POSIX")
-            return formatter
-        }()
+        // 使用FormatUtil进行日期处理，无需自定义格式化器
 
         var body: some View {
             NavigationLink(
@@ -432,14 +410,10 @@ struct CharacterOrdersView: View {
 
                         // 时间信息
                         HStack {
-                            if let date = dateFormatter.date(from: order.issued) {
-                                Text(
-                                    "\(displayDateFormatter.string(from: date)) \(timeFormatter.string(from: date)) (UTC+0)"
-                                )
+                            Text(FormatUtil.formatUTCToLocalTime(order.issued))
                                 .font(.caption)
                                 .foregroundColor(.gray)
                                 .lineLimit(1)
-                            }
                             Spacer()
                             Text(calculateRemainingTime())
                                 .font(.caption)
