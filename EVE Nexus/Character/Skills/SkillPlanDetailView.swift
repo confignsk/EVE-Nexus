@@ -27,35 +27,12 @@ struct SkillPlanDetailView: View {
         plan: SkillPlan, characterId: Int, databaseManager: DatabaseManager,
         skillPlans: Binding<[SkillPlan]>
     ) {
-        // 在初始化时同步更新技能完成状态
-        let learnedSkills = Self.getLearnedSkillsSync(skillIds: plan.skills.map { $0.skillID }, characterId: characterId)
-        let updatedSkills = plan.skills.map { skill in
-            let learnedSkill = learnedSkills[skill.skillID]
-            let currentLevel = learnedSkill?.trained_skill_level ?? 0
-            let isCompleted = skill.targetLevel <= currentLevel
-            
-            return PlannedSkill(
-                id: skill.id,
-                skillID: skill.skillID,
-                skillName: skill.skillName,
-                currentLevel: skill.currentLevel,
-                targetLevel: skill.targetLevel,
-                trainingTime: skill.trainingTime,
-                requiredSP: skill.requiredSP,
-                prerequisites: skill.prerequisites,
-                currentSkillPoints: skill.currentSkillPoints,
-                isCompleted: isCompleted
-            )
-        }
-        
-        var updatedPlan = plan
-        updatedPlan.skills = updatedSkills
-        
-        _plan = State(initialValue: updatedPlan)
+        // 简化初始化，不进行同步数据加载
+        _plan = State(initialValue: plan)
         self.characterId = characterId
         self.databaseManager = databaseManager
         _skillPlans = skillPlans
-        _learnedSkills = State(initialValue: learnedSkills)
+        _learnedSkills = State(initialValue: [:])
     }
 
     var body: some View {
@@ -152,7 +129,9 @@ struct SkillPlanDetailView: View {
                     )
 
                     Button {
-                        importSkillsFromClipboard()
+                        Task {
+                            await importSkillsFromClipboard()
+                        }
                     } label: {
                         Text(
                             NSLocalizedString("Main_Skills_Plan_Import_From_Clipboard", comment: "")
@@ -308,7 +287,7 @@ struct SkillPlanDetailView: View {
         return String(format: NSLocalizedString("Time_Seconds", comment: ""), seconds)
     }
 
-    private func importSkillsFromClipboard() {
+    private func importSkillsFromClipboard() async {
         if let clipboardString = UIPasteboard.general.string {
             Logger.debug("从剪贴板读取内容: \(clipboardString)")
             let result = SkillPlanReaderTool.parseSkillPlan(
@@ -326,7 +305,7 @@ struct SkillPlanDetailView: View {
                 }
 
                 // 获取新技能的已学习信息
-                let newLearnedSkills = getLearnedSkills(skillIds: newSkillIds)
+                let newLearnedSkills = await getLearnedSkills(skillIds: newSkillIds)
                 // 更新缓存
                 learnedSkills.merge(newLearnedSkills) { current, _ in current }
 
@@ -394,7 +373,7 @@ struct SkillPlanDetailView: View {
                     )
 
                     // 在主线程中更新UI状态
-                    DispatchQueue.main.async {
+                    await MainActor.run {
                         // 更新当前视图的计划
                         plan = updatedPlan
 
@@ -402,12 +381,10 @@ struct SkillPlanDetailView: View {
                         if let index = skillPlans.firstIndex(where: { $0.id == plan.id }) {
                             skillPlans[index] = updatedPlan
                         }
-
-                        // 重新加载所有数据并计算注入器需求
-                        Task {
-                            await loadCharacterData()
-                        }
                     }
+
+                    // 重新加载所有数据并计算注入器需求
+                    await loadCharacterData()
                 }
 
                 // 构建提示消息
@@ -439,8 +416,10 @@ struct SkillPlanDetailView: View {
                     shouldDismissSheet = true
                 }
 
-                errorMessage = message
-                showErrorAlert = true
+                await MainActor.run {
+                    errorMessage = message
+                    showErrorAlert = true
+                }
             } else if result.hasErrors {
                 // 如果没有成功导入任何技能，但有错误
                 var message = ""
@@ -460,53 +439,39 @@ struct SkillPlanDetailView: View {
                         + result.notFoundSkills.joined(separator: "\n")
                 }
 
-                errorMessage = message
-                showErrorAlert = true
-                shouldDismissSheet = false
+                await MainActor.run {
+                    errorMessage = message
+                    showErrorAlert = true
+                    shouldDismissSheet = false
+                }
             }
         }
     }
 
-    private func getLearnedSkills(skillIds: [Int]) -> [Int: CharacterSkill] {
-        return Self.getLearnedSkillsSync(skillIds: skillIds, characterId: characterId)
-    }
-    
-    private static func getLearnedSkillsSync(skillIds: [Int], characterId: Int) -> [Int: CharacterSkill] {
-        // 使用同步方式调用异步API（在后台队列中执行）
-        let semaphore = DispatchSemaphore(value: 0)
-        var result: [Int: CharacterSkill] = [:]
-        
-        Task {
-            do {
-                // 调用API获取技能数据
-                let skillsResponse = try await CharacterSkillsAPI.shared.fetchCharacterSkills(
-                    characterId: characterId, 
-                    forceRefresh: false
-                )
-                
-                // 创建技能ID到技能信息的映射
-                let skillsDict = Dictionary(
-                    uniqueKeysWithValues: skillsResponse.skills.map { ($0.skill_id, $0) })
-                
-                // 只返回请求的技能ID对应的技能信息
-                result = skillsDict.filter { skillIds.contains($0.key) }
-            } catch {
-                Logger.error("获取技能数据失败: \(error)")
-                result = [:]
-            }
+    private func getLearnedSkills(skillIds: [Int]) async -> [Int: CharacterSkill] {
+        do {
+            // 调用API获取技能数据
+            let skillsResponse = try await CharacterSkillsAPI.shared.fetchCharacterSkills(
+                characterId: characterId, 
+                forceRefresh: false
+            )
             
-            semaphore.signal()
+            // 创建技能ID到技能信息的映射
+            let skillsDict = Dictionary(
+                uniqueKeysWithValues: skillsResponse.skills.map { ($0.skill_id, $0) })
+            
+            // 只返回请求的技能ID对应的技能信息
+            return skillsDict.filter { skillIds.contains($0.key) }
+        } catch {
+            Logger.error("获取技能数据失败: \(error)")
+            return [:]
         }
-        
-        // 等待异步操作完成
-        semaphore.wait()
-        return result
     }
 
     private func loadCharacterData() async {
         // 先加载已学习的技能数据
         if learnedSkills.isEmpty {
-            learnedSkills = getLearnedSkills(skillIds: plan.skills.map { $0.skillID })
+            learnedSkills = await getLearnedSkills(skillIds: plan.skills.map { $0.skillID })
         }
 
         // 加载技能名称

@@ -171,12 +171,14 @@ class BlueprintCalcUtil {
         let facilityCostParams = FacilityCostParams(
             materials: finalMaterials,
             solarSystemId: params.solarSystemId,
+            facilityTypeId: params.facilityTypeId,
             facilityTax: params.facilityTax,
             isReaction: params.isReaction
         )
         let facilityCost = calculateFacilityCost(params: facilityCostParams)
         
         // 12. 计算总成本（材料成本 + 设施费用）
+        // 注意：EIV计算使用原始材料需求，不受效率加成影响
         let totalCost = calculateEIV(materials: finalMaterials) + facilityCost
         
         // 13. 获取产品信息
@@ -197,6 +199,7 @@ class BlueprintCalcUtil {
     struct StructureAttributes {
         let materialBonus: Double     // 原始材料效率加成
         let timeBonus: Double         // 原始时间效率加成
+        let taxBonus: Double          // 加工税减少加成 (2601属性)
         let highSecModifier: Double   // 高安修正系数
         let lowSecModifier: Double    // 低安修正系数
         let nullSecModifier: Double   // 0.0/虫洞修正系数
@@ -216,7 +219,7 @@ class BlueprintCalcUtil {
             attributeIds = [2721, 2355, 2356, 2357]
         } else {
             // 普通工业建筑：查询材料效率 (2600)、时间效率 (2602) 和安全等级修正系数 (2355, 2356, 2357)
-            attributeIds = [2600, 2602, 2355, 2356, 2357]
+            attributeIds = [2600, 2601, 2602, 2355, 2356, 2357]
         }
         
         let attributeIdPlaceholders = attributeIds.map { _ in "?" }.joined(separator: ",")
@@ -230,6 +233,7 @@ class BlueprintCalcUtil {
         
         var materialBonus: Double = 1.0
         var timeBonus: Double = 1.0
+        var taxBonus: Double = 1.0
         var highSecModifier: Double = 1.0
         var lowSecModifier: Double = 1.0
         var nullSecModifier: Double = 1.0
@@ -241,6 +245,8 @@ class BlueprintCalcUtil {
                     switch attributeId {
                     case 2600:  // 普通建筑材料效率加成
                         materialBonus = value
+                    case 2601:  // 加工税减少加成
+                        taxBonus = value
                     case 2602:  // 普通建筑时间效率加成
                         timeBonus = value
                     case 2721:  // 反应建筑时间效率加成
@@ -263,6 +269,7 @@ class BlueprintCalcUtil {
         return StructureAttributes(
             materialBonus: materialBonus,
             timeBonus: timeBonus,
+            taxBonus: taxBonus,
             highSecModifier: highSecModifier,
             lowSecModifier: lowSecModifier,
             nullSecModifier: nullSecModifier
@@ -1149,13 +1156,15 @@ class BlueprintCalcUtil {
     struct FacilityCostParams {
         let materials: [MaterialRequirement]  // 材料需求列表
         let solarSystemId: Int               // 星系ID
+        let facilityTypeId: Int              // 建筑类型ID
         let facilityTax: Double              // 设施税率（小数形式）
         let isReaction: Bool                 // 是否为反应类型
         let scc: Double = 0.04               // SCC费用，固定为4%
         
-        init(materials: [MaterialRequirement], solarSystemId: Int, facilityTax: Double, isReaction: Bool) {
+        init(materials: [MaterialRequirement], solarSystemId: Int, facilityTypeId: Int, facilityTax: Double, isReaction: Bool) {
             self.materials = materials
             self.solarSystemId = solarSystemId
+            self.facilityTypeId = facilityTypeId
             self.facilityTax = facilityTax
             self.isReaction = isReaction
         }
@@ -1179,10 +1188,24 @@ class BlueprintCalcUtil {
         let costIndex = getSystemCostIndex(solarSystemId: params.solarSystemId, isReaction: params.isReaction)
         Logger.info("  星系成本指数: \(String(format: "%.4f", costIndex)) (\(String(format: "%.2f", costIndex * 100))%)")
         
-        // 3. 计算最终手续费
-        let facilityCost = eiv * (costIndex + params.facilityTax + params.scc)
+        // 3. 获取建筑加工税减少加成
+        let structureAttributes = getStructureAttributes(structureTypeId: params.facilityTypeId, isReaction: params.isReaction)
+        let taxBonus = structureAttributes.taxBonus
+        Logger.info("  建筑加工税减少加成: \(String(format: "%.4f", taxBonus)) (\(String(format: "%.2f", (taxBonus - 1.0) * 100))%)")
         
-        Logger.info("  手续费计算: \(String(format: "%.2f", eiv)) × (\(String(format: "%.4f", costIndex)) + \(String(format: "%.4f", params.facilityTax)) + \(String(format: "%.4f", params.scc))) = \(String(format: "%.2f", facilityCost)) ISK")
+        // 4. 计算税额组成
+        // 系数税：EIV * 系数 * 2601属性数值加成
+        let coefficientTax = eiv * costIndex * taxBonus
+        Logger.info("  系数税: \(String(format: "%.2f", eiv)) × \(String(format: "%.4f", costIndex)) × \(String(format: "%.4f", taxBonus)) = \(String(format: "%.2f", coefficientTax)) ISK")
+        
+        // 建筑和SCC税：EIV * (4% + 建筑税)
+        let buildingAndSccTax = eiv * (params.scc + params.facilityTax)
+        Logger.info("  建筑和SCC税: \(String(format: "%.2f", eiv)) × (\(String(format: "%.4f", params.scc)) + \(String(format: "%.4f", params.facilityTax))) = \(String(format: "%.2f", buildingAndSccTax)) ISK")
+        
+        // 5. 计算最终手续费
+        let facilityCost = coefficientTax + buildingAndSccTax
+        
+        Logger.info("  最终手续费: \(String(format: "%.2f", coefficientTax)) + \(String(format: "%.2f", buildingAndSccTax)) = \(String(format: "%.2f", facilityCost)) ISK")
         Logger.info("[Bonus Result] 设施手续费: \(String(format: "%.2f", facilityCost)) ISK")
         
         return facilityCost
@@ -1198,7 +1221,7 @@ class BlueprintCalcUtil {
         let typeIds = materials.map { $0.typeId }
         
         // 使用Task同步等待异步结果
-        var prices: [Int: Double] = [:]
+        var prices: [Int: MarketPriceData] = [:]
         let semaphore = DispatchSemaphore(value: 0)
         
         Task {
@@ -1212,15 +1235,18 @@ class BlueprintCalcUtil {
         var totalEIV: Double = 0.0
         
         for material in materials {
-            let unitPrice = prices[material.typeId] ?? 0.0
-            let materialCost = unitPrice * Double(material.finalQuantity)
+            let priceData = prices[material.typeId]
+            // 使用adjusted_price计算EIV，如果不存在则设为0
+            let unitPrice = priceData?.adjustedPrice ?? 0.0
+            // 使用原始数量计算EIV，不考虑材料效率加成
+            let materialCost = unitPrice * Double(material.originalQuantity)
             
-            Logger.info("    材料 \(material.typeName) (ID: \(material.typeId)): \(material.finalQuantity) × \(String(format: "%.2f", unitPrice)) = \(String(format: "%.2f", materialCost)) ISK")
+            Logger.info("    材料 \(material.typeName) (ID: \(material.typeId)): \(material.originalQuantity) × \(String(format: "%.2f", unitPrice)) = \(String(format: "%.2f", materialCost)) ISK [使用adjusted_price计算EIV]")
             
             totalEIV += materialCost
         }
         
-        Logger.info("  EIV总计: \(String(format: "%.2f", totalEIV)) ISK")
+        Logger.info("  EIV总计: \(String(format: "%.2f", totalEIV)) ISK [基于原始材料需求，使用adjusted_price]")
         return totalEIV
     }
     

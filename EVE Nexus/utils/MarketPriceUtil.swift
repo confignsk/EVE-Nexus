@@ -1,26 +1,37 @@
 import Foundation
 
+/// 市场价格结构体
+struct MarketPriceData {
+    let adjustedPrice: Double  // 调整价格
+    let averagePrice: Double   // 平均价格
+}
+
 /// 市场价格工具类
 enum MarketPriceUtil {
-    /// 获取多个物品的市场预估价格（基于历史平均价格）
+    /// 获取多个物品的市场价格数据（包含调整价格和平均价格）
     /// - Parameter typeIds: 物品ID数组
-    /// - Returns: [物品ID: 预估价格] 的字典，如果某个物品没有价格数据则不会包含在结果中
+    /// - Returns: [物品ID: 价格数据] 的字典，如果某个物品没有价格数据则不会包含在结果中
     /// - 会联网获取市场价格，如果获取失败，会尝试重新获取
-    static func getMarketPrices(typeIds: [Int], forceRefresh: Bool = false) async -> [Int: Double] {
+    static func getMarketPrices(typeIds: [Int], forceRefresh: Bool = false) async -> [Int: MarketPriceData] {
         do {
             // 先尝试从缓存获取价格
             let prices = try await MarketPricesAPI.shared.fetchMarketPrices(forceRefresh: forceRefresh)
             Logger.debug("从缓存获取市场价格数据，总条目数: \(prices.count)")
 
             // 创建结果字典
-            var result: [Int: Double] = [:]
+            var result: [Int: MarketPriceData] = [:]
 
             // 从缓存中查找价格
             for price in prices {
-                if typeIds.contains(price.type_id),
-                    let averagePrice = price.average_price
-                {
-                    result[price.type_id] = averagePrice
+                if typeIds.contains(price.type_id) {
+                    // 如果adjusted_price不存在则设为0，如果average_price不存在则设为0
+                    let adjustedPrice = price.adjusted_price ?? 0.0
+                    let averagePrice = price.average_price ?? 0.0
+                    
+                    result[price.type_id] = MarketPriceData(
+                        adjustedPrice: adjustedPrice,
+                        averagePrice: averagePrice
+                    )
                 }
             }
 

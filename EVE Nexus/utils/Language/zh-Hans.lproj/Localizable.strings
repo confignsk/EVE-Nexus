@@ -2425,6 +2425,8 @@
 "StarMap_Reset_View" = "重置视图";
 "StarMap_Unknown_Region" = "未知";
 "StarMap_Search_System" = "搜索星系";
+"StarMap_Search_Region" = "搜索星域";
+"StarMap_No_Results" = "未找到匹配的星域";
 "StarMap_Clear_Search" = "清除";
 "StarMap_Export_Success" = "导出成功";
 "StarMap_Export_Success_Message" = "地图已导出到相册";

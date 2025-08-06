@@ -2387,6 +2387,8 @@
 "StarMap_Reset_View" = "Reset View";
 "StarMap_Unknown_Region" = "Unknown";
 "StarMap_Search_System" = "Search system";
+"StarMap_Search_Region" = "Search region";
+"StarMap_No_Results" = "No matching regions found";
 "StarMap_Clear_Search" = "Clear";
 "StarMap_Export_Success" = "Export Success";
 "StarMap_Export_Success_Message" = "Map exported to photo library";

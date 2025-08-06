@@ -427,12 +427,13 @@ struct RegionSystemMapView: View {
         return mapData
     }
     
-    private func querySystemInfo(systemIds: [Int]) -> [Int: (name: String, security: Double, regionId: Int)] {
+    private func querySystemInfo(systemIds: [Int]) -> [Int: (name: String, nameEn: String, nameZh: String, security: Double, regionId: Int, planetCounts: PlanetCounts)] {
         guard !systemIds.isEmpty else { return [:] }
         
         let placeholders = String(repeating: "?,", count: systemIds.count).dropLast()
         let sql = """
-            SELECT solarSystemID, solarSystemName, system_security, region_id
+            SELECT solarSystemID, solarSystemName, solarSystemName_en, solarSystemName_zh, system_security, region_id,
+                   gas, temperate, barren, oceanic, ice, lava, storm, plasma, jove
             FROM solarsystems s
             JOIN universe u ON u.solarsystem_id = s.solarSystemID
             WHERE s.solarSystemID IN (\(placeholders))
@@ -443,13 +444,28 @@ struct RegionSystemMapView: View {
             return [:]
         }
         
-        var systemInfo: [Int: (name: String, security: Double, regionId: Int)] = [:]
+        var systemInfo: [Int: (name: String, nameEn: String, nameZh: String, security: Double, regionId: Int, planetCounts: PlanetCounts)] = [:]
         for row in rows {
             if let id = row["solarSystemID"] as? Int,
                let name = row["solarSystemName"] as? String,
+               let nameEn = row["solarSystemName_en"] as? String,
+               let nameZh = row["solarSystemName_zh"] as? String,
                let security = row["system_security"] as? Double,
                let regionId = row["region_id"] as? Int {
-                systemInfo[id] = (name: name, security: security, regionId: regionId)
+                
+                let planetCounts = PlanetCounts(
+                    gas: row["gas"] as? Int ?? 0,
+                    temperate: row["temperate"] as? Int ?? 0,
+                    barren: row["barren"] as? Int ?? 0,
+                    oceanic: row["oceanic"] as? Int ?? 0,
+                    ice: row["ice"] as? Int ?? 0,
+                    lava: row["lava"] as? Int ?? 0,
+                    storm: row["storm"] as? Int ?? 0,
+                    plasma: row["plasma"] as? Int ?? 0,
+                    jove: row["jove"] as? Int ?? 0
+                )
+                
+                systemInfo[id] = (name: name, nameEn: nameEn, nameZh: nameZh, security: security, regionId: regionId, planetCounts: planetCounts)
             }
         }
         
@@ -457,7 +473,7 @@ struct RegionSystemMapView: View {
         return systemInfo
     }
     
-    private func buildSystemNodes(mapData: SystemMapData, systemInfo: [Int: (name: String, security: Double, regionId: Int)]) -> [SystemNodeData] {
+    private func buildSystemNodes(mapData: SystemMapData, systemInfo: [Int: (name: String, nameEn: String, nameZh: String, security: Double, regionId: Int, planetCounts: PlanetCounts)]) -> [SystemNodeData] {
         var nodes: [SystemNodeData] = []
         
         for (systemIdStr, position) in mapData.systems {
@@ -469,10 +485,13 @@ struct RegionSystemMapView: View {
             let node = SystemNodeData(
                 systemId: systemId,
                 name: info.name,
+                nameEn: info.nameEn,
+                nameZh: info.nameZh,
                 security: info.security,
                 regionId: info.regionId,
                 position: CGPoint(x: position.x, y: position.y),
-                connections: connections
+                connections: connections,
+                planetCounts: info.planetCounts
             )
             nodes.append(node)
         }
@@ -631,10 +650,13 @@ struct RegionSystemMapView: View {
             parentView.getSystemColor(SystemNodeData(
                 systemId: systemId,
                 name: systemName,
+                nameEn: systemName,
+                nameZh: systemName,
                 security: security,
                 regionId: 0,
                 position: .zero,
-                connections: []
+                connections: [],
+                planetCounts: PlanetCounts()
             ))
         }
         
@@ -642,10 +664,13 @@ struct RegionSystemMapView: View {
             parentView.getSystemBorderColor(SystemNodeData(
                 systemId: systemId,
                 name: systemName,
+                nameEn: systemName,
+                nameZh: systemName,
                 security: security,
                 regionId: 0,
                 position: .zero,
-                connections: []
+                connections: [],
+                planetCounts: PlanetCounts()
             ))
         }
         
@@ -683,10 +708,26 @@ struct RegionSystemMapView: View {
                     .foregroundColor(.white)
                     .lineLimit(1)
                 
-                Text(formatSystemSecurity(security))
-                    .font(.system(size: 6 * nodeScale, weight: .medium))
-                    .foregroundColor(securityColor)
-                    .lineLimit(1)
+                // 显示安全等级或行星数量
+                if parentView.selectedFilter != .all {
+                    let planetCount = parentView.getSystemPlanetCount(systemId: systemId)
+                    if planetCount > 0 {
+                        Text("\(planetCount)")
+                            .font(.system(size: 6 * nodeScale, weight: .bold))
+                            .foregroundColor(.white)
+                            .lineLimit(1)
+                    } else {
+                        Text(formatSystemSecurity(security))
+                            .font(.system(size: 6 * nodeScale, weight: .medium))
+                            .foregroundColor(securityColor)
+                            .lineLimit(1)
+                    }
+                } else {
+                    Text(formatSystemSecurity(security))
+                        .font(.system(size: 6 * nodeScale, weight: .medium))
+                        .foregroundColor(securityColor)
+                        .lineLimit(1)
+                }
             }
             .frame(width: 50 * nodeScale, height: 24 * nodeScale)
             .background(
@@ -731,6 +772,8 @@ struct RegionSystemMapView: View {
         } else {
             filteredNodes = systemNodes.filter { system in
                 system.name.localizedCaseInsensitiveContains(searchText) ||
+                system.nameEn.localizedCaseInsensitiveContains(searchText) ||
+                system.nameZh.localizedCaseInsensitiveContains(searchText) ||
                 formatSystemSecurity(system.security).contains(searchText)
             }
             
@@ -810,6 +853,13 @@ struct RegionSystemMapView: View {
             return selectedFilter.color
         }
         return nil
+    }
+    
+    private func getSystemPlanetCount(systemId: Int) -> Int {
+        guard let system = systemNodes.first(where: { $0.systemId == systemId }) else {
+            return 0
+        }
+        return system.planetCounts.getCount(for: selectedFilter)
     }
     
     // MARK: - 控制函数

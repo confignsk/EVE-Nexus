@@ -4,22 +4,88 @@ import Foundation
 struct StarMapView: View {
     @ObservedObject var databaseManager: DatabaseManager
     @State private var regions: [StarMapRegion] = []
+    @State private var allRegions: [StarMapRegion] = [] // 存储所有星域数据用于搜索
     @State private var showRegionMap = false
     @State private var availableRegionIds: Set<Int> = []
+    @State private var searchText = ""
+    
+    var filteredRegions: [StarMapRegion] {
+        if searchText.isEmpty {
+            return regions
+        } else {
+            return allRegions.filter { region in
+                region.name.localizedCaseInsensitiveContains(searchText) ||
+                region.nameEn.localizedCaseInsensitiveContains(searchText) ||
+                region.nameZh.localizedCaseInsensitiveContains(searchText)
+            }
+        }
+    }
     
     var body: some View {
-        List {
-            // Section 1: 星域图跳转
-            Section {
-                NavigationLink(value: "region_map") {
-                    Label(NSLocalizedString("Main_Star_Map", comment: "星域图"), systemImage: "map")
+        VStack(spacing: 0) {
+            // 搜索栏 - 始终显示
+            HStack {
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.secondary)
+                    TextField(NSLocalizedString("StarMap_Search_Region", comment: "搜索星域"), text: $searchText)
+                        .textFieldStyle(PlainTextFieldStyle())
+                    
+                    if !searchText.isEmpty {
+                        Button(action: {
+                            searchText = ""
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.secondary)
+                        }
+                    }
                 }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color(.systemGray6))
+                .cornerRadius(8)
             }
-            // Section 2: 星域列表
-            Section(header: Text(NSLocalizedString("Main_Language_Map_Type_Region", comment: ""))) {
-                ForEach(regions) { region in
-                    NavigationLink(value: RegionNavigation.regionMap(region.id, region.name)) {
-                        Text(region.name)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(Color(.systemBackground))
+            .overlay(
+                Rectangle()
+                    .frame(height: 0.5)
+                    .foregroundColor(Color(.separator)),
+                alignment: .bottom
+            )
+            
+            // 星域列表
+            List {
+                // Section 1: 星域图跳转
+                Section {
+                    NavigationLink(value: "region_map") {
+                        Label(NSLocalizedString("Main_Star_Map", comment: "星域图"), systemImage: "map")
+                    }
+                }
+                // Section 2: 星域列表
+                Section(header: Text(NSLocalizedString("Main_Language_Map_Type_Region", comment: ""))) {
+                    if filteredRegions.isEmpty && !searchText.isEmpty {
+                        // 搜索无结果提示
+                        HStack {
+                            Spacer()
+                            VStack(spacing: 8) {
+                                Image(systemName: "magnifyingglass")
+                                    .font(.system(size: 24))
+                                    .foregroundColor(.secondary)
+                                Text(NSLocalizedString("StarMap_No_Results", comment: "未找到匹配的星域"))
+                                    .font(.body)
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding(.vertical, 40)
+                            Spacer()
+                        }
+                    } else {
+                        ForEach(filteredRegions) { region in
+                            NavigationLink(value: RegionNavigation.regionMap(region.id, region.name)) {
+                                Text(region.name)
+                            }
+                        }
                     }
                 }
             }
@@ -62,19 +128,25 @@ struct StarMapView: View {
     }
     
     private func loadRegions() {
-        let sql = "select regionID, regionName from regions"
+        let sql = "SELECT regionID, regionName, regionName_en, regionName_zh FROM regions"
         if case let .success(rows) = DatabaseManager.shared.executeQuery(sql) {
-            self.regions = rows.compactMap { row in
+            let allRegionsData = rows.compactMap { (row: [String: Any]) -> StarMapRegion? in
                 guard let id = row["regionID"] as? Int, 
                       let name = row["regionName"] as? String,
+                      let nameEn = row["regionName_en"] as? String,
+                      let nameZh = row["regionName_zh"] as? String,
                       availableRegionIds.contains(id) else { 
-                    return nil as StarMapRegion? 
+                    return nil
                 }
-                return StarMapRegion(id: id, name: name)
+                return StarMapRegion(id: id, name: name, nameEn: nameEn, nameZh: nameZh)
             }
             .sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+            
+            self.allRegions = allRegionsData
+            self.regions = allRegionsData
             Logger.info("过滤后显示 \(regions.count) 个星域")
         } else {
+            self.allRegions = []
             self.regions = []
         }
     }

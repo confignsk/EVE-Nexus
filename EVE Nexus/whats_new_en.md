@@ -228,3 +228,8 @@ Fixes & Improvements:
 11. Add star map.
 12. Allow search LP Offer.
 
+# v1.7.1 Aug 6, 2025
+
+1. Fix Bug in Skill plan function.
+2. Fix Bug in Industry Calculator when calculate EIV.
+
