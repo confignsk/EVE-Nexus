@@ -176,6 +176,9 @@ class EVELoginViewModel: ObservableObject {
     @Published var characters: [EVECharacterInfo] = []
     @Published var characterPortraits: [Int: UIImage] = [:]
     let databaseManager: DatabaseManager
+    
+    // 添加私有队列来保证角色数组操作的线程安全
+    private let characterQueue = DispatchQueue(label: "character.queue", qos: .userInitiated)
 
     init(databaseManager: DatabaseManager = DatabaseManager()) {
         self.databaseManager = databaseManager
@@ -228,12 +231,22 @@ class EVELoginViewModel: ObservableObject {
     func loadCharacters() {
         Task { @MainActor in
             let allCharacters = EVELogin.shared.loadCharacters()
-            characters = allCharacters.map { $0.character }
-            // isLoggedIn = !characters.isEmpty
-
+            let newCharacters = allCharacters.map { $0.character }
+            
+            // 原子性更新角色列表
+            characters = newCharacters
+            
+            Logger.info("[EVELoginViewModel]已加载 \(characters.count) 个角色")
+            
+            // 异步加载头像
             Task {
-                for character in characters {
-                    await loadCharacterPortrait(characterId: character.CharacterID)
+                for character in newCharacters {
+                    // 检查视图是否仍然存在
+                    guard await MainActor.run(body: { self.characters.contains { $0.CharacterID == character.CharacterID } }) else {
+                        continue
+                    }
+                    
+                    await self.loadCharacterPortrait(characterId: character.CharacterID)
                 }
             }
         }
@@ -276,26 +289,101 @@ class EVELoginViewModel: ObservableObject {
 
     // 移除角色
     func removeCharacter(_ character: EVECharacterInfo) {
-        EVELogin.shared.removeCharacter(characterId: character.CharacterID)
-        characterPortraits.removeValue(forKey: character.CharacterID)
-        loadCharacters()
-
-        // 如果移除的是当前选中的角色，清除选中状态
-        if characterInfo?.CharacterID == character.CharacterID {
+        let characterId = character.CharacterID
+        Logger.info("[EVELoginViewModel]开始移除角色: \(character.CharacterName) (\(characterId))")
+        
+        // 1. 先从本地数组中移除，避免UI闪烁
+        characters.removeAll { $0.CharacterID == characterId }
+        
+        // 2. 移除头像缓存
+        characterPortraits.removeValue(forKey: characterId)
+        
+        // 3. 如果移除的是当前选中的角色，清除选中状态
+        if characterInfo?.CharacterID == characterId {
             characterInfo = nil
         }
-
-        // 如果没有角色了，更新登录状态
-        //        if characters.isEmpty {
-        //            isLoggedIn = false
-        //        }
+        
+        // 4. 异步清理持久化数据，避免阻塞UI
+        Task.detached {
+            // 清理持久化存储
+            EVELogin.shared.removeCharacter(characterId: characterId)
+            
+            // 重新验证本地状态与持久化状态的一致性
+            await MainActor.run {
+                let persistedCharacters = EVELogin.shared.loadCharacters()
+                let persistedIds = Set(persistedCharacters.map { $0.character.CharacterID })
+                let localIds = Set(self.characters.map { $0.CharacterID })
+                
+                // 如果发现不一致，重新加载
+                if persistedIds != localIds {
+                    Logger.warning("[EVELoginViewModel]检测到本地与持久化状态不一致，重新加载角色列表")
+                    self.loadCharacters()
+                }
+            }
+        }
+        
+        Logger.info("[EVELoginViewModel]角色移除完成: \(character.CharacterName) (\(characterId))")
     }
 
     // 更新角色顺序
     func moveCharacter(from source: IndexSet, to destination: Int) {
+        // 边界检查
+        guard destination >= 0 && destination <= characters.count else {
+            Logger.warning("移动目标位置 \(destination) 超出有效范围 [0, \(characters.count)]")
+            return
+        }
+        
+        // 检查源索引是否有效
+        for index in source {
+            guard index < characters.count else {
+                Logger.warning("源索引 \(index) 超出数组范围 \(characters.count)")
+                return
+            }
+        }
+        
         characters.move(fromOffsets: source, toOffset: destination)
         let characterIds = characters.map { $0.CharacterID }
         EVELogin.shared.saveCharacterOrder(characterIds)
+    }
+    
+    // MARK: - 基于角色ID的安全更新方法
+    
+    /// 通过角色ID查找角色在数组中的索引
+    private func findCharacterIndex(by characterId: Int) -> Int? {
+        return characters.firstIndex { $0.CharacterID == characterId }
+    }
+    
+    /// 安全地更新角色信息
+    func updateCharacter(characterId: Int, updateBlock: (inout EVECharacterInfo) -> Void) {
+        guard let index = findCharacterIndex(by: characterId) else {
+            Logger.warning("未找到角色ID \(characterId) 对应的角色")
+            return
+        }
+        
+        // 确保索引仍然有效（防止在查找和使用之间数组被修改）
+        guard index < characters.count else {
+            Logger.warning("角色索引 \(index) 超出数组范围 \(characters.count)")
+            return
+        }
+        
+        updateBlock(&characters[index])
+        
+        // 如果是当前选中的角色，也更新 characterInfo
+        if characterInfo?.CharacterID == characterId {
+            characterInfo = characters[index]
+        }
+    }
+    
+    /// 批量更新角色信息
+    func updateCharacters(updates: [Int: (inout EVECharacterInfo) -> Void]) {
+        for (characterId, updateBlock) in updates {
+            updateCharacter(characterId: characterId, updateBlock: updateBlock)
+        }
+    }
+    
+    /// 获取角色信息的只读副本
+    func getCharacter(by characterId: Int) -> EVECharacterInfo? {
+        return characters.first { $0.CharacterID == characterId }
     }
 }
 
@@ -767,7 +855,20 @@ class ScopeManager {
         }
     }
 
-    // 从 api 获取最新的 scopes
+    // 读取打包内的 scopes 配置
+    private func readBundledScopesConfig() -> (registered: Set<String>, notRequired: Set<String>)? {
+        guard let scopesURL = Bundle.main.url(forResource: hardcodedScopesFileName, withExtension: nil),
+              let data = try? Data(contentsOf: scopesURL),
+              let scopesDict = try? JSONDecoder().decode([String: [String]].self, from: data) else {
+            return nil
+        }
+
+        let registered = Set(scopesDict["registeredScopes"] ?? [])
+        let notRequired = Set(scopesDict["notRequiredScopes"] ?? [])
+        return (registered: registered, notRequired: notRequired)
+    }
+
+    // 从 api 获取最新的 scopes（与 registeredScopes 取交集后，剔除 notRequiredScopes）
     func fetchLatestScopes() async throws -> [String] {
         guard let url = URL(string: "https://esi.evetech.net/meta/openapi.json") else {
             throw NetworkError.invalidURL
@@ -785,28 +886,26 @@ class ScopeManager {
         let openapi = try JSONDecoder().decode(OpenAPIResponse.self, from: data)
 
         // 从 components.securitySchemes.OAuth2.flows.authorizationCode.scopes 中提取所有的 scope keys
-        let allScopes = openapi.components.securitySchemes.oauth2.flows.authorizationCode.scopes.keys.map { String($0) }
-        
-        // 获取不允许的 scopes 并过滤
-        let notAllowedScopes = getNotAllowedScopes()
-        let filteredScopes = allScopes.filter { !notAllowedScopes.contains($0) }
+        let allScopes = Set(openapi.components.securitySchemes.oauth2.flows.authorizationCode.scopes.keys.map { String($0) })
+
+        // 从本地打包文件读取配置
+        let config = readBundledScopesConfig() ?? (registered: Set<String>(), notRequired: Set<String>())
+
+        // 计算：最新(全量) ∩ registeredScopes，再剔除 notRequiredScopes
+        let intersected = allScopes.intersection(config.registered)
+        let finalScopes = intersected.subtracting(config.notRequired)
 
         // 保存过滤后的 scopes 到本地文件
-        saveScopesToFile(filteredScopes)
+        saveScopesToFile(Array(finalScopes))
 
-        Logger.info("[EVELogin]成功从网络获取最新scopes，原始: \(allScopes.count)，过滤后: \(filteredScopes.count)")
+        Logger.info("[EVELogin]成功从网络获取最新scopes，原始: \(allScopes.count)，交集后: \(intersected.count)，剔除不需要后: \(finalScopes.count)")
 
-        return filteredScopes
+        return Array(finalScopes)
     }
     
-    // 获取不允许的 scopes 集合
-    private func getNotAllowedScopes() -> Set<String> {
-        guard let scopesURL = Bundle.main.url(forResource: hardcodedScopesFileName, withExtension: nil),
-              let data = try? Data(contentsOf: scopesURL),
-              let scopesDict = try? JSONDecoder().decode([String: [String]].self, from: data) else {
-            return Set()
-        }
-        return Set(scopesDict["notAllowedScopes"] ?? [])
+    // 获取不需要的 scopes 集合
+    private func getNotRequiredScopes() -> Set<String> {
+        return readBundledScopesConfig()?.notRequired ?? Set()
     }
 
     // 获取 scopes 并返回来源信息
@@ -860,13 +959,15 @@ class ScopeManager {
         // 尝试从本地文件加载
         if let scopes = loadScopesFromFile(latestScopesPath) {
             Logger.info("[EVELogin]从本地文件加载 scopes 成功")
-            // 对从本地文件加载的 scopes 也应用过滤
-            let notAllowedScopes = getNotAllowedScopes()
-            let filteredScopes = scopes.filter { !notAllowedScopes.contains($0) }
-            if notAllowedScopes.count > 0 && scopes.count != filteredScopes.count {
-                Logger.info("[EVELogin]对本地 scopes 应用过滤，原始: \(scopes.count)，过滤后: \(filteredScopes.count)")
+            // 再次应用规则：与 registered 取交集，并剔除 notRequired
+            let config = readBundledScopesConfig() ?? (registered: Set<String>(), notRequired: Set<String>())
+            let currentSet = Set(scopes)
+            let intersected = config.registered.isEmpty ? currentSet : currentSet.intersection(config.registered)
+            let finalSet = intersected.subtracting(config.notRequired)
+            if scopes.count != finalSet.count {
+                Logger.info("[EVELogin]对本地 scopes 应用交集与剔除过滤，原始: \(scopes.count)，交集后: \(intersected.count)，剔除后: \(finalSet.count)")
             }
-            return ScopeResult(scopes: filteredScopes, source: .localCache)
+            return ScopeResult(scopes: Array(finalSet), source: .localCache)
         }
 
         // 如果本地文件加载失败，使用硬编码的 scopes
@@ -881,31 +982,14 @@ class ScopeManager {
         return result.scopes
     }
 
-    // 从硬编码的 scopes.json 加载，并过滤掉不允许的 scopes
+    // 从硬编码的 scopes.json 加载：registeredScopes 与 notRequiredScopes 计算后返回
     private func loadHardcodedScopes() -> [String]? {
-        guard let scopesURL = Bundle.main.url(forResource: hardcodedScopesFileName, withExtension: nil) else {
-            return nil
-        }
-        
-        do {
-            let data = try Data(contentsOf: scopesURL)
-            let scopesDict = try JSONDecoder().decode([String: [String]].self, from: data)
-            let allScopes = scopesDict["scopes"] ?? []
-            let notAllowedScopes = Set(scopesDict["notAllowedScopes"] ?? [])
-            
-            let filteredScopes = allScopes.filter { !notAllowedScopes.contains($0) }
-            
-            if notAllowedScopes.count > 0 {
-                Logger.info("[EVELogin]从硬编码文件加载 scopes 成功，原始: \(allScopes.count)，过滤后: \(filteredScopes.count)")
-            } else {
-                Logger.info("[EVELogin]从硬编码文件加载 scopes 成功，共 \(filteredScopes.count) 个权限")
-            }
-            
-            return filteredScopes
-        } catch {
-            Logger.error("[EVELogin]从硬编码文件加载 scopes 失败: \(error)")
-            return nil
-        }
+        guard let config = readBundledScopesConfig() else { return nil }
+
+        // 兜底：registeredScopes − notRequiredScopes
+        let finalScopes = config.registered.subtracting(config.notRequired)
+        Logger.info("[EVELogin]从硬编码文件加载 scopes 成功（registered − notRequired），共 \(finalScopes.count) 个权限")
+        return Array(finalScopes)
     }
 }
 

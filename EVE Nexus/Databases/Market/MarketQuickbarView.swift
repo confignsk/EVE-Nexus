@@ -1086,28 +1086,26 @@ struct MarketQuickbarDetailView: View {
         }
         .navigationTitle(quickbar.name)
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                HStack(spacing: 8) {
-                    // 剪贴板导入按钮
-                    Button {
-                        prepareImportFromClipboard()
-                    } label: {
-                        Image(systemName: "square.and.arrow.down")
-                    }
-                    
-                    // 剪贴板导出按钮
-                    Button {
-                        exportToClipboard()
-                    } label: {
-                        Image(systemName: "square.and.arrow.up")
-                    }
-                    .disabled(quickbar.items.isEmpty)
-                    
-                    Button {
-                        isShowingItemSelector = true
-                    } label: {
-                        Image(systemName: "plus")
-                    }
+            ToolbarItemGroup(placement: .navigationBarTrailing) {
+                // 剪贴板导入按钮
+                Button {
+                    prepareImportFromClipboard()
+                } label: {
+                    Image(systemName: "square.and.arrow.down")
+                }
+                
+                // 剪贴板导出按钮
+                Button {
+                    exportToClipboard()
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                }
+                .disabled(quickbar.items.isEmpty)
+                
+                Button {
+                    isShowingItemSelector = true
+                } label: {
+                    Image(systemName: "plus")
                 }
             }
         }
@@ -1836,9 +1834,23 @@ extension MarketQuickbarDetailView {
             return
         }
         
-        // 存储剪贴板内容并显示确认对话框
+        // 检查剪贴板内容是否为空
+        if clipboardContent.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            clipboardResult = NSLocalizedString("Main_Market_Clipboard_Empty", comment: "剪贴板为空")
+            isShowingClipboardAlert = true
+            return
+        }
+        
+        // 存储剪贴板内容
         clipboardContentToImport = clipboardContent
-        isShowingImportConfirmation = true
+        
+        // 如果当前列表有内容，显示确认对话框
+        if quickbar.items.count > 0 {
+            isShowingImportConfirmation = true
+        } else {
+            // 当前列表为空，直接导入
+            importFromClipboard()
+        }
     }
     
     // 从剪贴板导入物品
@@ -1855,8 +1867,17 @@ extension MarketQuickbarDetailView {
             existingItems: quickbar.items
         )
         
-        if importResult.successCount > 0 {
-            // 覆盖关注列表中的物品
+        // 根据解析结果处理不同情况
+        if importResult.successCount == 0 && importResult.failedItems.isEmpty {
+            // 情况1: 剪贴板内容为空或无有效内容
+            clipboardResult = NSLocalizedString("Main_Market_Clipboard_Empty", comment: "剪贴板为空")
+            isShowingClipboardAlert = true
+        } else if importResult.successCount == 0 && importResult.failedItems.count > 0 {
+            // 情况2: 全部解析失败
+            clipboardResult = NSLocalizedString("Main_Market_Clipboard_All_Failed", comment: "全部解析失败")
+            isShowingClipboardAlert = true
+        } else if importResult.successCount > 0 {
+            // 情况3和4: 有成功的解析结果，更新列表
             quickbar.items = importResult.updatedItems
             
             // 保存更改
@@ -1869,23 +1890,33 @@ extension MarketQuickbarDetailView {
             Task {
                 await loadAllMarketOrders()
             }
-        }
-        
-        // 显示导入结果
-        var resultMessage = ""
-        if importResult.successCount > 0 {
-            resultMessage += String(format: NSLocalizedString("Main_Market_Clipboard_Success", comment: ""), importResult.successCount)
-        }
-        if importResult.failedItems.count > 0 {
-            if !resultMessage.isEmpty {
-                resultMessage += "\n\n"
+            
+            if importResult.failedItems.count > 0 {
+                // 情况3: 部分成功，部分失败
+                var resultMessage = String(format: NSLocalizedString("Main_Market_Clipboard_Partial_Success", comment: ""), importResult.successCount)
+                
+                // 显示失败的前三行内容
+                let failedToShow = Array(importResult.failedItems.prefix(3))
+                if !failedToShow.isEmpty {
+                    resultMessage += "\n\n" + NSLocalizedString("Main_Market_Clipboard_Failed_Items", comment: "解析失败的项目:")
+                    resultMessage += "\n" + failedToShow.joined(separator: "\n")
+                    
+                    // 如果失败项目超过3个，显示省略提示
+                    if importResult.failedItems.count > 3 {
+                        resultMessage += "\n..."
+                        resultMessage += String(format: NSLocalizedString("Main_Market_Clipboard_More_Failed", comment: ""), importResult.failedItems.count - 3)
+                    }
+                }
+                
+                clipboardResult = resultMessage
+            } else {
+                // 情况4: 全部成功
+                clipboardResult = String(format: NSLocalizedString("Main_Market_Clipboard_All_Success", comment: ""), importResult.successCount)
             }
-            resultMessage += String(format: NSLocalizedString("Main_Market_Clipboard_Failed", comment: ""), importResult.failedItems.count)
-            resultMessage += "\n" + importResult.failedItems.joined(separator: "\n")
+            
+            isShowingClipboardAlert = true
         }
         
-        clipboardResult = resultMessage
-        isShowingClipboardAlert = true
         clipboardContentToImport = ""  // 清空临时存储的内容
     }
     

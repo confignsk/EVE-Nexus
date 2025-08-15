@@ -106,6 +106,9 @@
 "Calendar_Strategy_Minutes_Before" = "提前%d分钟";
 
 // 计算器相关
+"Calculator_Title" = "计算器";
+"Calculator_Blueprint" = "蓝图计算器";
+"Calculator_Ore_Refinery" = "精炼计算器";
 "Blueprint_Calculator_Settings" = "蓝图设置";
 "Blueprint_Calculator_Material_Efficiency" = "材料效率";
 "Blueprint_Calculator_Time_Efficiency" = "时间效率";
@@ -1194,6 +1197,7 @@
 // 剪贴板导入相关
 "Main_Market_Clipboard_Import" = "剪贴板导入";
 "Main_Market_Clipboard_Empty" = "剪贴板为空";
+"Main_Market_Clipboard_Parse_Failed" = "剪贴板内容解析失败";
 "Main_Market_Clipboard_Success" = "成功导入 %d 个物品";
 "Main_Market_Clipboard_Failed" = "以下 %d 个物品导入失败：";
 
@@ -1206,6 +1210,13 @@
 "Main_Market_Clipboard_Import_Confirm" = "确认导入";
 "Main_Market_Clipboard_Import_Confirm_Yes" = "确认导入";
 "Main_Market_Clipboard_Import_Confirm_Message" = "当前关注列表中有 %d 个物品，导入将覆盖现有内容。确定要继续吗？";
+
+// 新增的剪贴板导入结果相关字符串
+"Main_Market_Clipboard_All_Failed" = "全部解析失败";
+"Main_Market_Clipboard_Partial_Success" = "成功解析 %d 个物品";
+"Main_Market_Clipboard_All_Success" = "成功解析全部 %d 个物品";
+"Main_Market_Clipboard_Failed_Items" = "解析失败的项目:";
+"Main_Market_Clipboard_More_Failed" = "还有 %d 个项目解析失败";
 
 "Main_Battle" = "战斗";
 "Main_Killboard" = "战斗记录";
@@ -1743,7 +1754,6 @@
 
 
 // 计算器
-"Blueprint_Calculator" = "蓝图计算器";
 "Blueprint_Calculator_Structure_Settings" = "建筑设置";
 "Blueprint_Calculator_Select_Structure" = "选择建筑";
 "Blueprint_Calculator_No_Structure_Selected" = "未选择建筑";
@@ -2444,3 +2454,50 @@
 "StarMap_Filter_Storm" = "行星（风暴）";
 "StarMap_Filter_Plasma" = "行星（等离子）";
 "StarMap_Filter_Jove" = "朱庇特瞭望台";
+
+// Ore Refinery related strings
+"Ore_Refinery_Calculator" = "矿石精炼计算器";
+"Ore_Refinery_Basic_Settings" = "基本设置";
+"Ore_Refinery_Settings" = "精炼设置";
+"Ore_Refinery_Calculate" = "计算精炼";
+"Ore_Refinery_System_Security" = "星系安等";
+"Ore_Refinery_Structure" = "建筑";
+"Ore_Refinery_Structure_Rigs" = "建筑插件";
+"Ore_Refinery_Tax_Rate" = "建筑税率";
+"Ore_Refinery_Structure_1" = "建筑1";
+"Ore_Refinery_Structure_2" = "建筑2";
+"Ore_Refinery_Rig_None" = "无";
+"Ore_Refinery_Rig_T1" = "T1";
+"Ore_Refinery_Rig_T2" = "T2";
+"Ore_Refinery_Implant" = "植入体";
+"Ore_Refinery_Implant_1" = "植入体1";
+"Ore_Refinery_Implant_2" = "植入体2";
+"Ore_Refinery_Implant_3" = "植入体3";
+"Ore_Refinery_Implant_None" = "无";
+"Ore_Refinery_Tax_Rate_Placeholder" = "输入0-100的数字";
+"Ore_Refinery_Structure_Label" = "建筑";
+"Ore_Refinery_Implant_Label" = "植入体";
+"Ore_Refinery_Skills_Label" = "技能";
+"Ore_Refinery_All_Skills_Level" = "全5级";
+"Ore_Refinery_Insufficient_Quantity" = "数量不足";
+"Ore_Refinery_No_Output" = "无精炼产出";
+"Ore_Refinery_Unknown" = "未知状态";
+"Ore_Refinery_Ratio_Label" = "精炼比例：";
+"Ore_Refinery_Result_Title" = "精炼结果";
+"Ore_Refinery_Result_Input_Market_Value" = "精炼前市场总价";
+"Ore_Refinery_Result_Product_Market_Value" = "精炼后市场总价";
+"Ore_Refinery_Result_Market_Settings" = "市场设置";
+"Ore_Refinery_Result_Input_Market" = "输入市场";
+"Ore_Refinery_Result_Output_Market" = "输出市场";
+"Ore_Refinery_Result_Product_Value" = "产品总价值";
+"Ore_Refinery_Result_Tax_Amount" = "税额";
+"Ore_Refinery_Result_Total_Volume" = "总体积";
+"Ore_Refinery_Result_Output_List" = "精炼结果清单";
+"Ore_Refinery_Result_Remaining_List" = "精炼剩余物品清单";
+"Ore_Refinery_Result_Avg_Price" = "均价";
+"Ore_Refinery_Result_Total_Value" = "总价值";
+"Ore_Refinery_Result_No_Price" = "暂无价格信息";
+"Ore_Refinery_No_Items" = "暂无物品";
+"Ore_Refinery_Remaining_List_Empty" = "剩余物品列表为空";
+"Ore_Refinery_Output_List_Empty" = "精炼输出列表为空";
+"Ore_Refinery_Result_Tax_Zero" = "0 ISK (税率: %.1f%%)";

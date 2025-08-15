@@ -42,7 +42,18 @@ struct SkillRequirementRow: View {
             } label: {
                 HStack {
                     // 技能图标
-                    if let currentLevel = currentLevel, currentLevel == -1 {
+                    if currentLevel == nil {
+                        // 正在加载技能数据
+                        ProgressView()
+                            .frame(width: 32, height: 32)
+                            .scaleEffect(0.8)
+                    } else if let currentLevel = currentLevel, currentLevel == -2 {
+                        // 无角色登录，显示通用技能图标
+                        Image("skill")
+                            .resizable()
+                            .frame(width: 32, height: 32)
+                            .clipShape(Circle())
+                    } else if let currentLevel = currentLevel, currentLevel == -1 {
                         Image(systemName: "xmark.circle.fill")
                             .frame(width: 32, height: 32)
                             .foregroundColor(.red)
@@ -67,9 +78,21 @@ struct SkillRequirementRow: View {
                         //         .font(.caption)
                         //         .foregroundColor(.secondary)
                         // }
-                        // 新增：显示缺失技能点数（直接查表方式）
-                        if let currentLevel = currentLevel, currentLevel >= -1, currentLevel < level
-                        {
+                        // 技能点数显示
+                        if currentLevel == nil {
+                            // 正在加载中
+                            Text(NSLocalizedString("Misc_Loading", comment: ""))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        } else if let currentLevel = currentLevel, currentLevel == -2 {
+                            // 无角色登录，显示需要的总技能点数
+                            if !skillPointsText.isEmpty {
+                                Text(skillPointsText)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        } else if let currentLevel = currentLevel, currentLevel >= -1, currentLevel < level {
+                            // 新增：显示缺失技能点数（直接查表方式）
                             let currentSP = getCurrentSkillPointsSimple(for: skillID)
                             let requiredSP = getRequiredSkillPointsSimple(for: level)
                             Text(
@@ -104,9 +127,8 @@ struct SkillRequirementsView: View {
     let groupName: String
     @ObservedObject var databaseManager: DatabaseManager
     @AppStorage("currentCharacterId") private var currentCharacterId: Int = 0
+    @StateObject private var skillsManager = SharedSkillsManager.shared
     
-    // 存储所有技能等级的字典
-    @State private var characterSkills: [Int: Int] = [:]
     // 新增：存储角色属性点数
     @State private var characterAttributes: CharacterAttributes?
 
@@ -139,6 +161,11 @@ struct SkillRequirementsView: View {
             }
 
             let currentLevel = getCurrentSkillLevel(for: skill.skillID)
+            // 如果正在加载或没有角色登录，返回当前total
+            guard let currentLevel = currentLevel, currentLevel != -2 else {
+                return total
+            }
+            
             if currentLevel >= skill.level {
                 return total
             }
@@ -152,9 +179,9 @@ struct SkillRequirementsView: View {
         }
     }
 
-    // 获取当前技能等级 - 从预加载的数据中获取
-    private func getCurrentSkillLevel(for skillID: Int) -> Int {
-        return characterSkills[skillID] ?? -1
+    // 获取当前技能等级 - 从共享管理器获取
+    private func getCurrentSkillLevel(for skillID: Int) -> Int? {
+        return skillsManager.getSkillLevel(for: skillID)
     }
     
     // 新增：计算缺失技能的预计训练时间
@@ -170,6 +197,11 @@ struct SkillRequirementsView: View {
         
         for requirement in requirements {
             let currentLevel = getCurrentSkillLevel(for: requirement.skillID)
+            // 如果正在加载技能数据或没有角色登录，跳过计算
+            guard let currentLevel = currentLevel, currentLevel != -2 else {
+                continue
+            }
+            
             if currentLevel >= requirement.level {
                 continue // 技能已满足要求，跳过
             }
@@ -217,6 +249,10 @@ struct SkillRequirementsView: View {
         // 首先找出所有未满足要求的技能ID
         let unmetSkillIDs = requirements.compactMap { requirement -> Int? in
             let currentLevel = getCurrentSkillLevel(for: requirement.skillID)
+            // 如果正在加载技能数据或没有角色登录，跳过
+            guard let currentLevel = currentLevel, currentLevel != -2 else {
+                return nil
+            }
             return currentLevel < requirement.level ? requirement.skillID : nil
         }
         
@@ -321,43 +357,7 @@ struct SkillRequirementsView: View {
         return String(format: NSLocalizedString("Time_Seconds", comment: ""), Int(totalSeconds))
     }
 
-    // 加载所有技能等级
-    private func loadAllSkills() {
-        if currentCharacterId == 0 {
-            characterSkills = [:]
-            return
-        }
-        
-        Task {
-            do {
-                // 调用API获取技能数据
-                let skillsResponse = try await CharacterSkillsAPI.shared.fetchCharacterSkills(
-                    characterId: currentCharacterId, 
-                    forceRefresh: false
-                )
-                
-                // 将所有技能映射到字典中
-                var skillsDict = [Int: Int]()
-                for skill in skillsResponse.skills {
-                    skillsDict[skill.skill_id] = skill.trained_skill_level
-                }
-                
-                await MainActor.run {
-                    characterSkills = skillsDict
-                }
-            } catch {
-                Logger.error("获取技能数据失败: \(error)")
-                await MainActor.run {
-                    characterSkills = [:]
-                }
-            }
-        }
-        
-        // 新增：加载角色属性点数
-        loadCharacterAttributes()
-    }
-    
-    // 新增：加载角色属性点数（从API）
+    // 加载角色属性点数
     private func loadCharacterAttributes() {
         guard currentCharacterId != 0 else {
             characterAttributes = nil
@@ -413,14 +413,13 @@ struct SkillRequirementsView: View {
                         level: requirement.level,
                         timeMultiplier: requirement.timeMultiplier,
                         databaseManager: databaseManager,
-                        currentLevel: currentCharacterId == 0
-                            ? nil : getCurrentSkillLevel(for: requirement.skillID)
+                        currentLevel: getCurrentSkillLevel(for: requirement.skillID)
                     )
                 }
                 .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
             }
             .onAppear {
-                loadAllSkills()
+                loadCharacterAttributes()
             }
         }
     }

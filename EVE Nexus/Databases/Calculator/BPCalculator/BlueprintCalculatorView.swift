@@ -480,7 +480,7 @@ struct BlueprintCalculatorView: View {
             .disabled(!canStartCalculation || isCalculating)
             .padding()
         }
-        .navigationTitle(NSLocalizedString("Blueprint_Calculator", comment: "蓝图计算器"))
+        .navigationTitle(NSLocalizedString("Calculator_Blueprint", comment: "蓝图计算器"))
         .navigationBarTitleDisplayMode(.large)
         .onAppear {
             applyInitParams()

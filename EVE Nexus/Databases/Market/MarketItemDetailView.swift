@@ -43,6 +43,13 @@ struct MarketItemBasicInfoView: View {
                 .font(.subheadline)
                 .foregroundColor(.gray)
             }
+            
+            Spacer()
+            
+            // 添加右箭头提示
+            Image(systemName: "chevron.right")
+                .foregroundColor(.secondary)
+                .font(.caption)
         }
     }
 }
@@ -498,6 +505,7 @@ struct MarketItemDetailView: View {
     @State private var isLoadingHistory: Bool = false
     @State private var isFromParent: Bool = true
     @State private var showRegionPicker = false
+    @State private var showItemInfo = false  // 添加显示物品信息的状态
     @State private var selectedRegionID: Int
     @State private var selectedRegionName: String = ""
     @State private var saveSelection: Bool = true
@@ -525,17 +533,15 @@ struct MarketItemDetailView: View {
             // 基本信息部分
             Section {
                 if let details = itemDetails {
-                    NavigationLink {
-                        ItemInfoMap.getItemInfoView(
-                            itemID: itemID,
-                            databaseManager: databaseManager
-                        )
+                    Button {
+                        showItemInfo = true
                     } label: {
                         MarketItemBasicInfoView(
                             itemDetails: details,
                             marketPath: marketPath
                         )
                     }
+                    .buttonStyle(.plain)  // 使用 plain 样式避免按钮默认样式
                 }
             }
 
@@ -676,6 +682,21 @@ struct MarketItemDetailView: View {
                 saveSelection: $saveSelection,
                 databaseManager: databaseManager
             )
+        }
+        .sheet(isPresented: $showItemInfo) {
+            NavigationStack {
+                ItemInfoMap.getItemInfoView(
+                    itemID: itemID,
+                    databaseManager: databaseManager
+                )
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button(NSLocalizedString("Common_Done", comment: "完成")) {
+                            showItemInfo = false
+                        }
+                    }
+                }
+            }
         }
         .onChange(of: selectedRegionID) { _, _ in
             Task {

@@ -1,5 +1,104 @@
 import SwiftUI
 
+/// 共享的技能数据管理器
+@MainActor
+class SharedSkillsManager: ObservableObject {
+    static let shared = SharedSkillsManager()
+    
+    @Published var characterSkills: [Int: Int] = [:]
+    @Published var isLoading = false
+    
+    // 跟踪当前加载的角色ID，用于检测角色切换
+    private var loadedCharacterId: Int = 0
+    
+    private var currentCharacterId: Int {
+        UserDefaults.standard.integer(forKey: "currentCharacterId")
+    }
+    
+    private init() {}
+    
+    /// 预加载技能数据
+    func preloadSkills() {
+        guard currentCharacterId != 0 else {
+            characterSkills = [:]
+            loadedCharacterId = 0
+            isLoading = false
+            return
+        }
+        
+        // 检测角色切换：如果当前角色ID与已加载的不同，清空数据重新加载
+        if loadedCharacterId != currentCharacterId {
+            Logger.debug("检测到角色切换: \(loadedCharacterId) -> \(currentCharacterId)")
+            characterSkills = [:]
+            loadedCharacterId = 0
+            isLoading = false
+        }
+        
+        // 如果已经有当前角色的数据且不在加载中，直接返回
+        if !characterSkills.isEmpty && !isLoading && loadedCharacterId == currentCharacterId {
+            return
+        }
+        
+        // 防止重复加载
+        if isLoading {
+            return
+        }
+        
+        isLoading = true
+        Logger.debug("SharedSkillsManager开始预加载技能数据 - 角色ID: \(currentCharacterId)")
+        
+        Task {
+            do {
+                let skillsResponse = try await CharacterSkillsAPI.shared.fetchCharacterSkills(
+                    characterId: currentCharacterId,
+                    forceRefresh: false
+                )
+                
+                var skillsDict = [Int: Int]()
+                for skill in skillsResponse.skills {
+                    skillsDict[skill.skill_id] = skill.trained_skill_level
+                }
+                
+                await MainActor.run {
+                    self.characterSkills = skillsDict
+                    self.loadedCharacterId = currentCharacterId
+                    self.isLoading = false
+                    Logger.debug("SharedSkillsManager技能数据预加载完成 - 角色ID: \(currentCharacterId), 技能数量: \(skillsDict.count)")
+                }
+            } catch {
+                Logger.error("SharedSkillsManager预加载技能数据失败: \(error)")
+                await MainActor.run {
+                    self.characterSkills = [:]
+                    self.loadedCharacterId = 0
+                    self.isLoading = false
+                }
+            }
+        }
+    }
+    
+    /// 获取技能等级
+    /// - Returns: nil表示正在加载，-1表示角色未拥有该技能，-2表示无角色登录
+    func getSkillLevel(for skillID: Int) -> Int? {
+        if currentCharacterId == 0 {
+            return -2  // 特殊值表示无角色登录
+        }
+        
+        if isLoading {
+            return nil  // 正在加载
+        }
+        
+        return characterSkills[skillID] ?? -1  // 角色未拥有该技能
+    }
+    
+    /// 清除技能数据（角色切换或登出时调用）
+    func clearSkillData() {
+        Logger.debug("SharedSkillsManager清除技能数据")
+        characterSkills = [:]
+        loadedCharacterId = 0
+        isLoading = false
+    }
+}
+
 enum ItemInfoMap {
     // 缓存结构，存储物品ID对应的分类信息
     private static var categoryCache: [Int: (categoryID: Int, groupID: Int?)] = [:]
@@ -34,6 +133,11 @@ enum ItemInfoMap {
         databaseManager: DatabaseManager,
         modifiedAttributes: [Int: Double]? = nil
     ) -> AnyView {
+        // 预加载技能数据
+        Task {
+            await SharedSkillsManager.shared.preloadSkills()
+        }
+        
         // 从缓存中获取分类信息
         guard let itemCategory = categoryCache[itemID] else {
             Logger.error("ItemInfoMap - 无法获取物品分类信息，itemID: \(itemID)")

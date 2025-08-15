@@ -18,3 +18,7 @@ echo "xxxx" > secrets.txt
 
 ## 从历史记录中替换密钥
 bfg --replace-text secrets.txt
+
+# 已知问题
+
+- https://stackoverflow.com/questions/79012075/issue-with-swiftui-navigationstack-searchable-modifier-and-returning-to-root-v

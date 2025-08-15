@@ -233,3 +233,10 @@ Fixes & Improvements:
 1. Fix Bug in Skill plan function.
 2. Fix Bug in Industry Calculator when calculate EIV.
 
+# v1.7.2 Aug 20, 2025
+
+1. Fix a bug that can not get current skill level for blueprints.
+2. Fix a bug when fetch Oauth scopes.
+3. Fix a bug when navigate in market function.
+4. Add refinery calculator.
+5. Some tiny fixes.

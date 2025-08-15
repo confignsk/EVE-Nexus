@@ -13,6 +13,7 @@ struct CharacterLoyaltyPointsStoreView: View {
     @State private var loadingTask: Task<Void, Never>?
     @State private var lpSearchResults: [LPSearchResult] = []
     @State private var isSearchingItems = false
+    @State private var shouldExecuteSearch = false
 
     private var searchResults: (factions: [Faction], corporations: [Corporation]) {
         // 如果搜索文本为空，直接返回空结果，不进行任何计算
@@ -54,53 +55,44 @@ struct CharacterLoyaltyPointsStoreView: View {
     }
 
     var body: some View {
-        List {
-            if isLoading {
-                Section {
-                    HStack {
-                        Spacer()
-                        if let progress = loadingProgress {
-                            Text(String(format: NSLocalizedString("LP_Store_Loading_Progress", comment: ""), progress.current, progress.total))
-                                .font(.footnote)
-                                .foregroundColor(.secondary)
-                                .padding(.vertical, 8)
-                                .padding(.horizontal, 12)
-                                .background(Color(.secondarySystemGroupedBackground))
-                                .clipShape(RoundedRectangle(cornerRadius: 6))
-                        } else {
-                            ProgressView()
-                        }
-                        Spacer()
-                    }
-                    .listRowBackground(Color.clear)
-                    .listRowInsets(EdgeInsets())
-                }
-            } else if let error = error {
-                VStack {
-                    Image(systemName: "exclamationmark.triangle")
-                        .font(.largeTitle)
-                        .foregroundColor(.red)
-                    Text(error.localizedDescription)
-                        .font(.headline)
-                    Button(NSLocalizedString("Main_Setting_Reset", comment: "")) {
-                        loadFactions()
-                    }
-                    .buttonStyle(.bordered)
-                }
-            } else if !debouncedSearchText.isEmpty {
-                // 搜索结果视图
-                if debouncedSearchText.count < 2 {
+        VStack(spacing: 0) {
+            List {
+                if isLoading {
                     Section {
                         HStack {
                             Spacer()
-                            Text(NSLocalizedString("Main_Search_Too_Short", comment: "Please enter at least 2 characters to search"))
-                                .foregroundColor(.secondary)
+                            if let progress = loadingProgress {
+                                Text(String(format: NSLocalizedString("LP_Store_Loading_Progress", comment: ""), progress.current, progress.total))
+                                    .font(.footnote)
+                                    .foregroundColor(.secondary)
+                                    .padding(.vertical, 8)
+                                    .padding(.horizontal, 12)
+                                    .background(Color(.secondarySystemGroupedBackground))
+                                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                            } else {
+                                ProgressView()
+                            }
                             Spacer()
                         }
+                        .listRowBackground(Color.clear)
+                        .listRowInsets(EdgeInsets())
                     }
-                } else if !searchResults.factions.isEmpty {
+                } else if let error = error {
+                    VStack {
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.largeTitle)
+                            .foregroundColor(.red)
+                        Text(error.localizedDescription)
+                            .font(.headline)
+                        Button(NSLocalizedString("Main_Setting_Reset", comment: "")) {
+                            loadFactions()
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                } else {
+                    // 正常势力列表视图
                     Section(NSLocalizedString("Main_LP_Store_Factions", comment: "")) {
-                        ForEach(searchResults.factions) { faction in
+                        ForEach(factions) { faction in
                             NavigationLink(destination: FactionLPDetailView(faction: faction)) {
                                 HStack {
                                     IconManager.shared.loadImage(for: faction.iconName)
@@ -116,94 +108,21 @@ struct CharacterLoyaltyPointsStoreView: View {
                         .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                     }
                 }
-                
-                if !searchResults.corporations.isEmpty {
-                    Section(NSLocalizedString("Main_LP_Store_Corps", comment: "")) {
-                        ForEach(searchResults.corporations) { corporation in
-                            NavigationLink(
-                                destination: CorporationLPStoreView(
-                                    corporationId: corporation.id,
-                                    corporationName: corporation.name
-                                )
-                            ) {
-                                HStack {
-                                    CorporationIconView(corporationId: corporation.id, iconFileName: corporation.iconFileName, size: 36)
-                                    Text(corporation.name)
-                                        .padding(.leading, 8)
-                                }
-                                .padding(.vertical, 2)
-                            }
-                        }
-                        .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
-                    }
-                }
-                
-                // 显示LP物品搜索结果
-                if !lpSearchResults.isEmpty {
-                    Section(NSLocalizedString("Main_LP_Available_Items", comment: "可用物品")) {
-                        ForEach(lpSearchResults, id: \.categoryId) { category in
-                            NavigationLink(
-                                destination: LPSearchCategoryView(
-                                    categoryName: category.categoryName,
-                                    offers: category.offers
-                                )
-                            ) {
-                                HStack {
-                                    IconManager.shared.loadImage(for: category.categoryIcon)
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: 36)
-                                        .cornerRadius(6)
-                                    Text(category.categoryName)
-                                        .padding(.leading, 8)
-                                    
-                                    Spacer()
-                                    Text("\(category.offerCount)")
-                                        .foregroundColor(.secondary)
-                                }
-                                .padding(.vertical, 2)
-                            }
-                        }
-                        .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
-                    }
-                }
-                
-                if searchResults.factions.isEmpty && searchResults.corporations.isEmpty && lpSearchResults.isEmpty {
-                    Section {
-                        HStack {
-                            Spacer()
-                            Text(NSLocalizedString("Main_Search_No_Results", comment: ""))
-                                .foregroundColor(.secondary)
-                            Spacer()
-                        }
-                    }
-                }
-            } else {
-                // 正常势力列表视图
-                Section(NSLocalizedString("Main_LP_Store_Factions", comment: "")) {
-                    ForEach(factions) { faction in
-                        NavigationLink(destination: FactionLPDetailView(faction: faction)) {
-                            HStack {
-                                IconManager.shared.loadImage(for: faction.iconName)
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 36)
-                                Text(faction.name)
-                                    .padding(.leading, 8)
-                            }
-                            .padding(.vertical, 2)
-                        }
-                    }
-                    .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
-                }
             }
         }
         .navigationTitle(NSLocalizedString("Main_LP_Store", comment: ""))
         .searchable(
             text: $searchText,
             placement: .navigationBarDrawer(displayMode: .always),
-            prompt: NSLocalizedString("Main_Search_Placeholder", comment: "")
+            prompt: Text(NSLocalizedString("Main_Search_Placeholder", comment: ""))
         )
+        .onSubmit(of: .search) {
+            if !searchText.isEmpty && searchText.count >= 2 {
+                debouncedSearchText = searchText
+                searchLPItems(searchText: searchText)
+                shouldExecuteSearch = true
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: {
@@ -215,31 +134,7 @@ struct CharacterLoyaltyPointsStoreView: View {
                 }
             }
         }
-        .onChange(of: searchText) { _, newValue in
-            searchTask?.cancel()
-            
-            // 如果搜索框被清空，直接清空搜索结果
-            if newValue.isEmpty {
-                debouncedSearchText = ""
-                lpSearchResults = []
-                return
-            }
-            
-            searchTask = Task {
-                try? await Task.sleep(nanoseconds: 300_000_000) // 300ms
-                if !Task.isCancelled {
-                    await MainActor.run {
-                        debouncedSearchText = newValue
-                        // 如果搜索文本长度大于等于2，则搜索物品
-                        if newValue.count >= 2 {
-                            searchLPItems(searchText: newValue)
-                        } else {
-                            lpSearchResults = []
-                        }
-                    }
-                }
-            }
-        }
+        // 移除onChange监听器，现在使用专门的搜索按钮
         .onAppear {
             if !hasLoadedData {
                 loadFactions()
@@ -249,6 +144,13 @@ struct CharacterLoyaltyPointsStoreView: View {
             // 取消正在进行的任务以防止信号量泄漏
             loadingTask?.cancel()
             searchTask?.cancel()
+        }
+        .navigationDestination(isPresented: $shouldExecuteSearch) {
+            LPSearchResultsView(
+                searchText: searchText,
+                searchResults: searchResults,
+                lpSearchResults: lpSearchResults
+            )
         }
     }
 
@@ -560,7 +462,6 @@ struct CharacterLoyaltyPointsStoreView: View {
                     isSearchingItems = false
                     lpSearchResults = results
                 }
-                
             }
         }
     }

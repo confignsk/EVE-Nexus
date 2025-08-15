@@ -278,11 +278,12 @@ struct CorporationLPStoreView: View {
             }
         }
         .navigationTitle(corporationName)
-        .searchable(
-            text: $searchText,
-            placement: .navigationBarDrawer(displayMode: .always),
-            prompt: NSLocalizedString("Main_Search_Placeholder", comment: "")
-        )
+        // 移除嵌套的搜索功能，避免与主搜索页面冲突
+        // .searchable(
+        //     text: $searchText,
+        //     placement: .navigationBarDrawer(displayMode: .always),
+        //     prompt: NSLocalizedString("Main_Search_Placeholder", comment: "")
+        // )
         .refreshable {
             await loadOffers(forceRefresh: true)
         }

@@ -1168,6 +1168,7 @@
 // Clipboard import related
 "Main_Market_Clipboard_Import" = "Clipboard Import";
 "Main_Market_Clipboard_Empty" = "Clipboard is empty";
+"Main_Market_Clipboard_Parse_Failed" = "Failed to parse clipboard content";
 "Main_Market_Clipboard_Success" = "Successfully imported %d items";
 "Main_Market_Clipboard_Failed" = "Failed to import %d items:";
 
@@ -1180,6 +1181,13 @@
 "Main_Market_Clipboard_Import_Confirm" = "Confirm Import";
 "Main_Market_Clipboard_Import_Confirm_Yes" = "Confirm Import";
 "Main_Market_Clipboard_Import_Confirm_Message" = "Current watch list has %d items. Importing will overwrite existing content. Are you sure you want to continue?";
+
+// New clipboard import result related strings
+"Main_Market_Clipboard_All_Failed" = "All parsing failed";
+"Main_Market_Clipboard_Partial_Success" = "Successfully parsed %d items";
+"Main_Market_Clipboard_All_Success" = "Successfully parsed all %d items";
+"Main_Market_Clipboard_Failed_Items" = "Failed to parse:";
+"Main_Market_Clipboard_More_Failed" = "%d more items failed to parse";
 
 "Main_Battle" = "Battle";
 "Main_Killboard" = "KillBoard";
@@ -1697,7 +1705,9 @@
 "Main_Database_Applicable_Blueprints_info" = "Blueprints that require this item";
 
 // Calculator
-"Blueprint_Calculator" = "Blueprint Calculator";
+"Calculator_Title" = "Calculator";
+"Calculator_Blueprint" = "Blueprint Calculator";
+"Calculator_Ore_Refinery" = "Refinery Calculator";
 "Blueprint_Calculator_Settings" = "Blueprint Settings";
 "Blueprint_Calculator_Material_Efficiency" = "Material Efficiency";
 "Blueprint_Calculator_Time_Efficiency" = "Time Efficiency";
@@ -2406,3 +2416,50 @@
 "StarMap_Filter_Storm" = "Planet (Storm)";
 "StarMap_Filter_Plasma" = "Planet (Plasma)";
 "StarMap_Filter_Jove" = "Jove Observatory";
+
+// Refinery related strings
+"Ore_Refinery_Calculator" = "Refinery Calculator";
+"Ore_Refinery_Basic_Settings" = "Basic Settings";
+"Ore_Refinery_Settings" = "Refinery Settings";
+"Ore_Refinery_Calculate" = "Calculate Refinery";
+"Ore_Refinery_System_Security" = "System Security";
+"Ore_Refinery_Structure" = "Structure";
+"Ore_Refinery_Structure_Rigs" = "Structure Rigs";
+"Ore_Refinery_Tax_Rate" = "Tax Rate";
+"Ore_Refinery_Structure_1" = "Structure 1";
+"Ore_Refinery_Structure_2" = "Structure 2";
+"Ore_Refinery_Rig_None" = "None";
+"Ore_Refinery_Rig_T1" = "T1";
+"Ore_Refinery_Rig_T2" = "T2";
+"Ore_Refinery_Implant" = "Implant";
+"Ore_Refinery_Implant_1" = "Implant 1";
+"Ore_Refinery_Implant_2" = "Implant 2";
+"Ore_Refinery_Implant_3" = "Implant 3";
+"Ore_Refinery_Implant_None" = "None";
+"Ore_Refinery_Tax_Rate_Placeholder" = "Enter 0-100";
+"Ore_Refinery_Structure_Label" = "Structure";
+"Ore_Refinery_Implant_Label" = "Implant";
+"Ore_Refinery_Skills_Label" = "Skills";
+"Ore_Refinery_All_Skills_Level" = "All Level 5";
+"Ore_Refinery_Insufficient_Quantity" = "Insufficient Quantity";
+"Ore_Refinery_No_Output" = "No Refinery Output";
+"Ore_Refinery_Unknown" = "Unknown Status";
+"Ore_Refinery_Ratio_Label" = "Refinery Ratio: ";
+"Ore_Refinery_Result_Title" = "Refinery Result";
+"Ore_Refinery_Result_Input_Market_Value" = "Input Market Value";
+"Ore_Refinery_Result_Product_Market_Value" = "Output Market Value";
+"Ore_Refinery_Result_Market_Settings" = "Market Settings";
+"Ore_Refinery_Result_Input_Market" = "Input Market";
+"Ore_Refinery_Result_Output_Market" = "Output Market";
+"Ore_Refinery_Result_Product_Value" = "Product Total Value";
+"Ore_Refinery_Result_Tax_Amount" = "Tax Amount";
+"Ore_Refinery_Result_Total_Volume" = "Total Volume";
+"Ore_Refinery_Result_Output_List" = "Refinery Output List";
+"Ore_Refinery_Result_Remaining_List" = "Remaining Items List";
+"Ore_Refinery_Result_Avg_Price" = "Avg Price";
+"Ore_Refinery_Result_Total_Value" = "Total Value";
+"Ore_Refinery_Result_No_Price" = "No price information";
+"Ore_Refinery_No_Items" = "No Items";
+"Ore_Refinery_Remaining_List_Empty" = "Remaining Items List Empty";
+"Ore_Refinery_Output_List_Empty" = "Refinery Output List Empty";
+"Ore_Refinery_Result_Tax_Zero" = "0 ISK (Tax rate: %.1f%%)";

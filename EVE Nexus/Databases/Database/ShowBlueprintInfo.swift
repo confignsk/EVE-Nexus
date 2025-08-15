@@ -128,7 +128,18 @@ struct BlueprintSkillRow: View {
         } label: {
             HStack {
                 // 技能图标
-                if let currentLevel = currentSkillLevel, currentLevel == -1 {
+                if currentSkillLevel == nil {
+                    // 正在加载技能数据
+                    ProgressView()
+                        .frame(width: 32, height: 32)
+                        .scaleEffect(0.8)
+                } else if let currentLevel = currentSkillLevel, currentLevel == -2 {
+                    // 无角色登录，显示通用技能图标
+                    Image("skill")
+                        .resizable()
+                        .frame(width: 32, height: 32)
+                        .clipShape(Circle())
+                } else if let currentLevel = currentSkillLevel, currentLevel == -1 {
                     Image(systemName: "xmark.circle.fill")
                         .frame(width: 32, height: 32)
                         .foregroundColor(.red)
@@ -148,7 +159,19 @@ struct BlueprintSkillRow: View {
                         .font(.body)
                     
                     // 技能点数显示
-                    if let currentLevel = currentSkillLevel, currentLevel >= -1, currentLevel < skill.level {
+                    if currentSkillLevel == nil {
+                        // 正在加载中
+                        Text(NSLocalizedString("Misc_Loading", comment: ""))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    } else if let currentLevel = currentSkillLevel, currentLevel == -2 {
+                        // 无角色登录，显示需要的总技能点数
+                        if !skillPointsText.isEmpty {
+                            Text(skillPointsText)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    } else if let currentLevel = currentSkillLevel, currentLevel >= -1, currentLevel < skill.level {
                         // 当有技能但等级不足时，显示当前/需要的技能点数
                         let currentSP = getCurrentSkillPointsSimple()
                         let requiredSP = getRequiredSkillPointsSimple()
@@ -196,7 +219,7 @@ struct ShowBluePrintInfo: View {
     @State private var itemDetails: ItemDetails?
     @State private var blueprintSource: [(typeID: Int, typeName: String, typeIcon: String)] = []
     @AppStorage("currentCharacterId") private var currentCharacterId: Int = 0
-    @State private var characterSkills: [Int: Int] = [:]
+    @StateObject private var skillsManager = SharedSkillsManager.shared
     @State private var showingCopyAlert = false
     @State private var isManufacturingMaterialsExpanded = false
     @State private var isManufacturingSkillsExpanded = false
@@ -359,42 +382,9 @@ struct ShowBluePrintInfo: View {
         // rank值也可以通过查询typeAttributes表中对应物品的attribute_id = 1955的值来获取
     }
 
-    // 加载所有技能等级
-    private func loadAllSkills() {
-        if currentCharacterId == 0 {
-            characterSkills = [:]
-            return
-        }
-        
-        Task {
-            do {
-                // 调用API获取技能数据
-                let skillsResponse = try await CharacterSkillsAPI.shared.fetchCharacterSkills(
-                    characterId: currentCharacterId, 
-                    forceRefresh: false
-                )
-                
-                // 将所有技能映射到字典中
-                var skillsDict = [Int: Int]()
-                for skill in skillsResponse.skills {
-                    skillsDict[skill.skill_id] = skill.trained_skill_level
-                }
-                
-                await MainActor.run {
-                    characterSkills = skillsDict
-                }
-            } catch {
-                Logger.error("获取技能数据失败: \(error)")
-                await MainActor.run {
-                    characterSkills = [:]
-                }
-            }
-        }
-    }
-    
     // 获取当前技能等级
-    private func getCurrentSkillLevel(for skillID: Int) -> Int {
-        return characterSkills[skillID] ?? -1
+    private func getCurrentSkillLevel(for skillID: Int) -> Int? {
+        return skillsManager.getSkillLevel(for: skillID)
     }
 
     var body: some View {
@@ -1020,7 +1010,6 @@ struct ShowBluePrintInfo: View {
             itemDetails = databaseManager.getItemDetails(for: blueprintID)
             loadBlueprintData()
             loadBlueprintSource()
-            loadAllSkills()
         }
     }
 }

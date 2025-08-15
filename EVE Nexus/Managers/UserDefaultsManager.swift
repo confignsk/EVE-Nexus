@@ -14,6 +14,7 @@ class UserDefaultsManager {
         static let pinnedAssetLocationIDs = "pinnedAssetLocationIDs"
         static let mergeSimilarTransactions = "mergeSimilarTransactions"
         static let LPStoreUpdatetime = "LPStoreUpdatetime"
+        static let refineryTaxRate = "refineryTaxRate"
     }
 
     private init() {}
@@ -97,6 +98,16 @@ class UserDefaultsManager {
         }
         set {
             defaults.set(newValue, forKey: Keys.LPStoreUpdatetime)
+        }
+    }
+    
+    // 精炼税率设置
+    var refineryTaxRate: Double {
+        get {
+            return defaults.double(forKey: Keys.refineryTaxRate)
+        }
+        set {
+            defaults.set(newValue, forKey: Keys.refineryTaxRate)
         }
     }
 }

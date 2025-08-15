@@ -598,7 +598,9 @@ struct ContentView: View {
                                 viewModel.selectedCharacter = character
                                 viewModel.characterPortrait = portrait
                                 currentCharacterId = character.CharacterID
+                                // 清除旧的技能数据，确保加载新角色的技能
                                 Task {
+                                    SharedSkillsManager.shared.clearSkillData()
                                     await viewModel.refreshAllData()
                                 }
                             }
@@ -776,6 +778,10 @@ struct ContentView: View {
                     // 如果找不到认证信息，说明角色已退出
                     currentCharacterId = 0
                     viewModel.resetCharacterInfo()
+                    // 清除技能数据
+                    Task {
+                        SharedSkillsManager.shared.clearSkillData()
+                    }
                 }
             }
             
@@ -800,6 +806,10 @@ struct ContentView: View {
             currentCharacterId = 0
             viewModel.resetCharacterInfo()
             selectedItem = nil
+            // 清除技能数据
+            Task {
+                SharedSkillsManager.shared.clearSkillData()
+            }
         }
         .task {
             await viewModel.refreshAllData()
@@ -1020,13 +1030,12 @@ struct ContentView: View {
             VStack(alignment: .leading) {
                 Text(title)
                     .fixedSize(horizontal: false, vertical: true)
-                    .foregroundColor(isCustomizeMode && isHidden ? .gray : .primary)
                 if let noteView = noteView {
                     noteView
                 } else if let note = note, !note.isEmpty {
                     Text(note)
                         .font(.system(size: 12))
-                        .foregroundColor(.gray)
+                        .foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                         .lineLimit(1)
                 }
@@ -1311,7 +1320,7 @@ struct ContentView: View {
 
             customizableNavigationLink(
                 value: "calculator",
-                title: NSLocalizedString("Blueprint_Calculator", comment: "蓝图计算器"),
+                title: NSLocalizedString("Calculator_Title", comment: "计算器"),
                 icon: "calculator"
             )
         } header: {

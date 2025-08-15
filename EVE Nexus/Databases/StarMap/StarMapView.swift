@@ -23,38 +23,6 @@ struct StarMapView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // 搜索栏 - 始终显示
-            HStack {
-                HStack {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundColor(.secondary)
-                    TextField(NSLocalizedString("StarMap_Search_Region", comment: "搜索星域"), text: $searchText)
-                        .textFieldStyle(PlainTextFieldStyle())
-                    
-                    if !searchText.isEmpty {
-                        Button(action: {
-                            searchText = ""
-                        }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(Color(.systemGray6))
-                .cornerRadius(8)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(Color(.systemBackground))
-            .overlay(
-                Rectangle()
-                    .frame(height: 0.5)
-                    .foregroundColor(Color(.separator)),
-                alignment: .bottom
-            )
-            
             // 星域列表
             List {
                 // Section 1: 星域图跳转
@@ -103,6 +71,11 @@ struct StarMapView: View {
             }
         }
         .onAppear(perform: loadData)
+        .searchable(
+            text: $searchText,
+            placement: .navigationBarDrawer(displayMode: .always),
+            prompt: Text(NSLocalizedString("StarMap_Search_Region", comment: "搜索星域"))
+        )
     }
     
     private func loadData() {

@@ -228,14 +228,9 @@ struct AccountsView: View {
                             await updateCharacterSkillQueue(character: character)
 
                             // 保存更新后的角色信息到UserDefaults
-                            if let index = await MainActor.run(body: {
-                                self.viewModel.characters.firstIndex(where: {
-                                    $0.CharacterID == character.CharacterID
-                                })
+                            if let updatedCharacter = await MainActor.run(body: {
+                                self.viewModel.getCharacter(by: character.CharacterID)
                             }) {
-                                let updatedCharacter = await MainActor.run {
-                                    self.viewModel.characters[index]
-                                }
                                 do {
                                     // 获取 access token
                                     let accessToken = try await AuthTokenManager.shared
@@ -304,14 +299,9 @@ struct AccountsView: View {
                                     await updateCharacterSkillQueue(character: character)
 
                                     // 保存更新后的角色信息到UserDefaults
-                                    if let index = await MainActor.run(body: {
-                                        self.viewModel.characters.firstIndex(where: {
-                                            $0.CharacterID == character.CharacterID
-                                        })
+                                    if let updatedCharacter = await MainActor.run(body: {
+                                        self.viewModel.getCharacter(by: character.CharacterID)
                                     }) {
-                                        let updatedCharacter = await MainActor.run {
-                                            self.viewModel.characters[index]
-                                        }
                                         do {
                                             // 获取 access token
                                             let accessToken = try await AuthTokenManager.shared
@@ -600,46 +590,50 @@ struct AccountsView: View {
                         expiredTokenCharacters.insert(auth.character.CharacterID)
                     }
 
-                    if let index = viewModel.characters.firstIndex(where: {
-                        $0.CharacterID == auth.character.CharacterID
-                    }) {
-                        // 尝试从缓存获取钱包余额
-                        let cachedBalance = await CharacterWalletAPI.shared.getCachedWalletBalance(
-                            characterId: auth.character.CharacterID)
-                        if let balance = Double(cachedBalance) {
-                            viewModel.characters[index].walletBalance = balance
+                    // 使用基于角色ID的安全更新方法
+                    let characterId = auth.character.CharacterID
+                    
+                    // 尝试从缓存获取钱包余额
+                    let cachedBalance = await CharacterWalletAPI.shared.getCachedWalletBalance(
+                        characterId: characterId)
+                    if let balance = Double(cachedBalance) {
+                        viewModel.updateCharacter(characterId: characterId) { character in
+                            character.walletBalance = balance
                         }
+                    }
 
-                        // 尝试从缓存获取技能点数据
-                        if let skillsInfo = try? await CharacterSkillsAPI.shared
-                            .fetchCharacterSkills(
-                                characterId: auth.character.CharacterID,
-                                forceRefresh: false
-                            )
-                        {
-                            viewModel.characters[index].totalSkillPoints = skillsInfo.total_sp
-                            viewModel.characters[index].unallocatedSkillPoints =
-                                skillsInfo.unallocated_sp
-                        }
-
-                        // 尝试从缓存获取技能队列
-                        if let queue = try? await CharacterSkillsAPI.shared.fetchSkillQueue(
-                            characterId: auth.character.CharacterID,
+                    // 尝试从缓存获取技能点数据
+                    if let skillsInfo = try? await CharacterSkillsAPI.shared
+                        .fetchCharacterSkills(
+                            characterId: characterId,
                             forceRefresh: false
-                        ) {
-                            viewModel.characters[index].skillQueueLength = queue.count
+                        )
+                    {
+                        viewModel.updateCharacter(characterId: characterId) { character in
+                            character.totalSkillPoints = skillsInfo.total_sp
+                            character.unallocatedSkillPoints = skillsInfo.unallocated_sp
+                        }
+                    }
+
+                    // 尝试从缓存获取技能队列
+                    if let queue = try? await CharacterSkillsAPI.shared.fetchSkillQueue(
+                        characterId: characterId,
+                        forceRefresh: false
+                    ) {
+                        viewModel.updateCharacter(characterId: characterId) { character in
+                            character.skillQueueLength = queue.count
+                            
                             if let currentSkill = queue.first(where: { $0.isCurrentlyTraining }) {
                                 if let skillName = SkillTreeManager.shared.getSkillName(
                                     for: currentSkill.skill_id)
                                 {
-                                    viewModel.characters[index].currentSkill =
-                                        EVECharacterInfo.CurrentSkillInfo(
-                                            skillId: currentSkill.skill_id,
-                                            name: skillName,
-                                            level: currentSkill.skillLevel,
-                                            progress: currentSkill.progress,
-                                            remainingTime: currentSkill.remainingTime
-                                        )
+                                    character.currentSkill = EVECharacterInfo.CurrentSkillInfo(
+                                        skillId: currentSkill.skill_id,
+                                        name: skillName,
+                                        level: currentSkill.skillLevel,
+                                        progress: currentSkill.progress,
+                                        remainingTime: currentSkill.remainingTime
+                                    )
                                 }
                             } else if let firstSkill = queue.first,
                                 let skillName = SkillTreeManager.shared.getSkillName(
@@ -653,50 +647,56 @@ struct AccountsView: View {
                                     levelEndSp: levelEndSp,
                                     finishedLevel: firstSkill.finished_level
                                 )
-                                viewModel.characters[index].currentSkill =
-                                    EVECharacterInfo.CurrentSkillInfo(
-                                        skillId: firstSkill.skill_id,
-                                        name: skillName,
-                                        level: firstSkill.skillLevel,
-                                        progress: calculatedProgress,
-                                        remainingTime: nil  // 暂停状态
-                                    )
+                                character.currentSkill = EVECharacterInfo.CurrentSkillInfo(
+                                    skillId: firstSkill.skill_id,
+                                    name: skillName,
+                                    level: firstSkill.skillLevel,
+                                    progress: calculatedProgress,
+                                    remainingTime: nil  // 暂停状态
+                                )
                             }
                         }
+                    }
 
-                        // 尝试从缓存获取位置信息
-                        if let location = try? await CharacterLocationAPI.shared
-                            .fetchCharacterLocation(
-                                characterId: auth.character.CharacterID,
-                                forceRefresh: false
-                            )
-                        {
-                            viewModel.characters[index].locationStatus = location.locationStatus
-                            let locationInfo = await getSolarSystemInfo(
-                                solarSystemId: location.solar_system_id,
-                                databaseManager: viewModel.databaseManager
-                            )
-                            if let locationInfo = locationInfo {
-                                viewModel.characters[index].location = locationInfo
-                            }
-                        }
-
-                        // 尝试从缓存获取头像
-                        if let portrait = try? await CharacterAPI.shared.fetchCharacterPortrait(
-                            characterId: auth.character.CharacterID,
+                    // 尝试从缓存获取位置信息
+                    if let location = try? await CharacterLocationAPI.shared
+                        .fetchCharacterLocation(
+                            characterId: characterId,
                             forceRefresh: false
-                        ) {
-                            viewModel.characterPortraits[auth.character.CharacterID] = portrait
+                        )
+                    {
+                        viewModel.updateCharacter(characterId: characterId) { character in
+                            character.locationStatus = location.locationStatus
                         }
                         
-                        // 尝试从缓存获取角色公共信息（组织信息）
-                        if let publicInfo = try? await CharacterAPI.shared.fetchCharacterPublicInfo(
-                            characterId: auth.character.CharacterID,
-                            forceRefresh: false
-                        ) {
-                            viewModel.characters[index].corporationId = publicInfo.corporation_id
-                            viewModel.characters[index].allianceId = publicInfo.alliance_id
-                            viewModel.characters[index].factionId = publicInfo.faction_id
+                        let locationInfo = await getSolarSystemInfo(
+                            solarSystemId: location.solar_system_id,
+                            databaseManager: viewModel.databaseManager
+                        )
+                        if let locationInfo = locationInfo {
+                            viewModel.updateCharacter(characterId: characterId) { character in
+                                character.location = locationInfo
+                            }
+                        }
+                    }
+
+                    // 尝试从缓存获取头像
+                    if let portrait = try? await CharacterAPI.shared.fetchCharacterPortrait(
+                        characterId: characterId,
+                        forceRefresh: false
+                    ) {
+                        viewModel.characterPortraits[characterId] = portrait
+                    }
+                    
+                    // 尝试从缓存获取角色公共信息（组织信息）
+                    if let publicInfo = try? await CharacterAPI.shared.fetchCharacterPublicInfo(
+                        characterId: characterId,
+                        forceRefresh: false
+                    ) {
+                        viewModel.updateCharacter(characterId: characterId) { character in
+                            character.corporationId = publicInfo.corporation_id
+                            character.allianceId = publicInfo.alliance_id
+                            character.factionId = publicInfo.faction_id
                         }
                     }
                 }
@@ -808,58 +808,57 @@ struct AccountsView: View {
 
                             // 更新UI
                             await updateUI {
-                                if let index = self.viewModel.characters.firstIndex(where: {
-                                    $0.CharacterID == characterAuth.character.CharacterID
-                                }) {
+                                let characterId = characterAuth.character.CharacterID
+                                
+                                // 使用基于角色ID的安全更新方法
+                                self.viewModel.updateCharacter(characterId: characterId) { character in
                                     // 更新组织信息
-                                    self.viewModel.characters[index].corporationId = publicInfo.corporation_id
-                                    self.viewModel.characters[index].allianceId = publicInfo.alliance_id
-                                    self.viewModel.characters[index].factionId = publicInfo.faction_id
+                                    character.corporationId = publicInfo.corporation_id
+                                    character.allianceId = publicInfo.alliance_id
+                                    character.factionId = publicInfo.faction_id
                                     
                                     // 更新技能信息
-                                    self.viewModel.characters[index].totalSkillPoints =
-                                        skillsResponse.total_sp
-                                    self.viewModel.characters[index].unallocatedSkillPoints =
-                                        skillsResponse.unallocated_sp
+                                    character.totalSkillPoints = skillsResponse.total_sp
+                                    character.unallocatedSkillPoints = skillsResponse.unallocated_sp
 
                                     // 更新技能队列
-                                    self.viewModel.characters[index].skillQueueLength = queue.count
-                                    if let currentSkill = queue.first(where: {
-                                        $0.isCurrentlyTraining
-                                    }) {
+                                    character.skillQueueLength = queue.count
+                                    if let currentSkill = queue.first(where: { $0.isCurrentlyTraining }) {
                                         if let skillName = SkillTreeManager.shared.getSkillName(
                                             for: currentSkill.skill_id)
                                         {
-                                            self.viewModel.characters[index].currentSkill =
-                                                EVECharacterInfo.CurrentSkillInfo(
-                                                    skillId: currentSkill.skill_id,
-                                                    name: skillName,
-                                                    level: currentSkill.skillLevel,
-                                                    progress: currentSkill.progress,
-                                                    remainingTime: currentSkill.remainingTime
-                                                )
+                                            character.currentSkill = EVECharacterInfo.CurrentSkillInfo(
+                                                skillId: currentSkill.skill_id,
+                                                name: skillName,
+                                                level: currentSkill.skillLevel,
+                                                progress: currentSkill.progress,
+                                                remainingTime: currentSkill.remainingTime
+                                            )
                                         }
                                     }
 
                                     // 更新钱包余额
-                                    self.viewModel.characters[index].walletBalance = balance
-
-                                    // 更新头像
-                                    self.viewModel.characterPortraits[
-                                        characterAuth.character.CharacterID
-                                    ] = portrait
+                                    character.walletBalance = balance
 
                                     // 更新位置信息
-                                    self.viewModel.characters[index].locationStatus =
-                                        location.locationStatus
-                                    Task {
-                                        if let locationInfo = await getSolarSystemInfo(
-                                            solarSystemId: location.solar_system_id,
-                                            databaseManager: self.viewModel.databaseManager
-                                        ) {
-                                            await MainActor.run {
-                                                self.viewModel.characters[index].location =
-                                                    locationInfo
+                                    character.locationStatus = location.locationStatus
+                                }
+
+                                // 更新头像
+                                self.viewModel.characterPortraits[characterId] = portrait
+                                
+                                // 异步更新位置详细信息
+                                Task {
+                                    let databaseManager = self.viewModel.databaseManager
+                                    let viewModel = self.viewModel
+                                    
+                                    if let locationInfo = await getSolarSystemInfo(
+                                        solarSystemId: location.solar_system_id,
+                                        databaseManager: databaseManager
+                                    ) {
+                                        await MainActor.run {
+                                            viewModel.updateCharacter(characterId: characterId) { character in
+                                                character.location = locationInfo
                                             }
                                         }
                                     }
@@ -947,26 +946,15 @@ struct AccountsView: View {
                             )
 
                             await updateUI {
-                                var updatedCharacter = character
-                                updatedCharacter.currentSkill = EVECharacterInfo.CurrentSkillInfo(
-                                    skillId: currentSkill.skill_id,
-                                    name: skillName,
-                                    level: currentSkill.skillLevel,
-                                    progress: currentSkill.progress,
-                                    remainingTime: currentSkill.remainingTime
-                                )
-                                updatedCharacter.skillQueueLength = queue.count
-
-                                // 更新角色列表中的信息
-                                if let index = viewModel.characters.firstIndex(where: {
-                                    $0.CharacterID == character.CharacterID
-                                }) {
-                                    viewModel.characters[index] = updatedCharacter
-                                }
-
-                                // 如果是当前选中的角色，也更新 characterInfo
-                                if viewModel.characterInfo?.CharacterID == character.CharacterID {
-                                    viewModel.characterInfo = updatedCharacter
+                                self.viewModel.updateCharacter(characterId: character.CharacterID) { char in
+                                    char.currentSkill = EVECharacterInfo.CurrentSkillInfo(
+                                        skillId: currentSkill.skill_id,
+                                        name: skillName,
+                                        level: currentSkill.skillLevel,
+                                        progress: currentSkill.progress,
+                                        remainingTime: currentSkill.remainingTime
+                                    )
+                                    char.skillQueueLength = queue.count
                                 }
                             }
                         }
@@ -994,26 +982,15 @@ struct AccountsView: View {
                             }
 
                             await updateUI {
-                                var updatedCharacter = character
-                                updatedCharacter.currentSkill = EVECharacterInfo.CurrentSkillInfo(
-                                    skillId: firstSkill.skill_id,
-                                    name: skillName,
-                                    level: firstSkill.skillLevel,
-                                    progress: calculatedProgress,
-                                    remainingTime: nil  // 暂停状态
-                                )
-                                updatedCharacter.skillQueueLength = queue.count
-
-                                // 更新角色列表中的信息
-                                if let index = viewModel.characters.firstIndex(where: {
-                                    $0.CharacterID == character.CharacterID
-                                }) {
-                                    viewModel.characters[index] = updatedCharacter
-                                }
-
-                                // 如果是当前选中的角色，也更新 characterInfo
-                                if viewModel.characterInfo?.CharacterID == character.CharacterID {
-                                    viewModel.characterInfo = updatedCharacter
+                                self.viewModel.updateCharacter(characterId: character.CharacterID) { char in
+                                    char.currentSkill = EVECharacterInfo.CurrentSkillInfo(
+                                        skillId: firstSkill.skill_id,
+                                        name: skillName,
+                                        level: firstSkill.skillLevel,
+                                        progress: calculatedProgress,
+                                        remainingTime: nil  // 暂停状态
+                                    )
+                                    char.skillQueueLength = queue.count
                                 }
                             }
                         }
@@ -1022,20 +999,9 @@ struct AccountsView: View {
                         Logger.info("技能队列为空 - 角色: \(character.CharacterName)")
 
                         await updateUI {
-                            var updatedCharacter = character
-                            updatedCharacter.currentSkill = nil
-                            updatedCharacter.skillQueueLength = 0
-
-                            // 更新角色列表中的信息
-                            if let index = viewModel.characters.firstIndex(where: {
-                                $0.CharacterID == character.CharacterID
-                            }) {
-                                viewModel.characters[index] = updatedCharacter
-                            }
-
-                            // 如果是当前选中的角色，也更新 characterInfo
-                            if viewModel.characterInfo?.CharacterID == character.CharacterID {
-                                viewModel.characterInfo = updatedCharacter
+                            self.viewModel.updateCharacter(characterId: character.CharacterID) { char in
+                                char.currentSkill = nil
+                                char.skillQueueLength = 0
                             }
                         }
                     }
@@ -1097,51 +1063,57 @@ struct AccountsView: View {
 
             // 更新UI
             await updateUI {
-                if let index = self.viewModel.characters.firstIndex(where: {
-                    $0.CharacterID == character.CharacterID
-                }) {
+                let characterId = character.CharacterID
+                
+                // 使用基于角色ID的安全更新方法
+                self.viewModel.updateCharacter(characterId: characterId) { character in
                     // 更新组织信息
-                    self.viewModel.characters[index].corporationId = publicInfo.corporation_id
-                    self.viewModel.characters[index].allianceId = publicInfo.alliance_id
-                    self.viewModel.characters[index].factionId = publicInfo.faction_id
+                    character.corporationId = publicInfo.corporation_id
+                    character.allianceId = publicInfo.alliance_id
+                    character.factionId = publicInfo.faction_id
                     
                     // 更新技能信息
-                    self.viewModel.characters[index].totalSkillPoints = skillsResponse.total_sp
-                    self.viewModel.characters[index].unallocatedSkillPoints =
-                        skillsResponse.unallocated_sp
+                    character.totalSkillPoints = skillsResponse.total_sp
+                    character.unallocatedSkillPoints = skillsResponse.unallocated_sp
 
                     // 更新技能队列
-                    self.viewModel.characters[index].skillQueueLength = queue.count
+                    character.skillQueueLength = queue.count
                     if let currentSkill = queue.first(where: { $0.isCurrentlyTraining }) {
                         if let skillName = SkillTreeManager.shared.getSkillName(
                             for: currentSkill.skill_id)
                         {
-                            self.viewModel.characters[index].currentSkill =
-                                EVECharacterInfo.CurrentSkillInfo(
-                                    skillId: currentSkill.skill_id,
-                                    name: skillName,
-                                    level: currentSkill.skillLevel,
-                                    progress: currentSkill.progress,
-                                    remainingTime: currentSkill.remainingTime
-                                )
+                            character.currentSkill = EVECharacterInfo.CurrentSkillInfo(
+                                skillId: currentSkill.skill_id,
+                                name: skillName,
+                                level: currentSkill.skillLevel,
+                                progress: currentSkill.progress,
+                                remainingTime: currentSkill.remainingTime
+                            )
                         }
                     }
 
                     // 更新钱包余额
-                    self.viewModel.characters[index].walletBalance = balance
-
-                    // 更新头像
-                    self.viewModel.characterPortraits[character.CharacterID] = portrait
+                    character.walletBalance = balance
 
                     // 更新位置信息
-                    self.viewModel.characters[index].locationStatus = location.locationStatus
-                    Task {
-                        if let locationInfo = await getSolarSystemInfo(
-                            solarSystemId: location.solar_system_id,
-                            databaseManager: self.viewModel.databaseManager
-                        ) {
-                            await MainActor.run {
-                                self.viewModel.characters[index].location = locationInfo
+                    character.locationStatus = location.locationStatus
+                }
+
+                // 更新头像
+                self.viewModel.characterPortraits[characterId] = portrait
+                
+                // 异步更新位置详细信息
+                Task {
+                    let databaseManager = self.viewModel.databaseManager
+                    let viewModel = self.viewModel
+                    
+                    if let locationInfo = await getSolarSystemInfo(
+                        solarSystemId: location.solar_system_id,
+                        databaseManager: databaseManager
+                    ) {
+                        await MainActor.run {
+                            viewModel.updateCharacter(characterId: characterId) { character in
+                                character.location = locationInfo
                             }
                         }
                     }
