@@ -273,11 +273,12 @@ struct SimImplant {
     let attributesByName: [String: Double] // 属性名:值
     let effects: [Int]                // 植入体效果ID列表
     let requiredSkills: [Int]         // 所需技能ID列表
-    
+    let groupID: Int                  // 植入体分组ID
+
     // UI显示字段
     let name: String                  // 植入体名称
     let iconFileName: String?         // 植入体图标文件名
-    
+
     // 修饰器（由Step3初始化）
     var attributeModifiers: [Int: [SimAttributeModifier]] = [:] // 属性ID: [修饰器]
 }

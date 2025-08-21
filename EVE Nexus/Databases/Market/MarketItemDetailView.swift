@@ -533,15 +533,14 @@ struct MarketItemDetailView: View {
             // 基本信息部分
             Section {
                 if let details = itemDetails {
-                    Button {
+                    MarketItemBasicInfoView(
+                        itemDetails: details,
+                        marketPath: marketPath
+                    )
+                    .contentShape(Rectangle())  // 扩展点击区域到整个视图
+                    .onTapGesture {
                         showItemInfo = true
-                    } label: {
-                        MarketItemBasicInfoView(
-                            itemDetails: details,
-                            marketPath: marketPath
-                        )
                     }
-                    .buttonStyle(.plain)  // 使用 plain 样式避免按钮默认样式
                 }
             }
 

@@ -240,3 +240,8 @@ Fixes & Improvements:
 3. Fix a bug when navigate in market function.
 4. Add refinery calculator.
 5. Some tiny fixes.
+
+# v1.7.2 Aug 25, 2025
+
+1. Fix error in bp calculator when calculating job cost.
+2. Fix error in fitting simulation function when calculating the bonus of implants.

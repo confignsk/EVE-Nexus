@@ -980,9 +980,8 @@ class Step3 {
     
     /// 获取植入体的分组ID
     private func getImplantGroupId(implant: SimImplant) -> Int? {
-        // 这里需要实现获取植入体分组ID的逻辑
-        // 可以从数据库查询或者从implant.attributes中获取
-        return nil
+        // 直接从SimImplant对象中获取groupID
+        return implant.groupID
     }
     
     /// 应用RequiredSkillModifier (作用于需要特定技能的物品)

@@ -111,7 +111,7 @@ class Step1 {
             itemIds.insert(implantId)
             initialAttributes[implantId] = implant.attributes
             initialAttributesByName[implantId] = implant.attributesByName
-            typeInfo[implantId] = (name: implant.name, groupId: 0) // 植入体和增效剂的groupID可能需要从数据库获取
+            typeInfo[implantId] = (name: implant.name, groupId: implant.groupID)
         }
         
         // 获取所有技能ID

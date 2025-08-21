@@ -735,8 +735,8 @@ class FitConvert {
             
             // 查询植入体属性
             let attrQuery = """
-                SELECT t.type_id, ta.attribute_id, ta.value, da.name, t.name as type_name, t.icon_filename
-                FROM typeAttributes ta 
+                SELECT t.type_id, ta.attribute_id, ta.value, da.name, t.name as type_name, t.icon_filename, t.groupID
+                FROM typeAttributes ta
                 JOIN dogmaAttributes da ON ta.attribute_id = da.attribute_id
                 JOIN types t ON ta.type_id = t.type_id
                 WHERE ta.type_id IN (\(placeholders))
@@ -746,6 +746,7 @@ class FitConvert {
             var typeAttributesByName: [Int: [String: Double]] = [:]
             var typeNames: [Int: String] = [:]
             var typeIcons: [Int: String] = [:]
+            var typeGroupIDs: [Int: Int] = [:]
             
             if case let .success(rows) = databaseManager.executeQuery(attrQuery, parameters: implantTypeIds) {
                 for row in rows {
@@ -766,12 +767,15 @@ class FitConvert {
                         typeAttributes[typeId]?[attrId] = value
                         typeAttributesByName[typeId]?[name] = value
                         
-                        // 保存物品名称和图标
+                        // 保存物品名称、图标和分组ID
                         if let typeName = row["type_name"] as? String {
                             typeNames[typeId] = typeName
                         }
                         if let iconFileName = row["icon_filename"] as? String {
                             typeIcons[typeId] = iconFileName
+                        }
+                        if let groupID = row["groupID"] as? Int {
+                            typeGroupIDs[typeId] = groupID
                         }
                     }
                 }
@@ -806,11 +810,12 @@ class FitConvert {
             for typeId in implantTypeIds {
                 if let attributes = typeAttributes[typeId],
                    let attributesByName = typeAttributesByName[typeId] {
-                    
+
                     let effects = typeEffects[typeId] ?? []
                     let name = typeNames[typeId] ?? "Unknown Implant"
                     let iconFileName = typeIcons[typeId]
-                    
+                    let groupID = typeGroupIDs[typeId] ?? 0
+
                     // 创建植入体对象
                     let implant = SimImplant(
                         typeId: typeId,
@@ -818,12 +823,13 @@ class FitConvert {
                         attributesByName: attributesByName,
                         effects: effects,
                         requiredSkills: extractRequiredSkills(attributes: attributes),
+                        groupID: groupID,
                         name: name,
                         iconFileName: iconFileName
                     )
-                    
+
                     implants.append(implant)
-                    Logger.info("加载植入体: \(name), typeId: \(typeId)")
+                    Logger.info("加载植入体: \(name), typeId: \(typeId), groupID: \(groupID)")
                 }
             }
         }

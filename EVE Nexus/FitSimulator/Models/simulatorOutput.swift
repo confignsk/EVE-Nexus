@@ -232,6 +232,7 @@ struct SimImplantOutput {
     let name: String                   // 植入体名称
     let iconFileName: String?          // 植入体图标文件名
     let requiredSkills: [Int]          // 所需技能ID列表
+    let groupID: Int                   // 植入体分组ID
     
     /// 从SimImplant创建SimImplantOutput
     init(from implant: SimImplant) {
@@ -243,6 +244,7 @@ struct SimImplantOutput {
         self.name = implant.name
         self.iconFileName = implant.iconFileName
         self.requiredSkills = implant.requiredSkills
+        self.groupID = implant.groupID
     }
 }
 

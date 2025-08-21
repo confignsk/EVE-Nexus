@@ -170,6 +170,7 @@ class BlueprintCalcUtil {
         // 11. 计算设施手续费
         let facilityCostParams = FacilityCostParams(
             materials: finalMaterials,
+            runs: params.runs,
             solarSystemId: params.solarSystemId,
             facilityTypeId: params.facilityTypeId,
             facilityTax: params.facilityTax,
@@ -1155,14 +1156,16 @@ class BlueprintCalcUtil {
     /// 手续费计算参数结构体
     struct FacilityCostParams {
         let materials: [MaterialRequirement]  // 材料需求列表
+        let runs: Int                        // 流程数
         let solarSystemId: Int               // 星系ID
         let facilityTypeId: Int              // 建筑类型ID
         let facilityTax: Double              // 设施税率（小数形式）
         let isReaction: Bool                 // 是否为反应类型
         let scc: Double = 0.04               // SCC费用，固定为4%
         
-        init(materials: [MaterialRequirement], solarSystemId: Int, facilityTypeId: Int, facilityTax: Double, isReaction: Bool) {
+        init(materials: [MaterialRequirement], runs: Int, solarSystemId: Int, facilityTypeId: Int, facilityTax: Double, isReaction: Bool) {
             self.materials = materials
+            self.runs = runs
             self.solarSystemId = solarSystemId
             self.facilityTypeId = facilityTypeId
             self.facilityTax = facilityTax
@@ -1180,9 +1183,9 @@ class BlueprintCalcUtil {
         Logger.info("  是否为反应: \(params.isReaction)")
         Logger.info("  SCC费用: \(String(format: "%.4f", params.scc)) (\(String(format: "%.2f", params.scc * 100))%)")
         
-        // 1. 计算EIV（输入物品的市场估价总和）
+        // 1. 计算单流程的EIV（输入物品的市场估价总和）
         let eiv = calculateEIV(materials: params.materials)
-        Logger.info("  EIV计算: \(String(format: "%.2f", eiv)) ISK")
+        Logger.info("  单流程EIV计算: \(String(format: "%.2f", eiv)) ISK")
         
         // 2. 获取星系成本指数
         let costIndex = getSystemCostIndex(solarSystemId: params.solarSystemId, isReaction: params.isReaction)
@@ -1202,10 +1205,15 @@ class BlueprintCalcUtil {
         let buildingAndSccTax = eiv * (params.scc + params.facilityTax)
         Logger.info("  建筑和SCC税: \(String(format: "%.2f", eiv)) × (\(String(format: "%.4f", params.scc)) + \(String(format: "%.4f", params.facilityTax))) = \(String(format: "%.2f", buildingAndSccTax)) ISK")
         
-        // 5. 计算最终手续费
-        let facilityCost = coefficientTax + buildingAndSccTax
+        // 5. 计算单流程手续费
+        let singleRunFacilityCost = coefficientTax + buildingAndSccTax
         
-        Logger.info("  最终手续费: \(String(format: "%.2f", coefficientTax)) + \(String(format: "%.2f", buildingAndSccTax)) = \(String(format: "%.2f", facilityCost)) ISK")
+        Logger.info("  单流程手续费: \(String(format: "%.2f", coefficientTax)) + \(String(format: "%.2f", buildingAndSccTax)) = \(String(format: "%.2f", singleRunFacilityCost)) ISK")
+        
+        // 6. 计算总手续费（单流程手续费 × 流程数）
+        let facilityCost = singleRunFacilityCost * Double(params.runs)
+        
+        Logger.info("  总手续费: \(String(format: "%.2f", singleRunFacilityCost)) × \(params.runs) = \(String(format: "%.2f", facilityCost)) ISK")
         Logger.info("[Bonus Result] 设施手续费: \(String(format: "%.2f", facilityCost)) ISK")
         
         return facilityCost
@@ -1246,7 +1254,7 @@ class BlueprintCalcUtil {
             totalEIV += materialCost
         }
         
-        Logger.info("  EIV总计: \(String(format: "%.2f", totalEIV)) ISK [基于原始材料需求，使用adjusted_price]")
+        Logger.info("  EIV总计: \(String(format: "%.2f", totalEIV)) ISK [基于单流程原始材料需求，使用adjusted_price]")
         return totalEIV
     }
     

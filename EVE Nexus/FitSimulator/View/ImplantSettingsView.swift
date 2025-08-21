@@ -322,10 +322,10 @@ struct ImplantSettingsView: View {
         // 构建查询参数
         let placeholders = String(repeating: "?,", count: allIds.count).dropLast()
         
-        // 查询属性
+        // 查询属性和groupID
         let attrQuery = """
-            SELECT t.type_id, ta.attribute_id, ta.value, da.name 
-            FROM typeAttributes ta 
+            SELECT t.type_id, ta.attribute_id, ta.value, da.name, t.groupID
+            FROM typeAttributes ta
             JOIN dogmaAttributes da ON ta.attribute_id = da.attribute_id
             JOIN types t ON ta.type_id = t.type_id
             WHERE ta.type_id IN (\(placeholders))
@@ -333,6 +333,7 @@ struct ImplantSettingsView: View {
         
         var typeAttributes: [Int: [Int: Double]] = [:]
         var typeAttributesByName: [Int: [String: Double]] = [:]
+        var typeGroupIDs: [Int: Int] = [:]
         
         if case let .success(rows) = databaseManager.executeQuery(attrQuery, parameters: allIds) {
             for row in rows {
@@ -340,7 +341,7 @@ struct ImplantSettingsView: View {
                    let attrId = row["attribute_id"] as? Int,
                    let value = row["value"] as? Double,
                    let name = row["name"] as? String {
-                    
+
                     // 初始化字典
                     if typeAttributes[typeId] == nil {
                         typeAttributes[typeId] = [:]
@@ -348,10 +349,15 @@ struct ImplantSettingsView: View {
                     if typeAttributesByName[typeId] == nil {
                         typeAttributesByName[typeId] = [:]
                     }
-                    
+
                     // 添加属性
                     typeAttributes[typeId]?[attrId] = value
                     typeAttributesByName[typeId]?[name] = value
+
+                    // 保存groupID（只在第一次遇到该typeId时保存）
+                    if typeGroupIDs[typeId] == nil, let groupID = row["groupID"] as? Int {
+                        typeGroupIDs[typeId] = groupID
+                    }
                 }
             }
         }
@@ -392,12 +398,14 @@ struct ImplantSettingsView: View {
                 let effects = typeEffects[item.id] ?? []
                 
                 // 创建植入体对象
+                let groupID = typeGroupIDs[item.id] ?? 0
                 let implant = SimImplant(
                     typeId: item.id,
                     attributes: attributes,
                     attributesByName: attributesByName,
                     effects: effects,
                     requiredSkills: FitConvert.extractRequiredSkills(attributes: attributes),
+                    groupID: groupID,
                     name: item.name,
                     iconFileName: item.iconFileName
                 )
@@ -415,12 +423,14 @@ struct ImplantSettingsView: View {
                 let effects = typeEffects[item.id] ?? []
                 
                 // 创建增效剂对象
+                let groupID = typeGroupIDs[item.id] ?? 0
                 let booster = SimImplant(
                     typeId: item.id,
                     attributes: attributes,
                     attributesByName: attributesByName,
                     effects: effects,
                     requiredSkills: FitConvert.extractRequiredSkills(attributes: attributes),
+                    groupID: groupID,
                     name: item.name,
                     iconFileName: item.iconFileName
                 )
