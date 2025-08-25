@@ -217,6 +217,57 @@ class FittingEditorViewModel: ObservableObject {
         }
     }
     
+    /// 初始化方法（临时装配，如DNA导入，不保存文件）
+    init(temporaryFitting: LocalFitting, databaseManager: DatabaseManager) {
+        self.databaseManager = databaseManager
+        self.attributeCalculator = AttributeCalculator(databaseManager: databaseManager)
+        
+        // 查询飞船信息
+        let shipQuery = "SELECT name, icon_filename FROM types WHERE type_id = ?"
+        if case let .success(rows) = databaseManager.executeQuery(shipQuery, parameters: [temporaryFitting.ship_type_id]), 
+           let row = rows.first,
+           let name = row["name"] as? String,
+           let iconFileName = row["icon_filename"] as? String {
+            self.shipInfo = (name: name, iconFileName: iconFileName)
+        } else {
+            self.shipInfo = (name: NSLocalizedString("Unknown", comment: "Unknown Ship"), iconFileName: "")
+        }
+        
+        self.isNewFitting = false
+        self.isLocalFitting = false // 临时装配，不是真正的本地配置文件
+        
+        // 获取已保存的技能设置
+        let characterSkills = FittingEditorViewModel.getSkillsFromPreferences()
+        
+        // 转换为模拟输入
+        let simInput = FitConvert.localFittingToSimulationInput(
+            localFitting: temporaryFitting,
+            databaseManager: databaseManager,
+            characterSkills: characterSkills
+        )
+        
+        // 验证配置中的装备是否都可以安装
+        let (processedInput, invalidModules) = processConfiguration(
+            simulationInput: simInput,
+            databaseManager: databaseManager
+        )
+        
+        // 直接使用处理后的输入
+        self.simulationInput = processedInput
+        self.invalidModules = invalidModules
+        
+        // 如果有无效模块，设置错误消息
+        if !invalidModules.isEmpty {
+            let invalidModuleNames = invalidModules.map { $0.module.name }.joined(separator: ", ")
+            self.errorMessage = "以下装备无法安装到当前飞船，已自动移除: \(invalidModuleNames)"
+            
+            Logger.warning("DNA装配中包含无法安装的装备，已移除: \(invalidModuleNames)")
+        }
+        
+        Logger.info("创建临时装配视图模型，计算初始属性")
+        calculateAttributes()
+    }
+    
     /// 初始化方法（加载在线配置）
     init(onlineFitting: CharacterFitting, databaseManager: DatabaseManager) {
         self.databaseManager = databaseManager

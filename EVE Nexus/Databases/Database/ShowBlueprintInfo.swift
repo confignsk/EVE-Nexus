@@ -8,6 +8,7 @@ struct BlueprintActivity {
     let products:
         [(typeID: Int, typeName: String, typeIcon: String, quantity: Int, probability: Double?)]
     let time: Int
+    let maxRunsPerCopy: Int
 }
 
 // 产出物项视图
@@ -247,6 +248,9 @@ struct ShowBluePrintInfo: View {
             return
         }
 
+        // 获取最大复制流程数，默认为0
+        let maxRunsPerCopy = processTime.maxRunsPerCopy
+
         // 制造活动
         if processTime.manufacturing_time > 0 {
             let manufacturingMaterials = databaseManager.getBlueprintManufacturingMaterials(
@@ -271,7 +275,8 @@ struct ShowBluePrintInfo: View {
                 products: manufacturingProducts.map {
                     ($0.typeID, $0.typeName, $0.typeIcon, $0.quantity, nil)
                 },
-                time: processTime.manufacturing_time
+                time: processTime.manufacturing_time,
+                maxRunsPerCopy: 0
             )
         }
 
@@ -295,7 +300,8 @@ struct ShowBluePrintInfo: View {
                 materials: researchMaterialMaterials,
                 skills: skillsWithMultipliers,
                 products: [],
-                time: processTime.research_material_time
+                time: processTime.research_material_time,
+                maxRunsPerCopy: 0
             )
         }
 
@@ -319,7 +325,8 @@ struct ShowBluePrintInfo: View {
                 materials: researchTimeMaterials,
                 skills: skillsWithMultipliers,
                 products: [],
-                time: processTime.research_time_time
+                time: processTime.research_time_time,
+                maxRunsPerCopy: 0
             )
         }
 
@@ -341,7 +348,8 @@ struct ShowBluePrintInfo: View {
                 materials: copyingMaterials,
                 skills: skillsWithMultipliers,
                 products: [],
-                time: processTime.copying_time
+                time: processTime.copying_time,
+                maxRunsPerCopy: maxRunsPerCopy
             )
         }
 
@@ -367,7 +375,8 @@ struct ShowBluePrintInfo: View {
                 products: inventionProducts.map {
                     ($0.typeID, $0.typeName, $0.typeIcon, $0.quantity, $0.probability)
                 },
-                time: processTime.invention_time
+                time: processTime.invention_time,
+                maxRunsPerCopy: 0
             )
         }
     }
@@ -856,6 +865,17 @@ struct ShowBluePrintInfo: View {
                         Text(formatTime(copying.time))
                             .foregroundColor(.secondary)
                             .frame(alignment: .trailing)
+                    }
+
+                    // 每次复制的最大流程数（仅在大于0时显示）
+                    if copying.maxRunsPerCopy > 0 {
+                        HStack {
+                            Text(NSLocalizedString("Blueprint_Max_Runs_Per_Copy", comment: ""))
+                            Spacer()
+                            Text("\(copying.maxRunsPerCopy)")
+                                .foregroundColor(.secondary)
+                                .frame(alignment: .trailing)
+                        }
                     }
                 }
             }

@@ -57,6 +57,14 @@ struct ShipFittingView: View {
         ))
     }
     
+    // 构造函数4：临时装配（如DNA导入，不保存文件）
+    init(temporaryFitting: LocalFitting, databaseManager: DatabaseManager) {
+        _viewModel = StateObject(wrappedValue: FittingEditorViewModel(
+            temporaryFitting: temporaryFitting,
+            databaseManager: databaseManager
+        ))
+    }
+    
     var body: some View {
         VStack(spacing: 0) {
             // 视图类型选择器

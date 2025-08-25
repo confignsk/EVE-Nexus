@@ -952,10 +952,10 @@ class DatabaseManager: ObservableObject {
     // 获取蓝图处理时间
     func getBlueprintProcessTime(for blueprintID: Int) -> (
         manufacturing_time: Int, research_material_time: Int, research_time_time: Int,
-        copying_time: Int, invention_time: Int
+        copying_time: Int, invention_time: Int, maxRunsPerCopy: Int
     )? {
         let query = """
-                SELECT manufacturing_time, research_material_time, research_time_time, copying_time, invention_time
+                SELECT manufacturing_time, research_material_time, research_time_time, copying_time, invention_time, maxRunsPerCopy
                 FROM blueprint_process_time
                 WHERE blueprintTypeID = ?
             """
@@ -966,14 +966,16 @@ class DatabaseManager: ObservableObject {
                 let researchMaterialTime = row["research_material_time"] as? Int,
                 let researchTimeTime = row["research_time_time"] as? Int,
                 let copyingTime = row["copying_time"] as? Int,
-                let inventionTime = row["invention_time"] as? Int
+                let inventionTime = row["invention_time"] as? Int,
+                let maxRunsPerCopy = row["maxRunsPerCopy"] as? Int
             {
                 return (
                     manufacturing_time: manufacturingTime,
                     research_material_time: researchMaterialTime,
                     research_time_time: researchTimeTime,
                     copying_time: copyingTime,
-                    invention_time: inventionTime
+                    invention_time: inventionTime,
+                    maxRunsPerCopy: maxRunsPerCopy
                 )
             }
         }

@@ -304,6 +304,7 @@
 "Blueprint_Research_Time_Label" = "Research Time";
 "Blueprint_Copying_Time" = "Copying Time";
 "Blueprint_Invention_Time" = "Invention Time";
+"Blueprint_Max_Runs_Per_Copy" = "Max runs per copy";
 
 "Planetary_Input_Materials" = "Input";
 "Planetary_Output_Info" = "Output";
@@ -2425,6 +2426,13 @@
 "Ore_Refinery_System_Security" = "System Security";
 "Ore_Refinery_Structure" = "Structure";
 "Ore_Refinery_Structure_Rigs" = "Structure Rigs";
+
+// DNA Fitting Link related strings
+"DNA_Fitting_Link_Parse_Error" = "Failed to parse DNA fitting link";
+"DNA_Fitting_Link_Convert_Error" = "Failed to convert DNA fitting to local fitting";
+"DNA_Fitting_Link_Save_Error" = "Failed to save DNA fitting";
+"DNA_Fitting_Link_Default_Name" = "DNA Fitting";
+"DNA_Fitting_Link_Default_Description" = "Imported from DNA link";
 "Ore_Refinery_Tax_Rate" = "Tax Rate";
 "Ore_Refinery_Structure_1" = "Structure 1";
 "Ore_Refinery_Structure_2" = "Structure 2";

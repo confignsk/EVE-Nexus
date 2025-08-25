@@ -229,9 +229,10 @@ struct MarketItemSelectorBaseView<Content: View>: View {
             }
         }
         
-        // 添加未在优先级列表中的分类
-        for (categoryID, groups) in groupedByCategory {
-            if !categoryPriority.contains(categoryID) {
+        // 添加未在优先级列表中的分类（按categoryID排序确保稳定顺序）
+        let remainingCategories = groupedByCategory.keys.filter { !categoryPriority.contains($0) }.sorted()
+        for categoryID in remainingCategories {
+            if let groups = groupedByCategory[categoryID] {
                 for group in groups.sorted(by: { $0.groupID < $1.groupID }) {
                     // 对每个组内的物品进行排序
                     let sortedItems = group.items.sorted { item1, item2 in

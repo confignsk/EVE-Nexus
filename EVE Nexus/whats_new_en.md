@@ -241,7 +241,11 @@ Fixes & Improvements:
 4. Add refinery calculator.
 5. Some tiny fixes.
 
-# v1.7.2 Aug 25, 2025
+# v1.7.3 Aug 25, 2025
 
 1. Fix error in bp calculator when calculating job cost.
 2. Fix error in fitting simulation function when calculating the bonus of implants.
+
+# v1.7.4 Sep 4, 2025
+
+1. Able to show fitting and killmail from in-game mail.

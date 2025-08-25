@@ -8,6 +8,8 @@ struct RichTextView: View {
     @State private var urlToConfirm: URL?
     @State private var showingURLAlert = false
     @State private var plainText: String = ""
+    @State private var fittingToShow: LocalFitting?
+    @State private var killReportToShow: Int?
 
     var body: some View {
         let processedResult = RichTextProcessor.processRichText(text)
@@ -27,6 +29,17 @@ struct RichTextView: View {
                         DispatchQueue.main.async {
                             showingSheet = true
                         }
+                        return .handled
+                    } else if url.scheme == "fitting" {
+                        // 处理DNA装配链接
+                        handleDNALink(url)
+                        return .handled
+                    } else if url.scheme == "killreport",
+                        let killIdString = url.host,
+                        let killId = Int(killIdString)
+                    {
+                        // 处理战斗日志链接
+                        killReportToShow = killId
                         return .handled
                     } else if url.scheme == "externalurl",
                         let urlString = url.host?.removingPercentEncoding,
@@ -60,7 +73,7 @@ struct RichTextView: View {
                         databaseManager: databaseManager
                     )
                     .toolbar {
-                        ToolbarItem(placement: .navigationBarTrailing) {
+                        ToolbarItem(placement: .navigationBarLeading) {
                             Button(NSLocalizedString("Misc_back", comment: "")) {
                                 selectedItem = nil
                                 showingSheet = false
@@ -83,6 +96,69 @@ struct RichTextView: View {
                     Text("\(url.absoluteString)")
                 }
             }
+            .sheet(item: Binding(
+                get: { fittingToShow.map { FittingSheetItem(fitting: $0) } },
+                set: { if $0 == nil { fittingToShow = nil } }
+            )) { item in
+                NavigationStack {
+                    ShipFittingView(temporaryFitting: item.fitting, databaseManager: databaseManager)
+                        .toolbar {
+                            ToolbarItem(placement: .navigationBarLeading) {
+                                Button(NSLocalizedString("Misc_back", comment: "")) {
+                                    fittingToShow = nil
+                                }
+                            }
+                        }
+                }
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+            }
+            .sheet(item: Binding(
+                get: { killReportToShow.map { KillReportSheetItem(killId: $0) } },
+                set: { if $0 == nil { killReportToShow = nil } }
+            )) { item in
+                NavigationStack {
+                    BRKillMailDetailView(killmail: ["_id": item.killId])
+                        .toolbar {
+                            ToolbarItem(placement: .navigationBarLeading) {
+                                Button(NSLocalizedString("Misc_back", comment: "")) {
+                                    killReportToShow = nil
+                                }
+                            }
+                        }
+                }
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+            }
+    }
+    
+    // MARK: - DNA链接处理方法
+    
+    private func handleDNALink(_ url: URL) {
+        Logger.info("处理DNA链接: \(url.absoluteString)")
+        
+        // 直接从URL中获取DNA字符串，类似showinfo的处理方式
+        let dnaString = url.absoluteString
+        let displayName = NSLocalizedString("DNA_Fitting_Link_Default_Name", comment: "")
+        
+        // 解析DNA字符串
+        guard let dnaResult = DNAParser.parseDNA(dnaString, displayName: displayName) else {
+            Logger.error("DNA解析失败: \(dnaString)")
+            return
+        }
+        
+        // 将DNA结果转换为LocalFitting
+        guard let localFitting = DNAParser.dnaResultToLocalFitting(dnaResult, databaseManager: databaseManager) else {
+            Logger.error("DNA转换为LocalFitting失败")
+            return
+        }
+        
+        // 直接显示装配详情，不保存到文件
+        DispatchQueue.main.async {
+            self.fittingToShow = localFitting
+        }
+        
+        Logger.info("DNA装配已准备显示，不保存到文件，ID: \(localFitting.fitting_id)")
     }
 }
 
@@ -92,6 +168,20 @@ private struct SheetItem: Identifiable {
     let itemID: Int
     let categoryID: Int
 }
+
+// 用于装配sheet的标识符类型
+private struct FittingSheetItem: Identifiable {
+    let id = UUID()
+    let fitting: LocalFitting
+}
+
+// 用于战斗日志sheet的标识符类型
+private struct KillReportSheetItem: Identifiable {
+    let id = UUID()
+    let killId: Int
+}
+
+
 
 // 处理结果结构体
 struct RichTextProcessResult {
@@ -218,6 +308,82 @@ enum RichTextProcessor {
                             Logger.debug(
                                 "Invalid showinfo link format - Text: \(displayText)")
                         }
+                    } else if linkText.contains("href=fitting:") {
+                        // 处理DNA装配链接
+                        if let dnaStart = linkText.range(of: "fitting:")?.lowerBound,
+                            let dnaEnd = linkText.range(of: ">")?.lowerBound
+                        {
+                            let dnaString = String(linkText[dnaStart..<dnaEnd])
+                            
+                            // 设置为可点击的DNA链接
+                            attributedString.replaceSubrange(
+                                start..<end, with: AttributedString(displayText)
+                            )
+                            attributedString[
+                                start..<attributedString.index(
+                                    start, offsetByCharacters: displayText.count
+                                )
+                            ].foregroundColor = .blue
+                            
+                            // 直接使用fitting://格式，类似showinfo://
+                            attributedString[
+                                start..<attributedString.index(
+                                    start, offsetByCharacters: displayText.count
+                                )
+                            ].link = URL(string: dnaString)
+                            
+                            Logger.debug(
+                                "Processed DNA fitting link - DNA: \(dnaString), Text: \(displayText)")
+                        } else {
+                            // 无效的DNA链接，只保留文本内容
+                            attributedString.replaceSubrange(
+                                start..<end, with: AttributedString(displayText)
+                            )
+                            Logger.debug(
+                                "Invalid DNA fitting link format - Text: \(displayText)")
+                        }
+                    } else if linkText.contains("href=killReport:") {
+                        // 处理战斗日志链接
+                        if let killStart = linkText.range(of: "killReport:")?.upperBound,
+                            let hrefEnd = linkText.range(of: ">")?.lowerBound
+                        {
+                            let hrefContent = String(linkText[killStart..<hrefEnd])
+                            // 提取第一个冒号前的数字作为 killmail ID
+                            let components = hrefContent.components(separatedBy: ":")
+                            if let killIdString = components.first, let killId = Int(killIdString) {
+                                // 设置为可点击的战斗日志链接
+                                attributedString.replaceSubrange(
+                                    start..<end, with: AttributedString(displayText)
+                                )
+                                attributedString[
+                                    start..<attributedString.index(
+                                        start, offsetByCharacters: displayText.count
+                                    )
+                                ].foregroundColor = .blue
+                                attributedString[
+                                    start..<attributedString.index(
+                                        start, offsetByCharacters: displayText.count
+                                    )
+                                ].link = URL(string: "killreport://\(killId)")
+                                
+                                Logger.debug(
+                                    "Processed killReport link - ID: \(killId), Text: \(displayText)")
+                            } else {
+                                // 无效的killReport链接，只保留文本内容
+                                attributedString.replaceSubrange(
+                                    start..<end, with: AttributedString(displayText)
+                                )
+                                Logger.debug(
+                                    "Invalid killReport ID format - Text: \(displayText)")
+                            }
+                        } else {
+                            // 无效的killReport链接格式，只保留文本内容
+                            attributedString.replaceSubrange(
+                                start..<end, with: AttributedString(displayText)
+                            )
+                            Logger.debug(
+                                "Invalid killReport link format - Text: \(displayText)")
+                        }
                     } else {
                         // 处理普通链接
                         attributedString.replaceSubrange(
@@ -299,6 +465,55 @@ enum RichTextProcessor {
                             )
                             Logger.debug(
                                 "Invalid showinfo URL format - Text: \(displayText)")
+                        }
+                    } else if url.hasPrefix("fitting:") {
+                        // 处理DNA装配链接
+                        attributedString.replaceSubrange(
+                            start..<end, with: AttributedString(displayText)
+                        )
+                        attributedString[
+                            start..<attributedString.index(
+                                start, offsetByCharacters: displayText.count
+                            )
+                        ].foregroundColor = .blue
+                        
+                        // 直接使用fitting://格式，类似showinfo://
+                        attributedString[
+                            start..<attributedString.index(
+                                start, offsetByCharacters: displayText.count
+                            )
+                        ].link = URL(string: url)
+                        
+                        Logger.debug(
+                            "Processed DNA fitting URL - DNA: \(url), Text: \(displayText)")
+                    } else if url.hasPrefix("killReport:") {
+                        // 处理战斗日志链接
+                        let killReportContent = String(url.dropFirst("killReport:".count))
+                        let components = killReportContent.components(separatedBy: ":")
+                        if let killIdString = components.first, let killId = Int(killIdString) {
+                            attributedString.replaceSubrange(
+                                start..<end, with: AttributedString(displayText)
+                            )
+                            attributedString[
+                                start..<attributedString.index(
+                                    start, offsetByCharacters: displayText.count
+                                )
+                            ].foregroundColor = .blue
+                            attributedString[
+                                start..<attributedString.index(
+                                    start, offsetByCharacters: displayText.count
+                                )
+                            ].link = URL(string: "killreport://\(killId)")
+                            
+                            Logger.debug(
+                                "Processed killReport URL - ID: \(killId), Text: \(displayText)")
+                        } else {
+                            // 无效的killReport链接，只保留文本内容
+                            attributedString.replaceSubrange(
+                                start..<end, with: AttributedString(displayText)
+                            )
+                            Logger.debug(
+                                "Invalid killReport URL format - Text: \(displayText)")
                         }
                     } else {
                         // 处理普通URL

@@ -1149,10 +1149,6 @@ struct IndustryJobRow: View {
         let color: Color
     }
     
-
-    
-
-    
     // 修改时间显示格式
     private func getTimeDisplay() -> String {
         let currentTime = Date()
@@ -1177,26 +1173,26 @@ struct IndustryJobRow: View {
         switch job.status {
         case "cancelled":
             return StatusText(
-                text: NSLocalizedString("Industry_Status_cancelled", comment: ""),
+                text: "\(getActivityTypeText())·\(NSLocalizedString("Industry_Status_cancelled", comment: ""))",
                 color: .red
             )
         case "revoked":
             return StatusText(
-                text: NSLocalizedString("Industry_Status_revoked", comment: ""),
+                text: "\(getActivityTypeText())·\(NSLocalizedString("Industry_Status_revoked", comment: ""))",
                 color: .red
             )
         case "failed":
             return StatusText(
-                text: NSLocalizedString("Industry_Status_failed", comment: ""),
+                text: "\(getActivityTypeText())·\(NSLocalizedString("Industry_Status_failed", comment: ""))",
                 color: .red
             )
         case "delivered":
             let statusText = NSLocalizedString("Industry_Status_delivered", comment: "")
-            var finalText = statusText
-            // 只在已交付且概率不为1且runs大于1时显示成功比例
-            if job.probability != nil && job.probability! != 1.0 && job.runs > 1 {
+            var finalText = "\(getActivityTypeText())·\(statusText)"
+            // 只针对发明类项目显示成功率数量
+            if job.probability != nil && job.runs > 0 && job.activity_id == 8 {
                 let successfulRuns = job.successful_runs ?? 0
-                finalText = "\(statusText) (\(successfulRuns)/\(job.runs))"
+                finalText = "\(getActivityTypeText())·\(statusText) (\(successfulRuns)/\(job.runs))"
             }
             return StatusText(text: finalText, color: .secondary)
         case "ready":
