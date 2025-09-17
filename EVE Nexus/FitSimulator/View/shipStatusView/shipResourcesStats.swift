@@ -121,10 +121,13 @@ struct ShipResourcesStatsView: View {
             .lineLimit(1)
             .padding(.vertical, 4)
         } header: {
-            Text(NSLocalizedString("Fitting_stat_shipresource", comment: ""))
-                .fontWeight(.semibold)
-                .foregroundColor(.primary)
-                .font(.system(size: 18))
+            HStack {
+                Text(NSLocalizedString("Fitting_stat_shipresource", comment: ""))
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                    .font(.system(size: 18))
+                Spacer()
+            }
         }
         .onAppear {
             updateValues()

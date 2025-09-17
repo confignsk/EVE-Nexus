@@ -116,10 +116,13 @@ struct ShipResistancesStatsView: View {
                     self.hpColumnWidth = 60
                 }
             } header: {
-                Text(NSLocalizedString("Fitting_stat_resistances", comment: ""))
-                    .fontWeight(.semibold)
-                    .foregroundColor(.primary)
-                    .font(.system(size: 18))
+                HStack {
+                    Text(NSLocalizedString("Fitting_stat_resistances", comment: ""))
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                        .font(.system(size: 18))
+                    Spacer()
+                }
             }
         }
     }

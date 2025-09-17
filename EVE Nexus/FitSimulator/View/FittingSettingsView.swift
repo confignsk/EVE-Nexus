@@ -2,6 +2,7 @@ import SwiftUI
 
 struct FittingSettingsView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @State private var fittingName: String = ""
     let databaseManager: DatabaseManager
     let shipTypeID: Int
@@ -26,6 +27,7 @@ struct FittingSettingsView: View {
     // 删除配置相关状态
     @State private var showingDeleteConfirmAlert = false
     @State private var isDeletingFitting = false
+    
     
     init(
         databaseManager: DatabaseManager, shipTypeID: Int, fittingName: String,
@@ -207,6 +209,20 @@ struct FittingSettingsView: View {
                     }
                 }
                 .contentShape(Rectangle())
+                .listRowSeparator(.visible, edges: .bottom)
+                .listRowSeparatorTint(Color(UIColor.separator))
+                
+                Button {
+                    exportToImage()
+                } label: {
+                    HStack {
+                        Text(NSLocalizedString("Fitting_Export_To_Image", comment: "导出到图片"))
+                            .foregroundColor(.blue)
+                            .font(.system(size: 17))
+                        Spacer()
+                    }
+                }
+                .contentShape(Rectangle())
                 .listRowSeparator(.hidden)
             }
         }
@@ -359,6 +375,155 @@ struct FittingSettingsView: View {
         Logger.info("clipboardText: \(clipboardText)")
     }
     
+    /// 导出配置到图片
+    private func exportToImage() {
+        Logger.info("开始直接导出装配到相册")
+        
+        Task {
+            do {
+                // 创建用于渲染的完整内容视图
+                let contentView = VStack(spacing: 0) {
+                    // 飞船信息区域
+                    VStack(spacing: 12) {
+                        HStack(spacing: 16) {
+                            Image(uiImage: IconManager.shared.loadUIImage(for: viewModel.shipInfo.iconFileName))
+                                .resizable()
+                                .frame(width: 64, height: 64)
+                                .cornerRadius(8)
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(viewModel.shipInfo.name)
+                                    .font(.title2)
+                                    .fontWeight(.semibold)
+                                
+                                Text(viewModel.simulationInput.name.isEmpty ? NSLocalizedString("Unnamed", comment: "") : viewModel.simulationInput.name)
+                                    .font(.headline)
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            Spacer()
+                        }
+                    }
+                    .padding()
+                    .background(Color(.systemGroupedBackground))
+                    
+                    // 装备模块区域
+                    ModulesExportSection(viewModel: viewModel)
+                    
+                    // 植入体区域
+                    if !viewModel.simulationInput.implants.isEmpty {
+                        Divider()
+                            .padding(.vertical, 8)
+                        ImplantsExportSection(viewModel: viewModel)
+                    }
+                    
+                    // 无人机区域
+                    if !(viewModel.simulationOutput?.drones.isEmpty ?? true) {
+                        Divider()
+                            .padding(.vertical, 8)
+                        DronesExportSection(viewModel: viewModel)
+                    }
+                    
+                    // 货舱区域
+                    if !viewModel.simulationInput.cargo.items.isEmpty {
+                        Divider()
+                            .padding(.vertical, 8)
+                        CargoExportSection(viewModel: viewModel)
+                    }
+                    
+                    // 舰载机区域
+                    if let fighters = viewModel.simulationOutput?.fighters, !fighters.isEmpty {
+                        Divider()
+                            .padding(.vertical, 8)
+                        FightersExportSection(viewModel: viewModel)
+                    }
+                    
+                    // 状态信息区域前的分割线
+                    Divider()
+                        .padding(.vertical, 8)
+                    
+                    // 状态信息区域 - 使用原有的状态组件
+                    VStack(spacing: 16) {
+                        // 资源统计
+                        ShipResourcesStatsView(viewModel: viewModel)
+                        
+                        // 抗性统计
+                        ShipResistancesStatsView(viewModel: viewModel)
+                        
+                        // 电容统计
+                        ShipCapacitorStatsView(viewModel: viewModel)
+                        
+                        // 火力统计
+                        ShipFirepowerStatsView(viewModel: viewModel)
+                        
+                        // 维修统计
+                        ShipRepairStatsView(viewModel: viewModel)
+                        
+                        // 其他属性
+                        ShipMiscStatsView(viewModel: viewModel)
+                    }
+                    .padding(.horizontal)
+                    
+                    // Footer信息
+                    FooterView()
+                }
+                .frame(width: 425)
+                .fixedSize(horizontal: false, vertical: true)
+                .background(Color(.systemGroupedBackground))
+                // 明确设置当前颜色模式
+                .environment(\.colorScheme, colorScheme)
+                
+                // 使用ImageRenderer渲染
+                let renderer = ImageRenderer(content: contentView)
+                renderer.scale = 4.0  // 分辨率
+                
+                if let uiImage = renderer.uiImage {
+                    // 保存到相册
+                    try await saveImageToPhotoLibrary(uiImage)
+                    
+                    await MainActor.run {
+                        alertMessage = NSLocalizedString("Fitting_Export_Photo_Success", comment: "装配图片已保存到相册")
+                        showingSuccessAlert = true
+                        Logger.info("装配图片已成功保存到相册")
+                    }
+                } else {
+                    throw NSError(domain: "FittingSettingsView", code: 1, userInfo: [NSLocalizedDescriptionKey: "无法生成图片"])
+                }
+            } catch {
+                Logger.error("导出装配图片失败: \(error)")
+                await MainActor.run {
+                    alertMessage = String(format: NSLocalizedString("Fitting_Export_Failed_Message", comment: ""), error.localizedDescription)
+                    showingErrorAlert = true
+                }
+            }
+        }
+    }
+    
+    /// 保存图片到相册
+    private func saveImageToPhotoLibrary(_ image: UIImage) async throws {
+        return try await withCheckedThrowingContinuation { continuation in
+            // 创建一个临时类来处理保存回调
+            class SaveImageTarget: NSObject {
+                let continuation: CheckedContinuation<Void, Error>
+                
+                init(continuation: CheckedContinuation<Void, Error>) {
+                    self.continuation = continuation
+                }
+                
+                @objc func image(_ image: UIImage, didFinishSavingWithError error: Error?, contextInfo: UnsafeRawPointer) {
+                    if let error = error {
+                        continuation.resume(throwing: error)
+                    } else {
+                        continuation.resume()
+                    }
+                }
+            }
+            
+            let target = SaveImageTarget(continuation: continuation)
+            UIImageWriteToSavedPhotosAlbum(image, target, #selector(SaveImageTarget.image(_:didFinishSavingWithError:contextInfo:)), nil)
+        }
+    }
+    
     /// 删除配置
     private func deleteFitting() {
         guard let deleteHandler = onDelete else {
@@ -377,5 +542,46 @@ struct FittingSettingsView: View {
         dismiss()
         
         Logger.info("配置删除处理完成")
+    }
+}
+
+// MARK: - Footer视图
+struct FooterView: View {
+    // 获取应用版本信息
+    private var appVersion: String {
+        if let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String {
+            return version
+        }
+        return "1.0.0"
+    }
+    
+    // 格式化当前时间
+    private var currentTime: String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        formatter.locale = Locale.current
+        return formatter.string(from: Date())
+    }
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            Divider()
+                .padding(.horizontal)
+            
+            VStack(spacing: 4) {
+                // 第一行：应用信息
+                Text(String(format: NSLocalizedString("Fitting_Export_Generated_By", comment: ""), "Tritanium", appVersion))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                // 第二行：时间信息
+                Text(String(format: NSLocalizedString("Fitting_Export_Generated_Time", comment: ""), currentTime))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            .padding(.horizontal)
+            .padding(.bottom, 16)
+        }
     }
 } 

@@ -189,10 +189,13 @@ struct ShipRepairStatsView: View {
                 .font(.caption)
                 .lineLimit(1)
             } header: {
-                Text(NSLocalizedString("Fitting_stat_tank", comment: ""))
-                    .fontWeight(.semibold)
-                    .foregroundColor(.primary)
-                    .font(.system(size: 18))
+                HStack {
+                    Text(NSLocalizedString("Fitting_stat_tank", comment: ""))
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                        .font(.system(size: 18))
+                    Spacer()
+                }
             }
         }
     }

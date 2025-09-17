@@ -396,8 +396,8 @@ struct ContractDetailView: View {
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-        formatter.timeZone = TimeZone(identifier: "UTC")!
-        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone.current
+        formatter.locale = Locale.current
         return formatter
     }()
 
@@ -782,7 +782,7 @@ struct ContractDetailView: View {
                         // 合同发布日期
                         VStack(alignment: .leading, spacing: 2) {
                             Text(NSLocalizedString("Contract_Date_Issued", comment: "发布日期"))
-                            Text("\(dateFormatter.string(from: contract.date_issued)) UTC")
+                            Text("\(dateFormatter.string(from: contract.date_issued))")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
@@ -793,7 +793,7 @@ struct ContractDetailView: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(NSLocalizedString("Contract_Date_Expired", comment: "过期日期"))
                                 
-                                let expiredText = "\(dateFormatter.string(from: contract.date_expired)) UTC"
+                                let expiredText = "\(dateFormatter.string(from: contract.date_expired))"
                                 
                                 // 计算剩余天数
                                 let remainingDays = Calendar.current.dateComponents(
@@ -821,7 +821,7 @@ struct ContractDetailView: View {
                             if let dateCompleted = contract.date_completed {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(NSLocalizedString("Contract_Date_Completed", comment: "完成日期"))
-                                    Text("\(dateFormatter.string(from: dateCompleted)) UTC")
+                                    Text("\(dateFormatter.string(from: dateCompleted))")
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                 }

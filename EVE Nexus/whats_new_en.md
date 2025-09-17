@@ -249,3 +249,9 @@ Fixes & Improvements:
 # v1.7.4 Sep 4, 2025
 
 1. Able to show fitting and killmail from in-game mail.
+
+# v1.7.5 Sep 17, 2025
+
+1. Fix time zone of contracts.
+2. Able to convert fitting to image.
+3. Note: Still waitting for update of official SDE.

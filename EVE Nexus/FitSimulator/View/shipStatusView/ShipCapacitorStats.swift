@@ -65,10 +65,13 @@ struct ShipCapacitorStatsView: View {
                 .lineLimit(1)
                 .padding(.vertical, 4)
             } header: {
-                Text(NSLocalizedString("Fitting_stat_capacitor", comment: "电容"))
-                    .fontWeight(.semibold)
-                    .foregroundColor(.primary)
-                    .font(.system(size: 18))
+                HStack {
+                    Text(NSLocalizedString("Fitting_stat_capacitor", comment: "电容"))
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                        .font(.system(size: 18))
+                    Spacer()
+                }
             }
         }
     }

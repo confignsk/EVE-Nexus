@@ -109,10 +109,13 @@ struct ShipMiscStatsView: View {
                 .font(.caption)
                 .padding(.vertical, 4)
             } header: {
-                Text(NSLocalizedString("Fitting_stat_misc", comment: "其他属性"))
-                    .fontWeight(.semibold)
-                    .foregroundColor(.primary)
-                    .font(.system(size: 18))
+                HStack {
+                    Text(NSLocalizedString("Fitting_stat_misc", comment: "其他属性"))
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                        .font(.system(size: 18))
+                    Spacer()
+                }
             }
         }
     }

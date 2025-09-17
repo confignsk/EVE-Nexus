@@ -2140,6 +2140,8 @@
 "Fitting_Setting_Implants" = "植入体设置";
 "Fitting_Export_To_ESI" = "导出到ESI";
 "Fitting_Export_To_Clipboard" = "导出到剪贴板";
+"Fitting_Export_To_Image" = "导出到图片";
+"Fitting_Empty_Slot" = "空槽位";
 "Implant_Slot_Num" = "植入体槽位 %d";
 "Booster_Slot_Num" = "增效剂槽位 %d";
 "Implant_No_Slots" = "没有可用的植入体槽位";
@@ -2259,7 +2261,6 @@
 
 // 装配上传到ESI
 "Fitting_Exporting_To_ESI" = "正在上传到ESI...";
-"Fitting_Export_To_ESI" = "导出到ESI";
 "Fitting_Upload_Confirm_Title" = "确认上传";
 "Fitting_Upload_Confirm_Message" = "将配置 \"%@\" 上传到EVE内？";
 "Fitting_Upload_Cancel" = "取消";
@@ -2277,6 +2278,29 @@
 
 // 装配导出
 "Fitting_Export_Clipboard_Success" = "配置已复制到剪贴板";
+"Fitting_Export_Title" = "配置导出";
+"Fitting_Export_Resources" = "资源使用";
+"Fitting_Export_Drones" = "无人机";
+"Fitting_Export_Cargo" = "货舱";
+"Fitting_Export_Fighters" = "舰载机";
+"Fitting_Export_Implants" = "植入体";
+"Fitting_Export_Stats" = "状态信息";
+"Fitting_Export_Resistances" = "抗性";
+"Fitting_Export_Firepower" = "火力";
+"Fitting_Shield" = "护盾";
+"Fitting_Armor" = "装甲";
+"Fitting_Hull" = "结构";
+"Fitting_Alpha" = "Alpha";
+"Fitting_Range" = "射程";
+"Fitting_Export_Alert_Title" = "导出结果";
+"Fitting_Export_Failed_Message" = "导出失败: %@";
+"Fitting_Export_Long_Screenshot" = "长截图导出";
+"Fitting_Export_Generating" = "正在生成长截图...";
+"Fitting_Export_Generated_By" = "由 %@ (v%@版本) 生成";
+"Fitting_Export_Generated_Time" = "时间 %@";
+"Fitting_Export_Repair" = "维修";
+"Fitting_Export_Misc" = "其他属性";
+"Fitting_Export_Photo_Success" = "装配图片已保存到相册";
 
 // 装配导入
 "Fitting_Import_Success_Title" = "导入成功";
