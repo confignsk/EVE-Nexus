@@ -8,21 +8,21 @@ class Logger {
     private let dateFormatter = DateFormatter()
     private let logQueue = DispatchQueue(label: "com.eve.nexus.logger")
     private var currentLogFile: URL?
-    private let maxLogFiles = 20  // 保留最近20个日志文件
-    
+    private let maxLogFiles = 20 // 保留最近20个日志文件
+
     // 控制台输出重定向相关
     private var originalStderr: Int32 = 0
     private var logPipe: Pipe?
     private var isConsoleRedirected = false
-    
+
     // 是否输出日志到文件，通过UserDefaults控制
     private var ifWriteToFile: Bool {
         return UserDefaults.standard.bool(forKey: "enableLogging")
     }
 
     // 日志长度限制
-    private static var maxDebugLogLength = 2000  // debug日志最大长度
-    private static var maxInfoLogLength = 200000  // info日志最大长度
+    private static var maxDebugLogLength = 2000 // debug日志最大长度
+    private static var maxInfoLogLength = 200_000 // info日志最大长度
 
     private init() {
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
@@ -35,7 +35,7 @@ class Logger {
             self?.createNewLogFile()
             self?.setupConsoleRedirection()
         }
-        
+
         // 监听UserDefaults变化，动态启用/禁用控制台重定向
         NotificationCenter.default.addObserver(
             self,
@@ -44,38 +44,43 @@ class Logger {
             object: nil
         )
     }
-    
+
     @objc private func userDefaultsDidChange() {
         DispatchQueue.main.async { [weak self] in
             if self?.ifWriteToFile == true {
+                // 启用日志时，确保日志文件已创建
+                if self?.currentLogFile == nil {
+                    self?.setupLogDirectory()
+                    self?.createNewLogFile()
+                }
                 self?.startConsoleRedirection()
             } else {
                 self?.stopConsoleRedirection()
             }
         }
     }
-    
+
     private func setupConsoleRedirection() {
         guard ifWriteToFile else { return }
         startConsoleRedirection()
     }
-    
+
     private func startConsoleRedirection() {
         guard ifWriteToFile, !isConsoleRedirected else { return }
-        
+
         logQueue.async { [weak self] in
             guard let self = self else { return }
-            
+
             // 保存原始的stderr
             self.originalStderr = dup(STDERR_FILENO)
-            
+
             // 创建管道
             self.logPipe = Pipe()
             guard let pipe = self.logPipe else { return }
-            
+
             // 重定向stderr到管道
             dup2(pipe.fileHandleForWriting.fileDescriptor, STDERR_FILENO)
-            
+
             // 开始读取管道数据
             pipe.fileHandleForReading.readabilityHandler = { [weak self] fileHandle in
                 let data = fileHandle.availableData
@@ -85,41 +90,41 @@ class Logger {
                     }
                 }
             }
-            
+
             self.isConsoleRedirected = true
             Logger.info("[ConsoleRedirect] 控制台输出重定向已启用")
         }
     }
-    
+
     private func stopConsoleRedirection() {
         guard isConsoleRedirected else { return }
-        
+
         logQueue.async { [weak self] in
             guard let self = self else { return }
-            
+
             // 停止读取管道
             self.logPipe?.fileHandleForReading.readabilityHandler = nil
-            
+
             // 恢复原始的stderr
             dup2(self.originalStderr, STDERR_FILENO)
             close(self.originalStderr)
-            
+
             // 关闭管道
             self.logPipe?.fileHandleForWriting.closeFile()
             self.logPipe?.fileHandleForReading.closeFile()
             self.logPipe = nil
-            
+
             self.isConsoleRedirected = false
             Logger.info("[ConsoleRedirect] 控制台输出重定向已停止")
         }
     }
-    
+
     private func processConsoleOutput(_ output: String) {
         // 过滤掉我们自己的日志输出，避免无限循环
         if output.contains("[ConsoleRedirect]") || output.contains("EVE_Nexus_Logger") {
             return
         }
-        
+
         // 按行分割输出
         let lines = output.components(separatedBy: .newlines)
         for line in lines {
@@ -131,10 +136,10 @@ class Logger {
             }
         }
     }
-    
+
     private func formatConsoleOutput(_ output: String) -> String {
         let timestamp = dateFormatter.string(from: Date())
-        
+
         // 尝试解析常见的日志格式
         if output.contains("Timestamp:") && output.contains("Library:") {
             // 已经是格式化的系统日志
@@ -147,12 +152,12 @@ class Logger {
             return "Timestamp: \(timestamp) | Console: \(output)"
         }
     }
-    
+
     private func writeConsoleOutputToFile(_ message: String) {
         guard let logFile = currentLogFile else { return }
-        
+
         let logMessage = "\(message)\n"
-        
+
         if let data = logMessage.data(using: .utf8) {
             if fileManager.fileExists(atPath: logFile.path) {
                 if let fileHandle = try? FileHandle(forWritingTo: logFile) {
@@ -183,18 +188,18 @@ class Logger {
         }
         return identifier
     }
-    
+
     // 获取当前内存使用情况
     private func getMemoryUsage() -> (used: Double, total: Double) {
         var info = mach_task_basic_info()
-        var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size)/4
-        
+        var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size) / 4
+
         let result = withUnsafeMutablePointer(to: &info) {
             $0.withMemoryRebound(to: integer_t.self, capacity: 1) {
                 task_info(mach_task_self_, task_flavor_t(MACH_TASK_BASIC_INFO), $0, &count)
             }
         }
-        
+
         if result == KERN_SUCCESS {
             let usedMB = Double(info.resident_size) / 1024.0 / 1024.0
             // 获取系统总内存
@@ -203,44 +208,50 @@ class Logger {
         }
         return (used: 0, total: 0)
     }
-    
+
     // 获取CPU使用率
     private func getCPUUsage() -> Double {
         var info = mach_task_basic_info()
-        var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size)/4
-        
+        var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size) / 4
+
         let result = withUnsafeMutablePointer(to: &info) {
             $0.withMemoryRebound(to: integer_t.self, capacity: 1) {
                 task_info(mach_task_self_, task_flavor_t(MACH_TASK_BASIC_INFO), $0, &count)
             }
         }
-        
+
         if result == KERN_SUCCESS {
             var threadsList: thread_act_array_t?
             var threadsCount = mach_msg_type_number_t(0)
-            
+
             let threadsResult = task_threads(mach_task_self_, &threadsList, &threadsCount)
             if threadsResult == KERN_SUCCESS {
                 var totalCPU: Double = 0
-                
-                for i in 0..<threadsCount {
+
+                for i in 0 ..< threadsCount {
                     var threadInfo = thread_basic_info()
                     var threadInfoCount = mach_msg_type_number_t(THREAD_INFO_MAX)
-                    
+
                     let infoResult = withUnsafeMutablePointer(to: &threadInfo) {
                         $0.withMemoryRebound(to: integer_t.self, capacity: 1) {
-                            thread_info(threadsList![Int(i)], thread_flavor_t(THREAD_BASIC_INFO), $0, &threadInfoCount)
+                            thread_info(
+                                threadsList![Int(i)], thread_flavor_t(THREAD_BASIC_INFO), $0,
+                                &threadInfoCount
+                            )
                         }
                     }
-                    
+
                     if infoResult == KERN_SUCCESS {
                         totalCPU += Double(threadInfo.cpu_usage) / Double(TH_USAGE_SCALE) * 100.0
                     }
                 }
-                
+
                 // 清理内存
-                vm_deallocate(mach_task_self_, vm_address_t(UInt(bitPattern: threadsList)), vm_size_t(Int(threadsCount) * MemoryLayout<thread_t>.size))
-                
+                vm_deallocate(
+                    mach_task_self_, vm_address_t(UInt(bitPattern: threadsList)),
+                    vm_size_t(Int(threadsCount) * MemoryLayout<thread_t>.size)
+                )
+
                 return totalCPU
             }
         }
@@ -248,7 +259,7 @@ class Logger {
     }
 
     private func createNewLogFile() {
-        guard ifWriteToFile else { return }
+        // 移除 ifWriteToFile 检查，允许在启用时创建文件
         let logPath = StaticResourceManager.shared.getStaticDataSetPath().appendingPathComponent(
             "Logs")
         let formatter = DateFormatter()
@@ -259,54 +270,58 @@ class Logger {
         let device = UIDevice.current
         let processInfo = ProcessInfo.processInfo
         let deviceIdentifier = getDeviceIdentifier()
-        
+
         // 获取系统资源信息
         let memoryInfo = getMemoryUsage()
         let cpuUsage = getCPUUsage()
-        
+
         // 获取磁盘空间信息
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[
+            0
+        ]
         var availableSpace: Int64 = 0
         var totalSpace: Int64 = 0
-        
+
         do {
-            let values = try documentsPath.resourceValues(forKeys: [.volumeAvailableCapacityKey, .volumeTotalCapacityKey])
+            let values = try documentsPath.resourceValues(forKeys: [
+                .volumeAvailableCapacityKey, .volumeTotalCapacityKey,
+            ])
             availableSpace = Int64(values.volumeAvailableCapacity ?? 0)
             totalSpace = Int64(values.volumeTotalCapacity ?? 0)
         } catch {
             // 忽略错误，使用默认值
         }
-        
+
         // 格式化内存显示 (MB)
         let memoryDisplay = String(format: "%.0fMB/%.0fMB", memoryInfo.used, memoryInfo.total)
-        
+
         // 格式化存储空间显示 (MB)
         let usedStorageMB = Double(totalSpace - availableSpace) / 1024.0 / 1024.0
         let totalStorageMB = Double(totalSpace) / 1024.0 / 1024.0
         let storageDisplay = String(format: "%.0fMB/%.0fMB", usedStorageMB, totalStorageMB)
-        
+
         // 写入日志文件头部信息
         let header = """
-            \n\n=====================================
-            EVE Panel Full Debug Log (Console Redirect Mode)
-            Created at: \(dateFormatter.string(from: Date()))
-            
-            === 设备信息 ===
-            Device Model: \(deviceIdentifier)
-            iOS Version: \(device.systemName) \(processInfo.operatingSystemVersionString)
-            App Version: v\(AppConfiguration.Version.fullVersion)
-            
-            === 系统资源状态 ===
-            内存使用: \(memoryDisplay)
-            CPU 使用率: \(String(format: "%.1f", cpuUsage))%
-            存储使用: \(storageDisplay)
-            
-            === 调试模式 ===
-            Debug Mode: All console output captured
-            Log Level: All levels enabled
-            Console Redirect: \(ifWriteToFile ? "启用" : "禁用")
-            =====================================\n\n
-            """
+        \n\n=====================================
+        EVE Panel Full Debug Log (Console Redirect Mode)
+        Created at: \(dateFormatter.string(from: Date()))
+
+        === 设备信息 ===
+        Device Model: \(deviceIdentifier)
+        iOS Version: \(device.systemName) \(processInfo.operatingSystemVersionString)
+        App Version: v\(AppConfiguration.Version.fullVersion)
+
+        === 系统资源状态 ===
+        内存使用: \(memoryDisplay)
+        CPU 使用率: \(String(format: "%.1f", cpuUsage))%
+        存储使用: \(storageDisplay)
+
+        === 调试模式 ===
+        Debug Mode: All console output captured
+        Log Level: All levels enabled
+        Console Redirect: \(ifWriteToFile ? "启用" : "禁用")
+        =====================================\n\n
+        """
         Logger.info(header)
         Logger.info("[Logger] Create full debug log file: \(currentLogFile!.path)")
     }
@@ -323,10 +338,10 @@ class Logger {
                 .sorted { file1, file2 -> Bool in
                     let date1 =
                         try? file1.resourceValues(forKeys: [.creationDateKey]).creationDate
-                        ?? Date.distantPast
+                            ?? Date.distantPast
                     let date2 =
                         try? file2.resourceValues(forKeys: [.creationDateKey]).creationDate
-                        ?? Date.distantPast
+                            ?? Date.distantPast
                     return date1! > date2!
                 }
 
@@ -344,7 +359,7 @@ class Logger {
     }
 
     private func writeToFile(_ message: String, type: OSLogType) {
-        guard let logFile = currentLogFile else { return }
+        guard ifWriteToFile, let logFile = currentLogFile else { return }
 
         logQueue.async {
             let timestamp = self.dateFormatter.string(from: Date())
@@ -418,7 +433,7 @@ class Logger {
             return message.prefix(maxLength) + "......"
         }
     }
-    
+
     deinit {
         stopConsoleRedirection()
         NotificationCenter.default.removeObserver(self)

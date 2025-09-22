@@ -97,26 +97,26 @@ extension AssetTreeNode {
         stationNameCache: [Int64: String]? = nil, solarSystemNameCache: [Int: String]? = nil
     ) -> String {
         // 如果有自定义名称，优先使用
-        if let name = self.name {
+        if let name = name {
             return name
         }
 
         // 如果是空间站类型，从缓存中获取
-        if self.location_type == "station", let cache = stationNameCache {
-            if let name = cache[self.location_id] {
+        if location_type == "station", let cache = stationNameCache {
+            if let name = cache[location_id] {
                 return name
             }
         }
 
         // 如果有星系ID，尝试显示星系名称
-        if let systemId = self.system_id, let cache = solarSystemNameCache,
-            let name = cache[systemId]
+        if let systemId = system_id, let cache = solarSystemNameCache,
+           let name = cache[systemId]
         {
             return name
         }
 
         // 最后的回退选项
-        return String(self.location_id)
+        return String(location_id)
     }
 }
 
@@ -154,13 +154,15 @@ struct LocationAssetsView: View {
         self.solarSystemNameCache = solarSystemNameCache
         _viewModel = StateObject(
             wrappedValue: LocationAssetsViewModel(
-                location: location, preloadedItemInfo: preloadedItemInfo))
+                location: location, preloadedItemInfo: preloadedItemInfo
+            ))
     }
 
     // 获取位置名称
     private func getLocationName() -> String {
         return location.getLocationName(
-            stationNameCache: stationNameCache, solarSystemNameCache: solarSystemNameCache)
+            stationNameCache: stationNameCache, solarSystemNameCache: solarSystemNameCache
+        )
     }
 
     var body: some View {
@@ -208,7 +210,8 @@ struct LocationAssetsView: View {
         NavigationLink {
             SubLocationAssetsView(
                 parentNode: node, preloadedItemInfo: viewModel.preloadedItemInfo,
-                stationNameCache: stationNameCache, solarSystemNameCache: solarSystemNameCache)
+                stationNameCache: stationNameCache, solarSystemNameCache: solarSystemNameCache
+            )
         } label: {
             AssetItemView(node: node, itemInfo: viewModel.itemInfo(for: node.type_id))
         }
@@ -257,11 +260,14 @@ struct AssetItemView: View {
                                     Button {
                                         UIPasteboard.general.string = itemInfo.name
                                     } label: {
-                                        Label(NSLocalizedString("Misc_Copy_Item_Name", comment: ""), systemImage: "doc.on.doc")
+                                        Label(
+                                            NSLocalizedString("Misc_Copy_Item_Name", comment: ""),
+                                            systemImage: "doc.on.doc"
+                                        )
                                     }
                                 }
                             if showCustomName, let customName = node.name, node.items != nil,
-                                !customName.isEmpty, customName != "None"
+                               !customName.isEmpty, customName != "None"
                             {
                                 Text("[\(customName)]")
                                     .foregroundColor(.secondary)
@@ -312,7 +318,8 @@ struct SubLocationAssetsView: View {
         self.solarSystemNameCache = solarSystemNameCache
         _viewModel = StateObject(
             wrappedValue: LocationAssetsViewModel(
-                location: parentNode, preloadedItemInfo: preloadedItemInfo))
+                location: parentNode, preloadedItemInfo: preloadedItemInfo
+            ))
     }
 
     var body: some View {
@@ -337,7 +344,8 @@ struct SubLocationAssetsView: View {
     // 获取位置名称
     private func getLocationName() -> String {
         return parentNode.getLocationName(
-            stationNameCache: stationNameCache, solarSystemNameCache: solarSystemNameCache)
+            stationNameCache: stationNameCache, solarSystemNameCache: solarSystemNameCache
+        )
     }
 
     // 容器信息部分
@@ -345,7 +353,8 @@ struct SubLocationAssetsView: View {
         Section {
             NavigationLink {
                 MarketItemDetailView(
-                    databaseManager: viewModel.databaseManager, itemID: parentNode.type_id)
+                    databaseManager: viewModel.databaseManager, itemID: parentNode.type_id
+                )
             } label: {
                 AssetItemView(
                     node: parentNode,
@@ -391,7 +400,8 @@ struct SubLocationAssetsView: View {
                     parentNode: node,
                     preloadedItemInfo: viewModel.preloadedItemInfo,
                     stationNameCache: stationNameCache,
-                    solarSystemNameCache: solarSystemNameCache)
+                    solarSystemNameCache: solarSystemNameCache
+                )
             } label: {
                 AssetItemView(node: node, itemInfo: viewModel.itemInfo(for: node.type_id))
             }
@@ -399,7 +409,8 @@ struct SubLocationAssetsView: View {
             // 普通物品
             NavigationLink {
                 MarketItemDetailView(
-                    databaseManager: viewModel.databaseManager, itemID: node.type_id)
+                    databaseManager: viewModel.databaseManager, itemID: node.type_id
+                )
             } label: {
                 AssetItemView(node: node, itemInfo: viewModel.itemInfo(for: node.type_id))
             }
@@ -636,10 +647,10 @@ class LocationAssetsViewModel: ObservableObject {
         // 查询所有物品的名称
         if !typeIds.isEmpty {
             let query = """
-                    SELECT t.type_id, t.name, t.zh_name, t.en_name
-                    FROM types t
-                    WHERE t.type_id IN (\(typeIds.sorted().map { String($0) }.joined(separator: ",")))
-                """
+                SELECT t.type_id, t.name, t.zh_name, t.en_name
+                FROM types t
+                WHERE t.type_id IN (\(typeIds.sorted().map { String($0) }.joined(separator: ",")))
+            """
 
             if case let .success(rows) = databaseManager.executeQuery(query) {
                 var typeIdToName: [Int: String] = [:]
@@ -647,9 +658,9 @@ class LocationAssetsViewModel: ObservableObject {
                 // 先收集所有的名称
                 for row in rows {
                     if let typeId = row["type_id"] as? Int,
-                        let name = row["name"] as? String,
-                        let zh_name = row["zh_name"] as? String,
-                        let en_name = row["en_name"] as? String
+                       let name = row["name"] as? String,
+                       let zh_name = row["zh_name"] as? String,
+                       let en_name = row["en_name"] as? String
                     {
                         typeIdToName[typeId] = name
 

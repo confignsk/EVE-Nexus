@@ -35,8 +35,8 @@ final class FactionWarViewModel: ObservableObject {
         case let .success(rows):
             return rows.compactMap { row in
                 guard let id = row["id"] as? Int,
-                    let name = row["name"] as? String,
-                    let iconName = row["iconName"] as? String
+                      let name = row["name"] as? String,
+                      let iconName = row["iconName"] as? String
                 else {
                     Logger.error("数据转换失败: \(row)")
                     return nil
@@ -53,7 +53,7 @@ final class FactionWarViewModel: ObservableObject {
     private let databaseManager: DatabaseManager
     private var loadingTask: Task<Void, Never>?
     private var lastFetchTime: Date?
-    private let cacheTimeout: TimeInterval = 300  // 5分钟缓存
+    private let cacheTimeout: TimeInterval = 300 // 5分钟缓存
 
     init(databaseManager: DatabaseManager) {
         self.databaseManager = databaseManager
@@ -66,9 +66,9 @@ final class FactionWarViewModel: ObservableObject {
     func loadData(forceRefresh: Bool = false) async {
         // 如果不是强制刷新，且缓存未过期，且已有数据，则直接返回
         if !forceRefresh,
-            let lastFetch = lastFetchTime,
-            Date().timeIntervalSince(lastFetch) < cacheTimeout,
-            !factions.isEmpty
+           let lastFetch = lastFetchTime,
+           Date().timeIntervalSince(lastFetch) < cacheTimeout,
+           !factions.isEmpty
         {
             Logger.debug("使用缓存的FW数据，跳过加载")
             return
@@ -136,8 +136,8 @@ final class FactionWarViewModel: ObservableObject {
                 case let .success(rows):
                     self.factions = rows.compactMap { row in
                         guard let id = row["id"] as? Int,
-                            let name = row["name"] as? String,
-                            let iconName = row["iconName"] as? String
+                              let name = row["name"] as? String,
+                              let iconName = row["iconName"] as? String
                         else {
                             Logger.error("数据转换失败: \(row)")
                             return nil

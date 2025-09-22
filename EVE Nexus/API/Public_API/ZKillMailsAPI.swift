@@ -17,7 +17,7 @@ class ZKillMailsAPI {
     private init() {}
 
     // 获取角色战斗统计信息
-    public func fetchCharacterStats(characterId: Int) async throws -> CharBattleIsk {
+    func fetchCharacterStats(characterId: Int) async throws -> CharBattleIsk {
         let url = URL(
             string: "https://zkillboard.com/cache/1hour/stats/?type=characterID&id=\(characterId)")!
 

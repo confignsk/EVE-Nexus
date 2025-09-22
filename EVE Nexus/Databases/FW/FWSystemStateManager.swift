@@ -7,7 +7,7 @@ final class FWSystemStateManager {
     // 缓存相关
     private var systemStates: [Int: FWSystemState] = [:]
     private var lastCalculationTime: Date?
-    private let cacheTimeout: TimeInterval = 300  // 5分钟缓存
+    private let cacheTimeout: TimeInterval = 300 // 5分钟缓存
 
     // 星系名称缓存，使用更简单直观的命名
     private var systemNameCache: [Int: (name: String, name_en: String, name_zh: String)] = [:]
@@ -41,9 +41,9 @@ final class FWSystemStateManager {
     ) async {
         // 检查缓存
         if !forceRefresh,
-            let lastCalc = lastCalculationTime,
-            Date().timeIntervalSince(lastCalc) < cacheTimeout,
-            !systemStates.isEmpty
+           let lastCalc = lastCalculationTime,
+           Date().timeIntervalSince(lastCalc) < cacheTimeout,
+           !systemStates.isEmpty
         {
             Logger.debug("使用缓存的FW星系状态数据，跳过计算")
             return
@@ -66,14 +66,13 @@ final class FWSystemStateManager {
         let solarSystemIds = systems.map { $0.solar_system_id }
         let query =
             "SELECT solarSystemID, solarSystemName, solarSystemName_en, solarSystemName_zh FROM solarsystems WHERE solarSystemID IN (\(String(repeating: "?,", count: solarSystemIds.count).dropLast()))"
-        if case let .success(rows) = databaseManager.executeQuery(query, parameters: solarSystemIds)
-        {
+        if case let .success(rows) = databaseManager.executeQuery(query, parameters: solarSystemIds) {
             systemNameCache = Dictionary(
                 uniqueKeysWithValues: rows.compactMap { row in
                     guard let id = row["solarSystemID"] as? Int,
-                        let name = row["solarSystemName"] as? String,
-                        let nameEn = row["solarSystemName_en"] as? String,
-                        let nameZh = row["solarSystemName_zh"] as? String
+                          let name = row["solarSystemName"] as? String,
+                          let nameEn = row["solarSystemName_en"] as? String,
+                          let nameZh = row["solarSystemName_zh"] as? String
                     else {
                         return nil
                     }
@@ -93,14 +92,15 @@ final class FWSystemStateManager {
                 var enemyNeighbours: [(Int, String, Int)] = []
                 let hasEnemyNeighbour = currentNeighbourIds.contains { neighbourId in
                     if let neighbourFactionId = getFactionIdForSystem(
-                        neighbourId, systems: systems, sovereigntyData: sovereigntyData)
-                    {
+                        neighbourId, systems: systems, sovereigntyData: sovereigntyData
+                    ) {
                         let isEnemy = isEnemyFaction(
-                            currentSystem.occupier_faction_id, neighbourFactionId, wars: wars)
+                            currentSystem.occupier_faction_id, neighbourFactionId, wars: wars
+                        )
                         if isEnemy {
                             let neighbourName =
                                 systemNameCache[neighbourId]?.name
-                                ?? NSLocalizedString("Unknown", comment: "")
+                                    ?? NSLocalizedString("Unknown", comment: "")
                             enemyNeighbours.append((neighbourId, neighbourName, neighbourFactionId))
                         }
                         return isEnemy
@@ -132,7 +132,7 @@ final class FWSystemStateManager {
                     if isFrontline {
                         let neighbourName =
                             systemNameCache[neighbourId]?.name
-                            ?? NSLocalizedString("Unknown", comment: "")
+                                ?? NSLocalizedString("Unknown", comment: "")
                         frontlineNeighbours.append((neighbourId, neighbourName))
                     }
                     return isFrontline
@@ -158,7 +158,7 @@ final class FWSystemStateManager {
         for system in systems {
             let systemName =
                 systemNameCache[system.solar_system_id]?.name
-                ?? NSLocalizedString("Unknown", comment: "")
+                    ?? NSLocalizedString("Unknown", comment: "")
             let systemInfo = systemInfoMap[system.solar_system_id]
 
             // 获取邻居信息
@@ -168,19 +168,20 @@ final class FWSystemStateManager {
 
             for neighbourId in neighbourIds {
                 if let neighbourFactionId = getFactionIdForSystem(
-                    neighbourId, systems: systems, sovereigntyData: sovereigntyData),
+                    neighbourId, systems: systems, sovereigntyData: sovereigntyData
+                ),
                     isEnemyFaction(system.occupier_faction_id, neighbourFactionId, wars: wars)
                 {
                     let neighbourName =
                         systemNameCache[neighbourId]?.name
-                        ?? NSLocalizedString("Unknown", comment: "")
+                            ?? NSLocalizedString("Unknown", comment: "")
                     enemyNeighbours.append((neighbourId, neighbourName, neighbourFactionId))
                 }
 
                 if frontlineSystems.contains(neighbourId) {
                     let neighbourName =
                         systemNameCache[neighbourId]?.name
-                        ?? NSLocalizedString("Unknown", comment: "")
+                            ?? NSLocalizedString("Unknown", comment: "")
                     frontlineNeighbours.append((neighbourId, neighbourName))
                 }
             }

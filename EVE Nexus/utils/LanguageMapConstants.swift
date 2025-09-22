@@ -1,12 +1,12 @@
 import Foundation
 
-struct LanguageMapConstants {
+enum LanguageMapConstants {
     static let languageMapDefaultLanguages = ["en", "ja", "ru", "zh"]
     static let userDefaultsKey = "selectedLanguageMapLanguages"
-    
+
     static let availableLanguages = [
         "de": "Deutsch",
-        "en": "English", 
+        "en": "English",
         "es": "Español",
         "fr": "Français",
         "ja": "日本語",
@@ -14,4 +14,4 @@ struct LanguageMapConstants {
         "ru": "Русский",
         "zh": "中文",
     ]
-} 
+}

@@ -13,7 +13,7 @@ struct MarketGroupNode: Identifiable {
         self.name = name
         self.iconName = iconName
         self.parentGroupId = parentGroupId
-        self.children = []
+        children = []
     }
 }
 
@@ -67,7 +67,7 @@ class MarketItemGroupTreeBuilder {
                 Logger.warning("未找到指定ID的父节点：\(parentId)，将保持原树结构")
                 finalTree = prunedByTypeID
             }
-            
+
             // 只有在指定了parentGroupId时才进行顶层压缩
             let compressedTree = compressTopLevelOnly(finalTree)
             Logger.info("顶层压缩后的根节点数量：\(compressedTree.count)")
@@ -84,17 +84,17 @@ class MarketItemGroupTreeBuilder {
     // 从数据库获取所有市场组信息
     private func fetchMarketGroups() -> [MarketGroupNode] {
         let query = """
-                SELECT group_id, name, icon_name, parentgroup_id
-                FROM marketGroups
-                WHERE show = 1
-            """
+            SELECT group_id, name, icon_name, parentgroup_id
+            FROM marketGroups
+            WHERE show = 1
+        """
 
         var groups: [MarketGroupNode] = []
 
         if case let .success(rows) = databaseManager.executeQuery(query) {
             for row in rows {
                 if let groupId = row["group_id"] as? Int,
-                    let name = row["name"] as? String
+                   let name = row["name"] as? String
                 {
                     let iconName = (row["icon_name"] as? String) ?? ""
                     let parentId = row["parentgroup_id"] as? Int
@@ -204,7 +204,7 @@ class MarketItemGroupTreeBuilder {
                 FROM marketGroups
                 WHERE show = 1
             """
-            
+
             if case let .success(rows) = databaseManager.executeQuery(allGroupsQuery) {
                 for row in rows {
                     if let groupId = row["group_id"] as? Int {
@@ -212,24 +212,24 @@ class MarketItemGroupTreeBuilder {
                     }
                 }
             }
-            
+
             Logger.info("获取到所有市场组ID数量：\(validGroupIDs.count)")
             return validGroupIDs
         }
 
         // 2. 获取所有市场组的父子关系
         let relationsQuery = """
-                SELECT group_id, parentgroup_id
-                FROM marketGroups
-                WHERE show = 1
-            """
+            SELECT group_id, parentgroup_id
+            FROM marketGroups
+            WHERE show = 1
+        """
 
-        var parentChildMap = [Int: Int]()  // 子ID -> 父ID
+        var parentChildMap = [Int: Int]() // 子ID -> 父ID
 
         if case let .success(rows) = databaseManager.executeQuery(relationsQuery) {
             for row in rows {
                 if let groupId = row["group_id"] as? Int,
-                    let parentId = row["parentgroup_id"] as? Int
+                   let parentId = row["parentgroup_id"] as? Int
                 {
                     parentChildMap[groupId] = parentId
                 }

@@ -14,9 +14,11 @@ struct JumpPathResultView: View {
     private var systemIdToName: [Int: String] {
         JumpSystemData.getSystemIdToNameMap(from: allJumpSystems)
     }
+
     private var systemIdToSecurity: [Int: Double] {
         JumpSystemData.getSystemIdToSecurityMap(from: allJumpSystems)
     }
+
     private var systemIdToEnName: [Int: String] {
         JumpSystemData.getSystemIdToEnNameMap(from: allJumpSystems)
     }
@@ -70,7 +72,8 @@ struct JumpPathResultView: View {
                     header: Text(
                         String(
                             format: NSLocalizedString("Jump_Navigation_Jump_Format", comment: ""),
-                            index + 1, String(format: "%.2f", segment.range)))
+                            index + 1, String(format: "%.2f", segment.range)
+                        ))
                 ) {
                     // 起点星系
                     SystemJumpRow(
@@ -200,8 +203,8 @@ struct JumpPathResultView: View {
         }
 
         // 构造URL
-        let waypointsString = waypointNames.joined(separator: ":")  // 路径点参数
-        let avoidString = avoidNames.joined(separator: ":")  // 规避星系参数
+        let waypointsString = waypointNames.joined(separator: ":") // 路径点参数
+        let avoidString = avoidNames.joined(separator: ":") // 规避星系参数
 
         // 创建URL
         var dotlanUrl: String
@@ -298,7 +301,7 @@ class JumpResultViewModel: ObservableObject {
     func loadAllIcons() async {
         // 加载联盟图标和名称
         let allianceIds = Array(allianceToSystems.keys)
-        
+
         // 加载联盟名称
         for allianceId in allianceIds {
             let task = Task {
@@ -327,7 +330,7 @@ class JumpResultViewModel: ObservableObject {
             }
             loadingTasks[allianceId] = task
         }
-        
+
         // 使用 AllianceIconLoader 加载联盟图标
         await MainActor.run {
             allianceIconLoader.loadIcons(for: allianceIds)
@@ -340,11 +343,11 @@ class JumpResultViewModel: ObservableObject {
 
                 let query = "SELECT iconName, name FROM factions WHERE id = ?"
                 if case let .success(rows) = DatabaseManager.shared.executeQuery(
-                    query, parameters: [factionId]),
+                    query, parameters: [factionId]
+                ),
                     let row = rows.first,
                     let iconName = row["iconName"] as? String
                 {
-
                     let icon = IconManager.shared.loadImage(for: iconName)
                     let factionName = row["name"] as? String
 

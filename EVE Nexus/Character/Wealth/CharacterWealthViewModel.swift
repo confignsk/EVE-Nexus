@@ -3,10 +3,10 @@ import SwiftUI
 
 // 定义资产类型枚举
 enum WealthType: String, CaseIterable {
-    case wallet = "Wallet"  // 钱包余额
-    case assets = "Assets"  // 资产
-    case implants = "Implants"  // 植入体
-    case orders = "Orders"  // 市场订单
+    case wallet = "Wallet" // 钱包余额
+    case assets = "Assets" // 资产
+    case implants = "Implants" // 植入体
+    case orders = "Orders" // 市场订单
 
     var sortOrder: Int {
         switch self {
@@ -74,9 +74,9 @@ struct ValuedItem {
     // 返回用于标识的ID
     var identifier: AnyHashable {
         if orderId != 0 {
-            return AnyHashable(orderId)  // 对于订单，使用orderId
+            return AnyHashable(orderId) // 对于订单，使用orderId
         } else {
-            return AnyHashable(typeId)  // 对于其他类型，使用typeId
+            return AnyHashable(typeId) // 对于其他类型，使用typeId
         }
     }
 }
@@ -93,7 +93,7 @@ class CharacterWealthViewModel: ObservableObject {
     @Published var valuedImplants: [ValuedItem] = []
     @Published var valuedOrders: [ValuedItem] = []
     @Published var isLoadingDetails = false
-    
+
     // 资产加载进度状态
     @Published var assetsLoadingProgress: AssetLoadingProgress?
 
@@ -110,10 +110,10 @@ class CharacterWealthViewModel: ObservableObject {
         if typeIds.isEmpty { return [] }
 
         let query = """
-                SELECT type_id, name, icon_filename 
-                FROM types 
-                WHERE type_id IN (\(typeIds.sorted().map { String($0) }.joined(separator: ",")))
-            """
+            SELECT type_id, name, icon_filename 
+            FROM types 
+            WHERE type_id IN (\(typeIds.sorted().map { String($0) }.joined(separator: ",")))
+        """
 
         switch databaseManager.executeQuery(query, parameters: []) {
         case let .success(rows):
@@ -229,7 +229,7 @@ class CharacterWealthViewModel: ObservableObject {
             func calculateNodeValue(_ node: AssetTreeNode, isTopLevel: Bool = false) {
                 // 如果不是顶层节点且不是蓝图复制品，则计算价值
                 if !isTopLevel, let price = marketPrices[node.type_id],
-                    !(node.is_blueprint_copy ?? false)
+                   !(node.is_blueprint_copy ?? false)
                 {
                     totalValue += price * Double(node.quantity)
                     totalCount += 1
@@ -248,7 +248,7 @@ class CharacterWealthViewModel: ObservableObject {
                 calculateNodeValue(location, isTopLevel: true)
             }
         }
-        
+
         // 清除进度状态
         DispatchQueue.main.async {
             self.assetsLoadingProgress = nil
@@ -340,7 +340,7 @@ class CharacterWealthViewModel: ObservableObject {
                 func processNode(_ node: AssetTreeNode, isTopLevel: Bool = false) {
                     // 如果不是顶层节点且不是蓝图复制品，则计算价值
                     if !isTopLevel, let price = marketPrices[node.type_id],
-                        !(node.is_blueprint_copy ?? false)
+                       !(node.is_blueprint_copy ?? false)
                     {
                         let currentStats = itemStats[node.type_id] ?? (0, 0)
                         itemStats[node.type_id] = (
@@ -365,7 +365,8 @@ class CharacterWealthViewModel: ObservableObject {
                 // 转换为ValuedItem，排序，并只取前20个
                 valuedAssets = itemStats.map { typeId, stats in
                     ValuedItem(
-                        typeId: typeId, quantity: stats.quantity, value: stats.value, orderId: 0)
+                        typeId: typeId, quantity: stats.quantity, value: stats.value, orderId: 0
+                    )
                 }
                 .sorted { $0.totalValue > $1.totalValue }
                 .prefix(20)
@@ -434,7 +435,7 @@ class CharacterWealthViewModel: ObservableObject {
                     ValuedItem(
                         typeId: Int(order.typeId),
                         quantity: order.volumeRemain,
-                        value: order.price,  // 使用订单价格
+                        value: order.price, // 使用订单价格
                         orderId: order.orderId
                     )
                 }
@@ -466,8 +467,8 @@ class CharacterWealthViewModel: ObservableObject {
 
                 func processNode(_ node: AssetTreeNode, isTopLevel: Bool = false) {
                     // 如果不是顶层节点，且在市场价格中找不到，且不是蓝图复制品，则添加到统计
-                    if !isTopLevel && marketPrices[node.type_id] == nil
-                        && !(node.is_blueprint_copy ?? false)
+                    if !isTopLevel, marketPrices[node.type_id] == nil,
+                       !(node.is_blueprint_copy ?? false)
                     {
                         itemStats[node.type_id, default: 0] += node.quantity
                     }
@@ -510,8 +511,8 @@ class CharacterWealthViewModel: ObservableObject {
         // 按数量排序并只取前20个
         return
             itemsWithoutPrice
-            .sorted { $0.quantity > $1.quantity }
-            .prefix(20)
-            .map { $0 }
+                .sorted { $0.quantity > $1.quantity }
+                .prefix(20)
+                .map { $0 }
     }
 }

@@ -4,6 +4,7 @@ import SwiftUI
 import WebKit
 
 // MARK: - PreferenceKey for frame tracking
+
 struct AppendPreferenceKey<Value, ID>: PreferenceKey {
     static var defaultValue: [Value] { [] }
     static func reduce(value: inout [Value], nextValue: () -> [Value]) {
@@ -12,14 +13,23 @@ struct AppendPreferenceKey<Value, ID>: PreferenceKey {
 }
 
 // MARK: - View extensions for frame tracking
+
 extension View {
-    func framePreference<ID>(in coordinateSpace: CoordinateSpace, _ id: ID.Type = ID.self) -> some View {
-        self.background(GeometryReader { geometry in
-            Color.clear.preference(key: AppendPreferenceKey<CGRect, ID>.self, value: [geometry.frame(in: coordinateSpace)])
-        })
+    func framePreference<ID>(in coordinateSpace: CoordinateSpace, _: ID.Type = ID.self)
+        -> some View
+    {
+        background(
+            GeometryReader { geometry in
+                Color.clear.preference(
+                    key: AppendPreferenceKey<CGRect, ID>.self,
+                    value: [geometry.frame(in: coordinateSpace)]
+                )
+            })
     }
-    
-    func onFrameChange<ID>(_ id: ID.Type = ID.self, perform action: @escaping ([CGRect]) -> Void) -> some View {
+
+    func onFrameChange<ID>(_: ID.Type = ID.self, perform action: @escaping ([CGRect]) -> Void)
+        -> some View
+    {
         onPreferenceChange(AppendPreferenceKey<CGRect, ID>.self, perform: action)
     }
 }
@@ -34,7 +44,7 @@ struct TableRowNode: Identifiable, Equatable {
 
     static func == (lhs: TableRowNode, rhs: TableRowNode) -> Bool {
         lhs.id == rhs.id && lhs.title == rhs.title && lhs.iconName == rhs.iconName
-        && lhs.note == rhs.note
+            && lhs.note == rhs.note
     }
 }
 
@@ -69,23 +79,23 @@ class ServerStatusViewModel: ObservableObject {
 
         // 11:00 AM UTC
         if hour == 11 && minute == 0 {
-            return 60  // 1分钟
+            return 60 // 1分钟
         }
         // 11:00-11:30 AM UTC
         else if hour == 11 && minute < 30 {
             // 如果服务器已经在线，切换到2分钟间隔
             if let status = status, status.isOnline {
-                return 120  // 2分钟
+                return 120 // 2分钟
             }
-            return 60  // 1分钟
+            return 60 // 1分钟
         }
         // 11:30 AM UTC 之后
         else if hour == 11 && minute >= 30 {
-            return 120  // 2分钟
+            return 120 // 2分钟
         }
         // 11:00 AM UTC 之前
         else {
-            return 1200  // 20分钟
+            return 1200 // 20分钟
         }
     }
 
@@ -128,8 +138,7 @@ class ServerStatusViewModel: ObservableObject {
         oldTime: (hour: Int, minute: Int), newTime: (hour: Int, minute: Int)
     ) -> Bool {
         // 11:00 AM UTC
-        if newTime.hour == 11 && newTime.minute == 0 && (oldTime.hour != 11 || oldTime.minute != 0)
-        {
+        if newTime.hour == 11 && newTime.minute == 0 && (oldTime.hour != 11 || oldTime.minute != 0) {
             return true
         }
         return false
@@ -161,7 +170,7 @@ class ServerStatusViewModel: ObservableObject {
 
                 // 如果在11:00-11:30之间且服务器已上线，重置计时器使用新的间隔
                 let (hour, minute) = utcHourAndMinute
-                if hour == 11 && minute < 30 && newStatus.isOnline {
+                if hour == 11, minute < 30, newStatus.isOnline {
                     resetStatusTimer()
                 }
             }
@@ -213,12 +222,13 @@ struct ServerStatusView: View {
                 return Text(NSLocalizedString("Server_Status_Online", comment: ""))
                     .font(.caption.bold())
                     .foregroundColor(.green)
-                + Text(
-                    String(
-                        format: NSLocalizedString("Server_Status_Players", comment: ""),
-                        formattedPlayers)
-                )
-                .font(.caption)
+                    + Text(
+                        String(
+                            format: NSLocalizedString("Server_Status_Players", comment: ""),
+                            formattedPlayers
+                        )
+                    )
+                    .font(.caption)
             } else {
                 return Text(NSLocalizedString("Server_Status_Offline", comment: ""))
                     .font(.caption.bold())
@@ -232,6 +242,7 @@ struct ServerStatusView: View {
 }
 
 // MARK: - 自定义按钮样式
+
 struct ScaleButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -241,11 +252,12 @@ struct ScaleButtonStyle: ButtonStyle {
 }
 
 // MARK: - 导航栏头像组件
+
 struct NavigationBarAvatarView: View {
     let characterPortrait: UIImage?
     let isRefreshTokenExpired: Bool
     let isRefreshing: Bool
-    
+
     var body: some View {
         ZStack {
             if let portrait = characterPortrait {
@@ -254,12 +266,12 @@ struct NavigationBarAvatarView: View {
                     .aspectRatio(contentMode: .fill)
                     .frame(width: 32, height: 32)
                     .clipShape(Circle())
-                
+
                 if isRefreshing {
                     Circle()
                         .fill(Color.black.opacity(0.6))
                         .frame(width: 32, height: 32)
-                    
+
                     ProgressView()
                         .scaleEffect(0.6)
                         .tint(.white)
@@ -269,12 +281,12 @@ struct NavigationBarAvatarView: View {
                         Circle()
                             .fill(Color.black.opacity(0.4))
                             .frame(width: 32, height: 32)
-                        
+
                         ZStack {
                             Image(systemName: "triangle")
                                 .font(.system(size: 16))
                                 .foregroundColor(.red)
-                            
+
                             Image(systemName: "exclamationmark")
                                 .font(.system(size: 8, weight: .semibold))
                                 .foregroundColor(.red)
@@ -373,7 +385,7 @@ struct LoginButtonView: View {
                                 .lineLimit(1)
                         }
                     }
-                    
+
                     // 显示联盟信息
                     HStack(spacing: 4) {
                         if let alliance = mainViewModel.allianceInfo,
@@ -397,13 +409,12 @@ struct LoginButtonView: View {
                                 .lineLimit(1)
                         }
                     }
-                    
+
                     // 显示势力信息
                     if let faction = mainViewModel.factionInfo,
                        let logo = mainViewModel.factionLogo
                     {
                         HStack(spacing: 4) {
-                            
                             Image(uiImage: logo)
                                 .resizable()
                                 .frame(width: 16, height: 16)
@@ -459,16 +470,16 @@ struct LoginButtonView: View {
 
 struct ContentView: View {
     private enum HeaderFrame {}
-    
+
     @StateObject private var viewModel = MainViewModel()
     @ObservedObject var databaseManager: DatabaseManager
     @AppStorage("currentCharacterId") private var currentCharacterId: Int = 0
     @AppStorage("selectedTheme") private var selectedTheme: String = "system"
     @AppStorage("showCorporationAffairs") private var showCorporationAffairs: Bool = false
     @AppStorage("lastVersion") private var lastVersion: String = ""
-    
+
     // 功能自定义相关状态
-    @AppStorage("hiddenFeatures") private var hiddenFeaturesData: Data = Data()
+    @AppStorage("hiddenFeatures") private var hiddenFeaturesData: Data = .init()
     @State private var isCustomizeMode: Bool = false
     @State private var hiddenFeatures: Set<String> = []
     @Environment(\.colorScheme) var systemColorScheme
@@ -495,7 +506,7 @@ struct ContentView: View {
     var body: some View {
         GeometryReader { geometry in
             NavigationSplitView(columnVisibility: $columnVisibility) {
-                ScrollViewReader { proxy in
+                ScrollViewReader { _ in
                     List(selection: $selectedItem) {
                         // 登录部分
                         loginSection
@@ -535,7 +546,9 @@ struct ContentView: View {
                 .toolbar {
                     // 在导航栏左侧显示人物头像（仅当滚动且已登录时）
                     ToolbarItem(placement: .navigationBarLeading) {
-                        if currentCharacterId != 0, let _ = viewModel.selectedCharacter {
+                        if currentCharacterId != 0, viewModel.selectedCharacter != nil,
+                           navigationAvatarItemVisible
+                        {
                             Button(action: {
                                 // 跳转到人物选择页面
                                 selectedItem = "accounts"
@@ -547,11 +560,14 @@ struct ContentView: View {
                                 )
                             }
                             .buttonStyle(ScaleButtonStyle())
-                            .opacity(navigationAvatarItemVisible ? 1.0 : 0.0)
-                            .animation(.easeInOut(duration: 0.3), value: navigationAvatarItemVisible)
+                            .transition(
+                                .asymmetric(
+                                    insertion: .opacity.combined(with: .scale(scale: 0.8)),
+                                    removal: .opacity.combined(with: .scale(scale: 0.8))
+                                ))
                         }
                     }
-                    
+
                     ToolbarItem(placement: .navigationBarTrailing) {
                         if isCustomizeMode {
                             Button(action: {
@@ -562,7 +578,7 @@ struct ContentView: View {
                                 Text(NSLocalizedString("Features_Exit_Customize", comment: ""))
                                     .foregroundColor(.blue)
                             }
-                        } else {
+                        } else if currentCharacterId != 0 {
                             logoutButton
                         }
                     }
@@ -574,9 +590,14 @@ struct ContentView: View {
                         hasInitialLayout = true
                         return
                     }
-                    
+
                     // 只有在初始布局完成后才更新头像可见性
-                    navigationAvatarItemVisible = (frames.first?.minY ?? -100) < -35
+                    let shouldShow = (frames.first?.minY ?? -100) < -35
+
+                    // 使用动画来平滑切换状态
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        navigationAvatarItemVisible = shouldShow
+                    }
                 }
             } detail: {
                 NavigationStack {
@@ -586,7 +607,7 @@ struct ContentView: View {
                     } else {
                         // 记录用户访问的功能
                         let _ = logSelectedItem(selectedItem)
-                        
+
                         switch selectedItem {
                         case "accounts":
                             AccountsView(
@@ -628,7 +649,10 @@ struct ContentView: View {
                             }
                         case "calendar":
                             if let character = viewModel.selectedCharacter {
-                                CharacterCalendarView(characterId: character.CharacterID, databaseManager: databaseManager)
+                                CharacterCalendarView(
+                                    characterId: character.CharacterID,
+                                    databaseManager: databaseManager
+                                )
                             }
                         case "character_wealth":
                             if let character = viewModel.selectedCharacter {
@@ -682,7 +706,7 @@ struct ContentView: View {
                             }
                         case "contracts":
                             if let character = viewModel.selectedCharacter {
-                                PersonalContractsView(characterId: character.CharacterID)
+                                PersonalContractsView(character: character)
                             }
                         case "market_transactions":
                             if let character = viewModel.selectedCharacter {
@@ -746,7 +770,8 @@ struct ContentView: View {
                         case "fitting":
                             FittingMainView(
                                 characterId: viewModel.selectedCharacter?.CharacterID,
-                                databaseManager: databaseManager)
+                                databaseManager: databaseManager
+                            )
                         case "settings":
                             SettingView(databaseManager: databaseManager)
                         case "about":
@@ -784,10 +809,10 @@ struct ContentView: View {
                     }
                 }
             }
-            
+
             // 加载隐藏功能列表
             loadHiddenFeatures()
-            
+
             // 检查应用版本更新
             checkAppVersionUpdate()
         }
@@ -813,7 +838,7 @@ struct ContentView: View {
         }
         .task {
             await viewModel.refreshAllData()
-            
+
             // 检查token状态
             updateTokenStatus()
         }
@@ -821,7 +846,9 @@ struct ContentView: View {
             // 当选中的角色变化时，更新token状态
             updateTokenStatus()
         }
-        .alert(NSLocalizedString("App_Updated_Title", comment: "App已更新"), isPresented: $showUpdateAlert) {
+        .alert(
+            NSLocalizedString("App_Updated_Title", comment: "App已更新"), isPresented: $showUpdateAlert
+        ) {
             Button(NSLocalizedString("App_Updated_OK", comment: "好的"), role: .cancel) {
                 // 只关闭弹窗
             }
@@ -834,12 +861,12 @@ struct ContentView: View {
     }
 
     // MARK: - 辅助函数
-    
-    private func logSelectedItem(_ item: String?) -> Void {
+
+    private func logSelectedItem(_ item: String?) {
         guard let item = item else { return }
         Logger.info("\n\n=== 用户访问功能: \(item) ===")
     }
-    
+
     private func updateTokenStatus() {
         if let character = viewModel.selectedCharacter {
             if let auth = EVELogin.shared.getCharacterByID(character.CharacterID) {
@@ -851,19 +878,21 @@ struct ContentView: View {
             isRefreshTokenExpired = false
         }
     }
-    
+
     // 功能自定义相关辅助函数
     private func loadHiddenFeatures() {
         do {
             if !hiddenFeaturesData.isEmpty {
-                hiddenFeatures = try JSONDecoder().decode(Set<String>.self, from: hiddenFeaturesData)
+                hiddenFeatures = try JSONDecoder().decode(
+                    Set<String>.self, from: hiddenFeaturesData
+                )
             }
         } catch {
             Logger.error("加载隐藏功能列表失败: \(error)")
             hiddenFeatures = []
         }
     }
-    
+
     private func saveHiddenFeatures() {
         do {
             hiddenFeaturesData = try JSONEncoder().encode(hiddenFeatures)
@@ -871,11 +900,11 @@ struct ContentView: View {
             Logger.error("保存隐藏功能列表失败: \(error)")
         }
     }
-    
+
     private func isFeatureHidden(_ featureId: String) -> Bool {
         return hiddenFeatures.contains(featureId)
     }
-    
+
     private func toggleFeatureVisibility(_ featureId: String) {
         if hiddenFeatures.contains(featureId) {
             hiddenFeatures.remove(featureId)
@@ -884,13 +913,13 @@ struct ContentView: View {
         }
         saveHiddenFeatures()
     }
-    
+
     // 检查section是否有可见的功能
     private func hasVisibleFeatures(in features: [String]) -> Bool {
         if isCustomizeMode {
             return true // 自定义模式下总是显示section
         }
-        
+
         // 检查是否有任何功能未被隐藏且满足登录要求
         return features.contains { featureId in
             let participatesInHiding = shouldParticipateInHiding(featureId)
@@ -898,16 +927,14 @@ struct ContentView: View {
             return !isHidden && isFeatureAvailableForCurrentUser(featureId)
         }
     }
-    
 
-    
     // 功能配置结构
     struct FeatureConfig {
         let id: String
         let requiresLogin: Bool
         let section: String
     }
-    
+
     // 所有功能的配置
     private let featureConfigs: [FeatureConfig] = [
         // 角色功能
@@ -919,14 +946,14 @@ struct ContentView: View {
         FeatureConfig(id: "character_wealth", requiresLogin: true, section: "character"),
         FeatureConfig(id: "character_lp", requiresLogin: true, section: "character"),
         FeatureConfig(id: "searcher", requiresLogin: true, section: "character"),
-        
+
         // 军团功能
         FeatureConfig(id: "corporation_wallet", requiresLogin: true, section: "corporation"),
         FeatureConfig(id: "corporation_members", requiresLogin: true, section: "corporation"),
         FeatureConfig(id: "corporation_moon", requiresLogin: true, section: "corporation"),
         FeatureConfig(id: "corporation_structures", requiresLogin: true, section: "corporation"),
         FeatureConfig(id: "corporation_industry", requiresLogin: true, section: "corporation"),
-        
+
         // 数据库功能
         FeatureConfig(id: "database", requiresLogin: false, section: "database"),
         FeatureConfig(id: "market", requiresLogin: false, section: "database"),
@@ -943,7 +970,7 @@ struct ContentView: View {
         FeatureConfig(id: "language_map", requiresLogin: false, section: "database"),
         FeatureConfig(id: "jump_navigation", requiresLogin: false, section: "database"),
         FeatureConfig(id: "calculator", requiresLogin: false, section: "database"),
-        
+
         // 商业功能
         FeatureConfig(id: "assets", requiresLogin: true, section: "business"),
         FeatureConfig(id: "market_orders", requiresLogin: true, section: "business"),
@@ -953,60 +980,61 @@ struct ContentView: View {
         FeatureConfig(id: "industry_jobs", requiresLogin: true, section: "business"),
         FeatureConfig(id: "mining_ledger", requiresLogin: true, section: "business"),
         FeatureConfig(id: "planetary", requiresLogin: false, section: "business"),
-        
+
         // 战斗功能
         FeatureConfig(id: "killboard", requiresLogin: true, section: "battle"),
-        
+
         // 装配功能
         FeatureConfig(id: "fitting", requiresLogin: false, section: "fitting"),
-        
+
         // 其他功能
         FeatureConfig(id: "settings", requiresLogin: false, section: "other"),
         FeatureConfig(id: "update_history", requiresLogin: false, section: "other"),
-        FeatureConfig(id: "about", requiresLogin: false, section: "other")
+        FeatureConfig(id: "about", requiresLogin: false, section: "other"),
     ]
-    
+
     // 获取指定section的所有功能ID
     private func getFeatureIds(for section: String) -> [String] {
-        return featureConfigs
-            .filter { $0.section == section }
-            .map { $0.id }
+        return
+            featureConfigs
+                .filter { $0.section == section }
+                .map { $0.id }
     }
-    
+
     // 检查功能是否对当前用户可用
     private func isFeatureAvailableForCurrentUser(_ featureId: String) -> Bool {
         guard let config = featureConfigs.first(where: { $0.id == featureId }) else {
             return true // 如果找不到配置，默认可用
         }
-        
+
         if config.requiresLogin {
             return currentCharacterId != 0
         }
-        
+
         return true
     }
-    
+
     // 检查功能是否应该参与隐藏机制（other section中的功能不参与隐藏）
     private func shouldParticipateInHiding(_ featureId: String) -> Bool {
         guard let config = featureConfigs.first(where: { $0.id == featureId }) else {
             return true
         }
-        
+
         // other section中的功能不参与隐藏
         return config.section != "other"
     }
-    
+
     // 检查功能是否应该在编辑模式下显示选择圆圈（other section中的功能不显示选择圆圈）
     private func shouldShowSelectionCircle(_ featureId: String) -> Bool {
         guard let config = featureConfigs.first(where: { $0.id == featureId }) else {
             return true
         }
-        
+
         // other section中的功能不显示选择圆圈
         return config.section != "other"
     }
-    
-    // 创建可自定义的NavigationLink
+
+    // 创建可自定义的NavigationLink（带有默认的listRowInsets）
     @ViewBuilder
     private func customizableNavigationLink(
         value: String,
@@ -1018,7 +1046,7 @@ struct ContentView: View {
         let participatesInHiding = shouldParticipateInHiding(value)
         let isHidden = participatesInHiding && isFeatureHidden(value)
         let showSelectionCircle = shouldShowSelectionCircle(value)
-        
+
         let contentView = HStack {
             Image(icon)
                 .resizable()
@@ -1041,7 +1069,7 @@ struct ContentView: View {
                 }
             }
             Spacer()
-            
+
             // 在自定义模式下显示选择圆环（仅对显示选择圆圈的功能显示）
             if isCustomizeMode && showSelectionCircle {
                 Image(systemName: !isFeatureHidden(value) ? "checkmark.circle.fill" : "circle")
@@ -1049,10 +1077,11 @@ struct ContentView: View {
                     .foregroundColor(!isFeatureHidden(value) ? .blue : .gray)
             }
         }
-        
+
         if isCustomizeMode {
             // 编辑模式下，所有功能都变成不可点击的状态
             contentView
+                .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                 .contentShape(Rectangle())
                 .onTapGesture {
                     // 只有参与隐藏且显示选择圆圈的功能才能响应点击
@@ -1064,18 +1093,19 @@ struct ContentView: View {
             NavigationLink(value: value) {
                 contentView
             }
+            .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
             .isHidden(isHidden)
         }
     }
-    
+
     private func checkAppVersionUpdate() {
         let currentVersion = AppConfiguration.Version.fullVersion
-        
+
         // 如果lastVersion为空，说明是首次安装，记录版本号但不显示更新提示
         if lastVersion.isEmpty {
             lastVersion = currentVersion
             Logger.info("首次安装应用，记录当前版本: \(currentVersion)")
-        } 
+        }
         // 如果版本不同，显示更新提示
         else if lastVersion != currentVersion {
             Logger.info("检测到应用版本更新: \(lastVersion) -> \(currentVersion)")
@@ -1099,6 +1129,7 @@ struct ContentView: View {
                     mainViewModel: viewModel
                 )
             }
+            .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
             .onDisappear {
                 // 从人物管理页面返回时检查
                 if currentCharacterId != 0 {
@@ -1137,7 +1168,11 @@ struct ContentView: View {
                 value: "character_skills",
                 title: NSLocalizedString("Main_Skills", comment: ""),
                 icon: "skills",
-                noteView: AnyView(SkillQueueCountdownView(queueEndDate: viewModel.skillQueueEndDate, skillCount: viewModel.skillQueueCount))
+                noteView: AnyView(
+                    SkillQueueCountdownView(
+                        queueEndDate: viewModel.skillQueueEndDate,
+                        skillCount: viewModel.skillQueueCount
+                    ))
             )
             .isHidden(currentCharacterId == 0 && !isCustomizeMode)
 
@@ -1263,7 +1298,7 @@ struct ContentView: View {
                 title: NSLocalizedString("Main_NPC_entity", comment: ""),
                 icon: "criminal"
             )
-            
+
             customizableNavigationLink(
                 value: "npc_faction",
                 title: NSLocalizedString("Main_NPC_Faction", comment: ""),
@@ -1281,7 +1316,7 @@ struct ContentView: View {
                 title: NSLocalizedString("Main_Star_Map", comment: "星图"),
                 icon: "map"
             )
-            
+
             customizableNavigationLink(
                 value: "wormhole",
                 title: NSLocalizedString("Main_WH", comment: ""),
@@ -1417,6 +1452,7 @@ struct ContentView: View {
         }
         .isHidden(!hasVisibleFeatures(in: getFeatureIds(for: "battle")))
     }
+
     private var FittingSection: some View {
         Section {
             customizableNavigationLink(
@@ -1433,6 +1469,7 @@ struct ContentView: View {
         }
         .isHidden(!hasVisibleFeatures(in: getFeatureIds(for: "fitting")))
     }
+
     private var otherSection: some View {
         Section {
             customizableNavigationLink(
@@ -1481,9 +1518,16 @@ struct ContentView: View {
                         }) {
                             let hiddenCount = hiddenFeatures.count
                             if hiddenCount > 0 {
-                                Text(String(format: NSLocalizedString("Features_Too_Many_With_Count", comment: ""), hiddenCount))
-                                    .font(.caption)
-                                    .foregroundColor(.blue)
+                                Text(
+                                    String(
+                                        format: NSLocalizedString(
+                                            "Features_Too_Many_With_Count", comment: ""
+                                        ),
+                                        hiddenCount
+                                    )
+                                )
+                                .font(.caption)
+                                .foregroundColor(.blue)
                             } else {
                                 Text(NSLocalizedString("Features_Too_Many", comment: ""))
                                     .font(.caption)
@@ -1493,7 +1537,7 @@ struct ContentView: View {
                     }
                     Spacer()
                 }
-                
+
                 if isCustomizeMode {
                     // 恢复默认按钮
                     HStack {
@@ -1509,7 +1553,7 @@ struct ContentView: View {
                         }
                         Spacer()
                     }
-                    
+
                     // 自定义模式下的说明
                     Text(NSLocalizedString("Features_Customize_Mode", comment: ""))
                         .font(.caption)
@@ -1523,19 +1567,17 @@ struct ContentView: View {
 
     private var logoutButton: some View {
         Button {
-            if currentCharacterId != 0 {
-                currentCharacterId = 0
-                viewModel.resetCharacterInfo()
+            currentCharacterId = 0
+            viewModel.resetCharacterInfo()
+            // 清除技能数据
+            Task {
+                SharedSkillsManager.shared.clearSkillData()
             }
         } label: {
-            if currentCharacterId != 0 {
-                Image(systemName: "rectangle.portrait.and.arrow.right")
-                    .resizable()
-                    .frame(width: 28, height: 24)
-                    .foregroundColor(.red)
-            } else {
-                EmptyView()
-            }
+            Image(systemName: "rectangle.portrait.and.arrow.right")
+                .resizable()
+                .frame(width: 28, height: 24)
+                .foregroundColor(.red)
         }
     }
 
@@ -1584,6 +1626,7 @@ extension View {
 }
 
 // MARK: - 克隆倒计时组件
+
 struct CloneCountdownView: View {
     let targetDate: Date?
 
@@ -1607,42 +1650,53 @@ struct CloneCountdownView: View {
 
                     if hours > 0 {
                         if minutes > 0 {
-                            Text(String(
-                                format: NSLocalizedString(
-                                    "Main_Jump_Clones_Cooldown_Hours_Minutes_Seconds", comment: "下次跳跃: %dh %dm %ds"
-                                ), hours, minutes, seconds
-                            ))
+                            Text(
+                                String(
+                                    format: NSLocalizedString(
+                                        "Main_Jump_Clones_Cooldown_Hours_Minutes_Seconds",
+                                        comment: "下次跳跃: %dh %dm %ds"
+                                    ), hours, minutes, seconds
+                                )
+                            )
                             .font(.system(size: 12))
                             .foregroundColor(.gray)
                             .fixedSize(horizontal: false, vertical: true)
                             .lineLimit(1)
                         } else {
-                            Text(String(
-                                format: NSLocalizedString(
-                                    "Main_Jump_Clones_Cooldown_Hours_Seconds", comment: "下次跳跃: %dh %ds"
-                                ), hours, seconds
-                            ))
+                            Text(
+                                String(
+                                    format: NSLocalizedString(
+                                        "Main_Jump_Clones_Cooldown_Hours_Seconds",
+                                        comment: "下次跳跃: %dh %ds"
+                                    ), hours, seconds
+                                )
+                            )
                             .font(.system(size: 12))
                             .foregroundColor(.gray)
                             .fixedSize(horizontal: false, vertical: true)
                             .lineLimit(1)
                         }
                     } else if minutes > 0 {
-                        Text(String(
-                            format: NSLocalizedString(
-                                "Main_Jump_Clones_Cooldown_Minutes_Seconds", comment: "下次跳跃: %dm %ds"
-                            ), minutes, seconds
-                        ))
+                        Text(
+                            String(
+                                format: NSLocalizedString(
+                                    "Main_Jump_Clones_Cooldown_Minutes_Seconds",
+                                    comment: "下次跳跃: %dm %ds"
+                                ), minutes, seconds
+                            )
+                        )
                         .font(.system(size: 12))
                         .foregroundColor(.gray)
                         .fixedSize(horizontal: false, vertical: true)
                         .lineLimit(1)
                     } else {
-                        Text(String(
-                            format: NSLocalizedString(
-                                "Main_Jump_Clones_Cooldown_Seconds", comment: "下次跳跃: %ds"
-                            ), seconds
-                        ))
+                        Text(
+                            String(
+                                format: NSLocalizedString(
+                                    "Main_Jump_Clones_Cooldown_Seconds", comment: "下次跳跃: %ds"
+                                ), seconds
+                            )
+                        )
                         .font(.system(size: 12))
                         .foregroundColor(.gray)
                         .fixedSize(horizontal: false, vertical: true)
@@ -1661,6 +1715,7 @@ struct CloneCountdownView: View {
 }
 
 // MARK: - 技能队列倒计时组件
+
 struct SkillQueueCountdownView: View {
     let queueEndDate: Date?
     let skillCount: Int
@@ -1686,31 +1741,40 @@ struct SkillQueueCountdownView: View {
                     let seconds = Int(remainingTime) % 60
 
                     if days > 0 {
-                        Text(String(
-                            format: NSLocalizedString(
-                                "Main_Skills_Queue_Training_Days", comment: "训练中 - %d个技能 - %dd %dh %dm"
-                            ), skillCount, days, hours, minutes
-                        ))
+                        Text(
+                            String(
+                                format: NSLocalizedString(
+                                    "Main_Skills_Queue_Training_Days",
+                                    comment: "训练中 - %d个技能 - %dd %dh %dm"
+                                ), skillCount, days, hours, minutes
+                            )
+                        )
                         .font(.system(size: 12))
                         .foregroundColor(.gray)
                         .fixedSize(horizontal: false, vertical: true)
                         .lineLimit(1)
                     } else if hours > 0 {
-                        Text(String(
-                            format: NSLocalizedString(
-                                "Main_Skills_Queue_Training_Hours", comment: "训练中 - %d个技能 - %dh %dm %ds"
-                            ), skillCount, hours, minutes, seconds
-                        ))
+                        Text(
+                            String(
+                                format: NSLocalizedString(
+                                    "Main_Skills_Queue_Training_Hours",
+                                    comment: "训练中 - %d个技能 - %dh %dm %ds"
+                                ), skillCount, hours, minutes, seconds
+                            )
+                        )
                         .font(.system(size: 12))
                         .foregroundColor(.gray)
                         .fixedSize(horizontal: false, vertical: true)
                         .lineLimit(1)
                     } else {
-                        Text(String(
-                            format: NSLocalizedString(
-                                "Main_Skills_Queue_Training_Minutes", comment: "训练中 - %d个技能 - %dm %ds"
-                            ), skillCount, minutes, seconds
-                        ))
+                        Text(
+                            String(
+                                format: NSLocalizedString(
+                                    "Main_Skills_Queue_Training_Minutes",
+                                    comment: "训练中 - %d个技能 - %dm %ds"
+                                ), skillCount, minutes, seconds
+                            )
+                        )
                         .font(.system(size: 12))
                         .foregroundColor(.gray)
                         .fixedSize(horizontal: false, vertical: true)
@@ -1720,10 +1784,12 @@ struct SkillQueueCountdownView: View {
             }
         } else if skillCount > 0 {
             // 有技能但暂停中
-            Text(String(
-                format: NSLocalizedString("Main_Skills_Queue_Paused", comment: "暂停中 - %d个技能"),
-                skillCount
-            ))
+            Text(
+                String(
+                    format: NSLocalizedString("Main_Skills_Queue_Paused", comment: "暂停中 - %d个技能"),
+                    skillCount
+                )
+            )
             .font(.system(size: 12))
             .foregroundColor(.gray)
             .fixedSize(horizontal: false, vertical: true)

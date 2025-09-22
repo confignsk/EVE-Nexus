@@ -54,6 +54,7 @@ struct SkillDependencyListView: View {
                     }
                 }
             }
+            .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
         }
         .listStyle(.insetGrouped)
         .navigationTitle(
@@ -79,7 +80,7 @@ struct SkillDependencySection: View {
                 header: Text(NSLocalizedString("Main_Database_Required_By", comment: "")).font(
                     .headline)
             ) {
-                ForEach(1...5, id: \.self) { level in
+                ForEach(1 ... 5, id: \.self) { level in
                     if let items = itemsByLevel[level], !items.isEmpty {
                         NavigationLink {
                             SkillDependencyListView(
@@ -98,11 +99,13 @@ struct SkillDependencySection: View {
                                 Text(
                                     String(
                                         format: NSLocalizedString("Misc_Level", comment: "lv%d"),
-                                        level))
+                                        level
+                                    ))
                             }
                         }
                     }
                 }
+                .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
             }
         }
     }

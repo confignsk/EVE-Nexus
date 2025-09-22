@@ -27,9 +27,9 @@ func getColonyOverview(routes: [Route], pins: [Pin]) -> ColonyOverview {
     // 获取最终产品目的地ID
     let finalProductDestinationIds =
         routes
-        .filter { finalProducts.contains($0.type) }
-        .map { $0.destinationPinId }
-        .unique()
+            .filter { finalProducts.contains($0.type) }
+            .map { $0.destinationPinId }
+            .unique()
 
     // 获取最终产品存储设施
     let finalProductStoragePins = pins.filter { pin in

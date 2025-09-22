@@ -16,14 +16,14 @@ struct RichTextView: View {
         let _ = DispatchQueue.main.async {
             plainText = processedResult.plainText
         }
-        
+
         processedResult.richText
             .environment(
                 \.openURL,
                 OpenURLAction { url in
                     if url.scheme == "showinfo",
-                        let itemID = Int(url.host ?? ""),
-                        let categoryID = databaseManager.getCategoryID(for: itemID)
+                       let itemID = Int(url.host ?? ""),
+                       let categoryID = databaseManager.getCategoryID(for: itemID)
                     {
                         selectedItem = (itemID, categoryID)
                         DispatchQueue.main.async {
@@ -35,15 +35,15 @@ struct RichTextView: View {
                         handleDNALink(url)
                         return .handled
                     } else if url.scheme == "killreport",
-                        let killIdString = url.host,
-                        let killId = Int(killIdString)
+                              let killIdString = url.host,
+                              let killId = Int(killIdString)
                     {
                         // 处理战斗日志链接
                         killReportToShow = killId
                         return .handled
                     } else if url.scheme == "externalurl",
-                        let urlString = url.host?.removingPercentEncoding,
-                        let externalURL = URL(string: urlString)
+                              let urlString = url.host?.removingPercentEncoding,
+                              let externalURL = URL(string: urlString)
                     {
                         urlToConfirm = externalURL
                         showingURLAlert = true
@@ -81,8 +81,8 @@ struct RichTextView: View {
                         }
                     }
                 }
-                .presentationDetents([.fraction(0.81)])  // 设置为屏幕高度的82%
-                .presentationDragIndicator(.visible)  // 显示拖动指示器
+                .presentationDetents([.fraction(0.81)]) // 设置为屏幕高度的82%
+                .presentationDragIndicator(.visible) // 显示拖动指示器
             }
             .alert(NSLocalizedString("Misc_OpenLink", comment: ""), isPresented: $showingURLAlert) {
                 Button(NSLocalizedString("Common_Cancel", comment: ""), role: .cancel) {}
@@ -96,27 +96,33 @@ struct RichTextView: View {
                     Text("\(url.absoluteString)")
                 }
             }
-            .sheet(item: Binding(
-                get: { fittingToShow.map { FittingSheetItem(fitting: $0) } },
-                set: { if $0 == nil { fittingToShow = nil } }
-            )) { item in
+            .sheet(
+                item: Binding(
+                    get: { fittingToShow.map { FittingSheetItem(fitting: $0) } },
+                    set: { if $0 == nil { fittingToShow = nil } }
+                )
+            ) { item in
                 NavigationStack {
-                    ShipFittingView(temporaryFitting: item.fitting, databaseManager: databaseManager)
-                        .toolbar {
-                            ToolbarItem(placement: .navigationBarLeading) {
-                                Button(NSLocalizedString("Misc_back", comment: "")) {
-                                    fittingToShow = nil
-                                }
+                    ShipFittingView(
+                        temporaryFitting: item.fitting, databaseManager: databaseManager
+                    )
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            Button(NSLocalizedString("Misc_back", comment: "")) {
+                                fittingToShow = nil
                             }
                         }
+                    }
                 }
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
             }
-            .sheet(item: Binding(
-                get: { killReportToShow.map { KillReportSheetItem(killId: $0) } },
-                set: { if $0 == nil { killReportToShow = nil } }
-            )) { item in
+            .sheet(
+                item: Binding(
+                    get: { killReportToShow.map { KillReportSheetItem(killId: $0) } },
+                    set: { if $0 == nil { killReportToShow = nil } }
+                )
+            ) { item in
                 NavigationStack {
                     BRKillMailDetailView(killmail: ["_id": item.killId])
                         .toolbar {
@@ -131,33 +137,37 @@ struct RichTextView: View {
                 .presentationDragIndicator(.visible)
             }
     }
-    
+
     // MARK: - DNA链接处理方法
-    
+
     private func handleDNALink(_ url: URL) {
         Logger.info("处理DNA链接: \(url.absoluteString)")
-        
+
         // 直接从URL中获取DNA字符串，类似showinfo的处理方式
         let dnaString = url.absoluteString
         let displayName = NSLocalizedString("DNA_Fitting_Link_Default_Name", comment: "")
-        
+
         // 解析DNA字符串
         guard let dnaResult = DNAParser.parseDNA(dnaString, displayName: displayName) else {
             Logger.error("DNA解析失败: \(dnaString)")
             return
         }
-        
+
         // 将DNA结果转换为LocalFitting
-        guard let localFitting = DNAParser.dnaResultToLocalFitting(dnaResult, databaseManager: databaseManager) else {
+        guard
+            let localFitting = DNAParser.dnaResultToLocalFitting(
+                dnaResult, databaseManager: databaseManager
+            )
+        else {
             Logger.error("DNA转换为LocalFitting失败")
             return
         }
-        
+
         // 直接显示装配详情，不保存到文件
         DispatchQueue.main.async {
             self.fittingToShow = localFitting
         }
-        
+
         Logger.info("DNA装配已准备显示，不保存到文件，ID: \(localFitting.fitting_id)")
     }
 }
@@ -181,8 +191,6 @@ private struct KillReportSheetItem: Identifiable {
     let killId: Int
 }
 
-
-
 // 处理结果结构体
 struct RichTextProcessResult {
     let richText: Text
@@ -204,7 +212,7 @@ enum RichTextProcessor {
         if let regex = try? NSRegularExpression(
             pattern: "<font[^>]*>(.*?)</font>", options: [.dotMatchesLineSeparators]
         ) {
-            let range = NSRange(currentText.startIndex..<currentText.endIndex, in: currentText)
+            let range = NSRange(currentText.startIndex ..< currentText.endIndex, in: currentText)
             currentText = regex.stringByReplacingMatches(
                 in: currentText, options: [], range: range, withTemplate: "$1"
             )
@@ -213,14 +221,14 @@ enum RichTextProcessor {
         // 3. 统一链接格式：将带引号的href转换为不带引号的格式
         // 先处理双引号的情况
         if let regex = try? NSRegularExpression(pattern: "<a href=\"([^\"]*)\"", options: []) {
-            let range = NSRange(currentText.startIndex..<currentText.endIndex, in: currentText)
+            let range = NSRange(currentText.startIndex ..< currentText.endIndex, in: currentText)
             currentText = regex.stringByReplacingMatches(
                 in: currentText, options: [], range: range, withTemplate: "<a href=$1"
             )
         }
         // 再处理单引号的情况
         if let regex = try? NSRegularExpression(pattern: "<a href='([^']*)'", options: []) {
-            let range = NSRange(currentText.startIndex..<currentText.endIndex, in: currentText)
+            let range = NSRange(currentText.startIndex ..< currentText.endIndex, in: currentText)
             currentText = regex.stringByReplacingMatches(
                 in: currentText, options: [], range: range, withTemplate: "<a href=$1"
             )
@@ -237,7 +245,7 @@ enum RichTextProcessor {
         // 5. 删除所有非白名单的HTML标签（除了链接相关的标签）
         let pattern = "<(?!/?(a|b|url))[^>]*>"
         if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) {
-            let range = NSRange(currentText.startIndex..<currentText.endIndex, in: currentText)
+            let range = NSRange(currentText.startIndex ..< currentText.endIndex, in: currentText)
             currentText = regex.stringByReplacingMatches(
                 in: currentText, options: [], range: range, withTemplate: ""
             )
@@ -245,7 +253,7 @@ enum RichTextProcessor {
 
         return currentText
     }
-    
+
     static func processRichText(_ text: String) -> RichTextProcessResult {
         // 记录原始文本
         Logger.debug("RichText processing - Original text:\n\(text)")
@@ -262,38 +270,38 @@ enum RichTextProcessor {
 
         // 处理链接
         while let linkStart = processedText.range(of: "<a href="),
-            let linkEnd = processedText.range(of: "</a>")
+              let linkEnd = processedText.range(of: "</a>")
         {
-            let linkText = processedText[linkStart.lowerBound..<linkEnd.upperBound]
+            let linkText = processedText[linkStart.lowerBound ..< linkEnd.upperBound]
 
             if let textStart = linkText.range(of: ">")?.upperBound,
-                let textEnd = linkText.range(of: "</a>")?.lowerBound
+               let textEnd = linkText.range(of: "</a>")?.lowerBound
             {
-                let displayText = String(linkText[textStart..<textEnd])
+                let displayText = String(linkText[textStart ..< textEnd])
                 let startIndex = attributedString.range(of: linkText)?.lowerBound
                 let endIndex = attributedString.range(of: linkText)?.upperBound
 
                 if let start = startIndex, let end = endIndex {
                     // 处理showinfo链接
                     if linkText.contains("href=showinfo:"),
-                        let idStart = linkText.range(of: "showinfo:")?.upperBound,
-                        let idEnd = linkText.range(of: ">")?.lowerBound
+                       let idStart = linkText.range(of: "showinfo:")?.upperBound,
+                       let idEnd = linkText.range(of: ">")?.lowerBound
                     {
-                        let idString = String(linkText[idStart..<idEnd])
+                        let idString = String(linkText[idStart ..< idEnd])
                         if let itemID = Int(idString),
-                            idString.range(of: "^\\d+$", options: .regularExpression) != nil
+                           idString.range(of: "^\\d+$", options: .regularExpression) != nil
                         {
                             // 有效的showinfo链接，设置为可点击
                             attributedString.replaceSubrange(
-                                start..<end, with: AttributedString(displayText)
+                                start ..< end, with: AttributedString(displayText)
                             )
                             attributedString[
-                                start..<attributedString.index(
+                                start ..< attributedString.index(
                                     start, offsetByCharacters: displayText.count
                                 )
                             ].foregroundColor = .blue
                             attributedString[
-                                start..<attributedString.index(
+                                start ..< attributedString.index(
                                     start, offsetByCharacters: displayText.count
                                 )
                             ].link = URL(string: "showinfo://\(itemID)")
@@ -303,7 +311,7 @@ enum RichTextProcessor {
                         } else {
                             // 无效的showinfo链接，只保留文本内容
                             attributedString.replaceSubrange(
-                                start..<end, with: AttributedString(displayText)
+                                start ..< end, with: AttributedString(displayText)
                             )
                             Logger.debug(
                                 "Invalid showinfo link format - Text: \(displayText)")
@@ -311,33 +319,34 @@ enum RichTextProcessor {
                     } else if linkText.contains("href=fitting:") {
                         // 处理DNA装配链接
                         if let dnaStart = linkText.range(of: "fitting:")?.lowerBound,
-                            let dnaEnd = linkText.range(of: ">")?.lowerBound
+                           let dnaEnd = linkText.range(of: ">")?.lowerBound
                         {
-                            let dnaString = String(linkText[dnaStart..<dnaEnd])
-                            
+                            let dnaString = String(linkText[dnaStart ..< dnaEnd])
+
                             // 设置为可点击的DNA链接
                             attributedString.replaceSubrange(
-                                start..<end, with: AttributedString(displayText)
+                                start ..< end, with: AttributedString(displayText)
                             )
                             attributedString[
-                                start..<attributedString.index(
+                                start ..< attributedString.index(
                                     start, offsetByCharacters: displayText.count
                                 )
                             ].foregroundColor = .blue
-                            
+
                             // 直接使用fitting://格式，类似showinfo://
                             attributedString[
-                                start..<attributedString.index(
+                                start ..< attributedString.index(
                                     start, offsetByCharacters: displayText.count
                                 )
                             ].link = URL(string: dnaString)
-                            
+
                             Logger.debug(
-                                "Processed DNA fitting link - DNA: \(dnaString), Text: \(displayText)")
+                                "Processed DNA fitting link - DNA: \(dnaString), Text: \(displayText)"
+                            )
                         } else {
                             // 无效的DNA链接，只保留文本内容
                             attributedString.replaceSubrange(
-                                start..<end, with: AttributedString(displayText)
+                                start ..< end, with: AttributedString(displayText)
                             )
                             Logger.debug(
                                 "Invalid DNA fitting link format - Text: \(displayText)")
@@ -345,33 +354,34 @@ enum RichTextProcessor {
                     } else if linkText.contains("href=killReport:") {
                         // 处理战斗日志链接
                         if let killStart = linkText.range(of: "killReport:")?.upperBound,
-                            let hrefEnd = linkText.range(of: ">")?.lowerBound
+                           let hrefEnd = linkText.range(of: ">")?.lowerBound
                         {
-                            let hrefContent = String(linkText[killStart..<hrefEnd])
+                            let hrefContent = String(linkText[killStart ..< hrefEnd])
                             // 提取第一个冒号前的数字作为 killmail ID
                             let components = hrefContent.components(separatedBy: ":")
                             if let killIdString = components.first, let killId = Int(killIdString) {
                                 // 设置为可点击的战斗日志链接
                                 attributedString.replaceSubrange(
-                                    start..<end, with: AttributedString(displayText)
+                                    start ..< end, with: AttributedString(displayText)
                                 )
                                 attributedString[
-                                    start..<attributedString.index(
+                                    start ..< attributedString.index(
                                         start, offsetByCharacters: displayText.count
                                     )
                                 ].foregroundColor = .blue
                                 attributedString[
-                                    start..<attributedString.index(
+                                    start ..< attributedString.index(
                                         start, offsetByCharacters: displayText.count
                                     )
                                 ].link = URL(string: "killreport://\(killId)")
-                                
+
                                 Logger.debug(
-                                    "Processed killReport link - ID: \(killId), Text: \(displayText)")
+                                    "Processed killReport link - ID: \(killId), Text: \(displayText)"
+                                )
                             } else {
                                 // 无效的killReport链接，只保留文本内容
                                 attributedString.replaceSubrange(
-                                    start..<end, with: AttributedString(displayText)
+                                    start ..< end, with: AttributedString(displayText)
                                 )
                                 Logger.debug(
                                     "Invalid killReport ID format - Text: \(displayText)")
@@ -379,7 +389,7 @@ enum RichTextProcessor {
                         } else {
                             // 无效的killReport链接格式，只保留文本内容
                             attributedString.replaceSubrange(
-                                start..<end, with: AttributedString(displayText)
+                                start ..< end, with: AttributedString(displayText)
                             )
                             Logger.debug(
                                 "Invalid killReport link format - Text: \(displayText)")
@@ -387,19 +397,19 @@ enum RichTextProcessor {
                     } else {
                         // 处理普通链接
                         attributedString.replaceSubrange(
-                            start..<end, with: AttributedString(displayText)
+                            start ..< end, with: AttributedString(displayText)
                         )
                         attributedString[
-                            start..<attributedString.index(
+                            start ..< attributedString.index(
                                 start, offsetByCharacters: displayText.count
                             )
                         ].foregroundColor = .blue
                         if let hrefStart = linkText.range(of: "href=")?.upperBound,
-                            let hrefEnd = linkText.range(of: ">")?.lowerBound,
-                            let url = URL(string: String(linkText[hrefStart..<hrefEnd]))
+                           let hrefEnd = linkText.range(of: ">")?.lowerBound,
+                           let url = URL(string: String(linkText[hrefStart ..< hrefEnd]))
                         {
                             attributedString[
-                                start..<attributedString.index(
+                                start ..< attributedString.index(
                                     start, offsetByCharacters: displayText.count
                                 )
                             ].link = url
@@ -419,17 +429,17 @@ enum RichTextProcessor {
         // 处理URL标签
         processedText = currentText
         while let urlStart = processedText.range(of: "<url="),
-            let urlEnd = processedText.range(of: "</url>")
+              let urlEnd = processedText.range(of: "</url>")
         {
-            let urlText = processedText[urlStart.lowerBound..<urlEnd.upperBound]
+            let urlText = processedText[urlStart.lowerBound ..< urlEnd.upperBound]
 
             if let urlValueStart = urlText.range(of: "=")?.upperBound,
-                let urlValueEnd = urlText.range(of: ">")?.lowerBound,
-                let textStart = urlText.range(of: ">")?.upperBound,
-                let textEnd = urlText.range(of: "</url>")?.lowerBound
+               let urlValueEnd = urlText.range(of: ">")?.lowerBound,
+               let textStart = urlText.range(of: ">")?.upperBound,
+               let textEnd = urlText.range(of: "</url>")?.lowerBound
             {
-                let url = String(urlText[urlValueStart..<urlValueEnd])
-                let displayText = String(urlText[textStart..<textEnd])
+                let url = String(urlText[urlValueStart ..< urlValueEnd])
+                let displayText = String(urlText[textStart ..< textEnd])
 
                 let startIndex = attributedString.range(of: urlText)?.lowerBound
                 let endIndex = attributedString.range(of: urlText)?.upperBound
@@ -439,19 +449,19 @@ enum RichTextProcessor {
                     if url.contains("showinfo:") {
                         let idString = url.replacingOccurrences(of: "showinfo:", with: "")
                         if let itemID = Int(idString),
-                            idString.range(of: "^\\d+$", options: .regularExpression) != nil
+                           idString.range(of: "^\\d+$", options: .regularExpression) != nil
                         {
                             // 有效的showinfo链接，设置为可点击
                             attributedString.replaceSubrange(
-                                start..<end, with: AttributedString(displayText)
+                                start ..< end, with: AttributedString(displayText)
                             )
                             attributedString[
-                                start..<attributedString.index(
+                                start ..< attributedString.index(
                                     start, offsetByCharacters: displayText.count
                                 )
                             ].foregroundColor = .blue
                             attributedString[
-                                start..<attributedString.index(
+                                start ..< attributedString.index(
                                     start, offsetByCharacters: displayText.count
                                 )
                             ].link = URL(string: "showinfo://\(itemID)")
@@ -461,7 +471,7 @@ enum RichTextProcessor {
                         } else {
                             // 无效的showinfo链接，只保留文本内容
                             attributedString.replaceSubrange(
-                                start..<end, with: AttributedString(displayText)
+                                start ..< end, with: AttributedString(displayText)
                             )
                             Logger.debug(
                                 "Invalid showinfo URL format - Text: \(displayText)")
@@ -469,21 +479,21 @@ enum RichTextProcessor {
                     } else if url.hasPrefix("fitting:") {
                         // 处理DNA装配链接
                         attributedString.replaceSubrange(
-                            start..<end, with: AttributedString(displayText)
+                            start ..< end, with: AttributedString(displayText)
                         )
                         attributedString[
-                            start..<attributedString.index(
+                            start ..< attributedString.index(
                                 start, offsetByCharacters: displayText.count
                             )
                         ].foregroundColor = .blue
-                        
+
                         // 直接使用fitting://格式，类似showinfo://
                         attributedString[
-                            start..<attributedString.index(
+                            start ..< attributedString.index(
                                 start, offsetByCharacters: displayText.count
                             )
                         ].link = URL(string: url)
-                        
+
                         Logger.debug(
                             "Processed DNA fitting URL - DNA: \(url), Text: \(displayText)")
                     } else if url.hasPrefix("killReport:") {
@@ -492,25 +502,25 @@ enum RichTextProcessor {
                         let components = killReportContent.components(separatedBy: ":")
                         if let killIdString = components.first, let killId = Int(killIdString) {
                             attributedString.replaceSubrange(
-                                start..<end, with: AttributedString(displayText)
+                                start ..< end, with: AttributedString(displayText)
                             )
                             attributedString[
-                                start..<attributedString.index(
+                                start ..< attributedString.index(
                                     start, offsetByCharacters: displayText.count
                                 )
                             ].foregroundColor = .blue
                             attributedString[
-                                start..<attributedString.index(
+                                start ..< attributedString.index(
                                     start, offsetByCharacters: displayText.count
                                 )
                             ].link = URL(string: "killreport://\(killId)")
-                            
+
                             Logger.debug(
                                 "Processed killReport URL - ID: \(killId), Text: \(displayText)")
                         } else {
                             // 无效的killReport链接，只保留文本内容
                             attributedString.replaceSubrange(
-                                start..<end, with: AttributedString(displayText)
+                                start ..< end, with: AttributedString(displayText)
                             )
                             Logger.debug(
                                 "Invalid killReport URL format - Text: \(displayText)")
@@ -518,10 +528,10 @@ enum RichTextProcessor {
                     } else {
                         // 处理普通URL
                         attributedString.replaceSubrange(
-                            start..<end, with: AttributedString(displayText)
+                            start ..< end, with: AttributedString(displayText)
                         )
                         attributedString[
-                            start..<attributedString.index(
+                            start ..< attributedString.index(
                                 start, offsetByCharacters: displayText.count
                             )
                         ].foregroundColor = .blue
@@ -530,7 +540,7 @@ enum RichTextProcessor {
                             withAllowedCharacters: .urlHostAllowed)
                         {
                             attributedString[
-                                start..<attributedString.index(
+                                start ..< attributedString.index(
                                     start, offsetByCharacters: displayText.count
                                 )
                             ].link = URL(string: "externalurl://\(encodedUrl)")
@@ -549,18 +559,18 @@ enum RichTextProcessor {
         // 处理加粗文本
         // 首先找出所有的加粗标签对
         var boldRanges: [(Range<String.Index>, String)] = []
-        var searchRange = currentText.startIndex..<currentText.endIndex
+        var searchRange = currentText.startIndex ..< currentText.endIndex
 
         while let boldStart = currentText.range(of: "<b>", range: searchRange),
-            let boldEnd = currentText.range(
-                of: "</b>", range: boldStart.upperBound..<currentText.endIndex
-            )
+              let boldEnd = currentText.range(
+                  of: "</b>", range: boldStart.upperBound ..< currentText.endIndex
+              )
         {
-            let boldTextRange = boldStart.upperBound..<boldEnd.lowerBound
+            let boldTextRange = boldStart.upperBound ..< boldEnd.lowerBound
             let boldText = String(currentText[boldTextRange])
-            let fullRange = boldStart.lowerBound..<boldEnd.upperBound
+            let fullRange = boldStart.lowerBound ..< boldEnd.upperBound
             boldRanges.append((fullRange, boldText))
-            searchRange = boldEnd.upperBound..<currentText.endIndex
+            searchRange = boldEnd.upperBound ..< currentText.endIndex
         }
 
         // 记录找到的加粗文本
@@ -578,14 +588,15 @@ enum RichTextProcessor {
                     attrStartIndex, offsetByCharacters: "<b>".count + boldText.count + "</b>".count
                 )
                 attributedString.replaceSubrange(
-                    attrStartIndex..<attrEndIndex, with: AttributedString(boldText)
+                    attrStartIndex ..< attrEndIndex, with: AttributedString(boldText)
                 )
 
                 let boldEndIndex = attributedString.index(
                     attrStartIndex, offsetByCharacters: boldText.count
                 )
                 // 使用最简单的粗体设置方式
-                attributedString[attrStartIndex..<boldEndIndex].inlinePresentationIntent = .stronglyEmphasized
+                attributedString[attrStartIndex ..< boldEndIndex].inlinePresentationIntent =
+                    .stronglyEmphasized
 
                 Logger.debug("Applied bold style to: \(boldText)")
             }

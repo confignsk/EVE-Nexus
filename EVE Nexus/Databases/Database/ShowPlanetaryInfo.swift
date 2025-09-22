@@ -23,7 +23,10 @@ struct ShowPlanetaryInfo: View {
         List {
             // 基础信息部分
             if let itemDetails = itemDetails {
-                ItemBasicInfoView(itemDetails: itemDetails, databaseManager: databaseManager, modifiedAttributes: nil)
+                ItemBasicInfoView(
+                    itemDetails: itemDetails, databaseManager: databaseManager,
+                    modifiedAttributes: nil
+                )
             }
 
             // 输入材料部分
@@ -167,7 +170,8 @@ struct ShowPlanetaryInfo: View {
                 }
             }
             IndustrySection(
-                itemID: itemID, databaseManager: databaseManager, itemDetails: itemDetails)
+                itemID: itemID, databaseManager: databaseManager, itemDetails: itemDetails
+            )
         }
         .listStyle(.insetGrouped)
         .navigationTitle(NSLocalizedString("Item_Info", comment: ""))
@@ -187,15 +191,15 @@ struct ShowPlanetaryInfo: View {
 
     private func loadInputs() {
         let query = """
-            SELECT input_typeid, input_value 
-            FROM planetSchematics 
-            WHERE output_typeid = ?
-            """
+        SELECT input_typeid, input_value 
+        FROM planetSchematics 
+        WHERE output_typeid = ?
+        """
         let result = databaseManager.executeQuery(query, parameters: [itemID])
 
         if case let .success(rows) = result, let row = rows.first {
             if let inputTypeIDs = row["input_typeid"] as? String,
-                let inputValues = row["input_value"] as? String
+               let inputValues = row["input_value"] as? String
             {
                 let typeIDs = inputTypeIDs.split(separator: ",").compactMap { Int($0) }
                 let values = inputValues.split(separator: ",").compactMap { Int($0) }
@@ -215,15 +219,15 @@ struct ShowPlanetaryInfo: View {
 
     private func loadOutput() {
         let query = """
-            SELECT output_value, cycle_time 
-            FROM planetSchematics 
-            WHERE output_typeid = ?
-            """
+        SELECT output_value, cycle_time 
+        FROM planetSchematics 
+        WHERE output_typeid = ?
+        """
         let result = databaseManager.executeQuery(query, parameters: [itemID])
 
         if case let .success(rows) = result, let row = rows.first {
             if let outputValue = row["output_value"] as? Int,
-                let cycleTime = row["cycle_time"] as? Int
+               let cycleTime = row["cycle_time"] as? Int
             {
                 output = (outputValue: outputValue, cycleTime: cycleTime)
             }
@@ -232,16 +236,16 @@ struct ShowPlanetaryInfo: View {
 
     private func loadUses() {
         let query = """
-            SELECT output_typeid 
-            FROM planetSchematics 
-            WHERE instr(',' || input_typeid || ',', ',\(itemID),') > 0
-            """
+        SELECT output_typeid 
+        FROM planetSchematics 
+        WHERE instr(',' || input_typeid || ',', ',\(itemID),') > 0
+        """
         let result = databaseManager.executeQuery(query)
 
         if case let .success(rows) = result {
             uses = rows.compactMap { row in
                 guard let typeID = row["output_typeid"] as? Int,
-                    let details = databaseManager.getItemDetails(for: typeID)
+                      let details = databaseManager.getItemDetails(for: typeID)
                 else { return nil }
                 return (typeID: typeID, name: details.name, iconFileName: details.iconFileName)
             }
@@ -251,10 +255,10 @@ struct ShowPlanetaryInfo: View {
     // 添加设施加载方法
     private func loadFacilities() {
         let query = """
-            SELECT facilitys 
-            FROM planetSchematics 
-            WHERE output_typeid = ?
-            """
+        SELECT facilitys 
+        FROM planetSchematics 
+        WHERE output_typeid = ?
+        """
         let result = databaseManager.executeQuery(query, parameters: [itemID])
 
         if case let .success(rows) = result, let row = rows.first {
@@ -278,16 +282,16 @@ struct ShowPlanetaryInfo: View {
     // 添加收获来源加载方法
     private func loadHarvestSources() {
         let query = """
-            SELECT harvest_typeid 
-            FROM planetResourceHarvest 
-            WHERE typeid = ?
-            """
+        SELECT harvest_typeid 
+        FROM planetResourceHarvest 
+        WHERE typeid = ?
+        """
         let result = databaseManager.executeQuery(query, parameters: [itemID])
 
         if case let .success(rows) = result {
             harvestSources = rows.compactMap { row in
                 guard let harvestTypeID = row["harvest_typeid"] as? Int,
-                    let details = databaseManager.getItemDetails(for: harvestTypeID)
+                      let details = databaseManager.getItemDetails(for: harvestTypeID)
                 else { return nil }
                 return (
                     typeID: harvestTypeID, name: details.name, iconFileName: details.iconFileName

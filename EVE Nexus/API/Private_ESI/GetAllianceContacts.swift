@@ -2,7 +2,7 @@ import Foundation
 
 class GetAllianceContacts {
     static let shared = GetAllianceContacts()
-    private let cacheTimeout: TimeInterval = 8 * 3600  // 8小时缓存有效期
+    private let cacheTimeout: TimeInterval = 8 * 3600 // 8小时缓存有效期
 
     private init() {}
 
@@ -62,7 +62,7 @@ class GetAllianceContacts {
     }
 
     // 获取所有联系人数据
-    public func fetchContacts(characterId: Int, allianceId: Int, forceRefresh: Bool = false)
+    func fetchContacts(characterId: Int, allianceId: Int, forceRefresh: Bool = false)
         async throws -> [ContactInfo]
     {
         // 如果不是强制刷新，尝试从缓存加载

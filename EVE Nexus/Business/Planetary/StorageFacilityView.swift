@@ -33,7 +33,7 @@ struct StorageFacilityView: View {
                     ProgressView(value: total, total: capacity)
                         .progressViewStyle(.linear)
                         .frame(height: 6)
-                        .tint(capacity > 0 ? (total / capacity >= 0.9 ? .red : .blue) : .blue)  // 容量快满时标红提示
+                        .tint(capacity > 0 ? (total / capacity >= 0.9 ? .red : .blue) : .blue) // 容量快满时标红提示
 
                     Text("\(Int(total.rounded()))m³ / \(Int(capacity))m³")
                         .font(.caption)

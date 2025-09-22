@@ -17,8 +17,8 @@ struct P1ResourceInfo: Identifiable {
     var resourceId: Int
     var resourceName: String
     var iconFileName: String
-    var requiredP0Resources: [Int]  // 需要的P0资源ID列表
-    var canProduce: Bool  // 是否可以使用当前可用的P0资源生产
+    var requiredP0Resources: [Int] // 需要的P0资源ID列表
+    var canProduce: Bool // 是否可以使用当前可用的P0资源生产
 }
 
 // 定义P2资源信息结构体
@@ -27,8 +27,8 @@ struct P2ResourceInfo: Identifiable {
     var resourceId: Int
     var resourceName: String
     var iconFileName: String
-    var requiredP1Resources: [Int]  // 需要的P1资源ID列表
-    var canProduce: Bool  // 是否可以使用当前可用的P1资源生产
+    var requiredP1Resources: [Int] // 需要的P1资源ID列表
+    var canProduce: Bool // 是否可以使用当前可用的P1资源生产
 }
 
 // 定义P3资源信息结构体
@@ -37,8 +37,8 @@ struct P3ResourceInfo: Identifiable {
     var resourceId: Int
     var resourceName: String
     var iconFileName: String
-    var requiredP2Resources: [Int]  // 需要的P2资源ID列表
-    var canProduce: Bool  // 是否可以使用当前可用的P2资源生产
+    var requiredP2Resources: [Int] // 需要的P2资源ID列表
+    var canProduce: Bool // 是否可以使用当前可用的P2资源生产
 }
 
 // 定义P4资源信息结构体
@@ -47,8 +47,8 @@ struct P4ResourceInfo: Identifiable {
     var resourceId: Int
     var resourceName: String
     var iconFileName: String
-    var requiredP3Resources: [Int]  // 需要的P3资源ID列表
-    var canProduce: Bool  // 是否可以使用当前可用的P3资源生产
+    var requiredP3Resources: [Int] // 需要的P3资源ID列表
+    var canProduce: Bool // 是否可以使用当前可用的P3资源生产
 }
 
 // 定义行星资源等级枚举
@@ -70,7 +70,7 @@ enum PIResourceLevel: Int, CaseIterable {
     }
 
     var levelName: String {
-        "P\(self.rawValue)"
+        "P\(rawValue)"
     }
 }
 
@@ -103,19 +103,18 @@ class PIResourceCache {
         DispatchQueue.global(qos: .userInitiated).async {
             // 预加载所有P0-P4资源信息
             let query = """
-                    SELECT type_id, name, icon_filename, marketGroupID
-                    FROM types
-                    WHERE marketGroupID IN (1333, 1334, 1335, 1336, 1337)
-                """
+                SELECT type_id, name, icon_filename, marketGroupID
+                FROM types
+                WHERE marketGroupID IN (1333, 1334, 1335, 1336, 1337)
+            """
 
             if case let .success(rows) = DatabaseManager.shared.executeQuery(query) {
                 for row in rows {
                     if let typeId = row["type_id"] as? Int,
-                        let name = row["name"] as? String,
-                        let iconFileName = row["icon_filename"] as? String,
-                        let marketGroupId = row["marketGroupID"] as? Int
+                       let name = row["name"] as? String,
+                       let iconFileName = row["icon_filename"] as? String,
+                       let marketGroupId = row["marketGroupID"] as? Int
                     {
-
                         // 缓存资源基本信息
                         self.resourceInfoCache[typeId] = (
                             name: name,
@@ -191,15 +190,16 @@ class PIResourceCache {
         }
 
         let query = """
-                SELECT s.solarSystemName, u.system_security, r.regionName
-                FROM solarsystems s
-                JOIN universe u ON s.solarSystemID = u.solarsystem_id
-                JOIN regions r ON r.regionID = u.region_id
-                WHERE s.solarSystemID = ?
-            """
+            SELECT s.solarSystemName, u.system_security, r.regionName
+            FROM solarsystems s
+            JOIN universe u ON s.solarSystemID = u.solarsystem_id
+            JOIN regions r ON r.regionID = u.region_id
+            WHERE s.solarSystemID = ?
+        """
 
         if case let .success(rows) = DatabaseManager.shared.executeQuery(
-            query, parameters: [systemId]),
+            query, parameters: [systemId]
+        ),
             let row = rows.first,
             let name = row["solarSystemName"] as? String,
             let security = row["system_security"] as? Double,
@@ -216,18 +216,17 @@ class PIResourceCache {
     // 预加载配方信息
     private func preloadSchematicInfo() {
         let query = """
-                SELECT output_typeid, output_value, input_typeid, input_value
-                FROM planetSchematics
-            """
+            SELECT output_typeid, output_value, input_typeid, input_value
+            FROM planetSchematics
+        """
 
         if case let .success(rows) = DatabaseManager.shared.executeQuery(query) {
             for row in rows {
                 if let outputTypeId = row["output_typeid"] as? Int,
-                    let outputValue = row["output_value"] as? Int,
-                    let inputTypeIdStr = row["input_typeid"] as? String,
-                    let inputValueStr = row["input_value"] as? String
+                   let outputValue = row["output_value"] as? Int,
+                   let inputTypeIdStr = row["input_typeid"] as? String,
+                   let inputValueStr = row["input_value"] as? String
                 {
-
                     // 解析输入资源ID和值
                     let inputTypeIds = inputTypeIdStr.components(separatedBy: ",").compactMap {
                         Int($0.trimmingCharacters(in: .whitespaces))
@@ -236,7 +235,7 @@ class PIResourceCache {
                         Int($0.trimmingCharacters(in: .whitespaces))
                     }
 
-                    self.schematicCache[outputTypeId] = (
+                    schematicCache[outputTypeId] = (
                         outputValue: outputValue,
                         inputTypeIds: inputTypeIds,
                         inputValues: inputValues

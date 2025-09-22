@@ -30,7 +30,7 @@ struct LocationInfoView: View {
 
     var body: some View {
         if let stationName = stationName,
-            let solarSystemName = solarSystemName
+           let solarSystemName = solarSystemName
         {
             // 空间站或建筑物场景
             if stationName.hasPrefix(solarSystemName) {
@@ -46,7 +46,10 @@ struct LocationInfoView: View {
                         Button {
                             UIPasteboard.general.string = stationName
                         } label: {
-                            Label(NSLocalizedString("Misc_Copy_Location", comment: ""), systemImage: "doc.on.doc")
+                            Label(
+                                NSLocalizedString("Misc_Copy_Location", comment: ""),
+                                systemImage: "doc.on.doc"
+                            )
                         }
                     }
             } else {
@@ -60,7 +63,10 @@ struct LocationInfoView: View {
                         Button {
                             UIPasteboard.general.string = stationName
                         } label: {
-                            Label(NSLocalizedString("Misc_Copy", comment: ""), systemImage: "doc.on.doc")
+                            Label(
+                                NSLocalizedString("Misc_Copy", comment: ""),
+                                systemImage: "doc.on.doc"
+                            )
                         }
                     }
             }
@@ -79,7 +85,9 @@ struct LocationInfoView: View {
                         let copyText = solarSystemName
                         UIPasteboard.general.string = copyText
                     } label: {
-                        Label(NSLocalizedString("Misc_Copy", comment: ""), systemImage: "doc.on.doc")
+                        Label(
+                            NSLocalizedString("Misc_Copy", comment: ""), systemImage: "doc.on.doc"
+                        )
                     }
                 }
         } else if let locationId = locationId {
@@ -94,7 +102,9 @@ struct LocationInfoView: View {
                     Button {
                         UIPasteboard.general.string = "\(locationId)"
                     } label: {
-                        Label(NSLocalizedString("Misc_Copy", comment: ""), systemImage: "doc.on.doc")
+                        Label(
+                            NSLocalizedString("Misc_Copy", comment: ""), systemImage: "doc.on.doc"
+                        )
                     }
                 }
         } else {
@@ -106,9 +116,13 @@ struct LocationInfoView: View {
                 .foregroundColor(textColor)
                 .contextMenu {
                     Button {
-                        UIPasteboard.general.string = NSLocalizedString("Assets_Unknown_Location", comment: "")
+                        UIPasteboard.general.string = NSLocalizedString(
+                            "Assets_Unknown_Location", comment: ""
+                        )
                     } label: {
-                        Label(NSLocalizedString("Misc_Copy", comment: ""), systemImage: "doc.on.doc")
+                        Label(
+                            NSLocalizedString("Misc_Copy", comment: ""), systemImage: "doc.on.doc"
+                        )
                     }
                 }
         }

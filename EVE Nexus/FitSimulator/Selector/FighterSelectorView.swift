@@ -2,9 +2,9 @@ import SwiftUI
 
 // 舰载机类型枚举
 enum FighterType: Int {
-    case light = 840     // 轻型舰载机
-    case heavy = 1310    // 重型舰载机
-    case support = 2239  // 辅助舰载机
+    case light = 840 // 轻型舰载机
+    case heavy = 1310 // 重型舰载机
+    case support = 2239 // 辅助舰载机
 }
 
 // 舰载机选择器
@@ -19,7 +19,10 @@ struct FighterSelectorView: View {
     let fighterType: FighterType
     let shipTypeID: Int
 
-    init(databaseManager: DatabaseManager, fighterType: FighterType, shipTypeID: Int, onSelect: @escaping (DatabaseListItem) -> Void) {
+    init(
+        databaseManager: DatabaseManager, fighterType: FighterType, shipTypeID: Int,
+        onSelect: @escaping (DatabaseListItem) -> Void
+    ) {
         self.databaseManager = databaseManager
         self.onSelect = onSelect
         self.fighterType = fighterType
@@ -30,9 +33,9 @@ struct FighterSelectorView: View {
     var groupedItems: [(id: Int, name: String, items: [DatabaseListItem])] {
         let publishedItems = items.filter { $0.published }
         let unpublishedItems = items.filter { !$0.published }
-        
+
         var result: [(id: Int, name: String, items: [DatabaseListItem])] = []
-        
+
         // 按科技等级分组
         var techLevelGroups: [Int?: [DatabaseListItem]] = [:]
         for item in publishedItems {
@@ -42,23 +45,33 @@ struct FighterSelectorView: View {
             }
             techLevelGroups[techLevel]?.append(item)
         }
-        
+
         // 添加各种分组
         for (techLevel, items) in techLevelGroups.sorted(by: { ($0.key ?? -1) < ($1.key ?? -1) }) {
             if let techLevel = techLevel {
-                let name = metaGroupNames[techLevel] ?? NSLocalizedString("Main_Database_base", comment: "基础物品")
+                let name =
+                    metaGroupNames[techLevel]
+                        ?? NSLocalizedString("Main_Database_base", comment: "基础物品")
                 result.append((id: techLevel, name: name, items: items))
             }
         }
-        
+
         if let ungroupedItems = techLevelGroups[nil], !ungroupedItems.isEmpty {
-            result.append((id: -2, name: NSLocalizedString("Main_Database_ungrouped", comment: "未分组"), items: ungroupedItems))
+            result.append(
+                (
+                    id: -2, name: NSLocalizedString("Main_Database_ungrouped", comment: "未分组"),
+                    items: ungroupedItems
+                ))
         }
-        
+
         if !unpublishedItems.isEmpty {
-            result.append((id: -1, name: NSLocalizedString("Main_Database_unpublished", comment: "未发布"), items: unpublishedItems))
+            result.append(
+                (
+                    id: -1, name: NSLocalizedString("Main_Database_unpublished", comment: "未发布"),
+                    items: unpublishedItems
+                ))
         }
-        
+
         return result
     }
 
@@ -90,7 +103,9 @@ struct FighterSelectorView: View {
                         ) {
                             ForEach(group.items) { item in
                                 Button {
-                                    Logger.info("用户选择舰载机: \(item.name)(ID: \(item.id)), 类型: \(fighterType.rawValue), 飞船ID: \(shipTypeID)")
+                                    Logger.info(
+                                        "用户选择舰载机: \(item.name)(ID: \(item.id)), 类型: \(fighterType.rawValue), 飞船ID: \(shipTypeID)"
+                                    )
                                     dismiss()
                                     onSelect(item)
                                 } label: {
@@ -99,7 +114,8 @@ struct FighterSelectorView: View {
                                     }
                                 }
                                 .foregroundColor(.primary)
-                                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                                .listRowInsets(
+                                    EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                             }
                         }
                     }
@@ -119,7 +135,7 @@ struct FighterSelectorView: View {
             }
         }
     }
-    
+
     // 根据舰载机类型获取标题
     private func getTitleForFighterType() -> String {
         switch fighterType {
@@ -136,23 +152,22 @@ struct FighterSelectorView: View {
     private func loadItems() {
         isLoading = true
         Logger.info("开始加载全部舰载机数据")
-        
+
         // 加载全部舰载机（所有三种类型）
         let whereClause = "t.marketGroupID IN (840, 1310, 2239) AND t.published = 1"
         let allFighters = databaseManager.loadMarketItems(whereClause: whereClause, parameters: [])
-        
+
         // 根据当前舰载机类型过滤
         items = allFighters.filter { item in
             item.marketGroupID == fighterType.rawValue
         }
-        
+
         // 加载科技等级名称
         let metaGroupIDs = Set(items.compactMap { $0.metaGroupID })
         metaGroupNames = databaseManager.loadMetaGroupNames(for: Array(metaGroupIDs))
-        
-        Logger.info("加载完成，全部舰载机: \(allFighters.count)，当前类型(\(fighterType.rawValue)): \(items.count)")
+
+        Logger.info(
+            "加载完成，全部舰载机: \(allFighters.count)，当前类型(\(fighterType.rawValue)): \(items.count)")
         isLoading = false
     }
 }
-
-

@@ -4,21 +4,21 @@ import SwiftUI
 @MainActor
 class CharacterPortraitLoader: ObservableObject {
     static let shared = CharacterPortraitLoader()
-    
+
     @Published private(set) var portraits: [String: UIImage] = [:]
     @Published private(set) var isCorporation: [String: Bool] = [:]
     private var loadingTasks: [String: Task<Void, Never>] = [:]
-    
+
     private init() {}
-    
+
     func loadPortrait(for characterId: Int, size: Int) {
         let key = "\(characterId)_\(size)"
-        
+
         // 如果已经在加载中或已加载完成，直接返回
         if loadingTasks[key] != nil || portraits[key] != nil {
             return
         }
-        
+
         // 创建新的加载任务
         let task = Task {
             do {
@@ -28,12 +28,12 @@ class CharacterPortraitLoader: ObservableObject {
                     size: size,
                     catchImage: false
                 )
-                
+
                 await MainActor.run {
                     self.portraits[key] = portrait
                     self.isCorporation[key] = false
                 }
-                
+
                 Logger.info("成功加载角色头像 - ID: \(characterId), 大小: \(size)")
             } catch {
                 // 如果获取角色头像失败，尝试获取军团头像
@@ -42,26 +42,26 @@ class CharacterPortraitLoader: ObservableObject {
                         corporationId: characterId,
                         size: size
                     )
-                    
+
                     await MainActor.run {
                         self.portraits[key] = corpLogo
                         self.isCorporation[key] = true
                     }
-                    
+
                     Logger.info("成功加载军团头像 - ID: \(characterId), 大小: \(size)")
                 } catch {
                     Logger.error("加载头像失败（角色和军团都失败）: \(error)")
                 }
             }
         }
-        
+
         loadingTasks[key] = task
     }
-    
+
     func getPortrait(for characterId: Int, size: Int) -> UIImage? {
         return portraits["\(characterId)_\(size)"]
     }
-    
+
     func isCorporationPortrait(for characterId: Int, size: Int) -> Bool {
         return isCorporation["\(characterId)_\(size)"] ?? false
     }
@@ -74,14 +74,14 @@ struct CharacterPortrait: View {
     let displaySize: CGFloat
     let cornerRadius: CGFloat
     @StateObject private var portraitLoader = CharacterPortraitLoader.shared
-    
+
     init(characterId: Int, size: CGFloat, displaySize: CGFloat? = nil, cornerRadius: CGFloat = 6) {
         self.characterId = characterId
         self.size = size
         self.displaySize = displaySize ?? size
         self.cornerRadius = cornerRadius
     }
-    
+
     var body: some View {
         ZStack {
             if let image = portraitLoader.getPortrait(for: characterId, size: Int(size)) {
@@ -93,7 +93,7 @@ struct CharacterPortrait: View {
                     .overlay(
                         portraitLoader.isCorporationPortrait(for: characterId, size: Int(size))
                             ? RoundedRectangle(cornerRadius: cornerRadius)
-                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                             : nil
                     )
             } else {
@@ -121,7 +121,7 @@ class CharacterMailListViewModel: ObservableObject {
 
     func fetchMails(characterId: Int, labelId: Int? = nil, forceRefresh: Bool = false) async {
         // 如果已经加载过且不是强制刷新，则跳过
-        if initialLoadDone && !forceRefresh {
+        if initialLoadDone, !forceRefresh {
             return
         }
 
@@ -355,7 +355,7 @@ struct CharacterMailListView: View {
     @StateObject private var viewModel = CharacterMailListViewModel()
     @State private var scrollPosition: Int?
     @State private var composeMailData: ComposeMailData?
-    @State private var hasInitialized = false  // 追踪是否已执行初始化
+    @State private var hasInitialized = false // 追踪是否已执行初始化
 
     struct ComposeMailData: Identifiable {
         let id = UUID()
@@ -449,7 +449,7 @@ struct CharacterMailListView: View {
                 // 获取当前角色所在的军团
                 guard
                     let corporationId = try await CharacterDatabaseManager.shared
-                        .getCharacterCorporationId(characterId: characterId)
+                    .getCharacterCorporationId(characterId: characterId)
                 else {
                     Logger.error("无法获取军团ID")
                     return
@@ -457,7 +457,7 @@ struct CharacterMailListView: View {
 
                 // 获取军团名称
                 let corpNames = try await UniverseAPI.shared.getNamesWithFallback(ids: [
-                    corporationId
+                    corporationId,
                 ])
                 guard let corpInfo = corpNames[corporationId] else {
                     Logger.error("无法获取军团名称")

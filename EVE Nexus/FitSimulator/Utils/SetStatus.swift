@@ -12,7 +12,7 @@ import Foundation
 ///   - calculatedAttributesName: 计算后的属性名称字典（可选）
 /// - Returns: 设置后的状态
 func setStatus(
-    itemAttributes: [Int: Double],
+    itemAttributes _: [Int: Double],
     itemAttributesName: [String: Double],
     typeId: Int,
     typeGroupId: Int,
@@ -24,8 +24,8 @@ func setStatus(
     // 获取maxGroupOnline和maxGroupActive属性
     // 优先使用计算后的属性，如果没有则使用原始属性
     let attributesToUse = calculatedAttributesName ?? itemAttributesName
-    let maxGroupOnline = Int(attributesToUse["maxGroupOnline"] ?? 0)  // 同组装备可以同时在线(online)的最大数量
-    let maxGroupActive = Int(attributesToUse["maxGroupActive"] ?? 0)  // 同组装备可以同时激活(active)的最大数量
+    let maxGroupOnline = Int(attributesToUse["maxGroupOnline"] ?? 0) // 同组装备可以同时在线(online)的最大数量
+    let maxGroupActive = Int(attributesToUse["maxGroupActive"] ?? 0) // 同组装备可以同时激活(active)的最大数量
 
     Logger.info(
         """

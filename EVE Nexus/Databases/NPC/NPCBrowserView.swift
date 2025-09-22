@@ -38,7 +38,7 @@ struct NPCBaseView<Content: View>: View {
             var sceneMap: [Int: String] = [:]
             for row in rows {
                 if let typeID = row["type_id"] as? Int,
-                    let scene = row["npc_ship_scene"] as? String
+                   let scene = row["npc_ship_scene"] as? String
                 {
                     sceneMap[typeID] = scene
                 }
@@ -90,13 +90,23 @@ struct NPCBaseView<Content: View>: View {
                                             Button {
                                                 UIPasteboard.general.string = item.name
                                             } label: {
-                                                Label(NSLocalizedString("Misc_Copy_Name", comment: ""), systemImage: "doc.on.doc")
+                                                Label(
+                                                    NSLocalizedString(
+                                                        "Misc_Copy_Name", comment: ""
+                                                    ),
+                                                    systemImage: "doc.on.doc"
+                                                )
                                             }
                                             if !item.enName.isEmpty && item.enName != item.name {
                                                 Button {
                                                     UIPasteboard.general.string = item.enName
                                                 } label: {
-                                                    Label(NSLocalizedString("Misc_Copy_Trans", comment: ""), systemImage: "translate")
+                                                    Label(
+                                                        NSLocalizedString(
+                                                            "Misc_Copy_Trans", comment: ""
+                                                        ),
+                                                        systemImage: "translate"
+                                                    )
                                                 }
                                             }
                                         }
@@ -105,7 +115,7 @@ struct NPCBaseView<Content: View>: View {
                             .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                         }
                     }
-                }
+                }.listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
             } else {
                 content
             }
@@ -145,7 +155,8 @@ struct NPCBaseView<Content: View>: View {
                 ContentUnavailableView {
                     Label(
                         NSLocalizedString("Misc_Not_Found", comment: ""),
-                        systemImage: "magnifyingglass")
+                        systemImage: "magnifyingglass"
+                    )
                 }
             } else if searchText.isEmpty && isSearchActive {
                 Color.black.opacity(0.2)
@@ -178,18 +189,18 @@ struct NPCBaseView<Content: View>: View {
         let parameters = searchParameters(text)
 
         let query = """
-                SELECT t.type_id, t.name, t.en_name, t.icon_filename
-                FROM types t
-                WHERE \(whereClause)
-                ORDER BY t.name
-            """
+            SELECT t.type_id, t.name, t.en_name, t.icon_filename
+            FROM types t
+            WHERE \(whereClause)
+            ORDER BY t.name
+        """
 
         if case let .success(rows) = databaseManager.executeQuery(query, parameters: parameters) {
             items = rows.compactMap { row in
                 guard let typeID = row["type_id"] as? Int,
-                    let name = row["name"] as? String,
-                    let enName = row["en_name"] as? String,
-                    let iconFileName = row["icon_filename"] as? String
+                      let name = row["name"] as? String,
+                      let enName = row["en_name"] as? String,
+                      let iconFileName = row["icon_filename"] as? String
                 else {
                     return nil
                 }
@@ -242,14 +253,14 @@ struct NPCBrowserView: View {
                             )
                         ) {
                             HStack {
-                                IconManager.shared.loadImage(for: "items_73_16_50.png")
+                                IconManager.shared.loadImage(for: "category")
                                     .resizable()
                                     .frame(width: 32, height: 32)
                                     .cornerRadius(6)
                                 Text(scene)
                             }
                         }
-                    }
+                    }.listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                 )
             case .faction:
                 if let scene = scene {
@@ -277,7 +288,7 @@ struct NPCBrowserView: View {
                                     Text(faction)
                                 }
                             }
-                        }
+                        }.listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                     )
                 } else {
                     return AnyView(EmptyView())
@@ -297,14 +308,14 @@ struct NPCBrowserView: View {
                                 )
                             ) {
                                 HStack {
-                                    IconManager.shared.loadImage(for: "items_73_16_50.png")
+                                    IconManager.shared.loadImage(for: "category")
                                         .resizable()
                                         .frame(width: 32, height: 32)
                                         .cornerRadius(6)
                                     Text(type)
                                 }
                             }
-                        }
+                        }.listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                     )
                 } else {
                     return AnyView(EmptyView())
@@ -335,19 +346,29 @@ struct NPCBrowserView: View {
                                             Button {
                                                 UIPasteboard.general.string = item.name
                                             } label: {
-                                                Label(NSLocalizedString("Misc_Copy_Name", comment: ""), systemImage: "doc.on.doc")
+                                                Label(
+                                                    NSLocalizedString(
+                                                        "Misc_Copy_Name", comment: ""
+                                                    ),
+                                                    systemImage: "doc.on.doc"
+                                                )
                                             }
                                             if !item.enName.isEmpty && item.enName != item.name {
                                                 Button {
                                                     UIPasteboard.general.string = item.enName
                                                 } label: {
-                                                    Label(NSLocalizedString("Misc_Copy_Trans", comment: ""), systemImage: "translate")
+                                                    Label(
+                                                        NSLocalizedString(
+                                                            "Misc_Copy_Trans", comment: ""
+                                                        ),
+                                                        systemImage: "translate"
+                                                    )
                                                 }
                                             }
                                         }
                                 }
                             }
-                        }
+                        }.listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                     )
                 } else {
                     return AnyView(EmptyView())

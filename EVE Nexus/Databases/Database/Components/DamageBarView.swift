@@ -33,7 +33,7 @@ struct DamageBarView: View {
                 // 进度条
                 Rectangle()
                     .fill(foregroundColor)
-                    .brightness(0.1)  // 增加亮度
+                    .brightness(0.1) // 增加亮度
                     .frame(
                         width: max(
                             0,

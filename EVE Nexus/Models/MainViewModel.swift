@@ -29,7 +29,7 @@ class MainViewModel: ObservableObject {
     // MARK: - Constants
 
     private enum Constants {
-        static let baseCloneCooldown: TimeInterval = 24 * 3600  // 基础24小时冷却
+        static let baseCloneCooldown: TimeInterval = 24 * 3600 // 基础24小时冷却
         static let secondsInHour = 3600
         static let maxRetryCount = 3
         static let retryDelay: TimeInterval = 1.0
@@ -63,9 +63,9 @@ class MainViewModel: ObservableObject {
     @Published var cloneJumpStatus: String = NSLocalizedString(
         "Main_Jump_Clones_Available", comment: ""
     )
-    @Published var cloneCooldownEndDate: Date? = nil  // 克隆冷却结束时间
-    @Published var skillQueueEndDate: Date? = nil     // 技能队列完成时间
-    @Published var skillQueueCount: Int = 0           // 技能队列中的技能数量
+    @Published var cloneCooldownEndDate: Date? = nil // 克隆冷却结束时间
+    @Published var skillQueueEndDate: Date? = nil // 技能队列完成时间
+    @Published var skillQueueCount: Int = 0 // 技能队列中的技能数量
     @Published var isRefreshing = false
     @Published var loadingState: LoadingState = .idle
     @Published var lastError: RefreshError?
@@ -87,40 +87,41 @@ class MainViewModel: ObservableObject {
     private var cachedCloneCooldownPeriod: TimeInterval?
     private var lastCloneCooldownCalculation: Date?
     private let cloneCooldownCacheTimeout: TimeInterval = 300 // 5分钟缓存
-    
+
     private var cloneCooldownPeriod: TimeInterval {
         // 检查缓存是否有效
         if let cached = cachedCloneCooldownPeriod,
            let lastCalculation = lastCloneCooldownCalculation,
-           Date().timeIntervalSince(lastCalculation) < cloneCooldownCacheTimeout {
+           Date().timeIntervalSince(lastCalculation) < cloneCooldownCacheTimeout
+        {
             return cached
         }
-        
+
         // 如果没有缓存或缓存过期，返回默认值
         // 实际的异步计算将在需要时进行
         return Constants.baseCloneCooldown
     }
-    
+
     // 异步计算克隆冷却时间
     private func calculateCloneCooldownPeriod() async {
         guard let character = selectedCharacter else { return }
-        
+
         do {
             // 调用API获取技能数据
             let skillsResponse = try await CharacterSkillsAPI.shared.fetchCharacterSkills(
                 characterId: character.CharacterID,
                 forceRefresh: false
             )
-            
+
             // 查找 Advanced Infomorph Psychology 技能等级
             var cooldownPeriod = Constants.baseCloneCooldown
             if let infomorphSkill = skillsResponse.skills.first(where: { $0.skill_id == 33399 }) {
                 // 每级减少1小时，从24小时开始
                 let reductionHours = infomorphSkill.trained_skill_level
-                let remainingHours = max(24 - reductionHours, 1)  // 最少保留1小时冷却时间
+                let remainingHours = max(24 - reductionHours, 1) // 最少保留1小时冷却时间
                 cooldownPeriod = Double(remainingHours * Constants.secondsInHour)
             }
-            
+
             // 更新缓存
             await MainActor.run {
                 self.cachedCloneCooldownPeriod = cooldownPeriod
@@ -161,7 +162,7 @@ class MainViewModel: ObservableObject {
         // 异步计算克隆冷却时间
         Task {
             await calculateCloneCooldownPeriod()
-            
+
             if let lastJumpDate = cloneInfo.last_clone_jump_date {
                 let dateFormatter = ISO8601DateFormatter()
                 dateFormatter.formatOptions = [.withInternetDateTime]
@@ -177,7 +178,9 @@ class MainViewModel: ObservableObject {
                         // 计算并缓存冷却完成时间，但不使用定时器更新
                         cloneCooldownEndDate = jumpDate.addingTimeInterval(cloneCooldownPeriod)
                         // 设置基本状态，具体倒计时由CloneCountdownView组件处理
-                        cloneJumpStatus = NSLocalizedString("Main_Jump_Clones_Available", comment: "")
+                        cloneJumpStatus = NSLocalizedString(
+                            "Main_Jump_Clones_Available", comment: ""
+                        )
                     }
                 }
             } else {
@@ -189,22 +192,30 @@ class MainViewModel: ObservableObject {
 
     private func updateSkillPoints(_ totalSP: Int?) {
         if let sp = totalSP {
-            characterStats.skillPoints = String(format: NSLocalizedString("Main_Skills_Ponits", comment: ""), FormatUtil.format(Double(sp)))
+            characterStats.skillPoints = String(
+                format: NSLocalizedString("Main_Skills_Ponits", comment: ""),
+                FormatUtil.format(Double(sp))
+            )
         } else {
-            characterStats.skillPoints = String(format: NSLocalizedString("Main_Skills_Ponits", comment: ""), Constants.emptyValue)
-        }
-    }
-    
-    private func updateWalletBalance(_ balance: Double?) {
-        if let bal = balance {
-            characterStats.walletBalance = String(format: NSLocalizedString("Main_Wealth_ISK", comment: ""), FormatUtil.formatISK(bal))
-        } else {
-            characterStats.walletBalance = String(format: NSLocalizedString("Main_Wealth_ISK", comment: ""), Constants.emptyValue)
+            characterStats.skillPoints = String(
+                format: NSLocalizedString("Main_Skills_Ponits", comment: ""), Constants.emptyValue
+            )
         }
     }
 
-    private func processSkillInfo(skillsResponse: CharacterSkillsResponse, queue: [SkillQueueItem])
-    {
+    private func updateWalletBalance(_ balance: Double?) {
+        if let bal = balance {
+            characterStats.walletBalance = String(
+                format: NSLocalizedString("Main_Wealth_ISK", comment: ""), FormatUtil.formatISK(bal)
+            )
+        } else {
+            characterStats.walletBalance = String(
+                format: NSLocalizedString("Main_Wealth_ISK", comment: ""), Constants.emptyValue
+            )
+        }
+    }
+
+    private func processSkillInfo(skillsResponse: CharacterSkillsResponse, queue: [SkillQueueItem]) {
         cache.skills = CharacterSkills(
             total_sp: skillsResponse.total_sp,
             unallocated_sp: skillsResponse.unallocated_sp
@@ -213,9 +224,11 @@ class MainViewModel: ObservableObject {
 
         // 更新技能队列数量
         skillQueueCount = queue.count
-        
+
         // 更新技能队列结束时间
-        if let lastSkill = queue.last, let remainingTime = lastSkill.remainingTime, remainingTime > 0 {
+        if let lastSkill = queue.last, let remainingTime = lastSkill.remainingTime,
+           remainingTime > 0
+        {
             skillQueueEndDate = Date().addingTimeInterval(remainingTime)
         } else if !queue.isEmpty {
             // 检查是否有正在训练的技能
@@ -345,17 +358,19 @@ class MainViewModel: ObservableObject {
                     if let faction_id = publicInfo.faction_id {
                         // 从数据库查询势力信息
                         let query = "SELECT name, iconName FROM factions WHERE id = ?"
-                        if case let .success(rows) = DatabaseManager.shared.executeQuery(query, parameters: [faction_id]),
-                           let row = rows.first,
-                           let name = row["name"] as? String,
-                           let iconName = row["iconName"] as? String {
-                            
+                        if case let .success(rows) = DatabaseManager.shared.executeQuery(
+                            query, parameters: [faction_id]
+                        ),
+                            let row = rows.first,
+                            let name = row["name"] as? String,
+                            let iconName = row["iconName"] as? String
+                        {
                             self.factionInfo = FactionInfo(
                                 id: faction_id,
                                 name: name,
                                 iconName: iconName
                             )
-                            
+
                             // 加载势力图标 - 使用UIImage版本
                             let factionUIImage = IconManager.shared.loadUIImage(for: iconName)
                             self.factionLogo = factionUIImage

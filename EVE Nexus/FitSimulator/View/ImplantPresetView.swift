@@ -6,7 +6,7 @@ private let localizationMap: [String: String] = [
     "High-grade": "Implant_High_grade",
     "Mid-grade": "Implant_Mid_grade",
     "Low-grade": "Implant_Low_grade",
-    
+
     // 套装映射
     "Snake": "Implant_Snake",
     "Crystal": "Implant_Crystal",
@@ -15,19 +15,19 @@ private let localizationMap: [String: String] = [
     "Asklepian": "Implant_Asklepian",
     "Nirvana": "Implant_Nirvana",
     "Rapture": "Implant_Rapture",
-    "Virtue": "Implant_Virtue"
+    "Virtue": "Implant_Virtue",
 ]
 
 // 套装对应的属性ID映射
 private let implantSetAttributeMap: [String: Int] = [
-    "Snake": 315,      // 速度加成
-    "Crystal": 548,    // 护盾加成
-    "Amulet": 335,     // 装甲加成
+    "Snake": 315, // 速度加成
+    "Crystal": 548, // 护盾加成
+    "Amulet": 335, // 装甲加成
     "Ascendancy": 624, // 扫描强度加成
     "Asklepian": 2457, // 护盾回复加成
-    "Nirvana": 3015,   // 装甲回复加成
-    "Rapture": 314,    // 电容回复加成
-    "Virtue": 846      // 扫描强度加成
+    "Nirvana": 3015, // 装甲回复加成
+    "Rapture": 314, // 电容回复加成
+    "Virtue": 846, // 扫描强度加成
 ]
 
 // 全局本地化函数
@@ -42,16 +42,18 @@ struct ImplantPresetView: View {
     @Environment(\.dismiss) private var dismiss
     let databaseManager: DatabaseManager
     let onSelectPreset: ([Int]) -> Void
-    
+
     // 预设数据
     private let grade_list = ["High-grade", "Mid-grade", "Low-grade"]
-    private let implantSet_list = ["Snake", "Crystal", "Amulet", "Ascendancy", "Asklepian", "Nirvana", "Rapture", "Virtue"]
+    private let implantSet_list = [
+        "Snake", "Crystal", "Amulet", "Ascendancy", "Asklepian", "Nirvana", "Rapture", "Virtue",
+    ]
     private let type_list = ["Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Omega"]
-    
+
     @State private var isLoading = true
     @State private var presetData: [String: [String: [ImplantPresetItem]]] = [:]
     @State private var attributeDisplayNames: [Int: String] = [:]
-    
+
     var body: some View {
         NavigationView {
             List {
@@ -62,12 +64,14 @@ struct ImplantPresetView: View {
                 } else {
                     // 第一层：等级列表
                     ForEach(grade_list, id: \.self) { grade in
-                        NavigationLink(destination: GradeDetailView(
-                            grade: grade,
-                            implantSets: presetData[grade] ?? [:],
-                            attributeDisplayNames: attributeDisplayNames,
-                            onSelectPreset: onSelectPreset
-                        )) {
+                        NavigationLink(
+                            destination: GradeDetailView(
+                                grade: grade,
+                                implantSets: presetData[grade] ?? [:],
+                                attributeDisplayNames: attributeDisplayNames,
+                                onSelectPreset: onSelectPreset
+                            )
+                        ) {
                             HStack {
                                 Text(localizedImplantString(grade))
                                 Spacer()
@@ -90,38 +94,39 @@ struct ImplantPresetView: View {
             }
         }
     }
-    
+
     // 加载属性显示名称
     private func loadAttributeDisplayNames() {
         let attributeIds = Array(implantSetAttributeMap.values)
         let placeholders = attributeIds.map { _ in "?" }.joined(separator: ",")
-        
+
         let query = """
             SELECT attribute_id, display_name 
             FROM dogmaAttributes 
             WHERE attribute_id IN (\(placeholders))
         """
-        
+
         if case let .success(rows) = databaseManager.executeQuery(query, parameters: attributeIds) {
             var tempAttributeNames: [Int: String] = [:]
-            
+
             for row in rows {
                 if let attributeId = row["attribute_id"] as? Int,
-                   let displayName = row["display_name"] as? String {
+                   let displayName = row["display_name"] as? String
+                {
                     tempAttributeNames[attributeId] = displayName
                 }
             }
-            
+
             attributeDisplayNames = tempAttributeNames
         }
     }
-    
+
     private func loadImplantPresets() {
         isLoading = true
-        
+
         // 生成所有可能的植入体名称
         var implantNames: [String] = []
-        
+
         for grade in grade_list {
             for setName in implantSet_list {
                 for typeName in type_list {
@@ -130,35 +135,37 @@ struct ImplantPresetView: View {
                 }
             }
         }
-        
+
         // 构建查询参数
         let placeholders = implantNames.map { _ in "?" }.joined(separator: ",")
-        
+
         let query = """
             SELECT type_id, name, en_name, icon_filename 
             FROM types 
             WHERE en_name IN (\(placeholders))
             AND published = 1
         """
-        
+
         if case let .success(rows) = databaseManager.executeQuery(query, parameters: implantNames) {
             var tempPresetData: [String: [String: [ImplantPresetItem]]] = [:]
-            
+
             for row in rows {
                 if let typeId = row["type_id"] as? Int,
                    let name = row["name"] as? String,
                    let enName = row["en_name"] as? String,
-                   let iconFile = row["icon_filename"] as? String {
-                    
+                   let iconFile = row["icon_filename"] as? String
+                {
                     // 解析英文名称以获取级别、套装名称和类型
                     let components = enName.components(separatedBy: " ")
                     if components.count >= 3 {
                         let grade = components[0]
                         let setName = components[1]
                         let type = components.last ?? ""
-                        
+
                         // 检查是否为我们支持的预设
-                        if grade_list.contains(grade) && implantSet_list.contains(setName) && type_list.contains(type) {
+                        if grade_list.contains(grade), implantSet_list.contains(setName),
+                           type_list.contains(type)
+                        {
                             // 初始化字典
                             if tempPresetData[grade] == nil {
                                 tempPresetData[grade] = [:]
@@ -166,7 +173,7 @@ struct ImplantPresetView: View {
                             if tempPresetData[grade]?[setName] == nil {
                                 tempPresetData[grade]?[setName] = []
                             }
-                            
+
                             // 添加植入体项
                             let presetItem = ImplantPresetItem(
                                 typeId: typeId,
@@ -175,13 +182,13 @@ struct ImplantPresetView: View {
                                 iconFileName: iconFile,
                                 type: type
                             )
-                            
+
                             tempPresetData[grade]?[setName]?.append(presetItem)
                         }
                     }
                 }
             }
-            
+
             // 为每个套装按类型排序
             for grade in grade_list {
                 for setName in implantSet_list {
@@ -192,10 +199,10 @@ struct ImplantPresetView: View {
                     }
                 }
             }
-            
+
             presetData = tempPresetData
         }
-        
+
         isLoading = false
     }
 }
@@ -206,17 +213,19 @@ struct GradeDetailView: View {
     let implantSets: [String: [ImplantPresetItem]]
     let attributeDisplayNames: [Int: String]
     let onSelectPreset: ([Int]) -> Void
-    
+
     var body: some View {
         List {
             ForEach(implantSet_list, id: \.self) { setName in
                 if let setItems = implantSets[setName], !setItems.isEmpty {
-                    NavigationLink(destination: ImplantSetDetailView(
-                        setName: setName,
-                        grade: grade,
-                        implants: setItems,
-                        onSelectPreset: onSelectPreset
-                    )) {
+                    NavigationLink(
+                        destination: ImplantSetDetailView(
+                            setName: setName,
+                            grade: grade,
+                            implants: setItems,
+                            onSelectPreset: onSelectPreset
+                        )
+                    ) {
                         HStack {
                             if let firstItem = setItems.first {
                                 IconManager.shared.loadImage(for: firstItem.iconFileName)
@@ -224,19 +233,20 @@ struct GradeDetailView: View {
                                     .scaledToFit()
                                     .frame(width: 32, height: 32)
                             }
-                            
+
                             VStack(alignment: .leading) {
                                 Text(localizedImplantString(setName))
                                     .font(.body)
-                                
+
                                 if let attributeId = implantSetAttributeMap[setName],
-                                   let displayName = attributeDisplayNames[attributeId] {
+                                   let displayName = attributeDisplayNames[attributeId]
+                                {
                                     Text(displayName)
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                 }
                             }
-                            
+
                             Spacer()
                         }
                     }
@@ -246,7 +256,7 @@ struct GradeDetailView: View {
         }
         .navigationTitle(localizedImplantString(grade))
     }
-    
+
     // 植入体套装列表
     private var implantSet_list: [String] {
         // 按字母顺序排序，只包含有植入体的套装
@@ -270,7 +280,7 @@ struct ImplantSetDetailView: View {
     let grade: String
     let implants: [ImplantPresetItem]
     let onSelectPreset: ([Int]) -> Void
-    
+
     var body: some View {
         List {
             Section(header: Text(NSLocalizedString("Implant_Set_Items", comment: "套装物品"))) {
@@ -279,7 +289,7 @@ struct ImplantSetDetailView: View {
                 }
             }
             .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
-            
+
             Section {
                 Button {
                     // 选择整个套装
@@ -304,19 +314,19 @@ struct ImplantSetDetailView: View {
 struct ImplantPresetItemRow: View {
     let item: ImplantPresetItem
     @State private var showingItemInfo = false
-    
+
     var body: some View {
         HStack {
             IconManager.shared.loadImage(for: item.iconFileName)
                 .resizable()
                 .scaledToFit()
                 .frame(width: 32, height: 32)
-            
+
             Text(item.name)
                 .font(.body)
-            
+
             Spacer()
-            
+
             // 添加物品信息按钮
             Button {
                 showingItemInfo = true
@@ -333,4 +343,4 @@ struct ImplantPresetItemRow: View {
             }
         }
     }
-} 
+}

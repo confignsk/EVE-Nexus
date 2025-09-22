@@ -18,7 +18,7 @@ class CharacterLoyaltyPointsViewModel: ObservableObject {
     private var hasLoadedData = false
 
     func fetchLoyaltyPoints(characterId: Int, forceRefresh: Bool = false) {
-        if hasLoadedData && !forceRefresh {
+        if hasLoadedData, !forceRefresh {
             return
         }
 
@@ -44,8 +44,7 @@ class CharacterLoyaltyPointsViewModel: ObservableObject {
             var corporationInfo: [CorporationLoyaltyInfo] = []
 
             for point in points {
-                if let corpInfo = try await getCorporationInfo(corporationId: point.corporation_id)
-                {
+                if let corpInfo = try await getCorporationInfo(corporationId: point.corporation_id) {
                     corporationInfo.append(
                         CorporationLoyaltyInfo(
                             id: point.corporation_id,
@@ -70,13 +69,13 @@ class CharacterLoyaltyPointsViewModel: ObservableObject {
         name: String, iconFileName: String
     )? {
         let query = """
-                SELECT name, icon_filename FROM npcCorporations WHERE corporation_id = \(corporationId)
-            """
+            SELECT name, icon_filename FROM npcCorporations WHERE corporation_id = \(corporationId)
+        """
 
         guard case let .success(rows) = SQLiteManager.shared.executeQuery(query),
-            let result = rows.first,
-            let name = result["name"] as? String,
-            let iconFileName = result["icon_filename"] as? String
+              let result = rows.first,
+              let name = result["name"] as? String,
+              let iconFileName = result["icon_filename"] as? String
         else {
             return nil
         }

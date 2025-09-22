@@ -2,9 +2,9 @@ import SwiftUI
 
 // 浏览层级
 enum BrowserLevel: Hashable {
-    case categories  // 分类层级
-    case groups(categoryID: Int, categoryName: String)  // 组层级
-    case items(groupID: Int, groupName: String)  // 物品层级
+    case categories // 分类层级
+    case groups(categoryID: Int, categoryName: String) // 组层级
+    case items(groupID: Int, groupName: String) // 物品层级
 
     // 实现 Hashable
     func hash(into hasher: inout Hasher) {
@@ -28,8 +28,8 @@ struct DatabaseBrowserView: View {
     // 静态缓存
     private static var navigationCache:
         [BrowserLevel: ([DatabaseListItem], [Int: String], [Int: String])] = [:]
-    private static let maxCacheSize = 10  // 最大缓存层级数
-    private static var cacheAccessTime: [BrowserLevel: Date] = [:]  // 记录访问时间
+    private static let maxCacheSize = 10 // 最大缓存层级数
+    private static var cacheAccessTime: [BrowserLevel: Date] = [:] // 记录访问时间
 
     // 清除缓存的方法
     static func clearCache() {
@@ -87,7 +87,7 @@ struct DatabaseBrowserView: View {
             DatabaseListView(
                 databaseManager: databaseManager,
                 title: title,
-                groupingType: groupingType,  // 使用根据层级确定的分组类型
+                groupingType: groupingType, // 使用根据层级确定的分组类型
                 loadData: { dbManager in
                     // 检查缓存
                     if let cachedData = getCachedData(for: level) {
@@ -116,10 +116,12 @@ struct DatabaseBrowserView: View {
                         searchResult = dbManager.searchItems(searchText: searchText)
                     case let .groups(categoryID, _):
                         searchResult = dbManager.searchItems(
-                            searchText: searchText, categoryID: categoryID)
+                            searchText: searchText, categoryID: categoryID
+                        )
                     case let .items(groupID, _):
                         searchResult = dbManager.searchItems(
-                            searchText: searchText, groupID: groupID)
+                            searchText: searchText, groupID: groupID
+                        )
                     }
 
                     let (items, metaGroupNames, _) = searchResult
@@ -307,7 +309,7 @@ struct DatabaseBrowserView: View {
         // 添加上一层级
         switch level {
         case .categories:
-            break  // 没有上一层级
+            break // 没有上一层级
         case .groups:
             levels.insert(.categories)
         case let .items(_, groupName):
@@ -379,10 +381,10 @@ struct DatabaseListItemView: View {
                     }
                     // 弹药和无人机
                     else if categoryID == 18 || categoryID == 8 {
-                        if hasAnyDamage {  // 添加检查是否有任何伤害值
-                            HStack(spacing: 8) {  // 增加整体的间距
+                        if hasAnyDamage { // 添加检查是否有任何伤害值
+                            HStack(spacing: 8) { // 增加整体的间距
                                 // 电磁伤害
-                                HStack(spacing: 4) {  // 增加图标和条之间的间距
+                                HStack(spacing: 4) { // 增加图标和条之间的间距
                                     Image("em")
                                         .resizable()
                                         .frame(width: 18, height: 18)
@@ -395,7 +397,7 @@ struct DatabaseListItemView: View {
                                 }
 
                                 // 热能伤害
-                                HStack(spacing: 4) {  // 增加图标和条之间的间距
+                                HStack(spacing: 4) { // 增加图标和条之间的间距
                                     Image("th")
                                         .resizable()
                                         .frame(width: 18, height: 18)
@@ -408,7 +410,7 @@ struct DatabaseListItemView: View {
                                 }
 
                                 // 动能伤害
-                                HStack(spacing: 4) {  // 增加图标和条之间的间距
+                                HStack(spacing: 4) { // 增加图标和条之间的间距
                                     Image("ki")
                                         .resizable()
                                         .frame(width: 18, height: 18)
@@ -421,7 +423,7 @@ struct DatabaseListItemView: View {
                                 }
 
                                 // 爆炸伤害
-                                HStack(spacing: 4) {  // 增加图标和条之间的间距
+                                HStack(spacing: 4) { // 增加图标和条之间的间距
                                     Image("ex")
                                         .resizable()
                                         .frame(width: 18, height: 18)
@@ -437,7 +439,7 @@ struct DatabaseListItemView: View {
                     }
                     // 舰船
                     else if categoryID == 6 {
-                        HStack(spacing: 8) {  // 减小槽位之间的间距
+                        HStack(spacing: 8) { // 减小槽位之间的间距
                             if let highSlot = item.highSlot, highSlot != 0 {
                                 IconWithValueView(iconName: "highSlot", numericValue: highSlot)
                             }
@@ -467,13 +469,18 @@ struct DatabaseListItemView: View {
                 Button {
                     UIPasteboard.general.string = item.name
                 } label: {
-                    Label(NSLocalizedString("Misc_Copy_Name", comment: ""), systemImage: "doc.on.doc")
+                    Label(
+                        NSLocalizedString("Misc_Copy_Name", comment: ""), systemImage: "doc.on.doc"
+                    )
                 }
                 if let enName = item.enName, !enName.isEmpty && enName != item.name {
                     Button {
                         UIPasteboard.general.string = enName
                     } label: {
-                        Label(NSLocalizedString("Misc_Copy_Trans", comment: ""), systemImage: "translate")
+                        Label(
+                            NSLocalizedString("Misc_Copy_Trans", comment: ""),
+                            systemImage: "translate"
+                        )
                     }
                 }
             }
@@ -511,7 +518,7 @@ struct IconWithValueView: View {
         self.iconName = iconName
         value =
             unit.map { "\(FormatUtil.format(Double(numericValue)))\($0)" }
-            ?? FormatUtil.format(Double(numericValue))
+                ?? FormatUtil.format(Double(numericValue))
     }
 
     var body: some View {

@@ -19,29 +19,29 @@ struct JumpSystemData {
 
         // 综合查询，获取所有满足跳跃条件的星系信息，包括英文名和中文名
         let query = """
-                SELECT u.solarsystem_id, s.solarSystemName, s.solarSystemName_en, s.solarSystemName_zh,
-                       u.system_security, r.regionName, u.x, u.y, u.z
-                FROM universe u
-                JOIN solarsystems s ON s.solarSystemID = u.solarsystem_id
-                JOIN regions r ON r.regionID = u.region_id
-                WHERE u.hasJumpGate -- 排除没有星门的星系，一般是虫洞和GM星系
-                AND NOT u.isJSpace -- 排除虫洞星系
-                AND u.region_id NOT IN (10000019, 10000004, 10000017, 10000070) -- 排除朱庇特星域与波赫文星域
-                AND u.solarsystem_id NOT IN (30100000) -- 排除扎尔扎克
-            """
+            SELECT u.solarsystem_id, s.solarSystemName, s.solarSystemName_en, s.solarSystemName_zh,
+                   u.system_security, r.regionName, u.x, u.y, u.z
+            FROM universe u
+            JOIN solarsystems s ON s.solarSystemID = u.solarsystem_id
+            JOIN regions r ON r.regionID = u.region_id
+            WHERE u.hasJumpGate -- 排除没有星门的星系，一般是虫洞和GM星系
+            AND NOT u.isJSpace -- 排除虫洞星系
+            AND u.region_id NOT IN (10000019, 10000004, 10000017, 10000070) -- 排除朱庇特星域与波赫文星域
+            AND u.solarsystem_id NOT IN (30100000) -- 排除扎尔扎克
+        """
 
         if case let .success(rows) = databaseManager.executeQuery(query) {
             Logger.info("加载跳跃星系数据：查询成功，获取到 \(rows.count) 条记录")
 
             for row in rows {
                 if let id = row["solarsystem_id"] as? Int,
-                    let name = row["solarSystemName"] as? String,
-                    let nameEN = row["solarSystemName_en"] as? String,
-                    let security = row["system_security"] as? Double,
-                    let region = row["regionName"] as? String,
-                    let x = row["x"] as? Double,
-                    let y = row["y"] as? Double,
-                    let z = row["z"] as? Double
+                   let name = row["solarSystemName"] as? String,
+                   let nameEN = row["solarSystemName_en"] as? String,
+                   let security = row["system_security"] as? Double,
+                   let region = row["regionName"] as? String,
+                   let x = row["x"] as? Double,
+                   let y = row["y"] as? Double,
+                   let z = row["z"] as? Double
                 {
                     // 获取中文名，如果为nil则使用英文名
                     let nameZH = (row["solarSystemName_zh"] as? String) ?? nameEN
@@ -115,7 +115,7 @@ struct Ship: Identifiable {
     let id: Int
     let name: String
     let enName: String
-    let zhName: String  // 添加中文名称
+    let zhName: String // 添加中文名称
     let iconFilename: String
     let groupId: Int
     let groupName: String
@@ -130,12 +130,12 @@ struct JumpNavigationView: View {
     @State private var didInitialCheck = false
 
     // 修改UI相关状态
-    @State private var selectedShip: Int = 0  // 修改为Int类型
+    @State private var selectedShip: Int = 0 // 修改为Int类型
     @State private var JDCLv: Int = 5
-    @State private var startPointId: Int? = nil  // 修改为星系ID
-    @State private var waypointIds: [Int] = []  // 修改为星系ID数组
-    @State private var avoidSystemIds: [Int] = []  // 修改为星系ID数组
-    @State private var avoidIncursionSystems: Bool = true  // 添加避开入侵星系状态
+    @State private var startPointId: Int? = nil // 修改为星系ID
+    @State private var waypointIds: [Int] = [] // 修改为星系ID数组
+    @State private var avoidSystemIds: [Int] = [] // 修改为星系ID数组
+    @State private var avoidIncursionSystems: Bool = true // 添加避开入侵星系状态
 
     // 保存所有跳跃星系数据和飞船数据
     private var allJumpSystems: [JumpSystemData]
@@ -164,7 +164,7 @@ struct JumpNavigationView: View {
         self.allJumpSystems = allJumpSystems
 
         // 在初始化时就加载飞船数据
-        self.ships = JumpNavigationView.loadShips(databaseManager: databaseManager)
+        ships = JumpNavigationView.loadShips(databaseManager: databaseManager)
 
         Logger.info(
             "JumpNavigationView初始化完成，已加载飞船数据和\(allJumpSystems.count)个星系名称")
@@ -194,12 +194,12 @@ struct JumpNavigationView: View {
         .navigationTitle(NSLocalizedString("Main_Jump_Navigation", comment: ""))
         .navigationBarItems(
             trailing:
-                Button(action: {
-                    showingConfirmation = true
-                }) {
-                    Image(systemName: "arrow.clockwise")
-                }
-                .disabled(isLoading)
+            Button(action: {
+                showingConfirmation = true
+            }) {
+                Image(systemName: "arrow.clockwise")
+            }
+            .disabled(isLoading)
         )
         .alert(
             NSLocalizedString("Jump_Navigation_Recalculate_Title", comment: ""),
@@ -221,7 +221,7 @@ struct JumpNavigationView: View {
                     JumpPathResultView(
                         pathResult: mergePathResults(pathResults),
                         allJumpSystems: allJumpSystems,
-                        shipEnName: ships.values.flatMap({ $0 }).first(where: {
+                        shipEnName: ships.values.flatMap { $0 }.first(where: {
                             $0.id == selectedShip
                         })?.enName ?? "",
                         jdcLevel: JDCLv,
@@ -246,7 +246,7 @@ struct JumpNavigationView: View {
             SystemSelectorSheet(
                 title: NSLocalizedString("Jump_Navigation_Select_Start", comment: ""),
                 currentSelection: startPointId,
-                onlyLowSec: false,  // 起点可以选择所有星系
+                onlyLowSec: false, // 起点可以选择所有星系
                 jumpSystems: allJumpSystems,
                 onSelect: { systemId in
                     startPointId = systemId
@@ -261,7 +261,7 @@ struct JumpNavigationView: View {
             SystemSelectorSheet(
                 title: NSLocalizedString("Jump_Navigation_Add_Waypoint", comment: ""),
                 currentSelection: waypointIds.last,
-                onlyLowSec: true,  // 路径点只能选择低安全等级星系
+                onlyLowSec: true, // 路径点只能选择低安全等级星系
                 jumpSystems: allJumpSystems,
                 onSelect: { systemId in
                     waypointIds.append(systemId)
@@ -276,7 +276,7 @@ struct JumpNavigationView: View {
             SystemSelectorSheet(
                 title: NSLocalizedString("Jump_Navigation_Add_Avoid", comment: ""),
                 currentSelection: nil,
-                onlyLowSec: true,  // 路径点只能选择低安全等级星系
+                onlyLowSec: true, // 路径点只能选择低安全等级星系
                 jumpSystems: allJumpSystems,
                 onSelect: { systemId in
                     if !avoidSystemIds.contains(systemId) {
@@ -317,10 +317,11 @@ struct JumpNavigationView: View {
                         NSLocalizedString("Jump_Navigation_JDC_Skill", comment: ""),
                         selection: $JDCLv
                     ) {
-                        ForEach(1...5, id: \.self) { level in
+                        ForEach(1 ... 5, id: \.self) { level in
                             Text(
                                 String(
-                                    format: NSLocalizedString("Misc_Level", comment: "lv%d"), level)
+                                    format: NSLocalizedString("Misc_Level", comment: "lv%d"), level
+                                )
                             ).tag(level)
                         }
                     }
@@ -374,7 +375,9 @@ struct JumpNavigationView: View {
                             Text(
                                 String(
                                     format: NSLocalizedString(
-                                        "Jump_Navigation_Waypoint", comment: ""), index + 1)
+                                        "Jump_Navigation_Waypoint", comment: ""
+                                    ), index + 1
+                                )
                             )
                             .foregroundColor(.green)
                             .font(.system(size: 14, weight: .medium))
@@ -487,7 +490,7 @@ struct JumpNavigationView: View {
             .disabled(
                 !isPathCalculationEnabled
                     || progressMessage
-                        == NSLocalizedString("Jump_Navigation_Calculating", comment: "")
+                    == NSLocalizedString("Jump_Navigation_Calculating", comment: "")
             )
             .padding()
         }
@@ -638,7 +641,8 @@ struct JumpNavigationView: View {
         DispatchQueue.global(qos: .userInitiated).async {
             // 初始化路径寻找器，使用预加载的星系数据
             let pathFinder = JumpPathFinder(
-                databaseManager: self.databaseManager, preloadedSystems: self.allJumpSystems)
+                databaseManager: self.databaseManager, preloadedSystems: self.allJumpSystems
+            )
             Logger.info("初始化路径寻找器完成，使用预加载的星系数据")
 
             // 执行A*寻路
@@ -665,7 +669,7 @@ struct JumpNavigationView: View {
 
                 // 记录每个路径段的详细信息
                 for (index, result) in results.enumerated() {
-                    Logger.info("路径段 \(index+1):")
+                    Logger.info("路径段 \(index + 1):")
                     Logger.info("  跳跃次数: \(result.path.count - 1)")
                     Logger.info("  总距离: \(result.totalDistance)光年")
                     Logger.info(
@@ -695,7 +699,7 @@ struct JumpNavigationView: View {
 
         let needsRecalculation =
             !fileManager.fileExists(atPath: jumpMapFile.path) || savedVersion == nil
-            || savedVersion != currentAppVersion
+                || savedVersion != currentAppVersion
 
         if needsRecalculation {
             Logger.info(
@@ -703,7 +707,8 @@ struct JumpNavigationView: View {
             )
             isLoading = true
             progressMessage = NSLocalizedString(
-                "Jump_Navigation_Calculating_Jump_Distance", comment: "")
+                "Jump_Navigation_Calculating_Jump_Distance", comment: ""
+            )
             progressValue = 0.0
             loadingState = .processing
 
@@ -712,7 +717,7 @@ struct JumpNavigationView: View {
                 Logger.info("开始处理跳跃导航数据")
                 JumpNavigationHandler.processJumpNavigationData(
                     databaseManager: self.databaseManager,
-                    preloadedSystems: self.allJumpSystems,  // 使用预加载的星系数据
+                    preloadedSystems: self.allJumpSystems, // 使用预加载的星系数据
                     progressUpdate: { message, progress in
                         // 在主线程更新UI
                         DispatchQueue.main.async {
@@ -725,7 +730,8 @@ struct JumpNavigationView: View {
                                 Logger.info("跳跃导航数据处理完成")
                                 // 保存当前版本到UserDefaults
                                 UserDefaults.standard.set(
-                                    currentAppVersion, forKey: "jump_map_app_version")
+                                    currentAppVersion, forKey: "jump_map_app_version"
+                                )
                                 self.loadingState = .complete
                             }
                         }
@@ -775,7 +781,7 @@ struct JumpNavigationView: View {
             Logger.info("开始重新处理跳跃导航数据")
             JumpNavigationHandler.processJumpNavigationData(
                 databaseManager: self.databaseManager,
-                preloadedSystems: self.allJumpSystems,  // 使用预加载的星系数据
+                preloadedSystems: self.allJumpSystems, // 使用预加载的星系数据
                 progressUpdate: { message, progress in
                     // 在主线程更新UI
                     DispatchQueue.main.async {
@@ -788,7 +794,8 @@ struct JumpNavigationView: View {
                             Logger.info("重新计算跳跃导航数据完成")
                             // 保存当前版本到UserDefaults
                             UserDefaults.standard.set(
-                                currentAppVersion, forKey: "jump_map_app_version")
+                                currentAppVersion, forKey: "jump_map_app_version"
+                            )
                             self.loadingState = .complete
                         }
                     }
@@ -804,7 +811,7 @@ struct JumpNavigationView: View {
         // 合并所有路径
         var mergedPath: [Int] = []
         var mergedSegments: [PathSegment] = []
-        var totalDistance: Double = 0.0
+        var totalDistance = 0.0
 
         // 遍历每个路径结果
         for (index, result) in results.enumerated() {
@@ -816,12 +823,12 @@ struct JumpNavigationView: View {
             } else {
                 // 后续路径，跳过第一个点（因为它是前一个路径的终点）
                 mergedPath.append(contentsOf: result.path.dropFirst())
-                Logger.info("添加第 \(index+1) 个路径的点(跳过第一个): \(result.path.count-1) 个")
+                Logger.info("添加第 \(index + 1) 个路径的点(跳过第一个): \(result.path.count - 1) 个")
             }
 
             // 添加路径段
             mergedSegments.append(contentsOf: result.segments)
-            Logger.info("添加第 \(index+1) 个路径的 \(result.segments.count) 个路径段")
+            Logger.info("添加第 \(index + 1) 个路径的 \(result.segments.count) 个路径段")
 
             // 累加总距离
             totalDistance += result.totalDistance
@@ -850,13 +857,13 @@ struct JumpNavigationView: View {
         }
 
         // 从数据库查询飞船基础跳跃范围 (attribute_id 867 表示跳跃范围)
-        var baseRange: Double = 5.0  // 默认值为5光年
+        var baseRange = 5.0 // 默认值为5光年
 
         // 尝试从数据库获取实际跳跃范围
         let query = """
-                SELECT value FROM typeAttributes 
-                WHERE type_id = \(selectedShip) AND attribute_id = 867
-            """
+            SELECT value FROM typeAttributes 
+            WHERE type_id = \(selectedShip) AND attribute_id = 867
+        """
 
         if case let .success(rows) = databaseManager.executeQuery(query) {
             if let row = rows.first, let jumpRange = row["value"] as? Double {
@@ -916,28 +923,28 @@ struct JumpNavigationView: View {
 
         // 查询所有可跳跃的飞船
         let query = """
-            SELECT t.type_id, t.name, t.en_name, t.zh_name, 
-                               g.group_id, g.name as groupName, t.icon_filename 
-                        FROM types t
-                        JOIN groups g ON t.groupID  = g.group_id
-                        WHERE t.published = 1 
-                        AND g.categoryID  = 6  -- 飞船类别
-                        AND EXISTS (
-                            SELECT 1 FROM typeAttributes ta 
-                            WHERE ta.type_id = t.type_id 
-                            AND ta.attribute_id = 867  -- 跳跃范围属性
-                        )
-                        ORDER BY g.group_id, t.name
-            """
+        SELECT t.type_id, t.name, t.en_name, t.zh_name, 
+                           g.group_id, g.name as groupName, t.icon_filename 
+                    FROM types t
+                    JOIN groups g ON t.groupID  = g.group_id
+                    WHERE t.published = 1 
+                    AND g.categoryID  = 6  -- 飞船类别
+                    AND EXISTS (
+                        SELECT 1 FROM typeAttributes ta 
+                        WHERE ta.type_id = t.type_id 
+                        AND ta.attribute_id = 867  -- 跳跃范围属性
+                    )
+                    ORDER BY g.group_id, t.name
+        """
 
         if case let .success(rows) = databaseManager.executeQuery(query) {
             for row in rows {
                 guard let typeId = row["type_id"] as? Int,
-                    let typeName = row["name"] as? String,
-                    let typeNameEN = row["en_name"] as? String,
-                    let groupId = row["group_id"] as? Int,
-                    let groupName = row["groupName"] as? String,
-                    let iconFileName = row["icon_filename"] as? String
+                      let typeName = row["name"] as? String,
+                      let typeNameEN = row["en_name"] as? String,
+                      let groupId = row["group_id"] as? Int,
+                      let groupName = row["groupName"] as? String,
+                      let iconFileName = row["icon_filename"] as? String
                 else {
                     Logger.error("加载飞船数据时字段缺失: \(row)")
                     continue
@@ -975,17 +982,17 @@ struct JumpNavigationView: View {
 // 星系选择器Sheet
 struct SystemSelectorSheet: View {
     let title: String
-    let onSelect: (Int) -> Void  // 修改为接收星系ID
+    let onSelect: (Int) -> Void // 修改为接收星系ID
     let onCancel: () -> Void
-    let currentSelection: Int?  // 修改为星系ID
-    let onlyLowSec: Bool  // 添加新参数，控制是否只显示低安全等级星系
-    let jumpSystems: [JumpSystemData]  // 添加已加载的星系数据参数
+    let currentSelection: Int? // 修改为星系ID
+    let onlyLowSec: Bool // 添加新参数，控制是否只显示低安全等级星系
+    let jumpSystems: [JumpSystemData] // 添加已加载的星系数据参数
 
     @State private var searchText: String = ""
     @State private var systems: [(id: Int, name: String, security: Double, region: String)] = []
-    @State private var selectedSystemId: Int?  // 修改为星系ID
+    @State private var selectedSystemId: Int? // 修改为星系ID
     @State private var isLoading = true
-    
+
     // 添加主权相关状态
     @State private var sovereigntyData: [SovereigntyData] = []
     @State private var isLoadingSovereignty = false
@@ -1000,8 +1007,8 @@ struct SystemSelectorSheet: View {
     init(
         title: String,
         currentSelection: Int? = nil,
-        onlyLowSec: Bool = false,  // 添加新参数，默认为false
-        jumpSystems: [JumpSystemData],  // 添加已加载的星系数据参数
+        onlyLowSec: Bool = false, // 添加新参数，默认为false
+        jumpSystems: [JumpSystemData], // 添加已加载的星系数据参数
         onSelect: @escaping (Int) -> Void,
         onCancel: @escaping () -> Void
     ) {
@@ -1053,7 +1060,7 @@ struct SystemSelectorSheet: View {
                                             .frame(width: 36, height: 36)
                                             .cornerRadius(6)
                                     }
-                                    
+
                                     // 右侧：星系信息
                                     VStack(alignment: .leading, spacing: 4) {
                                         // 第一行：安全等级 + 星系名称 + 星域
@@ -1067,16 +1074,16 @@ struct SystemSelectorSheet: View {
                                                 .fontWeight(.semibold)
                                                 + Text(" / \(system.region)")
                                                 .foregroundColor(.secondary)
-                                                
+
                                             Spacer()
-                                            
+
                                             // 选中状态
                                             if selectedSystemId == system.id {
                                                 Image(systemName: "checkmark")
                                                     .foregroundColor(.blue)
                                             }
                                         }
-                                        
+
                                         // 第二行：主权势力名称
                                         if let sovereigntyInfo = getSovereigntyInfo(for: system.id) {
                                             Text(sovereigntyInfo.name)
@@ -1084,10 +1091,14 @@ struct SystemSelectorSheet: View {
                                                 .foregroundColor(.secondary)
                                                 .lineLimit(1)
                                         } else {
-                                            Text(NSLocalizedString("Jump_Navigation_No_Sovereignty", comment: "无主权"))
-                                                .font(.caption)
-                                                .foregroundColor(.secondary)
-                                                .lineLimit(1)
+                                            Text(
+                                                NSLocalizedString(
+                                                    "Jump_Navigation_No_Sovereignty", comment: "无主权"
+                                                )
+                                            )
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                            .lineLimit(1)
                                         }
                                     }
                                 }
@@ -1111,7 +1122,8 @@ struct SystemSelectorSheet: View {
                         NSLocalizedString("Main_Setting_Cancel", comment: ""),
                         action: {
                             onCancel()
-                        })
+                        }
+                    )
                 }
             }
             .onAppear {
@@ -1144,28 +1156,29 @@ struct SystemSelectorSheet: View {
             }.sorted { $0.name < $1.name }
         }
     }
-    
+
     // 获取星系的主权信息
     private func getSovereigntyInfo(for systemId: Int) -> (name: String, icon: Image?)? {
         // 查找该星系的主权数据
-        guard let systemSovereignty = sovereigntyData.first(where: { $0.systemId == systemId }) else {
+        guard let systemSovereignty = sovereigntyData.first(where: { $0.systemId == systemId })
+        else {
             return nil
         }
-        
+
         // 优先检查联盟主权
         if let allianceId = systemSovereignty.allianceId {
             let name = allianceNames[allianceId] ?? "\(allianceId)"
             let icon = allianceIconLoader.icons[allianceId]
             return (name: name, icon: icon)
         }
-        
+
         // 检查派系主权
         if let factionId = systemSovereignty.factionId {
             let name = factionNames[factionId] ?? "\(factionId)"
             let icon = factionIcons[factionId]
             return (name: name, icon: icon)
         }
-        
+
         return nil
     }
 
@@ -1190,34 +1203,35 @@ struct SystemSelectorSheet: View {
                 systems = filteredSystems.sorted { $0.name < $1.name }
                 systemIdToOriginalSystem = idToSystem
                 isLoading = false
-                
+
                 // 加载主权数据
                 loadSovereigntyData(for: filteredSystems.map { $0.id })
             }
         }
     }
-    
+
     // 加载主权数据
-    private func loadSovereigntyData(for systemIds: [Int]) {
+    private func loadSovereigntyData(for _: [Int]) {
         isLoadingSovereignty = true
-        
+
         Task {
             do {
                 // 获取主权数据
-                let data = try await SovereigntyDataAPI.shared.fetchSovereigntyData(forceRefresh: false)
-                
+                let data = try await SovereigntyDataAPI.shared.fetchSovereigntyData(
+                    forceRefresh: false)
+
                 await MainActor.run {
                     sovereigntyData = data
-                    
+
                     // 提取需要加载的联盟和派系ID
                     let allianceIds = Set(data.compactMap { $0.allianceId })
                     let factionIds = Set(data.compactMap { $0.factionId })
-                    
+
                     // 加载联盟和派系信息
                     Task {
                         await loadAllianceInfo(for: Array(allianceIds))
                         await loadFactionInfo(for: Array(factionIds))
-                        
+
                         await MainActor.run {
                             isLoadingSovereignty = false
                         }
@@ -1231,18 +1245,19 @@ struct SystemSelectorSheet: View {
             }
         }
     }
-    
+
     // 加载联盟信息
     private func loadAllianceInfo(for allianceIds: [Int]) async {
         // 批量获取联盟名称
         do {
-            let allianceNamesWithCategories = try await UniverseAPI.shared.getNamesWithFallback(ids: allianceIds)
-            
+            let allianceNamesWithCategories = try await UniverseAPI.shared.getNamesWithFallback(
+                ids: allianceIds)
+
             await MainActor.run {
                 for (allianceId, nameInfo) in allianceNamesWithCategories {
                     allianceNames[allianceId] = nameInfo.name
                 }
-                
+
                 // 使用 AllianceIconLoader 加载联盟图标
                 allianceIconLoader.loadIcons(for: allianceIds)
             }
@@ -1250,25 +1265,25 @@ struct SystemSelectorSheet: View {
             Logger.error("加载联盟名称失败: \(error)")
         }
     }
-    
+
     // 加载派系信息
     private func loadFactionInfo(for factionIds: [Int]) async {
         guard !factionIds.isEmpty else { return }
-        
+
         // 从数据库查询派系信息
         let query = """
             SELECT id, iconName, name, en_name, zh_name 
             FROM factions 
             WHERE id IN (\(factionIds.map { String($0) }.joined(separator: ",")))
         """
-        
+
         if case let .success(rows) = DatabaseManager.shared.executeQuery(query) {
             await MainActor.run {
                 for row in rows {
                     if let factionId = row["id"] as? Int,
                        let iconName = row["iconName"] as? String,
-                       let name = row["name"] as? String {
-                        
+                       let name = row["name"] as? String
+                    {
                         factionNames[factionId] = name
                         let icon = IconManager.shared.loadImage(for: iconName)
                         factionIcons[factionId] = icon
@@ -1325,7 +1340,7 @@ struct CustomLoadingView: View {
 // 飞船选择器视图
 struct JumpShipSelectorView: View {
     @Environment(\.dismiss) private var dismiss
-    @Binding var selectedShip: Int  // 修改为Int类型
+    @Binding var selectedShip: Int // 修改为Int类型
     let ships: [Int: [Ship]]
 
     @State private var searchText = ""
@@ -1361,7 +1376,8 @@ struct JumpShipSelectorView: View {
                             NSLocalizedString("Main_Setting_Cancel", comment: ""),
                             action: {
                                 dismiss()
-                            })
+                            }
+                        )
                     }
                 }
         }

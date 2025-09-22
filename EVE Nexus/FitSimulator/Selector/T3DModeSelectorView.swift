@@ -6,13 +6,13 @@ struct T3DModeSelectorView: View {
     @State private var modeInfos: [ModeInfo] = []
     @State private var hasSelectedItem: Bool = false
     @Environment(\.dismiss) private var dismiss
-    
+
     // 添加选择槽位的信息和回调
     let slotFlag: FittingFlag
     let onModuleSelected: ((Int) -> Void)?
     // 添加飞船ID
     let shipTypeID: Int
-    
+
     // 初始化方法
     init(
         databaseManager: DatabaseManager,
@@ -24,18 +24,19 @@ struct T3DModeSelectorView: View {
         self.slotFlag = slotFlag
         self.onModuleSelected = onModuleSelected
         self.shipTypeID = shipTypeID
-        
+
         // 预加载模式数据
-        self._modeInfos = State(initialValue: [])
+        _modeInfos = State(initialValue: [])
     }
-    
+
     var body: some View {
         NavigationStack {
             if modeInfos.isEmpty {
                 ContentUnavailableView {
                     Label(
                         NSLocalizedString("Misc_No_Data", comment: "无数据"),
-                        systemImage: "exclamationmark.triangle")
+                        systemImage: "exclamationmark.triangle"
+                    )
                 }
             } else {
                 List {
@@ -55,10 +56,10 @@ struct T3DModeSelectorView: View {
                             // 标记已选择模式
                             hasSelectedItem = true
                             Logger.info("用户选择了T3D模式: \(modeInfo.name), ID: \(modeInfo.typeId)")
-                            
+
                             // 调用回调函数安装模式
                             onModuleSelected?(modeInfo.typeId)
-                            
+
                             dismiss()
                         }
                     }
@@ -84,11 +85,11 @@ struct T3DModeSelectorView: View {
             loadModeOptions()
         }
     }
-    
+
     // 加载战术驱逐舰模式选项
     private func loadModeOptions() {
         Logger.info("加载T3D模式选项，飞船ID: \(shipTypeID)")
-        
+
         let query = """
             SELECT t.type_id, t.name, t.en_name, t.icon_filename, g.name as groupName
             FROM types t
@@ -98,16 +99,17 @@ struct T3DModeSelectorView: View {
               AND t.en_name LIKE '%' || s.en_name || '%'
             ORDER BY t.name
         """
-        
+
         if case let .success(rows) = databaseManager.executeQuery(query, parameters: [shipTypeID]) {
             modeInfos = rows.compactMap { row in
                 guard let typeId = row["type_id"] as? Int,
                       let name = row["name"] as? String,
                       let iconFileName = row["icon_filename"] as? String,
-                      let groupName = row["groupName"] as? String else {
+                      let groupName = row["groupName"] as? String
+                else {
                     return nil
                 }
-                
+
                 return ModeInfo(
                     typeId: typeId,
                     name: name,
@@ -115,7 +117,7 @@ struct T3DModeSelectorView: View {
                     groupName: groupName
                 )
             }
-            
+
             Logger.info("加载了 \(modeInfos.count) 个T3D模式选项")
         } else {
             Logger.error("加载T3D模式选项失败")
@@ -125,9 +127,9 @@ struct T3DModeSelectorView: View {
 
 // T3D模式信息结构体
 private struct ModeInfo: Identifiable {
-    let id: UUID = UUID()
+    let id: UUID = .init()
     let typeId: Int
     let name: String
     let iconFileName: String
     let groupName: String
-} 
+}

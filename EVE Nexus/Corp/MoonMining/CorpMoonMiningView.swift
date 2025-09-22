@@ -27,7 +27,8 @@ struct CorpMoonMiningView: View {
                 ContentUnavailableView {
                     Label(
                         NSLocalizedString("Misc_No_Data", comment: "无数据"),
-                        systemImage: "exclamationmark.triangle")
+                        systemImage: "exclamationmark.triangle"
+                    )
                 }
             } else {
                 if !viewModel.thisWeekExtractions.isEmpty {
@@ -80,7 +81,11 @@ struct CorpMoonMiningView: View {
                 }) {
                     Image(systemName: "arrow.clockwise")
                         .rotationEffect(.degrees(isRefreshing ? 360 : 0))
-                        .animation(isRefreshing ? .linear(duration: 1).repeatForever(autoreverses: false) : .default, value: isRefreshing)
+                        .animation(
+                            isRefreshing
+                                ? .linear(duration: 1).repeatForever(autoreverses: false)
+                                : .default, value: isRefreshing
+                        )
                 }
                 .disabled(isRefreshing || viewModel.isLoading)
             }
@@ -97,10 +102,10 @@ struct CorpMoonMiningView: View {
             )
         }
     }
-    
+
     private func refreshData() {
         isRefreshing = true
-        
+
         Task {
             do {
                 try await viewModel.fetchMoonExtractions(forceRefresh: true)
@@ -111,7 +116,7 @@ struct CorpMoonMiningView: View {
                     Logger.error("刷新月矿提取信息失败: \(error)")
                 }
             }
-            
+
             isRefreshing = false
         }
     }
@@ -224,7 +229,9 @@ class CorpMoonMiningViewModel: ObservableObject {
         let oneWeekLater = calendar.date(byAdding: .day, value: 7, to: now) ?? now
 
         return moonExtractions.filter { extraction in
-            guard let arrivalDate = FormatUtil.parseUTCDate(extraction.chunk_arrival_time) else { return false }
+            guard let arrivalDate = FormatUtil.parseUTCDate(extraction.chunk_arrival_time) else {
+                return false
+            }
             return arrivalDate <= oneWeekLater
         }
     }
@@ -236,7 +243,9 @@ class CorpMoonMiningViewModel: ObservableObject {
         let oneWeekLater = calendar.date(byAdding: .day, value: 7, to: now) ?? now
 
         return moonExtractions.filter { extraction in
-            guard let arrivalDate = FormatUtil.parseUTCDate(extraction.chunk_arrival_time) else { return false }
+            guard let arrivalDate = FormatUtil.parseUTCDate(extraction.chunk_arrival_time) else {
+                return false
+            }
             return arrivalDate > oneWeekLater
         }
     }
@@ -258,33 +267,34 @@ class CorpMoonMiningViewModel: ObservableObject {
         // 过滤并排序月矿数据
         moonExtractions =
             extractions
-            .filter { extraction in
-                guard let arrivalDate = FormatUtil.parseUTCDate(extraction.chunk_arrival_time) else {
-                    return false
+                .filter { extraction in
+                    guard let arrivalDate = FormatUtil.parseUTCDate(extraction.chunk_arrival_time)
+                    else {
+                        return false
+                    }
+
+                    // 计算时间差（天数）
+                    let days = calendar.dateComponents([.day], from: now, to: arrivalDate).day ?? 0
+
+                    // 只保留未来36天内的数据
+                    return days >= -1 && days <= 36
                 }
-
-                // 计算时间差（天数）
-                let days = calendar.dateComponents([.day], from: now, to: arrivalDate).day ?? 0
-
-                // 只保留未来36天内的数据
-                return days >= -1 && days <= 36
-            }
-            .sorted { first, second in
-                first.chunk_arrival_time < second.chunk_arrival_time
-            }
+                .sorted { first, second in
+                    first.chunk_arrival_time < second.chunk_arrival_time
+                }
 
         // 如果有数据，批量获取月球名称
         if !moonExtractions.isEmpty {
             // 对moon_id去重
             let uniqueMoonIds = Set(moonExtractions.map { Int($0.moon_id) })
             let moonIds = uniqueMoonIds.sorted().map { String($0) }.joined(separator: ",")
-            let query = "SELECT itemID, itemName FROM invNames WHERE itemID IN (\(moonIds))"
+            let query = "SELECT itemID, itemName FROM celestialNames WHERE itemID IN (\(moonIds))"
 
             if case let .success(rows) = DatabaseManager.shared.executeQuery(query) {
                 var names: [Int: String] = [:]
                 for row in rows {
                     if let itemId = row["itemID"] as? Int,
-                        let name = row["itemName"] as? String
+                       let name = row["itemName"] as? String
                     {
                         names[itemId] = name
                     }

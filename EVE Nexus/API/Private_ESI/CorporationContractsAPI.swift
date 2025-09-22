@@ -27,12 +27,12 @@ class CorporationContractsAPI {
     {
         let url = URL(
             string:
-                "https://esi.evetech.net/corporations/\(corporationId)/contracts/\(contractId)/items/?datasource=tranquility"
+            "https://esi.evetech.net/corporations/\(corporationId)/contracts/\(contractId)/items/?datasource=tranquility"
         )!
 
         let data = try await NetworkManager.shared.fetchDataWithToken(
             from: url,
-            characterId: characterId  // 使用角色ID获取token
+            characterId: characterId // 使用角色ID获取token
         )
 
         let decoder = JSONDecoder()
@@ -43,8 +43,8 @@ class CorporationContractsAPI {
     private func updateLastQueryTime(corporationId: Int, isItems: Bool = false) {
         let key =
             isItems
-            ? lastContractItemsQueryKey + String(corporationId)
-            : lastContractsQueryKey + String(corporationId)
+                ? lastContractItemsQueryKey + String(corporationId)
+                : lastContractsQueryKey + String(corporationId)
         UserDefaults.standard.set(Date(), forKey: key)
     }
 
@@ -61,13 +61,13 @@ class CorporationContractsAPI {
         let contracts = try await NetworkManager.shared.fetchPaginatedData(
             from: baseUrl,
             characterId: characterId,
-            maxConcurrentPages: 5,  // 保持原有的最大并发数
+            maxConcurrentPages: 5, // 保持原有的最大并发数
             decoder: { data in
                 let decoder = JSONDecoder()
                 decoder.dateDecodingStrategy = .iso8601
                 return try decoder.decode([ContractInfo].self, from: data)
             },
-            progressCallback: { currentPage, totalPages in
+            progressCallback: { currentPage, _ in
                 progressCallback?(currentPage)
             }
         )
@@ -92,16 +92,16 @@ class CorporationContractsAPI {
     // 从数据库获取合同列表
     private func getContractsFromDB(corporationId: Int) async -> [ContractInfo]? {
         let query = """
-                SELECT contract_id, acceptor_id, assignee_id, availability,
-                       buyout, collateral, date_accepted, date_completed, date_expired,
-                       date_issued, days_to_complete, end_location_id,
-                       for_corporation, issuer_corporation_id, issuer_id,
-                       price, reward, start_location_id, status, title,
-                       type, volume
-                FROM corporation_contracts 
-                WHERE corporation_id = ?
-                ORDER BY date_issued DESC
-            """
+            SELECT contract_id, acceptor_id, assignee_id, availability,
+                   buyout, collateral, date_accepted, date_completed, date_expired,
+                   date_issued, days_to_complete, end_location_id,
+                   for_corporation, issuer_corporation_id, issuer_id,
+                   price, reward, start_location_id, status, title,
+                   type, volume
+            FROM corporation_contracts 
+            WHERE corporation_id = ?
+            ORDER BY date_issued DESC
+        """
 
         if case let .success(results) = CharacterDatabaseManager.shared.executeQuery(
             query, parameters: [corporationId]
@@ -134,7 +134,7 @@ class CorporationContractsAPI {
 
                 // 解析日期
                 guard let dateIssued = dateFormatter.date(from: dateIssuedStr),
-                    let dateExpired = dateFormatter.date(from: dateExpiredStr)
+                      let dateExpired = dateFormatter.date(from: dateExpiredStr)
                 else {
                     Logger.error("日期解析失败")
                     return nil
@@ -282,7 +282,7 @@ class CorporationContractsAPI {
         var existingContracts: [Int: String] = [:]
         for row in existingResults {
             if let contractId = row["contract_id"] as? Int64,
-                let status = row["status"] as? String
+               let status = row["status"] as? String
             {
                 existingContracts[Int(contractId)] = status
             }
@@ -291,9 +291,9 @@ class CorporationContractsAPI {
         // 筛选需要更新的合同（状态变化或新合同）
         let contractsToUpdate = filteredContracts.filter { contract in
             if let existingStatus = existingContracts[contract.contract_id] {
-                return existingStatus != contract.status  // 状态变化的合同
+                return existingStatus != contract.status // 状态变化的合同
             }
-            return true  // 新合同
+            return true // 新合同
         }
 
         if contractsToUpdate.isEmpty {
@@ -307,7 +307,7 @@ class CorporationContractsAPI {
         _ = CharacterDatabaseManager.shared.executeQuery("BEGIN TRANSACTION")
 
         // 计算每批次的大小（每条记录24个参数）
-        let batchSize = 500  // 每批次处理500条记录
+        let batchSize = 500 // 每批次处理500条记录
         let dateFormatter = ISO8601DateFormatter()
         var success = true
         var newCount = 0
@@ -316,7 +316,7 @@ class CorporationContractsAPI {
         // 分批处理数据
         for batchStart in stride(from: 0, to: contractsToUpdate.count, by: batchSize) {
             let batchEnd = min(batchStart + batchSize, contractsToUpdate.count)
-            let currentBatch = Array(contractsToUpdate[batchStart..<batchEnd])
+            let currentBatch = Array(contractsToUpdate[batchStart ..< batchEnd])
 
             // 统计新增和更新的数量
             for contract in currentBatch {
@@ -330,19 +330,19 @@ class CorporationContractsAPI {
             // 构建批量插入语句
             let placeholders = Array(
                 repeating:
-                    "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 count: currentBatch.count
             ).joined(separator: ",")
             let insertSQL = """
-                    INSERT OR REPLACE INTO corporation_contracts (
-                        contract_id, corporation_id, status, acceptor_id, assignee_id,
-                        availability, buyout, collateral, date_accepted, date_completed,
-                        date_expired, date_issued, days_to_complete,
-                        end_location_id, for_corporation, issuer_corporation_id,
-                        issuer_id, price, reward, start_location_id,
-                        title, type, volume, items_fetched
-                    ) VALUES \(placeholders)
-                """
+                INSERT OR REPLACE INTO corporation_contracts (
+                    contract_id, corporation_id, status, acceptor_id, assignee_id,
+                    availability, buyout, collateral, date_accepted, date_completed,
+                    date_expired, date_issued, days_to_complete,
+                    end_location_id, for_corporation, issuer_corporation_id,
+                    issuer_id, price, reward, start_location_id,
+                    title, type, volume, items_fetched
+                ) VALUES \(placeholders)
+            """
 
             // 准备参数数组
             var parameters: [Any] = []
@@ -377,7 +377,7 @@ class CorporationContractsAPI {
                     contract.title,
                     contract.type,
                     contract.volume,
-                    0,  // 状态变化时重置items_fetched
+                    0, // 状态变化时重置items_fetched
                 ]
                 parameters.append(contentsOf: params)
             }
@@ -411,12 +411,12 @@ class CorporationContractsAPI {
         -> [ContractItemInfo]?
     {
         let query = """
-                SELECT record_id, is_included, is_singleton,
-                       quantity, type_id, raw_quantity
-                FROM contract_items 
-                WHERE contract_id = ?
-                ORDER BY record_id ASC
-            """
+            SELECT record_id, is_included, is_singleton,
+                   quantity, type_id, raw_quantity
+            FROM contract_items 
+            WHERE contract_id = ?
+            ORDER BY record_id ASC
+        """
 
         if case let .success(results) = CharacterDatabaseManager.shared.executeQuery(
             query, parameters: [contractId]
@@ -489,23 +489,23 @@ class CorporationContractsAPI {
         _ = CharacterDatabaseManager.shared.executeQuery("BEGIN TRANSACTION")
 
         // 计算每批次的大小（每条记录7个参数）
-        let batchSize = 100  // 每批次处理100条记录
+        let batchSize = 100 // 每批次处理100条记录
         var success = true
 
         // 分批处理数据
         for batchStart in stride(from: 0, to: items.count, by: batchSize) {
             let batchEnd = min(batchStart + batchSize, items.count)
-            let currentBatch = Array(items[batchStart..<batchEnd])
+            let currentBatch = Array(items[batchStart ..< batchEnd])
 
             // 构建批量插入语句
             let placeholders = Array(repeating: "(?, ?, ?, ?, ?, ?, ?)", count: currentBatch.count)
                 .joined(separator: ",")
             let insertSQL = """
-                    INSERT OR REPLACE INTO contract_items (
-                        record_id, contract_id, is_included, is_singleton,
-                        quantity, type_id, raw_quantity
-                    ) VALUES \(placeholders)
-                """
+                INSERT OR REPLACE INTO contract_items (
+                    record_id, contract_id, is_included, is_singleton,
+                    quantity, type_id, raw_quantity
+                ) VALUES \(placeholders)
+            """
 
             // 准备参数数组
             var parameters: [Any] = []
@@ -560,7 +560,7 @@ class CorporationContractsAPI {
     }
 
     // 获取合同列表（公开方法）
-    public func fetchContracts(
+    func fetchContracts(
         characterId: Int, forceRefresh: Bool = false, progressCallback: ((Int) -> Void)? = nil
     ) async throws -> [ContractInfo] {
         // 1. 获取角色的军团ID
@@ -579,9 +579,8 @@ class CorporationContractsAPI {
         )
         let isEmpty =
             if case let .success(rows) = result,
-                let row = rows.first,
-                let count = row["count"] as? Int64
-            {
+            let row = rows.first,
+            let count = row["count"] as? Int64 {
                 count == 0
             } else {
                 true
@@ -616,7 +615,7 @@ class CorporationContractsAPI {
     }
 
     // 获取合同物品（公开方法）
-    public func fetchContractItems(characterId: Int, contractId: Int) async throws
+    func fetchContractItems(characterId: Int, contractId: Int) async throws
         -> [ContractItemInfo]
     {
         Logger.debug("开始获取军团合同物品 - 角色ID: \(characterId), 合同ID: \(contractId)")
@@ -630,8 +629,7 @@ class CorporationContractsAPI {
         }
 
         // 检查数据库中是否有数据
-        if let items = getContractItemsFromDB(corporationId: corporationId, contractId: contractId)
-        {
+        if let items = getContractItemsFromDB(corporationId: corporationId, contractId: contractId) {
             if !items.isEmpty {
                 Logger.debug("从数据库获取到\(items.count)个军团合同物品")
                 return items

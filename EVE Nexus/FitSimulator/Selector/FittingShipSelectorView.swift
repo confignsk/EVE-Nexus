@@ -17,7 +17,7 @@ struct FittingShipSelectorView: View {
 
         // 在初始化时加载舰船分组ID
         let marketGroups = MarketManager.shared.loadMarketGroups(databaseManager: databaseManager)
-        self._allowedTopMarketGroupIDs = State(
+        _allowedTopMarketGroupIDs = State(
             initialValue: Set(MarketManager.shared.getChildGroupIDs(marketGroups, parentGroupID: 4))
         )
     }
@@ -41,4 +41,4 @@ struct FittingShipSelectorView: View {
             .interactiveDismissDisabled()
         }
     }
-} 
+}

@@ -7,7 +7,7 @@ struct CharacterWealthView: View {
     @State private var hasLoadedInitialData = false
     @State private var cachedWealthItems: [WealthItem] = []
     @State private var cachedTotalWealth: Double = 0
-    @State private var hasInitialized = false  // 追踪是否已执行初始化
+    @State private var hasInitialized = false // 追踪是否已执行初始化
 
     init(characterId: Int) {
         _viewModel = StateObject(
@@ -81,7 +81,7 @@ struct CharacterWealthView: View {
                     if item.type == .wallet {
                         // 钱包余额不可点击
                         WealthItemRow(
-                            item: item, 
+                            item: item,
                             isRefreshing: isTypeRefreshing(item.type),
                             loadingProgress: nil
                         )
@@ -98,9 +98,10 @@ struct CharacterWealthView: View {
                             )
                         } label: {
                             WealthItemRow(
-                                item: item, 
+                                item: item,
                                 isRefreshing: isTypeRefreshing(item.type),
-                                loadingProgress: item.type == .assets ? viewModel.assetsLoadingProgress : nil
+                                loadingProgress: item.type == .assets
+                                    ? viewModel.assetsLoadingProgress : nil
                             )
                         }
                         .disabled(isTypeRefreshing(item.type))
@@ -193,7 +194,7 @@ struct WealthItemRow: View {
             // 名称和详情
             VStack(alignment: .leading, spacing: 2) {
                 Text(NSLocalizedString("Wealth_\(item.type.rawValue)", comment: ""))
-                
+
                 // 显示详情或进度信息
                 if isRefreshing && item.type == .assets, let progress = loadingProgress {
                     // 显示资产加载进度
@@ -219,22 +220,27 @@ struct WealthItemRow: View {
             }
         }
     }
-    
+
     // 获取进度文本
     private func getProgressText(_ progress: AssetLoadingProgress) -> String {
         switch progress {
-        case .loading(let page):
+        case let .loading(page):
             return String(format: NSLocalizedString("Assets_Loading_Page", comment: ""), page)
         case .buildingTree:
             return NSLocalizedString("Assets_Loading_BuildingTree", comment: "")
         case .processingLocations:
             return NSLocalizedString("Assets_Loading_ProcessingLocations", comment: "")
-        case .fetchingStructureInfo(let current, let total):
-            return String(format: NSLocalizedString("Assets_Loading_FetchingStructures", comment: ""), current, total)
+        case let .fetchingStructureInfo(current, total):
+            return String(
+                format: NSLocalizedString("Assets_Loading_FetchingStructures", comment: ""),
+                current, total
+            )
         case .preparingContainers:
             return NSLocalizedString("Assets_Loading_PreparingContainers", comment: "")
-        case .loadingNames(let current, let total):
-            return String(format: NSLocalizedString("Assets_Loading_Names", comment: ""), current, total)
+        case let .loadingNames(current, total):
+            return String(
+                format: NSLocalizedString("Assets_Loading_Names", comment: ""), current, total
+            )
         case .savingCache:
             return NSLocalizedString("Assets_Loading_SavingCache", comment: "")
         case .completed:

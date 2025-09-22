@@ -3,16 +3,16 @@ import SwiftUI
 // 添加PIResourcesListView用于显示特定等级的PI资源列表
 struct PIResourcesListView: View {
     let title: String
-    let resources: [Any]  // 使用Any类型来接受不同类型的资源
+    let resources: [Any] // 使用Any类型来接受不同类型的资源
     let systemIds: [Int]
     let resourceLevel: Int
     let maxJumps: Int
-    let centerSystemId: Int?  // 添加中心星系ID参数
+    let centerSystemId: Int? // 添加中心星系ID参数
 
     var body: some View {
         List {
             Section(header: Text(NSLocalizedString("PI_Available_production", comment: ""))) {
-                ForEach(0..<resources.count, id: \.self) { index in
+                ForEach(0 ..< resources.count, id: \.self) { index in
                     let resource = resources[index]
                     NavigationLink(
                         destination: PIResourceChainView(
@@ -20,7 +20,7 @@ struct PIResourcesListView: View {
                             resourceName: getResourceName(from: resource),
                             systemIds: systemIds,
                             maxJumps: maxJumps,
-                            centerSystemId: centerSystemId  // 传递中心星系ID
+                            centerSystemId: centerSystemId // 传递中心星系ID
                         )
                     ) {
                         HStack {

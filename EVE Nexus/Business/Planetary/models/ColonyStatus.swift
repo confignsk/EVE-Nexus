@@ -36,7 +36,7 @@ enum ColonyStatus {
     var pins: [Pin] {
         switch self {
         case let .notSetup(pins), let .needsAttention(pins), let .idle(pins), let .producing(pins),
-            let .extracting(pins):
+             let .extracting(pins):
             return pins
         }
     }
@@ -88,8 +88,8 @@ func getPinStatus(pin: Pin, now: Date, routes: [Route]) -> PinStatus {
     if let extractor = pin as? Pin.Extractor {
         let isSetup =
             extractor.installTime != nil && extractor.expiryTime != nil
-            && extractor.cycleTime != nil && extractor.baseValue != nil
-            && extractor.productType != nil
+                && extractor.cycleTime != nil && extractor.baseValue != nil
+                && extractor.productType != nil
         if !isSetup {
             return .notSetup
         }
@@ -122,7 +122,7 @@ func getPinStatus(pin: Pin, now: Date, routes: [Route]) -> PinStatus {
 
         // 使用与Kotlin版本相似的逻辑判断工厂是否处于活跃状态
         if let lastCycleStartTime = factory.lastCycleStartTime,
-            let schematic = factory.schematic
+           let schematic = factory.schematic
         {
             let cycleTime = schematic.cycleTime
             let lastCycleAgo = now.timeIntervalSince(lastCycleStartTime)
@@ -135,9 +135,9 @@ func getPinStatus(pin: Pin, now: Date, routes: [Route]) -> PinStatus {
 
         // 检查是否有足够的输入材料
         if factory.hasEnoughInputs() {
-            return .factoryIdle  // 有足够材料但未生产
+            return .factoryIdle // 有足够材料但未生产
         } else {
-            return .inputNotRouted  // 材料不足
+            return .inputNotRouted // 材料不足
         }
     } else if pin is Pin.CommandCenter || pin is Pin.Launchpad || pin is Pin.Storage {
         let incomingRoutes = routes.filter { $0.destinationPinId == pin.id }

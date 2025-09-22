@@ -116,11 +116,14 @@ struct WormholeView: View {
 
 struct WormholeInfoSheetView: View {
     @Environment(\.dismiss) private var dismiss
-    
+
     var body: some View {
         NavigationView {
             List {
-                Section(header: Text(NSLocalizedString("WH_time_life", comment: "Time")).font(.headline).textCase(.none)) {
+                Section(
+                    header: Text(NSLocalizedString("WH_time_life", comment: "Time")).font(.headline)
+                        .textCase(.none)
+                ) {
                     WormholeInfoRow(
                         description: NSLocalizedString("WH_life_Notyet", comment: ""),
                         timeInfo: "> 24h",
@@ -137,8 +140,11 @@ struct WormholeInfoSheetView: View {
                         statusType: .critical
                     )
                 }
-                
-                Section(header: Text(NSLocalizedString("WH_Mass_life", comment: "Mass")).font(.headline).textCase(.none)) {
+
+                Section(
+                    header: Text(NSLocalizedString("WH_Mass_life", comment: "Mass")).font(.headline)
+                        .textCase(.none)
+                ) {
                     WormholeInfoRow(
                         description: NSLocalizedString("WH_Mass_Notyet", comment: ""),
                         timeInfo: "> 50%",
@@ -182,7 +188,7 @@ struct WormholeInfoRow: View {
     let description: String
     let timeInfo: String
     let statusType: WormholeStatusType
-    
+
     // 根据状态类型确定颜色
     private var statusColor: Color {
         switch statusType {
@@ -194,7 +200,7 @@ struct WormholeInfoRow: View {
             return .red
         }
     }
-    
+
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             // 状态圆点
@@ -202,13 +208,13 @@ struct WormholeInfoRow: View {
                 .fill(statusColor)
                 .frame(width: 12, height: 12)
                 .padding(.top, 4)
-            
+
             VStack(alignment: .leading, spacing: 8) {
                 Text(description)
                     .font(.body)
                     .foregroundColor(.primary)
                     .fixedSize(horizontal: false, vertical: true)
-                
+
                 Text(timeInfo)
                     .font(.subheadline)
                     .foregroundColor(.secondary)
@@ -250,27 +256,27 @@ struct WormholeDetailView: View {
                 WHDetailInfoRow(
                     title: NSLocalizedString("Main_Market_WH_Leadsto", comment: ""),
                     value: wormhole.target,
-                    iconName: "items_7_64_4.png"
+                    iconName: "star_map"
                 )
                 WHDetailInfoRow(
                     title: NSLocalizedString("Main_Market_WH_MaxStableTime", comment: ""),
                     value: wormhole.stableTime,
-                    iconName: "items_22_32_16.png"
+                    iconName: "recharge"
                 )
                 WHDetailInfoRow(
                     title: NSLocalizedString("Main_Market_WH_MaxStableMass", comment: ""),
                     value: wormhole.maxStableMass,
-                    iconName: "icon_1333_64.png"
+                    iconName: "hull"
                 )
                 WHDetailInfoRow(
                     title: NSLocalizedString("Main_Market_WH_MaxJumpMass", comment: ""),
                     value: wormhole.maxJumpMass,
-                    iconName: "items_9_64_5.png"
+                    iconName: "ship_2"
                 )
                 WHDetailInfoRow(
                     title: NSLocalizedString("Main_Market_WH_Size", comment: ""),
                     value: wormhole.sizeType,
-                    iconName: "items_22_32_15.png"
+                    iconName: "target_range"
                 )
             } header: {
                 Text(NSLocalizedString("Main_Market_WH_Details", comment: ""))

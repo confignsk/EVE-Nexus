@@ -4,7 +4,7 @@ import SwiftUI
 extension Array {
     func chunked(into size: Int) -> [[Element]] {
         return stride(from: 0, to: count, by: size).map {
-            Array(self[$0..<Swift.min($0 + size, count)])
+            Array(self[$0 ..< Swift.min($0 + size, count)])
         }
     }
 }
@@ -19,6 +19,8 @@ struct StructureSearchView {
     @Binding var error: Error?
     let structureType: SearcherView.StructureType
 
+    let strictMatch: Bool
+
     init(
         characterId: Int,
         searchText: String,
@@ -26,7 +28,8 @@ struct StructureSearchView {
         filteredResults: Binding<[SearcherView.SearchResult]>,
         searchingStatus: Binding<String>,
         error: Binding<Error?>,
-        structureType: SearcherView.StructureType
+        structureType: SearcherView.StructureType,
+        strictMatch: Bool = false
     ) {
         self.characterId = characterId
         self.searchText = searchText
@@ -35,6 +38,7 @@ struct StructureSearchView {
         _searchingStatus = searchingStatus
         _error = error
         self.structureType = structureType
+        self.strictMatch = strictMatch
     }
 
     // 批量加载位置信息
@@ -62,12 +66,12 @@ struct StructureSearchView {
     private func loadBatchTypeIcons(typeIds: [Int]) throws -> [Int: String] {
         let placeholders = String(repeating: "?,", count: typeIds.count).dropLast()
         let sql = """
-                SELECT 
-                    type_id,
-                    icon_filename
-                FROM types
-                WHERE type_id IN (\(placeholders))
-            """
+            SELECT 
+                type_id,
+                icon_filename
+            FROM types
+            WHERE type_id IN (\(placeholders))
+        """
 
         guard
             case let .success(rows) = DatabaseManager.shared.executeQuery(
@@ -80,7 +84,7 @@ struct StructureSearchView {
         var result: [Int: String] = [:]
         for row in rows {
             if let typeId = row["type_id"] as? Int,
-                let iconFilename = row["icon_filename"] as? String
+               let iconFilename = row["icon_filename"] as? String
             {
                 result[typeId] = iconFilename
             }
@@ -95,14 +99,14 @@ struct StructureSearchView {
     )] {
         let placeholders = String(repeating: "?,", count: stationIds.count).dropLast()
         let sql = """
-                SELECT 
-                    stationID,
-                    stationName,
-                    stationTypeID,
-                    solarSystemID
-                FROM stations
-                WHERE stationID IN (\(placeholders))
-            """
+            SELECT 
+                stationID,
+                stationName,
+                stationTypeID,
+                solarSystemID
+            FROM stations
+            WHERE stationID IN (\(placeholders))
+        """
 
         guard
             case let .success(rows) = DatabaseManager.shared.executeQuery(
@@ -125,11 +129,11 @@ struct StructureSearchView {
     // 从本地数据库搜索空间站
     private func searchLocalStations(searchText: String) throws -> [Int] {
         let sql = """
-                SELECT stationID 
-                FROM stations 
-                WHERE stationName LIKE ?
-                LIMIT 500
-            """
+            SELECT stationID 
+            FROM stations 
+            WHERE stationName LIKE ?
+            LIMIT 500
+        """
 
         guard
             case let .success(rows) = DatabaseManager.shared.executeQuery(
@@ -173,7 +177,8 @@ struct StructureSearchView {
             let data = try await CharacterSearchAPI.shared.search(
                 characterId: characterId,
                 categories: [.station, .structure],
-                searchText: searchText
+                searchText: searchText,
+                strict: strictMatch
             )
 
             // 检查是否被取消
@@ -207,7 +212,7 @@ struct StructureSearchView {
         }
 
         var results: [SearcherView.SearchResult] = []
-        var typeIdMap: [Int: Int] = [:]  // 建筑ID到类型ID的映射
+        var typeIdMap: [Int: Int] = [:] // 建筑ID到类型ID的映射
 
         // 处理空间站结果
         if !allStationIds.isEmpty {
@@ -248,7 +253,7 @@ struct StructureSearchView {
 
                     // 存储类型ID映射
                     typeIdMap[info.id] = info.typeId
-                    
+
                     let result = SearcherView.SearchResult(
                         id: info.id,
                         name: info.name,
@@ -294,8 +299,8 @@ struct StructureSearchView {
                                 let info = try await UniverseStructureAPI.shared.fetchStructureInfo(
                                     structureId: Int64(structureId),
                                     characterId: characterId,
-                                    forceRefresh: true,  // 建筑搜索功能总是联网搜索
-                                    cacheTimeOut: 1  // 缓存超时时间改为 1 小时
+                                    forceRefresh: true, // 建筑搜索功能总是联网搜索
+                                    cacheTimeOut: 1 // 缓存超时时间改为 1 小时
                                 )
 
                                 return (structureId, info.name, info.type_id, info.solar_system_id)
@@ -351,7 +356,7 @@ struct StructureSearchView {
 
                 // 存储类型ID映射
                 typeIdMap[info.id] = info.typeId
-                
+
                 let result = SearcherView.SearchResult(
                     id: info.id,
                     name: info.name,
@@ -374,24 +379,24 @@ struct StructureSearchView {
         results.sort { result1, result2 in
             // 定义优先级类型ID顺序
             let priorityTypeIds = [40340, 35834, 35833, 35827, 35832, 35825, 35836, 35826, 35835]
-            
+
             // 从映射中获取类型ID
             let typeId1 = typeIdMap[result1.id] ?? 0
             let typeId2 = typeIdMap[result2.id] ?? 0
-            
+
             // 获取优先级索引
             let priority1 = priorityTypeIds.firstIndex(of: typeId1) ?? Int.max
             let priority2 = priorityTypeIds.firstIndex(of: typeId2) ?? Int.max
-            
+
             // 如果两个都在优先级列表中
-            if priority1 != Int.max && priority2 != Int.max {
+            if priority1 != Int.max, priority2 != Int.max {
                 if priority1 != priority2 {
                     return priority1 < priority2
                 }
                 // 同类型按建筑名称进行本地化比较排序
                 return result1.name.localizedCompare(result2.name) == .orderedAscending
             }
-            
+
             // 如果只有一个在优先级列表中
             if priority1 != Int.max {
                 return true
@@ -399,7 +404,7 @@ struct StructureSearchView {
             if priority2 != Int.max {
                 return false
             }
-            
+
             // 两个都不在优先级列表中，按建筑名称进行本地化比较排序
             return result1.name.localizedCompare(result2.name) == .orderedAscending
         }

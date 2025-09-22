@@ -30,20 +30,23 @@ struct PreparedIncursion: Identifiable {
         let regionId: Int
         let regionName: String
     }
-    
+
     class SovereigntyInfo: ObservableObject {
         let id: Int
         let isAlliance: Bool
         @Published var icon: Image?
         @Published var isLoadingIcon: Bool = true
-        
+
         init(id: Int, isAlliance: Bool) {
             self.id = id
             self.isAlliance = isAlliance
         }
     }
 
-    init(incursion: Incursion, faction: FactionInfo, location: LocationInfo, sovereignty: SovereigntyInfo? = nil) {
+    init(
+        incursion: Incursion, faction: FactionInfo, location: LocationInfo,
+        sovereignty: SovereigntyInfo? = nil
+    ) {
         id = incursion.constellationId
         self.incursion = incursion
         self.faction = faction
@@ -63,11 +66,11 @@ final class IncursionsViewModel: ObservableObject {
     let databaseManager: DatabaseManager
     private var loadingTask: Task<Void, Never>?
     private var lastFetchTime: Date?
-    private let cacheTimeout: TimeInterval = 300  // 5分钟缓存
-    
+    private let cacheTimeout: TimeInterval = 300 // 5分钟缓存
+
     // 缓存所有星系信息，包括受影响的星系
     private var allSystemInfoCache: [Int: SolarSystemInfo] = [:]
-    
+
     // 主权数据缓存
     private var sovereigntyData: [SovereigntyData] = []
     private var loadingTasks: [Int: Task<Void, Never>] = [:]
@@ -84,9 +87,9 @@ final class IncursionsViewModel: ObservableObject {
     func fetchIncursionsData(forceRefresh: Bool = false) async {
         // 如果不是强制刷新，且缓存未过期，且已有数据，则直接返回
         if !forceRefresh,
-            let lastFetch = lastFetchTime,
-            Date().timeIntervalSince(lastFetch) < cacheTimeout,
-            !preparedIncursions.isEmpty
+           let lastFetch = lastFetchTime,
+           Date().timeIntervalSince(lastFetch) < cacheTimeout,
+           !preparedIncursions.isEmpty
         {
             Logger.debug("使用缓存的入侵数据，跳过加载")
             return
@@ -140,13 +143,14 @@ final class IncursionsViewModel: ObservableObject {
             solarSystemIds: Array(allSystemIds),
             databaseManager: databaseManager
         )
-        
+
         // 缓存所有星系信息
-        self.allSystemInfoCache = systemInfoMap
+        allSystemInfoCache = systemInfoMap
 
         // 获取主权数据
         do {
-            sovereigntyData = try await SovereigntyDataAPI.shared.fetchSovereigntyData(forceRefresh: false)
+            sovereigntyData = try await SovereigntyDataAPI.shared.fetchSovereigntyData(
+                forceRefresh: false)
         } catch {
             Logger.error("获取主权数据失败: \(error)")
         }
@@ -155,7 +159,7 @@ final class IncursionsViewModel: ObservableObject {
 
         for incursion in incursions {
             // 获取派系信息
-            guard let faction = await self.getFactionInfo(factionId: incursion.factionId) else {
+            guard let faction = await getFactionInfo(factionId: incursion.factionId) else {
                 continue
             }
 
@@ -204,7 +208,7 @@ final class IncursionsViewModel: ObservableObject {
         if !prepared.isEmpty {
             Logger.info("成功准备 \(prepared.count) 条数据")
             preparedIncursions = prepared
-            
+
             // 开始加载主权图标
             loadAllSovereigntyIcons()
         } else {
@@ -225,30 +229,30 @@ final class IncursionsViewModel: ObservableObject {
         }
         return (iconName, name)
     }
-    
+
     private func getSovereigntyInfo(for systemId: Int) -> PreparedIncursion.SovereigntyInfo? {
         guard let systemData = sovereigntyData.first(where: { $0.systemId == systemId }) else {
             return nil
         }
-        
+
         if let allianceId = systemData.allianceId {
             return PreparedIncursion.SovereigntyInfo(id: allianceId, isAlliance: true)
         } else if let factionId = systemData.factionId {
             return PreparedIncursion.SovereigntyInfo(id: factionId, isAlliance: false)
         }
-        
+
         return nil
     }
-    
+
     private func loadAllSovereigntyIcons() {
         // 取消之前的加载任务
         loadingTasks.values.forEach { $0.cancel() }
         loadingTasks.removeAll()
-        
+
         // 按主权ID分组
         var allianceToIncursions: [Int: [PreparedIncursion.SovereigntyInfo]] = [:]
         var factionToIncursions: [Int: [PreparedIncursion.SovereigntyInfo]] = [:]
-        
+
         for incursion in preparedIncursions {
             if let sovereignty = incursion.sovereignty {
                 if sovereignty.isAlliance {
@@ -258,26 +262,29 @@ final class IncursionsViewModel: ObservableObject {
                 }
             }
         }
-        
+
         // 加载联盟图标
         for (allianceId, sovereignties) in allianceToIncursions {
             let task = Task {
                 do {
                     Logger.debug("开始加载联盟图标: \(allianceId)，影响 \(sovereignties.count) 个入侵")
-                    
+
                     // 并行加载联盟信息和图标
-                    async let allianceInfoTask = AllianceAPI.shared.fetchAllianceInfo(allianceId: allianceId)
-                    async let allianceLogoTask = AllianceAPI.shared.fetchAllianceLogo(allianceID: allianceId, size: 64)
-                    
+                    async let allianceInfoTask = AllianceAPI.shared.fetchAllianceInfo(
+                        allianceId: allianceId)
+                    async let allianceLogoTask = AllianceAPI.shared.fetchAllianceLogo(
+                        allianceID: allianceId, size: 64
+                    )
+
                     let (_, logo) = try await (allianceInfoTask, allianceLogoTask)
-                    
+
                     await MainActor.run {
                         for sovereignty in sovereignties {
                             sovereignty.icon = Image(uiImage: logo)
                             sovereignty.isLoadingIcon = false
                         }
                     }
-                    
+
                     Logger.debug("联盟图标和名称加载成功: \(allianceId)")
                 } catch {
                     Logger.error("加载联盟图标失败: \(allianceId), error: \(error)")
@@ -290,26 +297,28 @@ final class IncursionsViewModel: ObservableObject {
             }
             loadingTasks[allianceId] = task
         }
-        
+
         // 加载派系图标
         for (factionId, sovereignties) in factionToIncursions {
             let task = Task {
                 Logger.debug("开始加载派系图标: \(factionId)，影响 \(sovereignties.count) 个入侵")
-                
+
                 let query = "SELECT iconName FROM factions WHERE id = ?"
-                if case let .success(rows) = databaseManager.executeQuery(query, parameters: [factionId]),
-                   let row = rows.first,
-                   let iconName = row["iconName"] as? String {
-                    
+                if case let .success(rows) = databaseManager.executeQuery(
+                    query, parameters: [factionId]
+                ),
+                    let row = rows.first,
+                    let iconName = row["iconName"] as? String
+                {
                     let icon = IconManager.shared.loadImage(for: iconName)
-                    
+
                     await MainActor.run {
                         for sovereignty in sovereignties {
                             sovereignty.icon = icon
                             sovereignty.isLoadingIcon = false
                         }
                     }
-                    
+
                     Logger.debug("派系图标和名称加载成功: \(factionId)")
                 } else {
                     Logger.error("派系图标加载失败: \(factionId)")
@@ -323,7 +332,7 @@ final class IncursionsViewModel: ObservableObject {
             loadingTasks[factionId] = task
         }
     }
-    
+
     // 获取入侵涉及的所有星系名称，已排序
     func getInfestedSystemNames(for incursion: PreparedIncursion) -> [String] {
         return incursion.incursion.infestedSolarSystems
@@ -396,23 +405,41 @@ struct IncursionCell: View {
                                     Button {
                                         UIPasteboard.general.string = incursion.location.systemName
                                     } label: {
-                                        Label(NSLocalizedString("Misc_Copy_Staging_Solar", comment: ""), systemImage: "doc.on.doc")
+                                        Label(
+                                            NSLocalizedString(
+                                                "Misc_Copy_Staging_Solar", comment: ""
+                                            ),
+                                            systemImage: "doc.on.doc"
+                                        )
                                     }
                                     Button {
-                                        UIPasteboard.general.string = incursion.location.constellationName
+                                        UIPasteboard.general.string =
+                                            incursion.location.constellationName
                                     } label: {
-                                        Label(NSLocalizedString("Misc_Copy_Constellation", comment: ""), systemImage: "doc.on.doc")
+                                        Label(
+                                            NSLocalizedString(
+                                                "Misc_Copy_Constellation", comment: ""
+                                            ),
+                                            systemImage: "doc.on.doc"
+                                        )
                                     }
                                     Button {
                                         // 使用缓存的星系信息，无需异步操作
-                                        let systemNames = viewModel.getInfestedSystemNames(for: incursion)
-                                        
+                                        let systemNames = viewModel.getInfestedSystemNames(
+                                            for: incursion)
+
                                         // 格式化为: 星座名称(星系1,星系2,星系3)
-                                        let formattedString = "\(incursion.location.constellationName) \(NSLocalizedString("Misc_Constellation", comment: ""))\(systemNames.joined(separator: ",")))"
-                                        
+                                        let formattedString =
+                                            "\(incursion.location.constellationName) \(NSLocalizedString("Misc_Constellation", comment: "")) (\(systemNames.joined(separator: ",")))"
+
                                         UIPasteboard.general.string = formattedString
                                     } label: {
-                                        Label(NSLocalizedString("Misc_Copy_Constellation_And_Solar", comment: ""), systemImage: "doc.on.doc")
+                                        Label(
+                                            NSLocalizedString(
+                                                "Misc_Copy_Constellation_And_Solar", comment: ""
+                                            ),
+                                            systemImage: "doc.on.doc"
+                                        )
                                     }
                                 }
                         }
@@ -424,9 +451,9 @@ struct IncursionCell: View {
                         .font(.caption)
                     }
                 }
-                
+
                 Spacer()
-                
+
                 // 右侧势力图标
                 if let sovereignty = incursion.sovereignty {
                     SovereigntyIconView(sovereignty: sovereignty)
@@ -439,7 +466,7 @@ struct IncursionCell: View {
 
 struct SovereigntyIconView: View {
     @ObservedObject var sovereignty: PreparedIncursion.SovereigntyInfo
-    
+
     var body: some View {
         if sovereignty.isLoadingIcon {
             ProgressView()
@@ -480,7 +507,7 @@ struct IncursionsView: View {
                 } else {
                     ForEach(viewModel.preparedIncursions) { incursion in
                         IncursionCell(
-                            incursion: incursion, 
+                            incursion: incursion,
                             databaseManager: viewModel.databaseManager,
                             viewModel: viewModel
                         )

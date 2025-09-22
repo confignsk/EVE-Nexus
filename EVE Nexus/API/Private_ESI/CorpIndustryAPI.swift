@@ -3,7 +3,7 @@ import Foundation
 class CorpIndustryAPI {
     static let shared = CorpIndustryAPI()
     private let databaseManager = CharacterDatabaseManager.shared
-    
+
     // 缓存过期时间（1小时）
     private let cacheExpirationInterval: TimeInterval = 3600
 
@@ -22,7 +22,7 @@ class CorpIndustryAPI {
         let installer_id: Int
         let job_id: Int
         let licensed_runs: Int?
-        let location_id: Int64  // 军团接口特有字段
+        let location_id: Int64 // 军团接口特有字段
         let output_location_id: Int64
         let pause_date: Date?
         let probability: Float?
@@ -69,13 +69,20 @@ class CorpIndustryAPI {
         }
 
         // 3. 从网络获取最新数据
-        return try await fetchJobsFromServer(corporationId: corporationId, characterId: characterId, includeCompleted: includeCompleted, progressCallback: progressCallback)
+        return try await fetchJobsFromServer(
+            corporationId: corporationId, characterId: characterId,
+            includeCompleted: includeCompleted, progressCallback: progressCallback
+        )
     }
 
-    private func fetchJobsFromServer(corporationId: Int, characterId: Int, includeCompleted: Bool, progressCallback: ((Int, Int) -> Void)? = nil) async throws -> [CorpIndustryJob] {
+    private func fetchJobsFromServer(
+        corporationId: Int, characterId: Int, includeCompleted: Bool,
+        progressCallback: ((Int, Int) -> Void)? = nil
+    ) async throws -> [CorpIndustryJob] {
         Logger.info("开始获取军团工业项目信息 - 军团ID: \(corporationId)")
 
-        let baseUrlString = "https://esi.evetech.net/corporations/\(corporationId)/industry/jobs/?datasource=tranquility&include_completed=\(includeCompleted)"
+        let baseUrlString =
+            "https://esi.evetech.net/corporations/\(corporationId)/industry/jobs/?datasource=tranquility&include_completed=\(includeCompleted)"
         guard let baseUrl = URL(string: baseUrlString) else {
             throw NetworkError.invalidURL
         }
@@ -96,10 +103,10 @@ class CorpIndustryAPI {
         )
 
         Logger.info("成功获取所有军团工业项目信息 - 军团ID: \(corporationId), 总条数: \(allJobs.count)")
-        
+
         // 保存到文件缓存
         saveJobsToCache(allJobs, corporationId: corporationId)
-        
+
         return allJobs
     }
 
@@ -149,7 +156,9 @@ class CorpIndustryAPI {
             if let modificationDate = fileAttributes[.modificationDate] as? Date {
                 let timeSinceModification = Date().timeIntervalSince(modificationDate)
                 if timeSinceModification > cacheExpirationInterval {
-                    Logger.info("缓存文件已过期 - 军团ID: \(corporationId), 路径: \(cacheFile.path), 修改时间: \(modificationDate)")
+                    Logger.info(
+                        "缓存文件已过期 - 军团ID: \(corporationId), 路径: \(cacheFile.path), 修改时间: \(modificationDate)"
+                    )
                     try? FileManager.default.removeItem(at: cacheFile)
                     return nil
                 }
@@ -160,7 +169,9 @@ class CorpIndustryAPI {
             decoder.dateDecodingStrategy = .iso8601
             let jobs = try decoder.decode([CorpIndustryJob].self, from: data)
 
-            Logger.info("成功从缓存加载军团工业项目信息 - 军团ID: \(corporationId), 路径: \(cacheFile.path), 数据条数: \(jobs.count)")
+            Logger.info(
+                "成功从缓存加载军团工业项目信息 - 军团ID: \(corporationId), 路径: \(cacheFile.path), 数据条数: \(jobs.count)"
+            )
             return jobs
         } catch {
             Logger.error("读取缓存文件失败 - 军团ID: \(corporationId), 路径: \(cacheFile.path), 错误: \(error)")
@@ -180,10 +191,13 @@ class CorpIndustryAPI {
             encoder.dateEncodingStrategy = .iso8601
             let encodedData = try encoder.encode(jobs)
             try encodedData.write(to: cacheFile)
-            Logger.info("军团工业项目信息已缓存到文件 - 军团ID: \(corporationId), 路径: \(cacheFile.path), 数据条数: \(jobs.count)")
+            Logger.info(
+                "军团工业项目信息已缓存到文件 - 军团ID: \(corporationId), 路径: \(cacheFile.path), 数据条数: \(jobs.count)"
+            )
         } catch {
-            Logger.error("保存军团工业项目信息缓存失败 - 军团ID: \(corporationId), 路径: \(cacheFile.path), 错误: \(error)")
+            Logger.error(
+                "保存军团工业项目信息缓存失败 - 军团ID: \(corporationId), 路径: \(cacheFile.path), 错误: \(error)")
             try? FileManager.default.removeItem(at: cacheFile)
         }
     }
-} 
+}

@@ -11,12 +11,12 @@ struct ShipFittingCargoView: View {
     @State private var showingItemSelector = false
     @State private var showingItemSettings = false
     @StateObject private var selectedCargoItem = CargoItemState()
-    
+
     var body: some View {
         VStack(spacing: 0) {
             // 货舱属性条
             CargoAttributesView(viewModel: viewModel)
-            
+
             // 货舱物品列表
             List {
                 ForEach(viewModel.simulationInput.cargo.items, id: \.typeId) { item in
@@ -35,12 +35,12 @@ struct ShipFittingCargoView: View {
                                 .frame(width: 32, height: 32)
                                 .foregroundColor(.gray)
                         }
-                        
+
                         // 物品名称和数量
-                        Text("\(item.quantity)x \(item.name)")
-                        
+                        Text("\(item.quantity)× \(item.name)")
+
                         Spacer()
-                        
+
                         // 物品体积
                         Text("\(item.volume * Double(item.quantity), specifier: "%.1f") m³")
                             .foregroundColor(.secondary)
@@ -61,7 +61,7 @@ struct ShipFittingCargoView: View {
                     }
                 }
                 .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
-                
+
                 // 添加物品按钮
                 Button(action: {
                     showingItemSelector = true
@@ -84,7 +84,10 @@ struct ShipFittingCargoView: View {
         }
         .sheet(isPresented: $showingItemSettings) {
             if let itemTypeId = selectedCargoItem.itemTypeId,
-               let itemIndex = viewModel.simulationInput.cargo.items.firstIndex(where: { $0.typeId == itemTypeId }) {
+               let itemIndex = viewModel.simulationInput.cargo.items.firstIndex(where: {
+                   $0.typeId == itemTypeId
+               })
+            {
                 let item = viewModel.simulationInput.cargo.items[itemIndex]
                 CargoItemSettingsView(
                     cargoItem: item,
@@ -100,7 +103,7 @@ struct ShipFittingCargoView: View {
             }
         }
     }
-    
+
     // 添加货舱物品
     private func addCargoItem(_ item: DatabaseListItem) {
         viewModel.addCargoItem(
@@ -117,24 +120,24 @@ struct MarketItemSelectorWrapper: View {
     @Environment(\.dismiss) private var dismiss
     let viewModel: FittingEditorViewModel
     let onItemSelected: (DatabaseListItem) -> Void
-    
+
     var body: some View {
         MarketItemTreeSelectorView(
             databaseManager: viewModel.databaseManager,
             title: NSLocalizedString("Fitting_Setting_Items", comment: ""),
             marketGroupTree: MarketItemGroupTreeBuilder(
                 databaseManager: viewModel.databaseManager,
-                allowedTypeIDs: Set(),  // 允许所有物品
-                parentGroupId: nil    // 从根目录开始
+                allowedTypeIDs: Set(), // 允许所有物品
+                parentGroupId: nil // 从根目录开始
             ).buildGroupTree(),
-            allowTypeIDs: Set(),      // 不限制物品类型
-            existingItems: Set(),     // 不需要标记已有物品
+            allowTypeIDs: Set(), // 不限制物品类型
+            existingItems: Set(), // 不需要标记已有物品
             onItemSelected: { item in
                 onItemSelected(item)
                 dismiss()
             },
             onItemDeselected: { _ in },
-            onDismiss: { _, _ in 
+            onDismiss: { _, _ in
                 dismiss()
             },
             lastVisitedGroupID: nil,
@@ -148,20 +151,20 @@ struct CargoItemSettingsView: View {
     // 物品和数据依赖
     let cargoItem: SimCargoItem
     let viewModel: FittingEditorViewModel
-    
+
     // 回调函数
     var onDelete: () -> Void
     var onUpdateQuantity: (Int) -> Void
-    
+
     // 环境变量
     @Environment(\.dismiss) var dismiss
-    
+
     // 状态变量
     @State private var quantity: Int
     @State private var quantityText: String
     @State private var itemDetails: DatabaseListItem? = nil
     @State private var isLoading = true
-    
+
     // 计算填满货舱的最大数量
     private var maxQuantity: Int {
         // 计算当前货舱已使用的体积（不包括当前物品）
@@ -171,7 +174,7 @@ struct CargoItemSettingsView: View {
                 usedVolume += item.volume * Double(item.quantity)
             }
         }
-        
+
         // 从计算后的属性中获取总货舱容量
         let totalCapacity: Double
         if let simulationOutput = viewModel.simulationOutput {
@@ -180,17 +183,17 @@ struct CargoItemSettingsView: View {
             // 如果没有计算结果，则使用基础属性
             totalCapacity = viewModel.simulationInput.ship.baseAttributesByName["capacity"] ?? 0.0
         }
-        
+
         // 计算剩余可用空间
         let availableSpace = totalCapacity - usedVolume
-        
+
         // 计算可以放置的最大数量
         let maxPossible = Int(availableSpace / cargoItem.volume)
-        
+
         // 至少保留1个物品
         return max(1, maxPossible)
     }
-    
+
     // 初始化方法
     init(
         cargoItem: SimCargoItem,
@@ -202,12 +205,12 @@ struct CargoItemSettingsView: View {
         self.viewModel = viewModel
         self.onDelete = onDelete
         self.onUpdateQuantity = onUpdateQuantity
-        
+
         // 初始化状态变量
-        self._quantity = State(initialValue: cargoItem.quantity)
-        self._quantityText = State(initialValue: String(cargoItem.quantity))
+        _quantity = State(initialValue: cargoItem.quantity)
+        _quantityText = State(initialValue: String(cargoItem.quantity))
     }
-    
+
     var body: some View {
         NavigationStack {
             List {
@@ -238,11 +241,11 @@ struct CargoItemSettingsView: View {
                                     .frame(width: 32, height: 32)
                                     .foregroundColor(.gray)
                             }
-                            
+
                             Text(cargoItem.name)
                         }
                     }
-                    
+
                     // 物品体积信息
                     HStack {
                         Text(NSLocalizedString("Fitting_unit_vol", comment: ""))
@@ -250,21 +253,21 @@ struct CargoItemSettingsView: View {
                         Text("\(cargoItem.volume, specifier: "%.2f") m³")
                             .foregroundColor(.secondary)
                     }
-                    
+
                     HStack {
                         Text(NSLocalizedString("Fitting_unit_vol_sum", comment: ""))
                         Spacer()
                         Text("\(cargoItem.volume * Double(quantity), specifier: "%.2f") m³")
                             .foregroundColor(.secondary)
                     }
-                    
+
                     // 数量设置
                     HStack {
                         // 数量标签
                         Text(NSLocalizedString("Misc_Qty", comment: ""))
-                        
+
                         Spacer()
-                        
+
                         // 数量输入框
                         TextField(NSLocalizedString("Misc_Qty", comment: ""), text: $quantityText)
                             .keyboardType(.numberPad)
@@ -280,17 +283,20 @@ struct CargoItemSettingsView: View {
                                     onUpdateQuantity(newQuantity)
                                 }
                             }
-                        
+
                         // 数量调节器
-                        Stepper(NSLocalizedString("Misc_Qty", comment: ""), value: $quantity, in: 1...10000, step: 1)
-                            .labelsHidden()
-                            .onChange(of: quantity) { _, newValue in
-                                // 更新输入框文本
-                                quantityText = String(newValue)
-                                // 更新物品数量
-                                onUpdateQuantity(newValue)
-                            }
-                        
+                        Stepper(
+                            NSLocalizedString("Misc_Qty", comment: ""), value: $quantity,
+                            in: 1 ... 10000, step: 1
+                        )
+                        .labelsHidden()
+                        .onChange(of: quantity) { _, newValue in
+                            // 更新输入框文本
+                            quantityText = String(newValue)
+                            // 更新物品数量
+                            onUpdateQuantity(newValue)
+                        }
+
                         // 设置最大数量按钮
                         Button(action: {
                             quantity = maxQuantity
@@ -312,7 +318,7 @@ struct CargoItemSettingsView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button {
-                        onDelete()  // 调用删除回调
+                        onDelete() // 调用删除回调
                         dismiss()
                     } label: {
                         Image(systemName: "trash")
@@ -322,7 +328,7 @@ struct CargoItemSettingsView: View {
                             .clipShape(Circle())
                     }
                 }
-                
+
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         dismiss()
@@ -339,24 +345,24 @@ struct CargoItemSettingsView: View {
                 loadItemDetails()
             }
         }
-        .presentationDetents([.fraction(0.81)])  // 设置为屏幕高度的81%
-        .presentationDragIndicator(.visible)  // 显示拖动指示器
+        .presentationDetents([.fraction(0.81)]) // 设置为屏幕高度的81%
+        .presentationDragIndicator(.visible) // 显示拖动指示器
     }
-    
+
     // 加载物品详细信息
     private func loadItemDetails() {
         isLoading = true
-        
+
         // 使用loadMarketItems方法获取物品数据
         let items = viewModel.databaseManager.loadMarketItems(
             whereClause: "t.type_id = ?",
             parameters: [cargoItem.typeId]
         )
-        
+
         if let item = items.first {
             itemDetails = item
         }
-        
+
         isLoading = false
     }
 }
@@ -364,7 +370,7 @@ struct CargoItemSettingsView: View {
 // 货舱属性条视图
 struct CargoAttributesView: View {
     @ObservedObject var viewModel: FittingEditorViewModel
-    
+
     // 计算货舱容量
     private var cargoCapacity: (current: Double, total: Double) {
         // 从计算后的属性中获取总货舱容量
@@ -375,16 +381,16 @@ struct CargoAttributesView: View {
             // 如果没有计算结果，则使用基础属性
             totalCapacity = viewModel.simulationInput.ship.baseAttributesByName["capacity"] ?? 0.0
         }
-        
+
         // 计算当前使用的容量
         var currentCapacity = 0.0
         for item in viewModel.simulationInput.cargo.items {
             currentCapacity += item.volume * Double(item.quantity)
         }
-        
+
         return (current: currentCapacity, total: totalCapacity)
     }
-    
+
     var body: some View {
         VStack(spacing: 12) {
             // 货舱状态行
@@ -404,5 +410,4 @@ struct CargoAttributesView: View {
         .background(Color(.systemBackground))
         .overlay(Divider(), alignment: .bottom)
     }
-} 
-
+}

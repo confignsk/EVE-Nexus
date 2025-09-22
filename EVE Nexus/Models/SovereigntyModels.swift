@@ -40,9 +40,12 @@ public struct SovereigntyInfo: Identifiable {
     public let zh_name: String
     public let icon: Image?
     public let systemCount: Int
-    public let isAlliance: Bool  // true为联盟，false为派系
-    
-    public init(id: Int, name: String, en_name: String, zh_name: String, icon: Image?, systemCount: Int, isAlliance: Bool) {
+    public let isAlliance: Bool // true为联盟，false为派系
+
+    public init(
+        id: Int, name: String, en_name: String, zh_name: String, icon: Image?, systemCount: Int,
+        isAlliance: Bool
+    ) {
         self.id = id
         self.name = name
         self.en_name = en_name

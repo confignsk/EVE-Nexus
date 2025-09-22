@@ -38,7 +38,7 @@ class DatabaseManager: ObservableObject {
         case "en":
             return "item_db_en"
         default:
-            return "item_db_en"  // 默认使用英文数据库
+            return "item_db_en" // 默认使用英文数据库
         }
     }
 
@@ -70,9 +70,9 @@ class DatabaseManager: ObservableObject {
 
                 // 确保所有必需的字段都存在且类型正确
                 guard let categoryId = row["category_id"] as? Int,
-                    let name = row["name"] as? String,
-                    let enName = row["en_name"] as? String,
-                    let iconFilename = row["icon_filename"] as? String
+                      let name = row["name"] as? String,
+                      let enName = row["en_name"] as? String,
+                      let iconFilename = row["icon_filename"] as? String
                 else {
                     Logger.error("行 \(index + 1) 数据不完整或类型不正确: \(row)")
                     continue
@@ -85,7 +85,7 @@ class DatabaseManager: ObservableObject {
                     name: name,
                     enName: enName,
                     published: isPublished,
-                    iconID: categoryId,  // 保持 iconID 为 categoryId
+                    iconID: categoryId, // 保持 iconID 为 categoryId
                     iconFileNew: iconFilename.isEmpty ? DatabaseConfig.defaultIcon : iconFilename
                 )
 
@@ -110,10 +110,10 @@ class DatabaseManager: ObservableObject {
     // 加载组
     func loadGroups(for categoryID: Int) -> ([Group], [Group]) {
         let query = """
-                SELECT g.group_id, g.name, g.en_name, g.categoryID, g.published, g.icon_filename
-                FROM groups g
-                WHERE g.categoryID = ?
-            """
+            SELECT g.group_id, g.name, g.en_name, g.categoryID, g.published, g.icon_filename
+            FROM groups g
+            WHERE g.categoryID = ?
+        """
 
         let result = executeQuery(query, parameters: [categoryID])
 
@@ -124,10 +124,10 @@ class DatabaseManager: ObservableObject {
         case let .success(rows):
             for row in rows {
                 guard let groupId = row["group_id"] as? Int,
-                    let name = row["name"] as? String,
-                    let enName = row["en_name"] as? String,
-                    let catId = row["categoryID"] as? Int,
-                    let iconFilename = row["icon_filename"] as? String
+                      let name = row["name"] as? String,
+                      let enName = row["en_name"] as? String,
+                      let catId = row["categoryID"] as? Int,
+                      let iconFilename = row["icon_filename"] as? String
                 else {
                     continue
                 }
@@ -138,7 +138,7 @@ class DatabaseManager: ObservableObject {
                     id: groupId,
                     name: name,
                     enName: enName,
-                    iconID: groupId,  // 保持 iconID 为 groupId
+                    iconID: groupId, // 保持 iconID 为 groupId
                     categoryID: catId,
                     published: isPublished,
                     icon_filename: iconFilename.isEmpty ? DatabaseConfig.defaultIcon : iconFilename
@@ -162,17 +162,17 @@ class DatabaseManager: ObservableObject {
     func loadItems(for groupID: Int) -> ([DatabaseItem], [DatabaseItem], [Int: String]) {
         // 首先获取所有 metaGroups 的名称
         let metaQuery = """
-                SELECT metagroup_id, name 
-                FROM metaGroups 
-                ORDER BY metagroup_id ASC
-            """
+            SELECT metagroup_id, name 
+            FROM metaGroups 
+            ORDER BY metagroup_id ASC
+        """
         let metaResult = executeQuery(metaQuery, useCache: true)
         var metaGroupNames: [Int: String] = [:]
 
         if case let .success(metaRows) = metaResult {
             for row in metaRows {
                 if let id = row["metagroup_id"] as? Int,
-                    let name = row["name"] as? String
+                   let name = row["name"] as? String
                 {
                     metaGroupNames[id] = name
                 } else {
@@ -185,14 +185,14 @@ class DatabaseManager: ObservableObject {
 
         // 查询物品
         let query = """
-                SELECT t.type_id, t.name, t.en_name, t.icon_filename, t.published, t.metaGroupID, t.categoryID,
-                       t.pg_need, t.cpu_need, t.rig_cost, 
-                       t.em_damage, t.them_damage, t.kin_damage, t.exp_damage,
-                       t.high_slot, t.mid_slot, t.low_slot, t.rig_slot, t.gun_slot, t.miss_slot
-                FROM types t
-                WHERE t.groupID = ?
-                ORDER BY t.name ASC
-            """
+            SELECT t.type_id, t.name, t.en_name, t.icon_filename, t.published, t.metaGroupID, t.categoryID,
+                   t.pg_need, t.cpu_need, t.rig_cost, 
+                   t.em_damage, t.them_damage, t.kin_damage, t.exp_damage,
+                   t.high_slot, t.mid_slot, t.low_slot, t.rig_slot, t.gun_slot, t.miss_slot
+            FROM types t
+            WHERE t.groupID = ?
+            ORDER BY t.name ASC
+        """
 
         let result = executeQuery(query, parameters: [groupID])
 
@@ -203,12 +203,12 @@ class DatabaseManager: ObservableObject {
         case let .success(rows):
             for row in rows {
                 guard let typeId = row["type_id"] as? Int,
-                    let name = row["name"] as? String,
-                    let enName = row["en_name"] as? String,
-                    let iconFilename = row["icon_filename"] as? String,
-                    let metaGroupId = row["metaGroupID"] as? Int,
-                    let categoryId = row["categoryID"] as? Int,
-                    let isPublished = row["published"] as? Int
+                      let name = row["name"] as? String,
+                      let enName = row["en_name"] as? String,
+                      let iconFilename = row["icon_filename"] as? String,
+                      let metaGroupId = row["metaGroupID"] as? Int,
+                      let categoryId = row["categoryID"] as? Int,
+                      let isPublished = row["published"] as? Int
                 else {
                     Logger.warning("物品基础数据不完整: \(row)")
                     continue
@@ -280,16 +280,16 @@ class DatabaseManager: ObservableObject {
     ) {
         Logger.info("Search: \(searchText)")
         var query = """
-                SELECT t.type_id as id, t.name, t.en_name, t.published, t.icon_filename as iconFileName,
-                       t.categoryID, t.groupID, t.metaGroupID, t.marketGroupID,
-                       t.pg_need as pgNeed, t.cpu_need as cpuNeed, t.rig_cost as rigCost,
-                       t.em_damage as emDamage, t.them_damage as themDamage, t.kin_damage as kinDamage, t.exp_damage as expDamage,
-                       t.high_slot as highSlot, t.mid_slot as midSlot, t.low_slot as lowSlot,
-                       t.rig_slot as rigSlot, t.gun_slot as gunSlot, t.miss_slot as missSlot,
-                       t.group_name as groupName
-                FROM types t
-                WHERE t.name LIKE ? OR t.en_name LIKE ? OR t.zh_name LIKE ? OR t.de_name LIKE ? OR t.es_name LIKE ? OR t.fr_name LIKE ? OR t.ja_name LIKE ? OR t.ko_name LIKE ? OR t.ru_name LIKE ? OR t.type_id = ?
-            """
+            SELECT t.type_id as id, t.name, t.en_name, t.published, t.icon_filename as iconFileName,
+                   t.categoryID, t.groupID, t.metaGroupID, t.marketGroupID,
+                   t.pg_need as pgNeed, t.cpu_need as cpuNeed, t.rig_cost as rigCost,
+                   t.em_damage as emDamage, t.them_damage as themDamage, t.kin_damage as kinDamage, t.exp_damage as expDamage,
+                   t.high_slot as highSlot, t.mid_slot as midSlot, t.low_slot as lowSlot,
+                   t.rig_slot as rigSlot, t.gun_slot as gunSlot, t.miss_slot as missSlot,
+                   t.group_name as groupName
+            FROM types t
+            WHERE t.name LIKE ? OR t.en_name LIKE ? OR t.zh_name LIKE ? OR t.de_name LIKE ? OR t.es_name LIKE ? OR t.fr_name LIKE ? OR t.ja_name LIKE ? OR t.ko_name LIKE ? OR t.ru_name LIKE ? OR t.type_id = ?
+        """
 
         var parameters: [Any] = [
             "%\(searchText)%", "%\(searchText)%", "%\(searchText)%", "%\(searchText)%",
@@ -316,8 +316,8 @@ class DatabaseManager: ObservableObject {
         if case let .success(rows) = result {
             for row in rows {
                 if let id = row["id"] as? Int,
-                    let name = row["name"] as? String,
-                    let categoryId = row["categoryID"] as? Int
+                   let name = row["name"] as? String,
+                   let categoryId = row["categoryID"] as? Int
                 {
                     let enName = row["en_name"] as? String
                     let iconFileName = (row["iconFileName"] as? String) ?? "not_found"
@@ -378,10 +378,10 @@ class DatabaseManager: ObservableObject {
         }
         let placeholders = String(repeating: "?,", count: metaGroupIDs.count).dropLast()
         let query = """
-                SELECT metagroup_id, name
-                FROM metaGroups
-                WHERE metagroup_id IN (\(placeholders))
-            """
+            SELECT metagroup_id, name
+            FROM metaGroups
+            WHERE metagroup_id IN (\(placeholders))
+        """
 
         let result = executeQuery(query, parameters: metaGroupIDs)
         var metaGroupNames: [Int: String] = [:]
@@ -390,7 +390,7 @@ class DatabaseManager: ObservableObject {
         case let .success(rows):
             for row in rows {
                 if let id = row["metagroup_id"] as? Int,
-                    let name = row["name"] as? String
+                   let name = row["name"] as? String
                 {
                     metaGroupNames[id] = name
                 }
@@ -408,8 +408,8 @@ class DatabaseManager: ObservableObject {
         let result = executeQuery(query, parameters: [typeID])
 
         if case let .success(rows) = result,
-            let row = rows.first,
-            let name = row["name"] as? String
+           let row = rows.first,
+           let name = row["name"] as? String
         {
             return name
         }
@@ -422,8 +422,8 @@ class DatabaseManager: ObservableObject {
         let result = executeQuery(query, parameters: [typeID])
 
         if case let .success(rows) = result,
-            let row = rows.first,
-            let name = row["display_name"] as? String
+           let row = rows.first,
+           let name = row["display_name"] as? String
         {
             return name
         }
@@ -431,13 +431,15 @@ class DatabaseManager: ObservableObject {
     }
 
     // 加载物品的所有属性组
-    func loadAttributeGroups(for typeID: Int, modifiedAttributes: [Int: Double]? = nil) -> [AttributeGroup] {
+    func loadAttributeGroups(for typeID: Int, modifiedAttributes: [Int: Double]? = nil)
+        -> [AttributeGroup]
+    {
         // 1. 首先加载所有属性分类
         let categoryQuery = """
-                SELECT attribute_category_id, name, description
-                FROM dogmaAttributeCategories
-                ORDER BY attribute_category_id
-            """
+            SELECT attribute_category_id, name, description
+            FROM dogmaAttributeCategories
+            ORDER BY attribute_category_id
+        """
 
         let categoryResult = executeQuery(categoryQuery)
         var categories: [Int: DogmaAttributeCategory] = [:]
@@ -445,8 +447,8 @@ class DatabaseManager: ObservableObject {
         if case let .success(rows) = categoryResult {
             for row in rows {
                 guard let id = row["attribute_category_id"] as? Int,
-                    let name = row["name"] as? String,
-                    let description = row["description"] as? String
+                      let name = row["name"] as? String,
+                      let description = row["description"] as? String
                 else {
                     continue
                 }
@@ -458,13 +460,13 @@ class DatabaseManager: ObservableObject {
 
         // 2. 加载物品的所有属性值
         let attributeQuery = """
-                SELECT da.attribute_id, da.categoryID, da.name, da.display_name, da.iconID, ta.value, da.unitID, da.highIsGood,
-                       COALESCE(da.icon_filename, '') as icon_filename
-                FROM typeAttributes ta
-                JOIN dogmaAttributes da ON ta.attribute_id = da.attribute_id
-                WHERE ta.type_id = ?
-                ORDER BY da.categoryID, da.attribute_id
-            """
+            SELECT da.attribute_id, da.categoryID, da.name, da.display_name, da.iconID, ta.value, da.unitID, da.highIsGood,
+                   COALESCE(da.icon_filename, '') as icon_filename
+            FROM typeAttributes ta
+            JOIN dogmaAttributes da ON ta.attribute_id = da.attribute_id
+            WHERE ta.type_id = ?
+            ORDER BY da.categoryID, da.attribute_id
+        """
 
         let attributeResult = executeQuery(attributeQuery, parameters: [typeID])
         var attributesByCategory: [Int: [DogmaAttribute]] = [:]
@@ -472,10 +474,10 @@ class DatabaseManager: ObservableObject {
         if case let .success(rows) = attributeResult {
             for row in rows {
                 guard let attributeId = row["attribute_id"] as? Int,
-                    let categoryId = row["categoryID"] as? Int,
-                    let name = row["name"] as? String,
-                    let iconId = row["iconID"] as? Int,
-                    let value = row["value"] as? Double
+                      let categoryId = row["categoryID"] as? Int,
+                      let name = row["name"] as? String,
+                      let iconId = row["iconID"] as? Int,
+                      let value = row["value"] as? Double
                 else {
                     continue
                 }
@@ -484,10 +486,10 @@ class DatabaseManager: ObservableObject {
                 let iconFileName = (row["icon_filename"] as? String) ?? ""
                 let unitID = row["unitID"] as? Int
                 let highIsGood = (row["highIsGood"] as? Int) == 1
-                
+
                 // 检查是否有修改后的属性值
                 let modifiedValue = modifiedAttributes?[attributeId]
-                
+
                 let attribute = DogmaAttribute(
                     id: attributeId,
                     categoryID: categoryId,
@@ -511,33 +513,33 @@ class DatabaseManager: ObservableObject {
         }
 
         // 3. 组合成最终的属性组列表
-        return categories.sorted { $0.key < $1.key }  // 按 category_id 排序
+        return categories.sorted { $0.key < $1.key } // 按 category_id 排序
             .compactMap { categoryId, category in
                 if let attributes = attributesByCategory[categoryId], !attributes.isEmpty {
                     return AttributeGroup(
                         id: categoryId,
                         name: category.name,
-                        attributes: attributes.sorted { $0.id < $1.id }  // 按 attribute_id 排序
+                        attributes: attributes.sorted { $0.id < $1.id } // 按 attribute_id 排序
                     )
                 }
-                return nil  // 如果这个分类没有属性，就不包含在结果中
+                return nil // 如果这个分类没有属性，就不包含在结果中
             }
     }
 
     // 加载属性单位信息
     func loadAttributeUnits() -> [Int: String] {
         let query = """
-                SELECT attribute_id, unitName
-                FROM dogmaAttributes
-                WHERE unitName IS NOT NULL AND unitName != ''
-            """
+            SELECT attribute_id, unitName
+            FROM dogmaAttributes
+            WHERE unitName IS NOT NULL AND unitName != ''
+        """
 
         var units: [Int: String] = [:]
 
         if case let .success(rows) = executeQuery(query) {
             for row in rows {
                 if let attributeId = row["attribute_id"] as? Int,
-                    let unitName = row["unitName"] as? String
+                   let unitName = row["unitName"] as? String
                 {
                     units[attributeId] = unitName
                 }
@@ -552,8 +554,8 @@ class DatabaseManager: ObservableObject {
         let query = "SELECT name FROM groups WHERE group_id = ?"
 
         if case let .success(rows) = executeQuery(query, parameters: [groupID]),
-            let row = rows.first,
-            let name = row["name"] as? String
+           let row = rows.first,
+           let name = row["name"] as? String
         {
             return name
         }
@@ -571,11 +573,11 @@ class DatabaseManager: ObservableObject {
 
     func getTypeMaterials(for typeID: Int) -> [TypeMaterial]? {
         let query = """
-                SELECT process_size, output_material, output_quantity, output_material_name, output_material_icon
-                FROM typeMaterials
-                WHERE typeid = ?
-                ORDER BY output_material
-            """
+            SELECT process_size, output_material, output_quantity, output_material_name, output_material_icon
+            FROM typeMaterials
+            WHERE typeid = ?
+            ORDER BY output_material
+        """
 
         let result = sqliteManager.executeQuery(query, parameters: [typeID])
         var materials: [TypeMaterial] = []
@@ -584,10 +586,10 @@ class DatabaseManager: ObservableObject {
         case let .success(rows):
             for row in rows {
                 guard let process_size = row["process_size"] as? Int,
-                    let outputMaterial = row["output_material"] as? Int,
-                    let outputQuantity = row["output_quantity"] as? Int,
-                    let outputMaterialName = row["output_material_name"] as? String,
-                    let outputMaterialIcon = row["output_material_icon"] as? String
+                      let outputMaterial = row["output_material"] as? Int,
+                      let outputQuantity = row["output_quantity"] as? Int,
+                      let outputMaterialName = row["output_material_name"] as? String,
+                      let outputMaterialIcon = row["output_material_icon"] as? String
                 else {
                     continue
                 }
@@ -618,19 +620,19 @@ class DatabaseManager: ObservableObject {
         typeID: Int, typeName: String, typeIcon: String, quantity: Int
     )] {
         let query = """
-                SELECT typeID, typeName, typeIcon, quantity
-                FROM blueprint_manufacturing_materials
-                WHERE blueprintTypeID = ?
-            """
+            SELECT typeID, typeName, typeIcon, quantity
+            FROM blueprint_manufacturing_materials
+            WHERE blueprintTypeID = ?
+        """
         let result = executeQuery(query, parameters: [blueprintID])
         var materials: [(typeID: Int, typeName: String, typeIcon: String, quantity: Int)] = []
 
         if case let .success(rows) = result {
             for row in rows {
                 if let typeID = row["typeID"] as? Int,
-                    let typeName = row["typeName"] as? String,
-                    let typeIcon = row["typeIcon"] as? String,
-                    let quantity = row["quantity"] as? Int
+                   let typeName = row["typeName"] as? String,
+                   let typeIcon = row["typeIcon"] as? String,
+                   let quantity = row["quantity"] as? Int
                 {
                     materials.append(
                         (typeID: typeID, typeName: typeName, typeIcon: typeIcon, quantity: quantity)
@@ -646,19 +648,19 @@ class DatabaseManager: ObservableObject {
         typeID: Int, typeName: String, typeIcon: String, quantity: Int
     )] {
         let query = """
-                SELECT typeID, typeName, typeIcon, quantity
-                FROM blueprint_manufacturing_output
-                WHERE blueprintTypeID = ?
-            """
+            SELECT typeID, typeName, typeIcon, quantity
+            FROM blueprint_manufacturing_output
+            WHERE blueprintTypeID = ?
+        """
         let result = executeQuery(query, parameters: [blueprintID])
         var products: [(typeID: Int, typeName: String, typeIcon: String, quantity: Int)] = []
 
         if case let .success(rows) = result {
             for row in rows {
                 if let typeID = row["typeID"] as? Int,
-                    let typeName = row["typeName"] as? String,
-                    let typeIcon = row["typeIcon"] as? String,
-                    let quantity = row["quantity"] as? Int
+                   let typeName = row["typeName"] as? String,
+                   let typeIcon = row["typeIcon"] as? String,
+                   let quantity = row["quantity"] as? Int
                 {
                     products.append(
                         (typeID: typeID, typeName: typeName, typeIcon: typeIcon, quantity: quantity)
@@ -674,19 +676,19 @@ class DatabaseManager: ObservableObject {
         typeID: Int, typeName: String, typeIcon: String, level: Int
     )] {
         let query = """
-                SELECT typeID, typeName, typeIcon, level
-                FROM blueprint_manufacturing_skills
-                WHERE blueprintTypeID = ?
-            """
+            SELECT typeID, typeName, typeIcon, level
+            FROM blueprint_manufacturing_skills
+            WHERE blueprintTypeID = ?
+        """
         let result = executeQuery(query, parameters: [blueprintID])
         var skills: [(typeID: Int, typeName: String, typeIcon: String, level: Int)] = []
 
         if case let .success(rows) = result {
             for row in rows {
                 if let typeID = row["typeID"] as? Int,
-                    let typeName = row["typeName"] as? String,
-                    let typeIcon = row["typeIcon"] as? String,
-                    let level = row["level"] as? Int
+                   let typeName = row["typeName"] as? String,
+                   let typeIcon = row["typeIcon"] as? String,
+                   let level = row["level"] as? Int
                 {
                     skills.append(
                         (typeID: typeID, typeName: typeName, typeIcon: typeIcon, level: level))
@@ -701,19 +703,19 @@ class DatabaseManager: ObservableObject {
         typeID: Int, typeName: String, typeIcon: String, quantity: Int
     )] {
         let query = """
-                SELECT typeID, typeName, typeIcon, quantity
-                FROM blueprint_research_material_materials
-                WHERE blueprintTypeID = ?
-            """
+            SELECT typeID, typeName, typeIcon, quantity
+            FROM blueprint_research_material_materials
+            WHERE blueprintTypeID = ?
+        """
         let result = executeQuery(query, parameters: [blueprintID])
         var materials: [(typeID: Int, typeName: String, typeIcon: String, quantity: Int)] = []
 
         if case let .success(rows) = result {
             for row in rows {
                 if let typeID = row["typeID"] as? Int,
-                    let typeName = row["typeName"] as? String,
-                    let typeIcon = row["typeIcon"] as? String,
-                    let quantity = row["quantity"] as? Int
+                   let typeName = row["typeName"] as? String,
+                   let typeIcon = row["typeIcon"] as? String,
+                   let quantity = row["quantity"] as? Int
                 {
                     materials.append(
                         (typeID: typeID, typeName: typeName, typeIcon: typeIcon, quantity: quantity)
@@ -729,19 +731,19 @@ class DatabaseManager: ObservableObject {
         typeID: Int, typeName: String, typeIcon: String, level: Int
     )] {
         let query = """
-                SELECT typeID, typeName, typeIcon, level
-                FROM blueprint_research_material_skills
-                WHERE blueprintTypeID = ?
-            """
+            SELECT typeID, typeName, typeIcon, level
+            FROM blueprint_research_material_skills
+            WHERE blueprintTypeID = ?
+        """
         let result = executeQuery(query, parameters: [blueprintID])
         var skills: [(typeID: Int, typeName: String, typeIcon: String, level: Int)] = []
 
         if case let .success(rows) = result {
             for row in rows {
                 if let typeID = row["typeID"] as? Int,
-                    let typeName = row["typeName"] as? String,
-                    let typeIcon = row["typeIcon"] as? String,
-                    let level = row["level"] as? Int
+                   let typeName = row["typeName"] as? String,
+                   let typeIcon = row["typeIcon"] as? String,
+                   let level = row["level"] as? Int
                 {
                     skills.append(
                         (typeID: typeID, typeName: typeName, typeIcon: typeIcon, level: level))
@@ -756,19 +758,19 @@ class DatabaseManager: ObservableObject {
         typeID: Int, typeName: String, typeIcon: String, quantity: Int
     )] {
         let query = """
-                SELECT typeID, typeName, typeIcon, quantity
-                FROM blueprint_research_time_materials
-                WHERE blueprintTypeID = ?
-            """
+            SELECT typeID, typeName, typeIcon, quantity
+            FROM blueprint_research_time_materials
+            WHERE blueprintTypeID = ?
+        """
         let result = executeQuery(query, parameters: [blueprintID])
         var materials: [(typeID: Int, typeName: String, typeIcon: String, quantity: Int)] = []
 
         if case let .success(rows) = result {
             for row in rows {
                 if let typeID = row["typeID"] as? Int,
-                    let typeName = row["typeName"] as? String,
-                    let typeIcon = row["typeIcon"] as? String,
-                    let quantity = row["quantity"] as? Int
+                   let typeName = row["typeName"] as? String,
+                   let typeIcon = row["typeIcon"] as? String,
+                   let quantity = row["quantity"] as? Int
                 {
                     materials.append(
                         (typeID: typeID, typeName: typeName, typeIcon: typeIcon, quantity: quantity)
@@ -784,19 +786,19 @@ class DatabaseManager: ObservableObject {
         typeID: Int, typeName: String, typeIcon: String, level: Int
     )] {
         let query = """
-                SELECT typeID, typeName, typeIcon, level
-                FROM blueprint_research_time_skills
-                WHERE blueprintTypeID = ?
-            """
+            SELECT typeID, typeName, typeIcon, level
+            FROM blueprint_research_time_skills
+            WHERE blueprintTypeID = ?
+        """
         let result = executeQuery(query, parameters: [blueprintID])
         var skills: [(typeID: Int, typeName: String, typeIcon: String, level: Int)] = []
 
         if case let .success(rows) = result {
             for row in rows {
                 if let typeID = row["typeID"] as? Int,
-                    let typeName = row["typeName"] as? String,
-                    let typeIcon = row["typeIcon"] as? String,
-                    let level = row["level"] as? Int
+                   let typeName = row["typeName"] as? String,
+                   let typeIcon = row["typeIcon"] as? String,
+                   let level = row["level"] as? Int
                 {
                     skills.append(
                         (typeID: typeID, typeName: typeName, typeIcon: typeIcon, level: level))
@@ -811,19 +813,19 @@ class DatabaseManager: ObservableObject {
         typeID: Int, typeName: String, typeIcon: String, quantity: Int
     )] {
         let query = """
-                SELECT typeID, typeName, typeIcon, quantity
-                FROM blueprint_copying_materials
-                WHERE blueprintTypeID = ?
-            """
+            SELECT typeID, typeName, typeIcon, quantity
+            FROM blueprint_copying_materials
+            WHERE blueprintTypeID = ?
+        """
         let result = executeQuery(query, parameters: [blueprintID])
         var materials: [(typeID: Int, typeName: String, typeIcon: String, quantity: Int)] = []
 
         if case let .success(rows) = result {
             for row in rows {
                 if let typeID = row["typeID"] as? Int,
-                    let typeName = row["typeName"] as? String,
-                    let typeIcon = row["typeIcon"] as? String,
-                    let quantity = row["quantity"] as? Int
+                   let typeName = row["typeName"] as? String,
+                   let typeIcon = row["typeIcon"] as? String,
+                   let quantity = row["quantity"] as? Int
                 {
                     materials.append(
                         (typeID: typeID, typeName: typeName, typeIcon: typeIcon, quantity: quantity)
@@ -839,19 +841,19 @@ class DatabaseManager: ObservableObject {
         typeID: Int, typeName: String, typeIcon: String, level: Int
     )] {
         let query = """
-                SELECT typeID, typeName, typeIcon, level
-                FROM blueprint_copying_skills
-                WHERE blueprintTypeID = ?
-            """
+            SELECT typeID, typeName, typeIcon, level
+            FROM blueprint_copying_skills
+            WHERE blueprintTypeID = ?
+        """
         let result = executeQuery(query, parameters: [blueprintID])
         var skills: [(typeID: Int, typeName: String, typeIcon: String, level: Int)] = []
 
         if case let .success(rows) = result {
             for row in rows {
                 if let typeID = row["typeID"] as? Int,
-                    let typeName = row["typeName"] as? String,
-                    let typeIcon = row["typeIcon"] as? String,
-                    let level = row["level"] as? Int
+                   let typeName = row["typeName"] as? String,
+                   let typeIcon = row["typeIcon"] as? String,
+                   let level = row["level"] as? Int
                 {
                     skills.append(
                         (typeID: typeID, typeName: typeName, typeIcon: typeIcon, level: level))
@@ -866,19 +868,19 @@ class DatabaseManager: ObservableObject {
         typeID: Int, typeName: String, typeIcon: String, quantity: Int
     )] {
         let query = """
-                SELECT typeID, typeName, typeIcon, quantity
-                FROM blueprint_invention_materials
-                WHERE blueprintTypeID = ?
-            """
+            SELECT typeID, typeName, typeIcon, quantity
+            FROM blueprint_invention_materials
+            WHERE blueprintTypeID = ?
+        """
         let result = executeQuery(query, parameters: [blueprintID])
         var materials: [(typeID: Int, typeName: String, typeIcon: String, quantity: Int)] = []
 
         if case let .success(rows) = result {
             for row in rows {
                 if let typeID = row["typeID"] as? Int,
-                    let typeName = row["typeName"] as? String,
-                    let typeIcon = row["typeIcon"] as? String,
-                    let quantity = row["quantity"] as? Int
+                   let typeName = row["typeName"] as? String,
+                   let typeIcon = row["typeIcon"] as? String,
+                   let quantity = row["quantity"] as? Int
                 {
                     materials.append(
                         (typeID: typeID, typeName: typeName, typeIcon: typeIcon, quantity: quantity)
@@ -894,19 +896,19 @@ class DatabaseManager: ObservableObject {
         typeID: Int, typeName: String, typeIcon: String, level: Int
     )] {
         let query = """
-                SELECT typeID, typeName, typeIcon, level
-                FROM blueprint_invention_skills
-                WHERE blueprintTypeID = ?
-            """
+            SELECT typeID, typeName, typeIcon, level
+            FROM blueprint_invention_skills
+            WHERE blueprintTypeID = ?
+        """
         let result = executeQuery(query, parameters: [blueprintID])
         var skills: [(typeID: Int, typeName: String, typeIcon: String, level: Int)] = []
 
         if case let .success(rows) = result {
             for row in rows {
                 if let typeID = row["typeID"] as? Int,
-                    let typeName = row["typeName"] as? String,
-                    let typeIcon = row["typeIcon"] as? String,
-                    let level = row["level"] as? Int
+                   let typeName = row["typeName"] as? String,
+                   let typeIcon = row["typeIcon"] as? String,
+                   let level = row["level"] as? Int
                 {
                     skills.append(
                         (typeID: typeID, typeName: typeName, typeIcon: typeIcon, level: level))
@@ -921,22 +923,22 @@ class DatabaseManager: ObservableObject {
         typeID: Int, typeName: String, typeIcon: String, quantity: Int, probability: Double
     )] {
         let query = """
-                SELECT typeID, typeName, typeIcon, quantity, probability
-                FROM blueprint_invention_products
-                WHERE blueprintTypeID = ?
-            """
+            SELECT typeID, typeName, typeIcon, quantity, probability
+            FROM blueprint_invention_products
+            WHERE blueprintTypeID = ?
+        """
         let result = executeQuery(query, parameters: [blueprintID])
         var products:
             [(typeID: Int, typeName: String, typeIcon: String, quantity: Int, probability: Double)] =
-                []
+            []
 
         if case let .success(rows) = result {
             for row in rows {
                 if let typeID = row["typeID"] as? Int,
-                    let typeName = row["typeName"] as? String,
-                    let typeIcon = row["typeIcon"] as? String,
-                    let quantity = row["quantity"] as? Int,
-                    let probability = row["probability"] as? Double
+                   let typeName = row["typeName"] as? String,
+                   let typeIcon = row["typeIcon"] as? String,
+                   let quantity = row["quantity"] as? Int,
+                   let probability = row["probability"] as? Double
                 {
                     products.append(
                         (
@@ -955,19 +957,19 @@ class DatabaseManager: ObservableObject {
         copying_time: Int, invention_time: Int, maxRunsPerCopy: Int
     )? {
         let query = """
-                SELECT manufacturing_time, research_material_time, research_time_time, copying_time, invention_time, maxRunsPerCopy
-                FROM blueprint_process_time
-                WHERE blueprintTypeID = ?
-            """
+            SELECT manufacturing_time, research_material_time, research_time_time, copying_time, invention_time, maxRunsPerCopy
+            FROM blueprint_process_time
+            WHERE blueprintTypeID = ?
+        """
         let result = executeQuery(query, parameters: [blueprintID])
 
         if case let .success(rows) = result, let row = rows.first {
             if let manufacturingTime = row["manufacturing_time"] as? Int,
-                let researchMaterialTime = row["research_material_time"] as? Int,
-                let researchTimeTime = row["research_time_time"] as? Int,
-                let copyingTime = row["copying_time"] as? Int,
-                let inventionTime = row["invention_time"] as? Int,
-                let maxRunsPerCopy = row["maxRunsPerCopy"] as? Int
+               let researchMaterialTime = row["research_material_time"] as? Int,
+               let researchTimeTime = row["research_time_time"] as? Int,
+               let copyingTime = row["copying_time"] as? Int,
+               let inventionTime = row["invention_time"] as? Int,
+               let maxRunsPerCopy = row["maxRunsPerCopy"] as? Int
             {
                 return (
                     manufacturing_time: manufacturingTime,
@@ -987,17 +989,17 @@ class DatabaseManager: ObservableObject {
         Logger.debug("DatabaseManager - 获取物品分类ID，typeID: \(typeID)")
 
         let query = """
-                SELECT categoryID
-                FROM types
-                WHERE type_id = ?
-            """
+            SELECT categoryID
+            FROM types
+            WHERE type_id = ?
+        """
 
         let result = executeQuery(query, parameters: [typeID])
 
         switch result {
         case let .success(rows):
             if let row = rows.first,
-                let categoryID = row["categoryID"] as? Int
+               let categoryID = row["categoryID"] as? Int
             {
                 Logger.debug("DatabaseManager - 找到分类ID: \(categoryID)")
                 return categoryID
@@ -1013,24 +1015,24 @@ class DatabaseManager: ObservableObject {
     // 获取物品详情
     func getItemDetails(for typeID: Int) -> ItemDetails? {
         let query = """
-                SELECT name, en_name, description, icon_filename, groupID,
-                       volume, repackaged_volume, capacity, mass, marketGroupID,
-                       group_name, category_name, categoryID
-                FROM types
-                WHERE type_id = ?
-            """
+            SELECT name, en_name, description, icon_filename, groupID,
+                   volume, repackaged_volume, capacity, mass, marketGroupID,
+                   group_name, category_name, categoryID
+            FROM types
+            WHERE type_id = ?
+        """
 
         let result = executeQuery(query, parameters: [typeID])
 
         if case let .success(rows) = result,
-            let row = rows.first,
-            let name = row["name"] as? String,
-            let en_name = row["en_name"] as? String,
-            let description = row["description"] as? String,
-            let iconFileName = row["icon_filename"] as? String,
-            let groupName = row["group_name"] as? String,
-            let categoryID = row["categoryID"] as? Int,
-            let categoryName = row["category_name"] as? String
+           let row = rows.first,
+           let name = row["name"] as? String,
+           let en_name = row["en_name"] as? String,
+           let description = row["description"] as? String,
+           let iconFileName = row["icon_filename"] as? String,
+           let groupName = row["group_name"] as? String,
+           let categoryID = row["categoryID"] as? Int,
+           let categoryName = row["category_name"] as? String
         {
             let groupID = row["groupID"] as? Int
             let volume = row["volume"] as? Double
@@ -1064,14 +1066,14 @@ class DatabaseManager: ObservableObject {
     // 根据物品ID获取对应的蓝图ID列表
     func getBlueprintIDsForProduct(_ typeID: Int) -> [Int] {
         let query = """
-                SELECT DISTINCT blueprintTypeID
-                FROM blueprint_manufacturing_output
-                WHERE typeID = ?
-                UNION
-                SELECT DISTINCT blueprintTypeID
-                FROM blueprint_invention_products
-                WHERE typeID = ?
-            """
+            SELECT DISTINCT blueprintTypeID
+            FROM blueprint_manufacturing_output
+            WHERE typeID = ?
+            UNION
+            SELECT DISTINCT blueprintTypeID
+            FROM blueprint_invention_products
+            WHERE typeID = ?
+        """
 
         let result = executeQuery(query, parameters: [typeID, typeID])
         var blueprintIDs: [Int] = []
@@ -1089,23 +1091,23 @@ class DatabaseManager: ObservableObject {
 
         return blueprintIDs
     }
-    
+
     /// 批量获取多个产品的蓝图ID映射
     /// - Parameter typeIDs: 产品类型ID数组
     /// - Returns: 产品ID -> 蓝图ID数组的映射
     func getBlueprintIDsForProducts(_ typeIDs: [Int]) -> [Int: [Int]] {
         guard !typeIDs.isEmpty else { return [:] }
-        
+
         let typeIDsString = typeIDs.map { String($0) }.joined(separator: ",")
         let query = """
-                SELECT DISTINCT blueprintTypeID, typeID
-                FROM blueprint_manufacturing_output
-                WHERE typeID IN (\(typeIDsString))
-                UNION
-                SELECT DISTINCT blueprintTypeID, typeID
-                FROM blueprint_invention_products
-                WHERE typeID IN (\(typeIDsString))
-            """
+            SELECT DISTINCT blueprintTypeID, typeID
+            FROM blueprint_manufacturing_output
+            WHERE typeID IN (\(typeIDsString))
+            UNION
+            SELECT DISTINCT blueprintTypeID, typeID
+            FROM blueprint_invention_products
+            WHERE typeID IN (\(typeIDsString))
+        """
 
         let result = executeQuery(query)
         var blueprintMapping: [Int: [Int]] = [:]
@@ -1114,7 +1116,8 @@ class DatabaseManager: ObservableObject {
         case let .success(rows):
             for row in rows {
                 if let blueprintID = row["blueprintTypeID"] as? Int,
-                   let typeID = row["typeID"] as? Int {
+                   let typeID = row["typeID"] as? Int
+                {
                     if blueprintMapping[typeID] == nil {
                         blueprintMapping[typeID] = []
                     }
@@ -1127,36 +1130,37 @@ class DatabaseManager: ObservableObject {
 
         return blueprintMapping
     }
-    
+
     /// 批量获取蓝图信息
     /// - Parameter blueprintIDs: 蓝图ID数组
     /// - Returns: 蓝图ID -> 蓝图信息的映射
     func getBlueprintInfos(_ blueprintIDs: [Int]) -> [Int: (name: String, iconFileName: String)] {
         guard !blueprintIDs.isEmpty else { return [:] }
-        
+
         let blueprintIDsString = blueprintIDs.map { String($0) }.joined(separator: ",")
         let query = """
             SELECT type_id, name, icon_filename
             FROM types
             WHERE type_id IN (\(blueprintIDsString)) AND published = 1
         """
-        
+
         let result = executeQuery(query)
         var blueprintInfos: [Int: (name: String, iconFileName: String)] = [:]
-        
+
         switch result {
         case let .success(rows):
             for row in rows {
                 if let blueprintID = row["type_id"] as? Int,
                    let name = row["name"] as? String,
-                   let iconFileName = row["icon_filename"] as? String {
+                   let iconFileName = row["icon_filename"] as? String
+                {
                     blueprintInfos[blueprintID] = (name: name, iconFileName: iconFileName)
                 }
             }
         case let .error(error):
             Logger.error("Error getting blueprint infos: \(error)")
         }
-        
+
         return blueprintInfos
     }
 
@@ -1165,12 +1169,12 @@ class DatabaseManager: ObservableObject {
         typeID: Int, typeName: String, typeIcon: String
     )] {
         let query = """
-                SELECT blueprintTypeID as type_id, 
-                       blueprintTypeName as name, 
-                       blueprintTypeIcon as icon_filename
-                FROM blueprint_invention_products
-                WHERE typeID = ?
-            """
+            SELECT blueprintTypeID as type_id, 
+                   blueprintTypeName as name, 
+                   blueprintTypeIcon as icon_filename
+            FROM blueprint_invention_products
+            WHERE typeID = ?
+        """
 
         let result = executeQuery(query, parameters: [blueprintID])
         var sources: [(typeID: Int, typeName: String, typeIcon: String)] = []
@@ -1179,8 +1183,8 @@ class DatabaseManager: ObservableObject {
         case let .success(rows):
             for row in rows {
                 if let typeID = row["type_id"] as? Int,
-                    let typeName = row["name"] as? String,
-                    let iconFileName = row["icon_filename"] as? String
+                   let typeName = row["name"] as? String,
+                   let iconFileName = row["icon_filename"] as? String
                 {
                     sources.append(
                         (
@@ -1205,46 +1209,46 @@ class DatabaseManager: ObservableObject {
         Logger.debug("DatabaseManager - 获取精炼来源，itemID: \(itemID), groupID: \(groupID)")
 
         let query: String
-        if groupID == 18 {  // 矿物，只看矿石来源
+        if groupID == 18 { // 矿物，只看矿石来源
             Logger.debug("DatabaseManager - 构建矿物查询")
             query = """
-                    SELECT DISTINCT t.type_id, t.name, t.icon_filename,
-                           CAST(tm.output_quantity AS FLOAT) / tm.process_size as output_per_unit
-                    FROM typeMaterials tm 
-                    JOIN types t ON tm.typeid = t.type_id 
-                    WHERE tm.output_material = ? AND tm.categoryid = 25
-                    ORDER BY output_per_unit DESC
-                """
-        } else if groupID == 1996 {  // 突变残渣，只看装备来源
+                SELECT DISTINCT t.type_id, t.name, t.icon_filename,
+                       CAST(tm.output_quantity AS FLOAT) / tm.process_size as output_per_unit
+                FROM typeMaterials tm 
+                JOIN types t ON tm.typeid = t.type_id 
+                WHERE tm.output_material = ? AND tm.categoryid = 25
+                ORDER BY output_per_unit DESC
+            """
+        } else if groupID == 1996 { // 突变残渣，只看装备来源
             Logger.debug("DatabaseManager - 构建突变残渣查询")
             query = """
-                    SELECT DISTINCT t.type_id, t.name, t.icon_filename,
-                           CAST(tm.output_quantity AS FLOAT) / tm.process_size as output_per_unit
-                    FROM typeMaterials tm 
-                    JOIN types t ON tm.typeid = t.type_id 
-                    WHERE tm.output_material = ? AND tm.categoryid = 7 AND tm.output_material != 47975 AND tm.output_material != 48112 
-                    ORDER BY output_per_unit DESC
-                """
-        } else if groupID == 423 {  // 同位素，只看矿石来源
+                SELECT DISTINCT t.type_id, t.name, t.icon_filename,
+                       CAST(tm.output_quantity AS FLOAT) / tm.process_size as output_per_unit
+                FROM typeMaterials tm 
+                JOIN types t ON tm.typeid = t.type_id 
+                WHERE tm.output_material = ? AND tm.categoryid = 7 AND tm.output_material != 47975 AND tm.output_material != 48112 
+                ORDER BY output_per_unit DESC
+            """
+        } else if groupID == 423 { // 同位素，只看矿石来源
             Logger.debug("DatabaseManager - 构建同位素查询")
             query = """
-                    SELECT DISTINCT t.type_id, t.name, t.icon_filename,
-                           CAST(tm.output_quantity AS FLOAT) / tm.process_size as output_per_unit
-                    FROM typeMaterials tm 
-                    JOIN types t ON tm.typeid = t.type_id 
-                    WHERE tm.output_material = ? AND tm.categoryid = 25
-                    ORDER BY output_per_unit DESC
-                """
-        } else if groupID == 427 {  // 元素，只看石来源
+                SELECT DISTINCT t.type_id, t.name, t.icon_filename,
+                       CAST(tm.output_quantity AS FLOAT) / tm.process_size as output_per_unit
+                FROM typeMaterials tm 
+                JOIN types t ON tm.typeid = t.type_id 
+                WHERE tm.output_material = ? AND tm.categoryid = 25
+                ORDER BY output_per_unit DESC
+            """
+        } else if groupID == 427 { // 元素，只看石来源
             Logger.debug("DatabaseManager - 构建元素查询")
             query = """
-                    SELECT DISTINCT t.type_id, t.name, t.icon_filename,
-                           CAST(tm.output_quantity AS FLOAT) / tm.process_size as output_per_unit
-                    FROM typeMaterials tm 
-                    JOIN types t ON tm.typeid = t.type_id 
-                    WHERE tm.output_material = ? AND tm.categoryid = 25
-                    ORDER BY output_per_unit DESC
-                """
+                SELECT DISTINCT t.type_id, t.name, t.icon_filename,
+                       CAST(tm.output_quantity AS FLOAT) / tm.process_size as output_per_unit
+                FROM typeMaterials tm 
+                JOIN types t ON tm.typeid = t.type_id 
+                WHERE tm.output_material = ? AND tm.categoryid = 25
+                ORDER BY output_per_unit DESC
+            """
         } else {
             Logger.debug("DatabaseManager - 不支持的物品组: \(groupID)")
             return nil
@@ -1259,9 +1263,9 @@ class DatabaseManager: ObservableObject {
             Logger.debug("DatabaseManager - 查询成功，找到 \(rows.count) 条记录")
             for row in rows {
                 if let typeID = row["type_id"] as? Int,
-                    let name = row["name"] as? String,
-                    let iconFileName = row["icon_filename"] as? String,
-                    let outputPerUnit = row["output_per_unit"] as? Double
+                   let name = row["name"] as? String,
+                   let iconFileName = row["icon_filename"] as? String,
+                   let outputPerUnit = row["output_per_unit"] as? Double
                 {
                     materials.append(
                         (
@@ -1285,10 +1289,10 @@ class DatabaseManager: ObservableObject {
     func loadGroupNames(for groupIDs: [Int]) -> [Int: String] {
         let placeholders = String(repeating: "?,", count: groupIDs.count).dropLast()
         let query = """
-                SELECT group_id, name
-                FROM groups
-                WHERE group_id IN (\(placeholders))
-            """
+            SELECT group_id, name
+            FROM groups
+            WHERE group_id IN (\(placeholders))
+        """
 
         let result = executeQuery(query, parameters: groupIDs)
         var groupNames: [Int: String] = [:]
@@ -1297,7 +1301,7 @@ class DatabaseManager: ObservableObject {
         case let .success(rows):
             for row in rows {
                 if let id = row["group_id"] as? Int,
-                    let name = row["name"] as? String
+                   let name = row["name"] as? String
                 {
                     groupNames[id] = name
                 }
@@ -1312,18 +1316,18 @@ class DatabaseManager: ObservableObject {
     // 获取物品的直接技能要求
     func getDirectSkillRequirements(for typeID: Int) -> [(skillID: Int, level: Int)] {
         let query = """
-                SELECT DISTINCT required_skill_id, required_skill_level
-                FROM typeSkillRequirement
-                WHERE typeid = ?
-                ORDER BY required_skill_level DESC
-            """
+            SELECT DISTINCT required_skill_id, required_skill_level
+            FROM typeSkillRequirement
+            WHERE typeid = ?
+            ORDER BY required_skill_level DESC
+        """
 
         var requirements: [(skillID: Int, level: Int)] = []
 
         if case let .success(rows) = executeQuery(query, parameters: [typeID]) {
             for row in rows {
                 if let skillID = row["required_skill_id"] as? Int,
-                    let level = row["required_skill_level"] as? Int
+                   let level = row["required_skill_level"] as? Int
                 {
                     requirements.append((skillID: skillID, level: level))
                 }
@@ -1338,8 +1342,8 @@ class DatabaseManager: ObservableObject {
         let query = "SELECT icon_filename FROM types WHERE type_id = ?"
 
         if case let .success(rows) = executeQuery(query, parameters: [typeID]),
-            let row = rows.first,
-            let iconFileName = row["icon_filename"] as? String
+           let row = rows.first,
+           let iconFileName = row["icon_filename"] as? String
         {
             return iconFileName.isEmpty ? DatabaseConfig.defaultItemIcon : iconFileName
         }
@@ -1348,11 +1352,11 @@ class DatabaseManager: ObservableObject {
 
     func getTraits(for typeID: Int) -> TraitGroup? {
         let query = """
-                SELECT importance, content, skill, bonus_type
-                FROM traits
-                WHERE typeid = ? AND bonus_type IN ('roleBonuses', 'typeBonuses', 'miscBonuses')
-                ORDER BY bonus_type, skill, importance
-            """
+            SELECT importance, content, skill, bonus_type
+            FROM traits
+            WHERE typeid = ? AND bonus_type IN ('roleBonuses', 'typeBonuses', 'miscBonuses')
+            ORDER BY bonus_type, skill, importance
+        """
 
         var roleBonuses: [Trait] = []
         var typeBonuses: [Trait] = []
@@ -1361,8 +1365,8 @@ class DatabaseManager: ObservableObject {
         if case let .success(rows) = executeQuery(query, parameters: [typeID]) {
             for row in rows {
                 if let importance = row["importance"] as? Int,
-                    let content = row["content"] as? String,
-                    let bonusType = row["bonus_type"] as? String
+                   let content = row["content"] as? String,
+                   let bonusType = row["bonus_type"] as? String
                 {
                     switch bonusType {
                     case "roleBonuses":
@@ -1398,7 +1402,9 @@ class DatabaseManager: ObservableObject {
             }
         }
 
-        return TraitGroup(roleBonuses: roleBonuses, typeBonuses: typeBonuses, miscBonuses: miscBonuses)
+        return TraitGroup(
+            roleBonuses: roleBonuses, typeBonuses: typeBonuses, miscBonuses: miscBonuses
+        )
     }
 
     // 获取所有需要特定技能的物品及其需求等级
@@ -1407,11 +1413,11 @@ class DatabaseManager: ObservableObject {
     )]] {
         // 获取物品依赖
         let itemsQuery = """
-                SELECT typeid, typename, typeicon, required_skill_level, categoryID, category_name
-                FROM typeSkillRequirement
-                WHERE required_skill_id = ?
-                AND published = 1
-            """
+            SELECT typeid, typename, typeicon, required_skill_level, categoryID, category_name
+            FROM typeSkillRequirement
+            WHERE required_skill_id = ?
+            AND published = 1
+        """
 
         var itemsByLevel:
             [Int: [(
@@ -1421,19 +1427,19 @@ class DatabaseManager: ObservableObject {
 
         // 在内存中收集物品数据并去重
         var processedItems = Set<Int>()
-        
+
         if case let .success(rows) = executeQuery(itemsQuery, parameters: [skillID]) {
             for row in rows {
                 if let typeID = row["typeid"] as? Int,
-                    let name = row["typename"] as? String,
-                    let iconFileName = row["typeicon"] as? String,
-                    let level = row["required_skill_level"] as? Int,
-                    let categoryID = row["categoryID"] as? Int,
-                    let categoryName = row["category_name"] as? String
+                   let name = row["typename"] as? String,
+                   let iconFileName = row["typeicon"] as? String,
+                   let level = row["required_skill_level"] as? Int,
+                   let categoryID = row["categoryID"] as? Int,
+                   let categoryName = row["category_name"] as? String
                 {
                     // 跳过已处理的物品
                     guard !processedItems.contains(typeID) else { continue }
-                    
+
                     let item = (
                         typeID: typeID,
                         name: name,
@@ -1454,7 +1460,7 @@ class DatabaseManager: ObservableObject {
 
         // 获取蓝图依赖
         let blueprintsByLevel = getAllBlueprintsRequiringSkill(skillID: skillID)
-        
+
         // 合并物品和蓝图结果
         for (level, blueprints) in blueprintsByLevel {
             if itemsByLevel[level] == nil {
@@ -1470,37 +1476,39 @@ class DatabaseManager: ObservableObject {
 
         return itemsByLevel
     }
-    
+
     // 获取所有需要特定技能的蓝图及其需求等级
     private func getAllBlueprintsRequiringSkill(skillID: Int) -> [Int: [(
         typeID: Int, name: String, iconFileName: String, categoryID: Int, categoryName: String
     )]] {
         // 获取所有蓝图技能要求数据
         let blueprintSkillsQuery = """
-                SELECT 
-                    blueprintTypeID,
-                    level as required_skill_level
-                FROM (
-                    SELECT blueprintTypeID, typeID, level FROM blueprint_manufacturing_skills WHERE typeID = ?
-                    UNION ALL
-                    SELECT blueprintTypeID, typeID, level FROM blueprint_copying_skills WHERE typeID = ?
-                    UNION ALL
-                    SELECT blueprintTypeID, typeID, level FROM blueprint_invention_skills WHERE typeID = ?
-                    UNION ALL
-                    SELECT blueprintTypeID, typeID, level FROM blueprint_research_material_skills WHERE typeID = ?
-                    UNION ALL
-                    SELECT blueprintTypeID, typeID, level FROM blueprint_research_time_skills WHERE typeID = ?
-                )
-            """
+            SELECT 
+                blueprintTypeID,
+                level as required_skill_level
+            FROM (
+                SELECT blueprintTypeID, typeID, level FROM blueprint_manufacturing_skills WHERE typeID = ?
+                UNION ALL
+                SELECT blueprintTypeID, typeID, level FROM blueprint_copying_skills WHERE typeID = ?
+                UNION ALL
+                SELECT blueprintTypeID, typeID, level FROM blueprint_invention_skills WHERE typeID = ?
+                UNION ALL
+                SELECT blueprintTypeID, typeID, level FROM blueprint_research_material_skills WHERE typeID = ?
+                UNION ALL
+                SELECT blueprintTypeID, typeID, level FROM blueprint_research_time_skills WHERE typeID = ?
+            )
+        """
 
         // 在内存中收集所有蓝图ID和等级要求
         var blueprintRequirements: [(blueprintID: Int, level: Int)] = []
         var blueprintIDs = Set<Int>()
-        
-        if case let .success(rows) = executeQuery(blueprintSkillsQuery, parameters: [skillID, skillID, skillID, skillID, skillID]) {
+
+        if case let .success(rows) = executeQuery(
+            blueprintSkillsQuery, parameters: [skillID, skillID, skillID, skillID, skillID]
+        ) {
             for row in rows {
                 if let blueprintID = row["blueprintTypeID"] as? Int,
-                    let level = row["required_skill_level"] as? Int
+                   let level = row["required_skill_level"] as? Int
                 {
                     blueprintRequirements.append((blueprintID: blueprintID, level: level))
                     blueprintIDs.insert(blueprintID)
@@ -1516,32 +1524,36 @@ class DatabaseManager: ObservableObject {
         // 从types表获取蓝图的详细信息
         let placeholders = String(repeating: "?,", count: blueprintIDs.count).dropLast()
         let blueprintDetailsQuery = """
-                SELECT 
-                    t.type_id,
-                    t.name,
-                    t.icon_filename,
-                    t.categoryID,
-                    t.published,
-                    c.name as category_name
-                FROM types t
-                LEFT JOIN categories c ON t.categoryID = c.category_id
-                WHERE t.type_id IN (\(placeholders))
-                AND t.published = 1
-            """
+            SELECT 
+                t.type_id,
+                t.name,
+                t.icon_filename,
+                t.categoryID,
+                t.published,
+                c.name as category_name
+            FROM types t
+            LEFT JOIN categories c ON t.categoryID = c.category_id
+            WHERE t.type_id IN (\(placeholders))
+            AND t.published = 1
+        """
 
-        var blueprintDetails: [Int: (name: String, iconFileName: String, categoryID: Int, categoryName: String)] = [:]
-        
-        if case let .success(rows) = executeQuery(blueprintDetailsQuery, parameters: Array(blueprintIDs)) {
+        var blueprintDetails:
+            [Int: (name: String, iconFileName: String, categoryID: Int, categoryName: String)] = [:]
+
+        if case let .success(rows) = executeQuery(
+            blueprintDetailsQuery, parameters: Array(blueprintIDs)
+        ) {
             for row in rows {
                 if let typeID = row["type_id"] as? Int,
-                    let name = row["name"] as? String,
-                    let iconFileName = row["icon_filename"] as? String,
-                    let categoryID = row["categoryID"] as? Int,
-                    let categoryName = row["category_name"] as? String
+                   let name = row["name"] as? String,
+                   let iconFileName = row["icon_filename"] as? String,
+                   let categoryID = row["categoryID"] as? Int,
+                   let categoryName = row["category_name"] as? String
                 {
                     blueprintDetails[typeID] = (
                         name: name,
-                        iconFileName: iconFileName.isEmpty ? DatabaseConfig.defaultItemIcon : iconFileName,
+                        iconFileName: iconFileName.isEmpty
+                            ? DatabaseConfig.defaultItemIcon : iconFileName,
                         categoryID: categoryID,
                         categoryName: categoryName
                     )
@@ -1562,13 +1574,14 @@ class DatabaseManager: ObservableObject {
         for requirement in blueprintRequirements {
             let blueprintID = requirement.blueprintID
             let level = requirement.level
-            
+
             // 跳过已处理的蓝图
             guard !processedBlueprints.contains(blueprintID),
-                  let details = blueprintDetails[blueprintID] else {
+                  let details = blueprintDetails[blueprintID]
+            else {
                 continue
             }
-            
+
             let blueprint = (
                 typeID: blueprintID,
                 name: details.name,
@@ -1580,7 +1593,7 @@ class DatabaseManager: ObservableObject {
             if blueprintsByLevel[level] == nil {
                 blueprintsByLevel[level] = []
             }
-            
+
             blueprintsByLevel[level]?.append(blueprint)
             processedBlueprints.insert(blueprintID)
         }
@@ -1598,25 +1611,25 @@ class DatabaseManager: ObservableObject {
         -> [DatabaseListItem]
     {
         var query = """
-                SELECT t.type_id as id, t.name, t.en_name, t.published, t.icon_filename as iconFileName,
-                       t.categoryID, t.groupID, t.metaGroupID, t.marketGroupID,
-                       t.pg_need as pgNeed, t.cpu_need as cpuNeed, t.rig_cost as rigCost,
-                       t.em_damage as emDamage, t.them_damage as themDamage, t.kin_damage as kinDamage, t.exp_damage as expDamage,
-                       t.high_slot as highSlot, t.mid_slot as midSlot, t.low_slot as lowSlot,
-                       t.rig_slot as rigSlot, t.gun_slot as gunSlot, t.miss_slot as missSlot,
-                       t.group_name as groupName
-                FROM types t
-                WHERE \(whereClause)
-                ORDER BY t.metaGroupID
-            """
+            SELECT t.type_id as id, t.name, t.en_name, t.published, t.icon_filename as iconFileName,
+                   t.categoryID, t.groupID, t.metaGroupID, t.marketGroupID,
+                   t.pg_need as pgNeed, t.cpu_need as cpuNeed, t.rig_cost as rigCost,
+                   t.em_damage as emDamage, t.them_damage as themDamage, t.kin_damage as kinDamage, t.exp_damage as expDamage,
+                   t.high_slot as highSlot, t.mid_slot as midSlot, t.low_slot as lowSlot,
+                   t.rig_slot as rigSlot, t.gun_slot as gunSlot, t.miss_slot as missSlot,
+                   t.group_name as groupName
+            FROM types t
+            WHERE \(whereClause)
+            ORDER BY t.metaGroupID
+        """
         if limit > 0 {
             query.append(" LIMIT \(limit)")
         }
         if case let .success(rows) = executeQuery(query, parameters: parameters) {
             return rows.compactMap { row in
                 guard let id = row["id"] as? Int,
-                    let name = row["name"] as? String,
-                    let categoryId = row["categoryID"] as? Int
+                      let name = row["name"] as? String,
+                      let categoryId = row["categoryID"] as? Int
                 else { return nil }
 
                 let enName = row["en_name"] as? String
@@ -1664,11 +1677,11 @@ class DatabaseManager: ObservableObject {
     // 获取所有NPC场景（一级目录）
     func getNPCScenes() -> [String] {
         let query = """
-                SELECT DISTINCT npc_ship_scene 
-                FROM types 
-                WHERE npc_ship_scene IS NOT NULL 
-                ORDER BY npc_ship_scene
-            """
+            SELECT DISTINCT npc_ship_scene 
+            FROM types 
+            WHERE npc_ship_scene IS NOT NULL 
+            ORDER BY npc_ship_scene
+        """
 
         var scenes: [String] = []
         if case let .success(rows) = executeQuery(query) {
@@ -1684,12 +1697,12 @@ class DatabaseManager: ObservableObject {
     // 获取特定场景下的所有阵营（二级目录）
     func getNPCFactions(for scene: String) -> [String] {
         let query = """
-                SELECT DISTINCT npc_ship_faction 
-                FROM types 
-                WHERE npc_ship_scene = ? 
-                AND npc_ship_faction IS NOT NULL 
-                ORDER BY npc_ship_faction
-            """
+            SELECT DISTINCT npc_ship_faction 
+            FROM types 
+            WHERE npc_ship_scene = ? 
+            AND npc_ship_faction IS NOT NULL 
+            ORDER BY npc_ship_faction
+        """
 
         var factions: [String] = []
         if case let .success(rows) = executeQuery(query, parameters: [scene]) {
@@ -1705,13 +1718,13 @@ class DatabaseManager: ObservableObject {
     // 获取特定场景和阵营下的所有类型（三级目录）
     func getNPCTypes(for scene: String, faction: String) -> [String] {
         let query = """
-                SELECT DISTINCT npc_ship_type 
-                FROM types 
-                WHERE npc_ship_scene = ? 
-                AND npc_ship_faction = ? 
-                AND npc_ship_type IS NOT NULL 
-                ORDER BY npc_ship_type
-            """
+            SELECT DISTINCT npc_ship_type 
+            FROM types 
+            WHERE npc_ship_scene = ? 
+            AND npc_ship_faction = ? 
+            AND npc_ship_type IS NOT NULL 
+            ORDER BY npc_ship_type
+        """
 
         var types: [String] = []
         if case let .success(rows) = executeQuery(query, parameters: [scene, faction]) {
@@ -1727,23 +1740,26 @@ class DatabaseManager: ObservableObject {
     // 获取特定场景、阵营和类型下的所有物品
     func getNPCItems(for scene: String, faction: String, type: String) -> [NPCItem] {
         let query = """
-                SELECT type_id, name, en_name, icon_filename 
-                FROM types 
-                WHERE npc_ship_scene = ? 
-                AND npc_ship_faction = ? 
-                AND npc_ship_type = ?
-                ORDER BY name
-            """
+            SELECT type_id, name, en_name, icon_filename 
+            FROM types 
+            WHERE npc_ship_scene = ? 
+            AND npc_ship_faction = ? 
+            AND npc_ship_type = ?
+            ORDER BY name
+        """
 
         var items: [NPCItem] = []
         if case let .success(rows) = executeQuery(query, parameters: [scene, faction, type]) {
             for row in rows {
                 if let typeID = row["type_id"] as? Int,
-                    let name = row["name"] as? String,
-                    let enName = row["en_name"] as? String,
-                    let iconFileName = row["icon_filename"] as? String
+                   let name = row["name"] as? String,
+                   let enName = row["en_name"] as? String,
+                   let iconFileName = row["icon_filename"] as? String
                 {
-                    items.append(NPCItem(typeID: typeID, name: name, enName: enName, iconFileName: iconFileName))
+                    items.append(
+                        NPCItem(
+                            typeID: typeID, name: name, enName: enName, iconFileName: iconFileName
+                        ))
                 }
             }
         }
@@ -1753,16 +1769,16 @@ class DatabaseManager: ObservableObject {
     // 获取NPC阵营的图标
     func getNPCFactionIcon(for faction: String) -> String? {
         let query = """
-                SELECT DISTINCT npc_ship_faction_icon 
-                FROM types 
-                WHERE npc_ship_faction = ? 
-                AND npc_ship_faction_icon IS NOT NULL 
-                LIMIT 1
-            """
+            SELECT DISTINCT npc_ship_faction_icon 
+            FROM types 
+            WHERE npc_ship_faction = ? 
+            AND npc_ship_faction_icon IS NOT NULL 
+            LIMIT 1
+        """
 
         if case let .success(rows) = executeQuery(query, parameters: [faction]),
-            let row = rows.first,
-            let iconFileName = row["npc_ship_faction_icon"] as? String
+           let row = rows.first,
+           let iconFileName = row["npc_ship_faction_icon"] as? String
         {
             return iconFileName.isEmpty ? DatabaseConfig.defaultItemIcon : iconFileName
         }
@@ -1775,10 +1791,10 @@ class DatabaseManager: ObservableObject {
         var hasData = false
 
         let query = """
-                SELECT attribute_id, value 
-                FROM typeAttributes 
-                WHERE type_id = ? AND attribute_id IN (114, 116, 117, 118)
-            """
+            SELECT attribute_id, value 
+            FROM typeAttributes 
+            WHERE type_id = ? AND attribute_id IN (114, 116, 117, 118)
+        """
 
         let result = executeQuery(query, parameters: [itemID])
 
@@ -1786,7 +1802,7 @@ class DatabaseManager: ObservableObject {
         case let .success(rows):
             for row in rows {
                 if let attributeID = row["attribute_id"] as? Int,
-                    let value = row["value"] as? Double
+                   let value = row["value"] as? Double
                 {
                     switch attributeID {
                     case 114: damages.em = value
@@ -1811,20 +1827,20 @@ class DatabaseManager: ObservableObject {
         typeID: Int, name: String, iconFileName: String
     )] {
         let query = """
-                SELECT t.type_id, t.name, t.icon_filename
-                FROM typeAttributes ta
-                JOIN types t ON ta.type_id = t.type_id
-                WHERE ta.attribute_id = ? AND ta.value = ?
-                ORDER BY t.type_id
-            """
+            SELECT t.type_id, t.name, t.icon_filename
+            FROM typeAttributes ta
+            JOIN types t ON ta.type_id = t.type_id
+            WHERE ta.attribute_id = ? AND ta.value = ?
+            ORDER BY t.type_id
+        """
 
         var items: [(typeID: Int, name: String, iconFileName: String)] = []
 
         if case let .success(rows) = executeQuery(query, parameters: [attributeID, value]) {
             for row in rows {
                 if let typeID = row["type_id"] as? Int,
-                    let name = row["name"] as? String,
-                    let iconFileName = row["icon_filename"] as? String
+                   let name = row["name"] as? String,
+                   let iconFileName = row["icon_filename"] as? String
                 {
                     items.append(
                         (
@@ -1839,24 +1855,24 @@ class DatabaseManager: ObservableObject {
 
         return items
     }
+
     /// 获取物品可以突变的结果
     /// - Parameter typeID: 物品ID
     /// - Returns: 突变结果列表，每个结果包含 typeID、name 和 iconFileName
-    func getMutationResults(for typeID: Int) -> [(typeID: Int, name: String, iconFileName: String)]
-    {
+    func getMutationResults(for typeID: Int) -> [(typeID: Int, name: String, iconFileName: String)] {
         let query = """
-                SELECT DISTINCT m.resulting_type as type_id, t.name, t.icon_filename
-                FROM dynamic_item_mappings m
-                LEFT JOIN types t ON m.resulting_type = t.type_id
-                WHERE m.applicable_type = ?
-                ORDER BY t.name
-            """
+            SELECT DISTINCT m.resulting_type as type_id, t.name, t.icon_filename
+            FROM dynamic_item_mappings m
+            LEFT JOIN types t ON m.resulting_type = t.type_id
+            WHERE m.applicable_type = ?
+            ORDER BY t.name
+        """
 
         if case let .success(rows) = executeQuery(query, parameters: [typeID]) {
             return rows.compactMap { row in
                 guard let typeID = row["type_id"] as? Int,
-                    let name = row["name"] as? String,
-                    let iconFileName = row["icon_filename"] as? String
+                      let name = row["name"] as? String,
+                      let iconFileName = row["icon_filename"] as? String
                 else { return nil }
                 return (typeID: typeID, name: name, iconFileName: iconFileName)
             }
@@ -1871,18 +1887,18 @@ class DatabaseManager: ObservableObject {
         typeID: Int, name: String, iconFileName: String
     )] {
         let query = """
-                SELECT DISTINCT m.type_id, t.name, t.icon_filename
-                FROM dynamic_item_mappings m
-                LEFT JOIN types t ON m.type_id = t.type_id
-                WHERE m.applicable_type = ?
-                ORDER BY t.name
-            """
+            SELECT DISTINCT m.type_id, t.name, t.icon_filename
+            FROM dynamic_item_mappings m
+            LEFT JOIN types t ON m.type_id = t.type_id
+            WHERE m.applicable_type = ?
+            ORDER BY t.name
+        """
 
         if case let .success(rows) = executeQuery(query, parameters: [typeID]) {
             return rows.compactMap { row in
                 guard let typeID = row["type_id"] as? Int,
-                    let name = row["name"] as? String,
-                    let iconFileName = row["icon_filename"] as? String
+                      let name = row["name"] as? String,
+                      let iconFileName = row["icon_filename"] as? String
                 else { return nil }
                 return (typeID: typeID, name: name, iconFileName: iconFileName)
             }
@@ -1896,21 +1912,21 @@ class DatabaseManager: ObservableObject {
         mutaplasmids: [(typeID: Int, name: String, iconFileName: String)]
     ) {
         let query = """
-                SELECT 
-                    t1.type_id as source_type_id, 
-                    t1.name as source_name, 
-                    t1.icon_filename as source_icon,
-                    t1.metaGroupID as source_meta,
-                    t2.type_id as muta_type_id,
-                    t2.name as muta_name,
-                    t2.icon_filename as muta_icon,
-                    t2.metaGroupID as muta_meta
-                FROM dynamic_item_mappings m
-                JOIN types t1 ON m.applicable_type = t1.type_id
-                JOIN types t2 ON m.type_id = t2.type_id
-                WHERE m.resulting_type = ?
-                ORDER BY t1.metaGroupID ASC, t1.type_id ASC, t2.metaGroupID ASC, t2.type_id ASC
-            """
+            SELECT 
+                t1.type_id as source_type_id, 
+                t1.name as source_name, 
+                t1.icon_filename as source_icon,
+                t1.metaGroupID as source_meta,
+                t2.type_id as muta_type_id,
+                t2.name as muta_name,
+                t2.icon_filename as muta_icon,
+                t2.metaGroupID as muta_meta
+            FROM dynamic_item_mappings m
+            JOIN types t1 ON m.applicable_type = t1.type_id
+            JOIN types t2 ON m.type_id = t2.type_id
+            WHERE m.resulting_type = ?
+            ORDER BY t1.metaGroupID ASC, t1.type_id ASC, t2.metaGroupID ASC, t2.type_id ASC
+        """
 
         var sourceItems: [(typeID: Int, name: String, iconFileName: String)] = []
         var mutaplasmids: [(typeID: Int, name: String, iconFileName: String)] = []
@@ -1920,13 +1936,12 @@ class DatabaseManager: ObservableObject {
         if case let .success(rows) = executeQuery(query, parameters: [itemID]) {
             for row in rows {
                 if let sourceTypeID = row["source_type_id"] as? Int,
-                    let sourceName = row["source_name"] as? String,
-                    let sourceIcon = row["source_icon"] as? String,
-                    let mutaTypeID = row["muta_type_id"] as? Int,
-                    let mutaName = row["muta_name"] as? String,
-                    let mutaIcon = row["muta_icon"] as? String
+                   let sourceName = row["source_name"] as? String,
+                   let sourceIcon = row["source_icon"] as? String,
+                   let mutaTypeID = row["muta_type_id"] as? Int,
+                   let mutaName = row["muta_name"] as? String,
+                   let mutaIcon = row["muta_icon"] as? String
                 {
-
                     // 添加源装备（如果还没有添加过）
                     if !seenSourceItems.contains(sourceTypeID) {
                         sourceItems.append(
@@ -1963,23 +1978,23 @@ class DatabaseManager: ObservableObject {
         groups: [(groupID: Int, name: String, iconFileName: String)]
     ) {
         let query = """
-                WITH blueprint_list AS (
-                    SELECT DISTINCT b.blueprintTypeID, b.blueprintTypeName, b.blueprintTypeIcon,
-                           t.groupID, t.group_name
-                    FROM (
-                        SELECT blueprintTypeID, blueprintTypeName, blueprintTypeIcon
-                        FROM blueprint_manufacturing_materials
-                        WHERE typeID = ?
-                        UNION
-                        SELECT blueprintTypeID, blueprintTypeName, blueprintTypeIcon
-                        FROM blueprint_invention_materials
-                        WHERE typeID = ?
-                    ) b
-                    LEFT JOIN types t ON b.blueprintTypeID = t.type_id AND t.published = 1
-                )
-                SELECT * FROM blueprint_list
-                ORDER BY groupID, blueprintTypeID
-            """
+            WITH blueprint_list AS (
+                SELECT DISTINCT b.blueprintTypeID, b.blueprintTypeName, b.blueprintTypeIcon,
+                       t.groupID, t.group_name
+                FROM (
+                    SELECT blueprintTypeID, blueprintTypeName, blueprintTypeIcon
+                    FROM blueprint_manufacturing_materials
+                    WHERE typeID = ?
+                    UNION
+                    SELECT blueprintTypeID, blueprintTypeName, blueprintTypeIcon
+                    FROM blueprint_invention_materials
+                    WHERE typeID = ?
+                ) b
+                LEFT JOIN types t ON b.blueprintTypeID = t.type_id AND t.published = 1
+            )
+            SELECT * FROM blueprint_list
+            ORDER BY groupID, blueprintTypeID
+        """
 
         var blueprints: [(typeID: Int, name: String, iconFileName: String)] = []
         var groups: [(groupID: Int, name: String, iconFileName: String)] = []
@@ -1988,10 +2003,10 @@ class DatabaseManager: ObservableObject {
         if case let .success(rows) = executeQuery(query, parameters: [typeID, typeID]) {
             for row in rows {
                 if let blueprintID = row["blueprintTypeID"] as? Int,
-                    let blueprintName = row["blueprintTypeName"] as? String,
-                    let blueprintIcon = row["blueprintTypeIcon"] as? String,
-                    let groupID = row["groupID"] as? Int,
-                    let groupName = row["group_name"] as? String
+                   let blueprintName = row["blueprintTypeName"] as? String,
+                   let blueprintIcon = row["blueprintTypeIcon"] as? String,
+                   let groupID = row["groupID"] as? Int,
+                   let groupName = row["group_name"] as? String
                 {
                     // 添加蓝图
                     blueprints.append(
@@ -2038,10 +2053,10 @@ extension DatabaseManager {
     // 加载虫洞数据
     func loadWormholes() -> [WormholeInfo] {
         let query = """
-                SELECT type_id, name, description, icon, target_value, target, stable_time, max_stable_mass, max_jump_mass, size_type
-                FROM wormholes
-                ORDER BY target_value
-            """
+            SELECT type_id, name, description, icon, target_value, target, stable_time, max_stable_mass, max_jump_mass, size_type
+            FROM wormholes
+            ORDER BY target_value
+        """
 
         let result = executeQuery(query)
         var wormholes: [WormholeInfo] = []
@@ -2050,14 +2065,14 @@ extension DatabaseManager {
         case let .success(rows):
             for row in rows {
                 if let typeId = row["type_id"] as? Int,
-                    let name = row["name"] as? String,
-                    let description = row["description"] as? String,
-                    let icon = row["icon"] as? String,
-                    let target = row["target"] as? String,
-                    let stableTime = row["stable_time"] as? String,
-                    let maxStableMass = row["max_stable_mass"] as? String,
-                    let maxJumpMass = row["max_jump_mass"] as? String,
-                    let sizeType = row["size_type"] as? String
+                   let name = row["name"] as? String,
+                   let description = row["description"] as? String,
+                   let icon = row["icon"] as? String,
+                   let target = row["target"] as? String,
+                   let stableTime = row["stable_time"] as? String,
+                   let maxStableMass = row["max_stable_mass"] as? String,
+                   let maxJumpMass = row["max_jump_mass"] as? String,
+                   let sizeType = row["size_type"] as? String
                 {
                     let wormhole = WormholeInfo(
                         id: typeId,

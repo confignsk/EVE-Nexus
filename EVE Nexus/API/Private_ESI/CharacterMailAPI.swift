@@ -62,14 +62,14 @@ class CharacterMailAPI {
     // 缓存邮件标签数据
     private var cachedLabels: [Int: MailLabelsResponse] = [:]
     private var labelsCacheTime: [Int: Date] = [:]
-    private let cacheValidDuration: TimeInterval = 300  // 5分钟缓存有效期
+    private let cacheValidDuration: TimeInterval = 300 // 5分钟缓存有效期
 
     // 邮件内容缓存
     private let mailContentCache = NSCache<NSNumber, CachedMailContent>()
 
     private init() {
         // 设置缓存限制
-        mailContentCache.countLimit = 100  // 最多缓存100封邮件
+        mailContentCache.countLimit = 100 // 最多缓存100封邮件
     }
 
     /// 从网络获取邮件
@@ -131,9 +131,9 @@ class CharacterMailAPI {
     {
         // 检查缓存是否有效
         if !forceRefresh,
-            let cachedResponse = cachedLabels[characterId],
-            let cacheTime = labelsCacheTime[characterId],
-            Date().timeIntervalSince(cacheTime) < cacheValidDuration
+           let cachedResponse = cachedLabels[characterId],
+           let cacheTime = labelsCacheTime[characterId],
+           Date().timeIntervalSince(cacheTime) < cacheValidDuration
         {
             Logger.debug("使用缓存的邮件标签数据")
             return cachedResponse
@@ -208,9 +208,9 @@ class CharacterMailAPI {
         // 构建批量查询SQL
         let mailIds = mails.map { String($0.mail_id) }.joined(separator: ",")
         let checkExistSQL = """
-                SELECT mail_id FROM mailbox 
-                WHERE mail_id IN (\(mailIds)) AND character_id = ?
-            """
+            SELECT mail_id FROM mailbox 
+            WHERE mail_id IN (\(mailIds)) AND character_id = ?
+        """
 
         // 批量查询已存在的邮件
         let existResult = databaseManager.executeQuery(checkExistSQL, parameters: [characterId])
@@ -240,17 +240,17 @@ class CharacterMailAPI {
         let valuePlaceholders = newMails.map { _ in "(?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)" }
             .joined(separator: ",")
         let insertMailSQL = """
-                INSERT INTO mailbox (
-                    mail_id,
-                    character_id,
-                    from_id,
-                    is_read,
-                    subject,
-                    recipients,
-                    timestamp,
-                    last_updated
-                ) VALUES \(valuePlaceholders)
-            """
+            INSERT INTO mailbox (
+                mail_id,
+                character_id,
+                from_id,
+                is_read,
+                subject,
+                recipients,
+                timestamp,
+                last_updated
+            ) VALUES \(valuePlaceholders)
+        """
 
         // 准备批量插入的参数
         var insertParameters: [Any] = []
@@ -308,9 +308,9 @@ class CharacterMailAPI {
                 }
 
                 let insertLabelSQL = """
-                        INSERT OR REPLACE INTO mail_labels (mail_id, label_id)
-                        VALUES \(labelValuePlaceholders.joined(separator: ","))
-                    """
+                    INSERT OR REPLACE INTO mail_labels (mail_id, label_id)
+                    VALUES \(labelValuePlaceholders.joined(separator: ","))
+                """
 
                 let labelResult = databaseManager.executeQuery(
                     insertLabelSQL, parameters: labelParameters
@@ -375,27 +375,27 @@ class CharacterMailAPI {
     /// - Returns: 邮件内容，如果不存在则返回nil
     private func loadMailContentFromDatabase(mailId: Int) async throws -> EVEMailContent? {
         let query = """
-                SELECT * FROM mail_content 
-                WHERE mail_id = ? 
-                LIMIT 1
-            """
+            SELECT * FROM mail_content 
+            WHERE mail_id = ? 
+            LIMIT 1
+        """
 
         let result = databaseManager.executeQuery(query, parameters: [mailId])
         switch result {
         case let .success(rows):
             guard let row = rows.first,
-                let body = row["body"] as? String,
-                let fromId = (row["from_id"] as? Int64).map(Int.init) ?? (row["from_id"] as? Int),
-                let subject = row["subject"] as? String,
-                let recipientsString = row["recipients"] as? String,
-                let labelsString = row["labels"] as? String,
-                let timestamp = row["timestamp"] as? String,
-                let recipients = try? JSONDecoder().decode(
-                    [EVEMailRecipient].self, from: recipientsString.data(using: .utf8)!
-                ),
-                let labels = try? JSONDecoder().decode(
-                    [Int].self, from: labelsString.data(using: .utf8)!
-                )
+                  let body = row["body"] as? String,
+                  let fromId = (row["from_id"] as? Int64).map(Int.init) ?? (row["from_id"] as? Int),
+                  let subject = row["subject"] as? String,
+                  let recipientsString = row["recipients"] as? String,
+                  let labelsString = row["labels"] as? String,
+                  let timestamp = row["timestamp"] as? String,
+                  let recipients = try? JSONDecoder().decode(
+                      [EVEMailRecipient].self, from: recipientsString.data(using: .utf8)!
+                  ),
+                  let labels = try? JSONDecoder().decode(
+                      [Int].self, from: labelsString.data(using: .utf8)!
+                  )
             else {
                 return nil
             }
@@ -419,23 +419,23 @@ class CharacterMailAPI {
     /// - Parameter content: 邮件内容
     private func saveMailContentToDatabase(content: EVEMailContent) async throws {
         let insertSQL = """
-                INSERT OR REPLACE INTO mail_content (
-                    mail_id,
-                    body,
-                    from_id,
-                    subject,
-                    recipients,
-                    labels,
-                    timestamp
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)
-            """
+            INSERT OR REPLACE INTO mail_content (
+                mail_id,
+                body,
+                from_id,
+                subject,
+                recipients,
+                labels,
+                timestamp
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        """
 
         // 将数组转换为JSON字符串
         let recipientsData = try JSONEncoder().encode(content.recipients)
         let labelsData = try JSONEncoder().encode(content.labels)
 
         guard let recipientsString = String(data: recipientsData, encoding: .utf8),
-            let labelsString = String(data: labelsData, encoding: .utf8)
+              let labelsString = String(data: labelsData, encoding: .utf8)
         else {
             throw DatabaseError.insertError("Failed to encode recipients or labels")
         }
@@ -443,7 +443,7 @@ class CharacterMailAPI {
         let result = databaseManager.executeQuery(
             insertSQL,
             parameters: [
-                content.from,  // 使用from作为mail_id
+                content.from, // 使用from作为mail_id
                 content.body,
                 content.from,
                 content.subject,
@@ -500,13 +500,13 @@ class CharacterMailAPI {
     private func saveMailLists(_ mailLists: [EVEMailList], for characterId: Int) async throws {
         // 构建SQL插入语句
         let insertSQL = """
-                INSERT OR REPLACE INTO mail_lists (
-                    list_id,
-                    character_id,
-                    name,
-                    last_updated
-                ) VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-            """
+            INSERT OR REPLACE INTO mail_lists (
+                list_id,
+                character_id,
+                name,
+                last_updated
+            ) VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+        """
 
         // 先删除该角色的旧订阅列表
         let deleteSQL = "DELETE FROM mail_lists WHERE character_id = ?"
@@ -541,11 +541,11 @@ class CharacterMailAPI {
     /// - Returns: 邮件订阅列表数组
     func loadMailListsFromDatabase(characterId: Int) async throws -> [EVEMailList] {
         let query = """
-                SELECT list_id, name 
-                FROM mail_lists 
-                WHERE character_id = ? 
-                ORDER BY name
-            """
+            SELECT list_id, name 
+            FROM mail_lists 
+            WHERE character_id = ? 
+            ORDER BY name
+        """
 
         let result = databaseManager.executeQuery(query, parameters: [characterId])
         switch result {
@@ -555,7 +555,7 @@ class CharacterMailAPI {
             for row in rows {
                 guard
                     let listId = (row["list_id"] as? Int64).map(Int.init)
-                        ?? (row["list_id"] as? Int),
+                    ?? (row["list_id"] as? Int),
                     let name = row["name"] as? String
                 else {
                     continue

@@ -6,26 +6,26 @@ struct DroneSettingsView: View {
     let drone: SimDrone
     let databaseManager: DatabaseManager
     let viewModel: FittingEditorViewModel
-    
+
     // 回调函数
     var onDelete: () -> Void
     var onUpdateQuantity: (Int, Int) -> Void // (新数量, 新激活数)
     var onReplaceDrone: (Int) -> Void // 新无人机类型ID
-    
+
     // 环境变量
     @Environment(\.dismiss) var dismiss
-    
+
     // 状态变量
     @State private var droneDetails: DatabaseListItem? = nil
     @State private var isLoading = true
     @State private var variationsCount: Int = 0
     @State private var quantity: Int
     @State private var activeCount: Int
-    @State private var currentDroneID: Int  // 当前无人机ID
+    @State private var currentDroneID: Int // 当前无人机ID
     @State private var initialActiveCount: Int // 用于跟踪激活数量是否变化
     @State private var hasActiveCountChanged = false // 跟踪激活数量是否发生了变化
     @State private var hasQuantityChanged = false // 跟踪总数量是否发生了变化
-    
+
     // 初始化方法
     init(
         drone: SimDrone,
@@ -41,24 +41,31 @@ struct DroneSettingsView: View {
         self.onDelete = onDelete
         self.onUpdateQuantity = onUpdateQuantity
         self.onReplaceDrone = onReplaceDrone
-        
+
         // 初始化状态变量
-        self._quantity = State(initialValue: drone.quantity)
-        self._activeCount = State(initialValue: drone.activeCount)
-        self._initialActiveCount = State(initialValue: drone.activeCount)
-        self._currentDroneID = State(initialValue: drone.typeId)
+        _quantity = State(initialValue: drone.quantity)
+        _activeCount = State(initialValue: drone.activeCount)
+        _initialActiveCount = State(initialValue: drone.activeCount)
+        _currentDroneID = State(initialValue: drone.typeId)
     }
-    
+
     var body: some View {
         NavigationStack {
             List {
-                Section(header: 
+                Section(
+                    header:
                     HStack {
                         Text(NSLocalizedString("Fitting_Setting_Drones", comment: ""))
                         Spacer()
                         // 获取计算后的无人机属性
-                        let currentOutputDrone = viewModel.simulationOutput?.drones.first(where: { $0.typeId == currentDroneID })
-                        NavigationLink(destination: ShowItemInfo(databaseManager: databaseManager, itemID: currentDroneID, modifiedAttributes: currentOutputDrone?.attributes)) {
+                        let currentOutputDrone = viewModel.simulationOutput?.drones.first(
+                            where: { $0.typeId == currentDroneID })
+                        NavigationLink(
+                            destination: ShowItemInfo(
+                                databaseManager: databaseManager, itemID: currentDroneID,
+                                modifiedAttributes: currentOutputDrone?.attributes
+                            )
+                        ) {
                             Text(NSLocalizedString("View_Details", comment: ""))
                                 .font(.caption)
                                 .foregroundColor(.blue)
@@ -81,24 +88,24 @@ struct DroneSettingsView: View {
                                         // 保存当前状态
                                         let previousQuantity = quantity
                                         let previousActiveCount = min(activeCount, previousQuantity)
-                                        
+
                                         // 替换无人机
                                         onReplaceDrone(variationID)
-                                        
+
                                         // 更新当前无人机ID
                                         currentDroneID = variationID
-                                        
+
                                         // 重新加载无人机信息
                                         loadDroneDetails()
                                         checkVariations()
-                                        
+
                                         // 保持之前的数量和激活状态
                                         quantity = previousQuantity
                                         activeCount = previousActiveCount
-                                        
+
                                         // 更新无人机数量和激活状态
                                         onUpdateQuantity(quantity, activeCount)
-                                        
+
                                         // 如果激活数量与初始值不同，标记为已更改
                                         if activeCount != initialActiveCount {
                                             hasActiveCountChanged = true
@@ -119,10 +126,14 @@ struct DroneSettingsView: View {
                             )
                         }
                     }
-                    
+
                     // 数量设置
-                    Stepper(value: $quantity, in: 1...500, step: 1) {
-                        Text(String(format: NSLocalizedString("Fitting_Drones_Qty", comment: ""), quantity))
+                    Stepper(value: $quantity, in: 1 ... 500, step: 1) {
+                        Text(
+                            String(
+                                format: NSLocalizedString("Fitting_Drones_Qty", comment: ""),
+                                quantity
+                            ))
                     }
                     .onChange(of: quantity) { _, newValue in
                         // 如果数量小于激活数，更新激活数
@@ -133,22 +144,26 @@ struct DroneSettingsView: View {
                                 hasActiveCountChanged = true
                             }
                         }
-                        
+
                         // 标记数量已更改
                         hasQuantityChanged = true
-                        
+
                         // 更新无人机数量
                         onUpdateQuantity(newValue, activeCount)
                     }
-                    
+
                     // 激活数量设置
-                    Stepper(value: $activeCount, in: 0...min(quantity, viewModel.maxActiveDrones)) {
-                        Text(String(format: NSLocalizedString("Fitting_Act_Drones_Qty", comment: ""), activeCount))
+                    Stepper(value: $activeCount, in: 0 ... min(quantity, viewModel.maxActiveDrones)) {
+                        Text(
+                            String(
+                                format: NSLocalizedString("Fitting_Act_Drones_Qty", comment: ""),
+                                activeCount
+                            ))
                     }
                     .onChange(of: activeCount) { _, newValue in
                         // 更新激活数量
                         onUpdateQuantity(quantity, newValue)
-                        
+
                         // 如果激活数量与初始值不同，标记为已更改
                         if newValue != initialActiveCount {
                             hasActiveCountChanged = true
@@ -162,7 +177,7 @@ struct DroneSettingsView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button {
-                        onDelete()  // 调用删除回调
+                        onDelete() // 调用删除回调
                         dismiss()
                     } label: {
                         Image(systemName: "trash")
@@ -172,7 +187,7 @@ struct DroneSettingsView: View {
                             .clipShape(Circle())
                     }
                 }
-                
+
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         dismiss()
@@ -197,27 +212,27 @@ struct DroneSettingsView: View {
                 }
             }
         }
-        .presentationDetents([.fraction(0.81)])  // 设置为屏幕高度的81%
-        .presentationDragIndicator(.visible)  // 显示拖动指示器
+        .presentationDetents([.fraction(0.81)]) // 设置为屏幕高度的81%
+        .presentationDragIndicator(.visible) // 显示拖动指示器
     }
-    
+
     // 加载无人机详细信息
     private func loadDroneDetails() {
         isLoading = true
-        
+
         // 使用loadMarketItems方法获取无人机数据
         let items = databaseManager.loadMarketItems(
             whereClause: "t.type_id = ?",
             parameters: [currentDroneID]
         )
-        
+
         if let item = items.first {
             droneDetails = item
         }
-        
+
         isLoading = false
     }
-    
+
     // 检查是否有变体
     private func checkVariations() {
         variationsCount = databaseManager.getVariationsCount(for: currentDroneID)
@@ -229,12 +244,12 @@ struct DroneVariationSelectionView: View {
     let databaseManager: DatabaseManager
     let currentDroneID: Int
     let onSelectVariation: (Int) -> Void
-    
+
     @Environment(\.dismiss) var dismiss
     @State private var items: [DatabaseListItem] = []
     @State private var metaGroupNames: [Int: String] = [:]
     @State private var isLoading = true
-    
+
     var body: some View {
         List {
             if isLoading {
@@ -244,7 +259,11 @@ struct DroneVariationSelectionView: View {
                 }
             } else {
                 ForEach(groupedItems.keys.sorted(), id: \.self) { metaGroupID in
-                    Section(header: Text(metaGroupNames[metaGroupID] ?? NSLocalizedString("Unknown", comment: ""))) {
+                    Section(
+                        header: Text(
+                            metaGroupNames[metaGroupID] ?? NSLocalizedString("Unknown", comment: "")
+                        )
+                    ) {
                         ForEach(groupedItems[metaGroupID] ?? [], id: \.id) { item in
                             HStack {
                                 DatabaseListItemView(item: item, showDetails: true)
@@ -265,16 +284,16 @@ struct DroneVariationSelectionView: View {
             loadData()
         }
     }
-    
+
     private var groupedItems: [Int: [DatabaseListItem]] {
         Dictionary(grouping: items) { $0.metaGroupID ?? 0 }
     }
-    
+
     private func loadData() {
         isLoading = true
         let result = databaseManager.loadVariations(for: currentDroneID)
-        self.items = result.0
-        self.metaGroupNames = result.1
+        items = result.0
+        metaGroupNames = result.1
         isLoading = false
     }
-} 
+}

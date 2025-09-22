@@ -12,12 +12,15 @@ struct MarketOrdersView: View {
     @State private var isLoadingLocations = false
     let locationInfoLoader: LocationInfoLoader
 
-    init(itemID: Int, itemName: String, regionID: Int, initialOrders: [MarketOrder] = [], databaseManager: DatabaseManager) {
+    init(
+        itemID: Int, itemName: String, regionID: Int, initialOrders: [MarketOrder] = [],
+        databaseManager: DatabaseManager
+    ) {
         self.itemID = itemID
         self.itemName = itemName
         self.regionID = regionID
         self.databaseManager = databaseManager
-        self._orders = State(initialValue: initialOrders)
+        _orders = State(initialValue: initialOrders)
 
         // 从 UserDefaults 获取当前选择的角色ID
         let currentCharacterId = UserDefaults.standard.integer(forKey: "currentCharacterId")
@@ -64,11 +67,13 @@ struct MarketOrdersView: View {
                 HStack {
                     ProgressView()
                         .scaleEffect(0.7)
-                    Text(isLoadingOrders ? 
-                         NSLocalizedString("Loading_Orders", comment: "正在加载订单...") :
-                         NSLocalizedString("Loading_Location_Info", comment: "正在加载地点信息..."))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    Text(
+                        isLoadingOrders
+                            ? NSLocalizedString("Loading_Orders", comment: "正在加载订单...")
+                            : NSLocalizedString("Loading_Location_Info", comment: "正在加载地点信息...")
+                    )
+                    .font(.caption)
+                    .foregroundColor(.secondary)
                 }
                 .padding(.vertical, 4)
                 .frame(maxWidth: .infinity)
@@ -84,7 +89,7 @@ struct MarketOrdersView: View {
             if orders.isEmpty {
                 await loadOrdersData()
             }
-            
+
             // 加载位置信息
             await loadLocationInfo()
         }
@@ -94,16 +99,16 @@ struct MarketOrdersView: View {
             await loadLocationInfo()
         }
     }
-    
+
     // MARK: - 数据加载方法
-    
+
     private func loadOrdersData(forceRefresh: Bool = false) async {
         isLoadingOrders = true
         defer { isLoadingOrders = false }
-        
+
         do {
             let newOrders: [MarketOrder]
-            
+
             // 判断是否选择了建筑
             if StructureMarketManager.isStructureId(regionID) {
                 // 选择了建筑，使用建筑订单API
@@ -114,7 +119,7 @@ struct MarketOrdersView: View {
                     }
                     return
                 }
-                
+
                 // 获取建筑对应的角色ID
                 guard let structure = getStructureById(structureId) else {
                     Logger.error("未找到建筑信息: \(structureId)")
@@ -123,14 +128,14 @@ struct MarketOrdersView: View {
                     }
                     return
                 }
-                
+
                 newOrders = try await StructureMarketManager.shared.getItemOrdersInStructure(
                     structureId: structureId,
                     characterId: structure.characterId,
                     typeId: itemID,
                     forceRefresh: forceRefresh
                 )
-                
+
                 Logger.info("从建筑 \(structure.structureName) 获取到 \(newOrders.count) 个订单")
             } else {
                 // 选择了星域，使用原有的API
@@ -140,7 +145,7 @@ struct MarketOrdersView: View {
                     forceRefresh: forceRefresh
                 )
             }
-            
+
             await MainActor.run {
                 orders = newOrders
             }
@@ -151,24 +156,24 @@ struct MarketOrdersView: View {
             }
         }
     }
-    
+
     private func loadLocationInfo() async {
         guard !orders.isEmpty else { return }
-        
+
         isLoadingLocations = true
         defer { isLoadingLocations = false }
-        
+
         // 收集所有订单的位置ID
         let locationIds = Set(orders.map { $0.locationId })
-        
+
         // 按类型分组位置ID
         let groupedIds = Dictionary(grouping: locationIds) { LocationType.from(id: $0) }
-        
+
         // 清空之前的位置信息
         await MainActor.run {
             locationInfos = [:]
         }
-        
+
         // 1. 立即处理PLEX建筑物（如果适用）
         if itemID == 44992, let structureIds = groupedIds[.structure] {
             var plexStructureInfos: [Int64: LocationInfoDetail] = [:]
@@ -179,32 +184,32 @@ struct MarketOrdersView: View {
                     security: 0.0
                 )
             }
-            
+
             await MainActor.run {
                 locationInfos.merge(plexStructureInfos) { _, new in new }
             }
         }
-        
+
         // 2. 优先加载空间站信息（通常在本地数据库中，速度快）
         if let stationIds = groupedIds[.station], !stationIds.isEmpty {
             let stationInfos = await locationInfoLoader.loadLocationInfo(
                 locationIds: Set(stationIds))
-            
+
             await MainActor.run {
                 locationInfos.merge(stationInfos) { _, new in new }
             }
         }
-        
+
         // 3. 优先加载星系信息（通常在本地数据库中，速度快）
         if let systemIds = groupedIds[.solarSystem], !systemIds.isEmpty {
             let systemInfos = await locationInfoLoader.loadLocationInfo(
                 locationIds: Set(systemIds))
-            
+
             await MainActor.run {
                 locationInfos.merge(systemInfos) { _, new in new }
             }
         }
-        
+
         // 4. 最后加载建筑物信息（需要API查询，速度慢）
         if let structureIds = groupedIds[.structure], !structureIds.isEmpty {
             // PLEX特殊处理：跳过建筑物API查询
@@ -212,11 +217,11 @@ struct MarketOrdersView: View {
                 // PLEX的建筑物已经在步骤1中处理了
                 return
             }
-            
+
             // 正常物品：查询建筑物信息
             let structureInfos = await locationInfoLoader.loadLocationInfo(
                 locationIds: Set(structureIds))
-            
+
             await MainActor.run {
                 locationInfos.merge(structureInfos) { _, new in new }
             }
@@ -232,9 +237,9 @@ struct MarketOrdersView: View {
         private var sortedOrders: [MarketOrder] {
             orders.sorted { order1, order2 -> Bool in
                 if order1.isBuyOrder {
-                    return order1.price > order2.price  // 买单按价格从高到低
+                    return order1.price > order2.price // 买单按价格从高到低
                 } else {
-                    return order1.price < order2.price  // 卖单按价格从低到高
+                    return order1.price < order2.price // 卖单按价格从低到高
                 }
             }
         }
@@ -317,7 +322,7 @@ struct MarketOrdersView: View {
 
             let formattedFullPrice =
                 numberFormatter.string(from: NSNumber(value: price))
-                ?? String(format: "%.2f", price)
+                    ?? String(format: "%.2f", price)
 
             if price >= billion {
                 let value = price / billion
@@ -330,7 +335,7 @@ struct MarketOrdersView: View {
             }
         }
     }
-    
+
     // 根据建筑ID获取建筑信息
     private func getStructureById(_ structureId: Int64) -> MarketStructure? {
         return MarketStructureManager.shared.structures.first { $0.structureId == Int(structureId) }

@@ -42,7 +42,7 @@ class IncursionsAPI {
 
     // 缓存相关常量
     private let cacheKey = "incursions_data"
-    private let cacheDuration: TimeInterval = 30 * 60  // 30 分钟缓存
+    private let cacheDuration: TimeInterval = 30 * 60 // 30 分钟缓存
 
     struct CachedData: Codable {
         let data: [Incursion]
@@ -66,7 +66,7 @@ class IncursionsAPI {
         let baseURL = "https://esi.evetech.net/incursions/"
         var components = URLComponents(string: baseURL)
         components?.queryItems = [
-            URLQueryItem(name: "datasource", value: "tranquility")
+            URLQueryItem(name: "datasource", value: "tranquility"),
         ]
 
         guard let url = components?.url else {
@@ -87,8 +87,8 @@ class IncursionsAPI {
 
     private func loadFromCache() throws -> [Incursion]? {
         guard let cachedData = UserDefaults.standard.data(forKey: cacheKey),
-            let cached = try? JSONDecoder().decode(CachedData.self, from: cachedData),
-            cached.timestamp.addingTimeInterval(cacheDuration) > Date()
+              let cached = try? JSONDecoder().decode(CachedData.self, from: cachedData),
+              cached.timestamp.addingTimeInterval(cacheDuration) > Date()
         else {
             return nil
         }

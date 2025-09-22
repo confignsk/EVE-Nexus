@@ -29,16 +29,16 @@ private struct ImplantInfo {
 
         // 获取基本信息
         let query = """
-                SELECT t.type_id, t.name, t.icon_filename, COALESCE(ta.value, 0) as attribute_value
-                FROM types t
-                LEFT JOIN typeAttributes ta ON t.type_id = ta.type_id AND ta.attribute_id = 331
-                WHERE t.type_id IN (\(typeIds.sorted().map { String($0) }.joined(separator: ",")))
-            """
+            SELECT t.type_id, t.name, t.icon_filename, COALESCE(ta.value, 0) as attribute_value
+            FROM types t
+            LEFT JOIN typeAttributes ta ON t.type_id = ta.type_id AND ta.attribute_id = 331
+            WHERE t.type_id IN (\(typeIds.sorted().map { String($0) }.joined(separator: ",")))
+        """
 
         if case let .success(rows) = databaseManager.executeQuery(query) {
             for row in rows {
                 if let typeId = row["type_id"] as? Int,
-                    let name = row["name"] as? String
+                   let name = row["name"] as? String
                 {
                     let iconFile =
                         (row["icon_filename"] as? String) ?? DatabaseConfig.defaultItemIcon
@@ -73,9 +73,9 @@ struct CharacterClonesView: View {
     @State private var homeLocationDetail: LocationInfoDetail?
     @State private var locationLoader: LocationInfoLoader?
     @State private var locationTypeId: Int?
-    @State private var implantDetails: [ImplantInfo] = []  // 修改类型
+    @State private var implantDetails: [ImplantInfo] = [] // 修改类型
     @State private var mergedCloneLocations: [MergedCloneLocation] = []
-    @State private var hasInitialized = false  // 追踪是否已执行初始化
+    @State private var hasInitialized = false // 追踪是否已执行初始化
 
     private let dateFormatter: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
@@ -121,9 +121,9 @@ struct CharacterClonesView: View {
                         if let locationDetail = homeLocationDetail {
                             HStack {
                                 if let typeId = locationTypeId,
-                                    let iconFileName = getStationIcon(
-                                        typeId: typeId, databaseManager: databaseManager
-                                    )
+                                   let iconFileName = getStationIcon(
+                                       typeId: typeId, databaseManager: databaseManager
+                                   )
                                 {
                                     IconManager.shared.loadImage(for: iconFileName)
                                         .resizable()
@@ -151,7 +151,7 @@ struct CharacterClonesView: View {
 
                         // 最后跳跃时间
                         if let lastJumpDate = cloneInfo.last_clone_jump_date,
-                            let date = dateFormatter.date(from: lastJumpDate)
+                           let date = dateFormatter.date(from: lastJumpDate)
                         {
                             HStack {
                                 Image("jumpclones")
@@ -180,7 +180,7 @@ struct CharacterClonesView: View {
                                 Text(
                                     NSLocalizedString("Character_Last_Station_Change", comment: ""))
                                 if let lastStationDate = cloneInfo.last_station_change_date,
-                                    let date = dateFormatter.date(from: lastStationDate)
+                                   let date = dateFormatter.date(from: lastStationDate)
                                 {
                                     Text(formatDate(date))
                                         .font(.caption)
@@ -215,17 +215,16 @@ struct CharacterClonesView: View {
                                     Text(implant.name)
                                         .multilineTextAlignment(.leading)
                                         .lineLimit(2)
-                                        .fixedSize(horizontal: false, vertical: true)  // 添加这行以确保正确换行
+                                        .fixedSize(horizontal: false, vertical: true) // 添加这行以确保正确换行
                                     Spacer()
                                 }
                             }
-                        }
+                        }.listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                     } else {
                         Text(NSLocalizedString("Character_No_Implants", comment: ""))
                             .foregroundColor(.secondary)
                     }
                 }
-                .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
 
                 // 克隆体列表
                 if cloneInfo != nil, !mergedCloneLocations.isEmpty {
@@ -248,8 +247,8 @@ struct CharacterClonesView: View {
                                 )
                             }
                         }
+                        .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                     }
-                    .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                 }
             }
         }
@@ -360,8 +359,8 @@ struct CharacterClonesView: View {
     private func getStationIcon(typeId: Int, databaseManager: DatabaseManager) -> String? {
         let query = "SELECT icon_filename FROM types WHERE type_id = ?"
         if case let .success(rows) = databaseManager.executeQuery(query, parameters: [typeId]),
-            let row = rows.first,
-            let iconFile = row["icon_filename"] as? String
+           let row = rows.first,
+           let iconFile = row["icon_filename"] as? String
         {
             return iconFile.isEmpty ? DatabaseConfig.defaultItemIcon : iconFile
         }
@@ -399,9 +398,9 @@ struct CloneLocationRow: View {
         HStack {
             if let locationDetail = locationDetail {
                 if let typeId = locationTypeId,
-                    let iconFileName = getStationIcon(
-                        typeId: typeId, databaseManager: databaseManager
-                    )
+                   let iconFileName = getStationIcon(
+                       typeId: typeId, databaseManager: databaseManager
+                   )
                 {
                     IconManager.shared.loadImage(for: iconFileName)
                         .resizable()
@@ -426,7 +425,8 @@ struct CloneLocationRow: View {
                     Text(
                         String(
                             format: NSLocalizedString(
-                                "Character_Clone_And_Implants_Count", comment: ""),
+                                "Character_Clone_And_Implants_Count", comment: ""
+                            ),
                             cloneCount,
                             totalImplantsCount
                         )
@@ -480,8 +480,8 @@ struct CloneLocationRow: View {
     private func getStationIcon(typeId: Int, databaseManager: DatabaseManager) -> String? {
         let query = "SELECT icon_filename FROM types WHERE type_id = ?"
         if case let .success(rows) = databaseManager.executeQuery(query, parameters: [typeId]),
-            let row = rows.first,
-            let iconFile = row["icon_filename"] as? String
+           let row = rows.first,
+           let iconFile = row["icon_filename"] as? String
         {
             return iconFile.isEmpty ? DatabaseConfig.defaultItemIcon : iconFile
         }
@@ -493,7 +493,7 @@ struct CloneLocationRow: View {
 struct CloneLocationDetailView: View {
     let clones: [JumpClone]
     let databaseManager: DatabaseManager
-    @State private var implantDetailsMap: [Int: [ImplantInfo]] = [:]  // 修改类型
+    @State private var implantDetailsMap: [Int: [ImplantInfo]] = [:] // 修改类型
 
     var body: some View {
         List {
@@ -555,6 +555,7 @@ struct CloneLocationDetailView: View {
                     }
                 }
             }
+            .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
         }
         .navigationTitle(NSLocalizedString("Character_Clone_Details", comment: ""))
         .task {

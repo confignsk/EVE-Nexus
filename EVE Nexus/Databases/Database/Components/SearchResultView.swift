@@ -5,12 +5,12 @@ import SwiftUI
 struct DatabaseListItem: Identifiable {
     let id: Int
     let name: String
-    let enName: String?  // 添加英文名称
+    let enName: String? // 添加英文名称
     let iconFileName: String
     let published: Bool
     let categoryID: Int?
     let groupID: Int?
-    let groupName: String?  // 添加物品组名称字段
+    let groupName: String? // 添加物品组名称字段
     let pgNeed: Double?
     let cpuNeed: Double?
     let rigCost: Int?
@@ -25,14 +25,14 @@ struct DatabaseListItem: Identifiable {
     let gunSlot: Int?
     let missSlot: Int?
     let metaGroupID: Int?
-    let marketGroupID: Int?  // 添加市场组ID字段
+    let marketGroupID: Int? // 添加市场组ID字段
     let navigationDestination: AnyView
 }
 
 // 分组类型
 enum GroupingType {
-    case publishedOnly  // Categories 和 Groups 用：只分已发布和未发布
-    case metaGroups  // Items 用：按 metaGroup 分组，外加未发布组
+    case publishedOnly // Categories 和 Groups 用：只分已发布和未发布
+    case metaGroups // Items 用：按 metaGroup 分组，外加未发布组
 }
 
 // 统一的列表视图
@@ -47,12 +47,12 @@ struct DatabaseListView: View {
 
     @State private var items: [DatabaseListItem] = []
     @State private var metaGroupNames: [Int: String] = [:]
-    @State private var groupNames: [Int: String] = [:]  // 添加组名字典
+    @State private var groupNames: [Int: String] = [:] // 添加组名字典
     @State private var searchText = ""
     @State private var isLoading = false
     @State private var lastSearchResults: ([DatabaseListItem], [Int: String], [Int: String])? = nil
     @State private var isShowingSearchResults = false
-    @State private var isSearchActive = false  // 新增：控制搜索框激活状态
+    @State private var isSearchActive = false // 新增：控制搜索框激活状态
 
     // Combine 用于处理搜索
     @StateObject private var searchController = SearchController()
@@ -105,7 +105,7 @@ struct DatabaseListView: View {
     @ViewBuilder
     private var loadingOverlay: some View {
         if isLoading || (!searchText.isEmpty && !isShowingSearchResults) {
-            Color(.systemBackground)  // 使用系统背景色作为不透明遮罩
+            Color(.systemBackground) // 使用系统背景色作为不透明遮罩
                 .ignoresSafeArea()
                 .overlay {
                     VStack {
@@ -198,8 +198,8 @@ struct DatabaseListView: View {
         let (loadedItems, loadedMetaGroupNames) = loadData(databaseManager)
         items = loadedItems
         metaGroupNames = loadedMetaGroupNames
-        isShowingSearchResults = false  // 重置搜索结果标志
-        lastSearchResults = nil  // 清除搜索结果缓存
+        isShowingSearchResults = false // 重置搜索结果标志
+        lastSearchResults = nil // 清除搜索结果缓存
     }
 
     private func setupSearch() {
@@ -216,7 +216,7 @@ struct DatabaseListView: View {
     private func performSearch(with text: String) {
         guard let searchData = searchData else { return }
 
-        isLoading = true  // 开始搜索，显示加载状态
+        isLoading = true // 开始搜索，显示加载状态
 
         // 在主线程中执行搜索
         DispatchQueue.main.async {
@@ -245,9 +245,9 @@ struct DatabaseListView: View {
 
             // 保存搜索结果
             lastSearchResults = (searchResults, metaGroupNames, groupNames)
-            isShowingSearchResults = true  // 搜索结果标志
+            isShowingSearchResults = true // 搜索结果标志
 
-            isLoading = false  // 搜索完成，隐藏加载状态
+            isLoading = false // 搜索完成，隐藏加载状态
         }
     }
 
@@ -265,7 +265,7 @@ struct DatabaseListView: View {
                 (
                     id: 0, name: NSLocalizedString("Main_Database_published", comment: ""),
                     items: publishedItems
-                )
+                ),
             ]
         }
     }
@@ -303,9 +303,9 @@ struct DatabaseListView: View {
             let index1 = categoryPriority.firstIndex(of: cat1) ?? Int.max
             let index2 = categoryPriority.firstIndex(of: cat2) ?? Int.max
             if index1 == index2 {
-                return cat1 < cat2  // 如果都不在优先级列表中，按ID升序
+                return cat1 < cat2 // 如果都不在优先级列表中，按ID升序
             }
-            return index1 < index2  // 按优先级排序
+            return index1 < index2 // 按优先级排序
         }
 
         // 构建最终结果

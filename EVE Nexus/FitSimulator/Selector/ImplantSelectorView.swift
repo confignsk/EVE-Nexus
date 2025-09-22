@@ -9,7 +9,7 @@ struct ImplantSelectorView: View {
     @State private var searchText: String = ""
     @State private var isLoading: Bool = true
     @Environment(\.dismiss) private var dismiss
-    
+
     let onSelect: (DatabaseListItem) -> Void
     let onRemove: (() -> Void)?
 
@@ -28,20 +28,25 @@ struct ImplantSelectorView: View {
                                     dismiss()
                                 }) {
                                     HStack {
-                                        Text(NSLocalizedString("Remove_Current_Implant", comment: "移除现有植入体"))
-                                            .foregroundColor(.red)
+                                        Text(
+                                            NSLocalizedString(
+                                                "Remove_Current_Implant", comment: "移除现有植入体"
+                                            )
+                                        )
+                                        .foregroundColor(.red)
                                         Spacer()
                                     }
                                 }
                             }
                         }
-                        
+
                         if filteredItems.isEmpty {
                             Section {
                                 ContentUnavailableView {
                                     Label(
                                         NSLocalizedString("Misc_No_Data", comment: "无数据"),
-                                        systemImage: "exclamationmark.triangle")
+                                        systemImage: "exclamationmark.triangle"
+                                    )
                                 }
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                                 .listRowBackground(Color.clear)
@@ -63,7 +68,11 @@ struct ImplantSelectorView: View {
                     )
                 }
             }
-            .navigationTitle(String(format: NSLocalizedString("Implant_Slot_Num", comment: "植入体槽位 %d"), slotNumber))
+            .navigationTitle(
+                String(
+                    format: NSLocalizedString("Implant_Slot_Num", comment: "植入体槽位 %d"), slotNumber
+                )
+            )
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -83,7 +92,7 @@ struct ImplantSelectorView: View {
             loadImplantItems()
         }
     }
-    
+
     // 根据搜索文本过滤物品
     private var filteredItems: [DatabaseListItem] {
         if searchText.isEmpty {
@@ -94,13 +103,11 @@ struct ImplantSelectorView: View {
             }
         }
     }
-    
 
-    
     // 加载植入体物品
     private func loadImplantItems() {
         isLoading = true
-        
+
         // 获取指定槽位的植入体信息
         let query = """
             SELECT t.type_id as id, t.name, t.en_name, t.published, t.icon_filename as iconFileName,
@@ -113,10 +120,10 @@ struct ImplantSelectorView: View {
             AND t.marketGroupID IS NOT NULL
             ORDER BY t.name
         """
-        
+
         if case let .success(rows) = databaseManager.executeQuery(query, parameters: [slotNumber]) {
             var items: [DatabaseListItem] = []
-            
+
             for row in rows {
                 if let id = row["id"] as? Int,
                    let name = row["name"] as? String,
@@ -127,7 +134,7 @@ struct ImplantSelectorView: View {
                     let published = (row["published"] as? Int) ?? 0
                     let groupID = row["groupID"] as? Int
                     let groupName = row["groupName"] as? String
-                    
+
                     let item = DatabaseListItem(
                         id: id,
                         name: name,
@@ -154,17 +161,17 @@ struct ImplantSelectorView: View {
                         marketGroupID: nil,
                         navigationDestination: AnyView(EmptyView())
                     )
-                    
+
                     items.append(item)
                 }
             }
-            
+
             implantItems = items
             Logger.info("加载了 \(implantItems.count) 个植入体")
         } else {
             Logger.error("加载植入体信息失败")
         }
-        
+
         isLoading = false
     }
 }
@@ -175,7 +182,7 @@ struct ItemRowWithInfo: View {
     let databaseManager: DatabaseManager
     let onTap: () -> Void
     @State private var showingItemInfo = false
-    
+
     var body: some View {
         HStack {
             ItemNodeRow(item: item) {

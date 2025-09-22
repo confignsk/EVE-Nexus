@@ -1,5 +1,5 @@
 //
-//  Fw.swift
+//  FW.swift
 //  EVE Nexus
 //
 //  Created by GG on 2025/5/7.
@@ -112,8 +112,8 @@ enum FWAPIError: LocalizedError {
 @FWAPIActor
 class FWAPI {
     static let shared = FWAPI()
-    private let cacheDuration: TimeInterval = 15 * 60  // 15分钟缓存
-    private let insurgencyCacheDuration: TimeInterval = 5 * 60  // 5分钟缓存
+    private let cacheDuration: TimeInterval = 15 * 60 // 15分钟缓存
+    private let insurgencyCacheDuration: TimeInterval = 5 * 60 // 5分钟缓存
     private var systemNeighbours: SystemNeighbours = [:]
 
     private init() {
@@ -123,9 +123,9 @@ class FWAPI {
     // MARK: - 私有方法
 
     private func loadNeighboursData() {
-        guard let url = Bundle.main.url(forResource: "neighbours_data", withExtension: "json")
+        guard let url = Bundle.main.url(forResource: "neighbors_data", withExtension: "json")
         else {
-            Logger.error("找不到neighbours_data.json文件")
+            Logger.error("找不到neighbors_data.json文件")
             return
         }
 
@@ -157,8 +157,8 @@ class FWAPI {
     private func loadFromCache<T: Codable>(_ type: String) -> T? {
         let cacheKey = getCacheKey(for: type)
         guard let cachedData = UserDefaults.standard.data(forKey: cacheKey),
-            let cached = try? JSONDecoder().decode(CachedData<T>.self, from: cachedData),
-            cached.timestamp.addingTimeInterval(cacheDuration) > Date()
+              let cached = try? JSONDecoder().decode(CachedData<T>.self, from: cachedData),
+              cached.timestamp.addingTimeInterval(cacheDuration) > Date()
         else {
             return nil
         }
@@ -290,7 +290,7 @@ class FWAPI {
         // 如果不是强制刷新，尝试从缓存获取
         if !forceRefresh {
             if let cachedSystems: [FWSystem] = loadFromCache("systems"),
-                let cachedWars: [FWWar] = loadFromCache("wars")
+               let cachedWars: [FWWar] = loadFromCache("wars")
             {
                 Logger.info("使用缓存的FW数据 - 星系: \(cachedSystems.count)个, 战争: \(cachedWars.count)场")
                 return (cachedSystems, cachedWars)

@@ -15,7 +15,7 @@ struct InsurgencySystemCell: View {
     let factionIconMap: [Int: String]
 
     private var hasEnoughWidth: Bool {
-        DeviceUtils.screenWidth >= 428  // 只在屏幕宽度大于等于 428 时显示额外信息
+        DeviceUtils.screenWidth >= 428 // 只在屏幕宽度大于等于 428 时显示额外信息
     }
 
     var body: some View {
@@ -30,8 +30,8 @@ struct InsurgencySystemCell: View {
                             .font(.system(.subheadline, design: .monospaced))
                         // 添加势力图标，仅在屏幕宽度足够时显示
                         if hasEnoughWidth,
-                            let occupierFactionId = insurgency.solarSystem.occupierFactionId,
-                            let iconName = factionIconMap[occupierFactionId]
+                           let occupierFactionId = insurgency.solarSystem.occupierFactionId,
+                           let iconName = factionIconMap[occupierFactionId]
                         {
                             IconManager.shared.loadImage(for: iconName)
                                 .resizable()
@@ -44,7 +44,10 @@ struct InsurgencySystemCell: View {
                                 Button {
                                     UIPasteboard.general.string = systemInfo.name
                                 } label: {
-                                    Label(NSLocalizedString("Misc_Copy_Location", comment: ""), systemImage: "doc.on.doc")
+                                    Label(
+                                        NSLocalizedString("Misc_Copy_Location", comment: ""),
+                                        systemImage: "doc.on.doc"
+                                    )
                                 }
                             }
                     }
@@ -163,7 +166,7 @@ struct InsurgencyView: View {
     @Environment(\.colorScheme) private var colorScheme
 
     private var hasEnoughWidth: Bool {
-        DeviceUtils.screenWidth >= 428  // 只在屏幕宽度大于等于 428 时显示额外信息
+        DeviceUtils.screenWidth >= 428 // 只在屏幕宽度大于等于 428 时显示额外信息
     }
 
     enum SortType {
@@ -291,7 +294,8 @@ struct InsurgencyView: View {
                             let factionId = firstCampaign.pirateFaction.id
                             let query = "SELECT id, name, iconName FROM factions WHERE id = ?"
                             if case let .success(rows) = databaseManager.executeQuery(
-                                query, parameters: [factionId]),
+                                query, parameters: [factionId]
+                            ),
                                 let row = rows.first,
                                 let iconName = row["iconName"] as? String
                             {
@@ -302,8 +306,7 @@ struct InsurgencyView: View {
                             }
 
                             // 右侧星系信息
-                            if let systemInfo = originSystemInfo[firstCampaign.originSolarSystem.id]
-                            {
+                            if let systemInfo = originSystemInfo[firstCampaign.originSolarSystem.id] {
                                 VStack(alignment: .leading, spacing: 4) {
                                     HStack(spacing: 4) {
                                         Text(formatSystemSecurity(systemInfo.security))
@@ -315,7 +318,12 @@ struct InsurgencyView: View {
                                                 Button {
                                                     UIPasteboard.general.string = systemInfo.name
                                                 } label: {
-                                                    Label(NSLocalizedString("Misc_Copy_Location", comment: ""), systemImage: "doc.on.doc")
+                                                    Label(
+                                                        NSLocalizedString(
+                                                            "Misc_Copy_Location", comment: ""
+                                                        ),
+                                                        systemImage: "doc.on.doc"
+                                                    )
                                                 }
                                             }
                                     }
@@ -406,7 +414,8 @@ struct InsurgencyView: View {
                             if let systemInfo = insurgencySystemInfo[insurgency.solarSystem.id] {
                                 InsurgencySystemCell(
                                     systemInfo: systemInfo, insurgency: insurgency,
-                                    factionIconMap: factionIconMap)
+                                    factionIconMap: factionIconMap
+                                )
                             }
                         }
                     }
@@ -611,14 +620,14 @@ struct InsurgencyView: View {
             let query =
                 "SELECT solarSystemID, solarSystemName, solarSystemName_en, solarSystemName_zh FROM solarsystems WHERE solarSystemID IN (\(String(repeating: "?,", count: allSystemIds.count).dropLast()))"
             if case let .success(rows) = databaseManager.executeQuery(
-                query, parameters: Array(allSystemIds))
-            {
+                query, parameters: Array(allSystemIds)
+            ) {
                 systemNameCache = Dictionary(
                     uniqueKeysWithValues: rows.compactMap { row in
                         guard let id = row["solarSystemID"] as? Int,
-                            let name = row["solarSystemName"] as? String,
-                            let nameEn = row["solarSystemName_en"] as? String,
-                            let nameZh = row["solarSystemName_zh"] as? String
+                              let name = row["solarSystemName"] as? String,
+                              let nameEn = row["solarSystemName_en"] as? String,
+                              let nameZh = row["solarSystemName_zh"] as? String
                         else {
                             return nil
                         }
@@ -636,12 +645,12 @@ struct InsurgencyView: View {
                 let factionQuery =
                     "SELECT id, iconName FROM factions WHERE id IN (\(String(repeating: "?,", count: occupierFactionIds.count).dropLast()))"
                 if case let .success(factionRows) = databaseManager.executeQuery(
-                    factionQuery, parameters: Array(occupierFactionIds))
-                {
+                    factionQuery, parameters: Array(occupierFactionIds)
+                ) {
                     factionIconMap = Dictionary(
                         uniqueKeysWithValues: factionRows.compactMap { row in
                             guard let id = row["id"] as? Int,
-                                let iconName = row["iconName"] as? String
+                                  let iconName = row["iconName"] as? String
                             else {
                                 return nil
                             }

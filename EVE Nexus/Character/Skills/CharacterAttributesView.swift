@@ -16,22 +16,31 @@ struct CharacterAttributesView: View {
                         name: NSLocalizedString("Character_Attribute_Perception", comment: ""),
                         icon: "perception", value: attributes.perception
                     )
+                    .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+
                     AttributeRow(
                         name: NSLocalizedString("Character_Attribute_Memory", comment: ""),
                         icon: "memory", value: attributes.memory
                     )
+                    .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+
                     AttributeRow(
                         name: NSLocalizedString("Character_Attribute_Willpower", comment: ""),
                         icon: "willpower", value: attributes.willpower
                     )
+                    .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+
                     AttributeRow(
                         name: NSLocalizedString("Character_Attribute_Intelligence", comment: ""),
                         icon: "intelligence", value: attributes.intelligence
                     )
+                    .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+
                     AttributeRow(
                         name: NSLocalizedString("Character_Attribute_Charisma", comment: ""),
                         icon: "charisma", value: attributes.charisma
                     )
+                    .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                 } else if isLoading {
                     ProgressView()
                         .frame(maxWidth: .infinity, alignment: .center)
@@ -43,7 +52,13 @@ struct CharacterAttributesView: View {
                 Text(NSLocalizedString("Character_Attributes_Basic", comment: ""))
             } footer: {
                 if hasBooster {
-                    Text(String(format: NSLocalizedString("Character_Attributes_Has_Booster", comment: "人物使用了加速器，每个属性+%d"), boosterValue))
+                    Text(
+                        String(
+                            format: NSLocalizedString(
+                                "Character_Attributes_Has_Booster", comment: "人物使用了加速器，每个属性+%d"
+                            ),
+                            boosterValue
+                        ))
                 }
             }
 
@@ -57,6 +72,7 @@ struct CharacterAttributesView: View {
                             Text("\(bonusRemaps)")
                                 .foregroundColor(.secondary)
                         }
+                        .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                     }
 
                     if let cooldownDate = attributes.accrued_remap_cooldown_date {
@@ -66,6 +82,7 @@ struct CharacterAttributesView: View {
                             Text(formatNextRemapTime(cooldownDate))
                                 .foregroundColor(.secondary)
                         }
+                        .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                     }
                 } header: {
                     Text(NSLocalizedString("Character_Attributes_Remap", comment: ""))
@@ -133,18 +150,18 @@ struct CharacterAttributesView: View {
             let attrs = try await CharacterSkillsAPI.shared.fetchAttributes(
                 characterId: characterId, forceRefresh: forceRefresh
             )
-            
+
             // 获取植入体加成
             let implants = await SkillTrainingCalculator.getImplantBonuses(
                 characterId: characterId, forceRefresh: forceRefresh
             )
-            
+
             // 检测是否有加速器
             let boosterBonus = SkillTrainingCalculator.detectBoosterBonus(
                 currentAttributes: attrs,
                 implantBonuses: implants
             )
-            
+
             await MainActor.run {
                 attributes = attrs
                 implantBonuses = implants

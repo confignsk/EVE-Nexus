@@ -7,7 +7,7 @@ struct ESIStatusView: View {
     @State private var isLoading = true
     @State private var errorMessage: String? = nil
     @State private var lastRefreshTime: Date? = nil
-    @State private var selectedFilter: String? = nil  // nil表示不过滤
+    @State private var selectedFilter: String? = nil // nil表示不过滤
 
     // MARK: - 计算属性
 

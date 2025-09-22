@@ -35,9 +35,9 @@ public final class SolarSystemInfo: Codable {
 // 计算显示用的安全等级
 func calculateDisplaySecurity(_ trueSec: Double) -> Double {
     if trueSec > 0.0 && trueSec < 0.05 {
-        return 0.1  // 0.0到0.05之间向上取整到0.1
+        return 0.1 // 0.0到0.05之间向上取整到0.1
     }
-    return round(trueSec * 10) / 10  // 其他情况四舍五入到小数点后一位
+    return round(trueSec * 10) / 10 // 其他情况四舍五入到小数点后一位
 }
 
 // 格式化安全等级显示
@@ -51,23 +51,23 @@ func getSecurityColor(_ trueSec: Double) -> Color {
     let displaySec = calculateDisplaySecurity(trueSec)
     switch displaySec {
     case 1.0:
-        return Color(red: 65 / 255, green: 115 / 255, blue: 212 / 255)  // 深蓝色
+        return Color(red: 65 / 255, green: 115 / 255, blue: 212 / 255) // 深蓝色
     case 0.9:
-        return Color(red: 85 / 255, green: 152 / 255, blue: 229 / 255)  // 中蓝色
+        return Color(red: 85 / 255, green: 152 / 255, blue: 229 / 255) // 中蓝色
     case 0.8:
-        return Color(red: 115 / 255, green: 203 / 255, blue: 244 / 255)  // 浅蓝色
+        return Color(red: 115 / 255, green: 203 / 255, blue: 244 / 255) // 浅蓝色
     case 0.7:
-        return Color(red: 129 / 255, green: 216 / 255, blue: 169 / 255)  // 浅绿色
+        return Color(red: 129 / 255, green: 216 / 255, blue: 169 / 255) // 浅绿色
     case 0.6, 0.5:
-        return Color(red: 143 / 255, green: 225 / 255, blue: 103 / 255)  // 绿色
+        return Color(red: 143 / 255, green: 225 / 255, blue: 103 / 255) // 绿色
     case 0.4, 0.3:
-        return Color(red: 208 / 255, green: 113 / 255, blue: 45 / 255)  // 橙色
+        return Color(red: 208 / 255, green: 113 / 255, blue: 45 / 255) // 橙色
     case 0.2, 0.1:
-        return Color(red: 188 / 255, green: 17 / 255, blue: 23 / 255)  // 深红色
+        return Color(red: 188 / 255, green: 17 / 255, blue: 23 / 255) // 深红色
     case ...0.0:
-        return Color(red: 130 / 255, green: 55 / 255, blue: 97 / 255)  // 负数安全等级显示为紫色
+        return Color(red: 130 / 255, green: 55 / 255, blue: 97 / 255) // 负数安全等级显示为紫色
     default:
-        return .red  // 其他情况显示为红色
+        return .red // 其他情况显示为红色
     }
 }
 
@@ -75,17 +75,16 @@ func getSecurityColor(_ trueSec: Double) -> Color {
 func getSolarSystemInfo(solarSystemId: Int, databaseManager: DatabaseManager) async
     -> SolarSystemInfo?
 {
-
     // 执行查询
     let universeQuery = """
-            SELECT u.region_id, u.constellation_id, u.system_security,
-                   s.solarSystemName, c.constellationName, r.regionName
-            FROM universe u
-            JOIN solarsystems s ON s.solarSystemID = u.solarsystem_id
-            JOIN constellations c ON c.constellationID = u.constellation_id
-            JOIN regions r ON r.regionID = u.region_id
-            WHERE u.solarsystem_id = ?
-        """
+        SELECT u.region_id, u.constellation_id, u.system_security,
+               s.solarSystemName, c.constellationName, r.regionName
+        FROM universe u
+        JOIN solarsystems s ON s.solarSystemID = u.solarsystem_id
+        JOIN constellations c ON c.constellationID = u.constellation_id
+        JOIN regions r ON r.regionID = u.region_id
+        WHERE u.solarsystem_id = ?
+    """
 
     guard
         case let .success(rows) = databaseManager.executeQuery(
@@ -136,16 +135,16 @@ func getBatchSolarSystemInfo(solarSystemIds: [Int], databaseManager: DatabaseMan
 
     // 执行批量查询
     let universeQuery = """
-            SELECT u.solarsystem_id, u.region_id, u.constellation_id, u.system_security,
-                   s.solarSystemName,
-                   c.constellationName,
-                   r.regionName
-            FROM universe u
-            JOIN solarsystems s ON s.solarSystemID = u.solarsystem_id
-            JOIN constellations c ON c.constellationID = u.constellation_id
-            JOIN regions r ON r.regionID = u.region_id
-            WHERE u.solarsystem_id IN (\(placeholders))
-        """
+        SELECT u.solarsystem_id, u.region_id, u.constellation_id, u.system_security,
+               s.solarSystemName,
+               c.constellationName,
+               r.regionName
+        FROM universe u
+        JOIN solarsystems s ON s.solarSystemID = u.solarsystem_id
+        JOIN constellations c ON c.constellationID = u.constellation_id
+        JOIN regions r ON r.regionID = u.region_id
+        WHERE u.solarsystem_id IN (\(placeholders))
+    """
 
     // 将ID数组转换为Any类型数组，以便传递给executeQuery
     let parameters = uniqueSortedIds.map { $0 as Any }
@@ -220,10 +219,10 @@ func getBatchSolarSystemNames(solarSystemIds: [Int], databaseManager: DatabaseMa
 
     // 执行批量查询，获取中英文名称
     let namesQuery = """
-            SELECT solarSystemID, solarSystemName, solarSystemName_en, solarSystemName_zh
-            FROM solarsystems
-            WHERE solarSystemID IN (\(placeholders))
-        """
+        SELECT solarSystemID, solarSystemName, solarSystemName_en, solarSystemName_zh
+        FROM solarsystems
+        WHERE solarSystemID IN (\(placeholders))
+    """
 
     // 将ID数组转换为Any类型数组，以便传递给executeQuery
     let parameters = uniqueSortedIds.map { $0 as Any }
@@ -279,7 +278,8 @@ func getSystemInfo(systemId: Int, databaseManager: DatabaseManager) -> SimpleSys
         WHERE s.solarSystemID = ?
     """
     if case let .success(rows) = databaseManager.executeQuery(query, parameters: [systemId]),
-       let row = rows.first {
+       let row = rows.first
+    {
         let systemName = row["solarSystemName"] as? String
         let security = row["system_security"] as? Double
         return SimpleSystemInfo(name: systemName, security: security)
@@ -289,15 +289,15 @@ func getSystemInfo(systemId: Int, databaseManager: DatabaseManager) -> SimpleSys
 
 // 星系安全类别枚举
 public enum SecurityClass {
-    case highSec    // 高安
-    case lowSec     // 低安
+    case highSec // 高安
+    case lowSec // 低安
     case nullSecOrWH // 0.0或虫洞
 }
 
 // 根据安全等级判断星系安全类别
 func getSecurityClass(trueSec: Double) -> SecurityClass {
     let displaySec = calculateDisplaySecurity(trueSec)
-    
+
     if displaySec >= 0.5 {
         return .highSec
     } else if displaySec >= 0.0 {

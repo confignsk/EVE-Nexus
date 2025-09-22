@@ -8,12 +8,13 @@ class CharacterMarketAPI {
         let timestamp: Date
     }
 
-    private let cacheTimeout: TimeInterval = 8 * 60 * 60  // 8 小时缓存
+    private let cacheTimeout: TimeInterval = 8 * 60 * 60 // 8 小时缓存
     private let cacheDirectory: URL = {
         let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
         let ordersDirectory = paths[0].appendingPathComponent("CharacterOrders", isDirectory: true)
         try? FileManager.default.createDirectory(
-            at: ordersDirectory, withIntermediateDirectories: true)
+            at: ordersDirectory, withIntermediateDirectories: true
+        )
         return ordersDirectory
     }()
 
@@ -43,14 +44,14 @@ class CharacterMarketAPI {
 
         // 1. 尝试从文件读取并解码缓存数据
         guard let data = try? Data(contentsOf: cacheFile),
-            let cache = try? JSONDecoder().decode(CachedData.self, from: data)
+              let cache = try? JSONDecoder().decode(CachedData.self, from: data)
         else {
             return nil
         }
 
         // 2. 将缓存的订单转换为JSON字符串
         guard let jsonData = try? JSONEncoder().encode(cache.orders),
-            let jsonString = String(data: jsonData, encoding: .utf8)
+              let jsonString = String(data: jsonData, encoding: .utf8)
         else {
             return nil
         }
@@ -63,7 +64,7 @@ class CharacterMarketAPI {
     private func saveOrdersToCache(jsonString: String, characterId: Int64) {
         // 将JSON字符串转换为订单数组
         guard let jsonData = jsonString.data(using: .utf8),
-            let orders = try? JSONDecoder().decode([CharacterMarketOrder].self, from: jsonData)
+              let orders = try? JSONDecoder().decode([CharacterMarketOrder].self, from: jsonData)
         else {
             return
         }

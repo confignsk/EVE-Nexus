@@ -5,7 +5,7 @@ struct PlanetaryResourceResult {
     var typeId: Int
     var name: String
     var quantity: Double
-    var depth: Int  // 用于记录资源层级深度
+    var depth: Int // 用于记录资源层级深度
 }
 
 // 资源可用行星结果
@@ -37,9 +37,9 @@ class PlanetaryResourceCalculator {
 
     // 计算行星产品所需的基础资源
     func calculateBaseResources(for typeId: Int) -> [PlanetaryResourceResult] {
-        var baseResourcesWithDepth: [(typeId: Int, depth: Int)] = []  // 存储基础资源ID和深度
-        var processedTypes = Set<Int>()  // 用于检测循环依赖
-        processedTypes.insert(typeId)  // 将初始产品ID加入已处理集合
+        var baseResourcesWithDepth: [(typeId: Int, depth: Int)] = [] // 存储基础资源ID和深度
+        var processedTypes = Set<Int>() // 用于检测循环依赖
+        processedTypes.insert(typeId) // 将初始产品ID加入已处理集合
 
         // 存储每一层级需要查询的资源ID
         var currentLevelTypeIds = [typeId]
@@ -48,10 +48,10 @@ class PlanetaryResourceCalculator {
         while !currentLevelTypeIds.isEmpty {
             // 构建IN查询
             let query = """
-                    SELECT ps.input_typeid, ps.input_value, ps.output_value, ps.output_typeid
-                    FROM planetSchematics ps
-                    WHERE ps.output_typeid IN (\(currentLevelTypeIds.map { String($0) }.joined(separator: ",")))
-                """
+                SELECT ps.input_typeid, ps.input_value, ps.output_value, ps.output_typeid
+                FROM planetSchematics ps
+                WHERE ps.output_typeid IN (\(currentLevelTypeIds.map { String($0) }.joined(separator: ",")))
+            """
 
             var nextLevelTypeIds = Set<Int>()
             var currentLevelHasRecipes = false
@@ -60,7 +60,7 @@ class PlanetaryResourceCalculator {
                 for row in rows {
                     currentLevelHasRecipes = true
                     guard let inputTypeIdsStr = row["input_typeid"] as? String,
-                        let inputValuesStr = row["input_value"] as? String
+                          let inputValuesStr = row["input_value"] as? String
                     else {
                         continue
                     }
@@ -85,7 +85,7 @@ class PlanetaryResourceCalculator {
             // 如果这一层级的资源都没有配方，且不是初始产品，说明它们是基础资源
             if !currentLevelHasRecipes {
                 for resourceId in currentLevelTypeIds {
-                    if resourceId != typeId {  // 排除初始产品
+                    if resourceId != typeId { // 排除初始产品
                         baseResourcesWithDepth.append((typeId: resourceId, depth: depth))
                     }
                 }
@@ -100,10 +100,10 @@ class PlanetaryResourceCalculator {
         if !baseResourcesWithDepth.isEmpty {
             let allResourceIds = baseResourcesWithDepth.map { $0.typeId }
             let nameQuery = """
-                    SELECT type_id, name
-                    FROM types
-                    WHERE type_id IN (\(allResourceIds.map { String($0) }.joined(separator: ",")))
-                """
+                SELECT type_id, name
+                FROM types
+                WHERE type_id IN (\(allResourceIds.map { String($0) }.joined(separator: ",")))
+            """
 
             var results: [PlanetaryResourceResult] = []
             if case let .success(nameRows) = databaseManager.executeQuery(nameQuery) {
@@ -111,7 +111,7 @@ class PlanetaryResourceCalculator {
                 var nameMap: [Int: String] = [:]
                 for row in nameRows {
                     if let typeId = row["type_id"] as? Int,
-                        let name = row["name"] as? String
+                       let name = row["name"] as? String
                     {
                         nameMap[typeId] = name
                     }
@@ -150,28 +150,28 @@ class PlanetaryResourceCalculator {
 
         // 一次性联合查询获取所有信息
         let query = """
-                WITH ResourceHarvester AS (
-                    SELECT DISTINCT ph.typeid as resource_id, ph.harvest_typeid
-                    FROM planetResourceHarvest ph
-                    WHERE ph.typeid IN (\(resourceIds.map { String($0) }.joined(separator: ",")))
-                ),
-                PlanetTypes AS (
-                    SELECT rh.resource_id, ta.value as planet_type_id
-                    FROM ResourceHarvester rh
-                    JOIN typeAttributes ta ON ta.type_id = rh.harvest_typeid
-                    WHERE ta.attribute_id = 1632
-                )
-                SELECT 
-                    pt.resource_id,
-                    r.name as resource_name,
-                    pt.planet_type_id,
-                    p.name as planet_name,
-                    p.icon_filename as iconFileName
-                FROM PlanetTypes pt
-                JOIN types r ON r.type_id = pt.resource_id
-                JOIN types p ON p.type_id = pt.planet_type_id
-                ORDER BY pt.resource_id, pt.planet_type_id
-            """
+            WITH ResourceHarvester AS (
+                SELECT DISTINCT ph.typeid as resource_id, ph.harvest_typeid
+                FROM planetResourceHarvest ph
+                WHERE ph.typeid IN (\(resourceIds.map { String($0) }.joined(separator: ",")))
+            ),
+            PlanetTypes AS (
+                SELECT rh.resource_id, ta.value as planet_type_id
+                FROM ResourceHarvester rh
+                JOIN typeAttributes ta ON ta.type_id = rh.harvest_typeid
+                WHERE ta.attribute_id = 1632
+            )
+            SELECT 
+                pt.resource_id,
+                r.name as resource_name,
+                pt.planet_type_id,
+                p.name as planet_name,
+                p.icon_filename as iconFileName
+            FROM PlanetTypes pt
+            JOIN types r ON r.type_id = pt.resource_id
+            JOIN types p ON p.type_id = pt.planet_type_id
+            ORDER BY pt.resource_id, pt.planet_type_id
+        """
 
         if case let .success(rows) = databaseManager.executeQuery(query) {
             var currentResourceId: Int?
@@ -181,11 +181,11 @@ class PlanetaryResourceCalculator {
             // 处理查询结果
             for row in rows {
                 guard let resourceId = row["resource_id"] as? Int,
-                    let resourceName = row["resource_name"] as? String,
-                    let iconFileName = row["iconFileName"] as? String,
-                    let planetTypeId = (row["planet_type_id"] as? Double).map({ Int($0) })
-                        ?? (row["planet_type_id"] as? Int),
-                    let planetName = row["planet_name"] as? String
+                      let resourceName = row["resource_name"] as? String,
+                      let iconFileName = row["iconFileName"] as? String,
+                      let planetTypeId = (row["planet_type_id"] as? Double).map({ Int($0) })
+                      ?? (row["planet_type_id"] as? Int),
+                      let planetName = row["planet_name"] as? String
                 else {
                     continue
                 }
@@ -252,25 +252,25 @@ class PlanetaryResourceCalculator {
         // 查询所有相关星系的信息
         Logger.debug("查询所有相关星系信息...")
         let query = """
-                SELECT 
-                    s.solarsystem_id,
-                    s.region_id,
-                    r.regionName as region_name,
-                    s.system_security,
-                    s.temperate,
-                    s.barren,
-                    s.oceanic,
-                    s.ice,
-                    s.gas,
-                    s.lava,
-                    s.storm,
-                    s.plasma,
-                    ss.solarSystemName as system_name
-                FROM universe s
-                JOIN regions r ON r.regionID = s.region_id
-                JOIN solarsystems ss ON ss.solarSystemID = s.solarsystem_id
-                WHERE s.solarsystem_id IN (\(systems.map { String($0) }.joined(separator: ",")))
-            """
+            SELECT 
+                s.solarsystem_id,
+                s.region_id,
+                r.regionName as region_name,
+                s.system_security,
+                s.temperate,
+                s.barren,
+                s.oceanic,
+                s.ice,
+                s.gas,
+                s.lava,
+                s.storm,
+                s.plasma,
+                ss.solarSystemName as system_name
+            FROM universe s
+            JOIN regions r ON r.regionID = s.region_id
+            JOIN solarsystems ss ON ss.solarSystemID = s.solarsystem_id
+            WHERE s.solarsystem_id IN (\(systems.map { String($0) }.joined(separator: ",")))
+        """
 
         guard case let .success(rows) = databaseManager.executeQuery(query) else {
             Logger.error("查询星系信息失败")
@@ -284,10 +284,10 @@ class PlanetaryResourceCalculator {
         // 处理每个星系
         for row in rows {
             guard let systemId = row["solarsystem_id"] as? Int,
-                let regionId = row["region_id"] as? Int,
-                let regionName = row["region_name"] as? String,
-                let systemName = row["system_name"] as? String,
-                let security = row["system_security"] as? Double
+                  let regionId = row["region_id"] as? Int,
+                  let regionName = row["region_name"] as? String,
+                  let systemName = row["system_name"] as? String,
+                  let security = row["system_security"] as? Double
             else {
                 continue
             }
@@ -299,7 +299,7 @@ class PlanetaryResourceCalculator {
             )
 
             // 获取当前星系的可用资源
-            var availableResources: [Int: Int] = [:]  // [resourceId: planetCount]
+            var availableResources: [Int: Int] = [:] // [resourceId: planetCount]
             var missingResources: [Int] = []
 
             // 检查星系中存在哪些类型的行星
@@ -327,7 +327,7 @@ class PlanetaryResourceCalculator {
                     // 检查每种行星类型的数量
                     for planetType in planetTypes {
                         if let columnName = PlanetaryUtils.planetTypeToColumn[planetType],
-                            let count = row[columnName] as? Int
+                           let count = row[columnName] as? Int
                         {
                             planetCount += count
                         }
@@ -355,20 +355,20 @@ class PlanetaryResourceCalculator {
             }
 
             // 如果当前星系缺少资源，检查相邻星系
-            var additionalResources: [Int: (resourceId: Int, jumps: Int)] = [:]  // [systemId: (resourceId, jumps)]
-            if !missingResources.isEmpty && maxJumps > 0 {
+            var additionalResources: [Int: (resourceId: Int, jumps: Int)] = [:] // [systemId: (resourceId, jumps)]
+            if !missingResources.isEmpty, maxJumps > 0 {
                 Logger.debug("缺少 \(missingResources.count) 种资源，开始在邻近星系寻找...")
 
                 // 使用BFS查找最近的资源
                 var visited = Set<Int>()
-                var queue = [(systemId, 0)]  // (systemId, jumps)
+                var queue = [(systemId, 0)] // (systemId, jumps)
                 visited.insert(systemId)
 
                 // 收集所有需要查询的相邻星系ID
                 var neighborSystemIds = Set<Int>()
-                var systemJumps: [Int: Int] = [:]  // [systemId: jumps]
+                var systemJumps: [Int: Int] = [:] // [systemId: jumps]
 
-                while !queue.isEmpty && !missingResources.isEmpty {
+                while !queue.isEmpty, !missingResources.isEmpty {
                     let (currentSystemId, jumps) = queue.removeFirst()
 
                     // 如果跳数超过限制，跳过
@@ -401,22 +401,21 @@ class PlanetaryResourceCalculator {
                 // 一次性查询所有相邻星系的行星数量
                 if !neighborSystemIds.isEmpty {
                     let neighborQuery = """
-                            SELECT 
-                                solarsystem_id,
-                                temperate,
-                                barren,
-                                oceanic,
-                                ice,
-                                gas,
-                                lava,
-                                storm,
-                                plasma
-                            FROM universe
-                            WHERE solarsystem_id IN (\(neighborSystemIds.map { String($0) }.joined(separator: ",")))
-                        """
+                        SELECT 
+                            solarsystem_id,
+                            temperate,
+                            barren,
+                            oceanic,
+                            ice,
+                            gas,
+                            lava,
+                            storm,
+                            plasma
+                        FROM universe
+                        WHERE solarsystem_id IN (\(neighborSystemIds.map { String($0) }.joined(separator: ",")))
+                    """
 
-                    if case let .success(neighborRows) = databaseManager.executeQuery(neighborQuery)
-                    {
+                    if case let .success(neighborRows) = databaseManager.executeQuery(neighborQuery) {
                         Logger.debug("查询到 \(neighborRows.count) 个邻近星系信息")
 
                         // 创建星系ID到行星数量的映射
@@ -426,7 +425,7 @@ class PlanetaryResourceCalculator {
                                 var planets: [String: Int] = [:]
                                 for (key, value) in row {
                                     if key != "solarsystem_id",
-                                        let count = value as? Int
+                                       let count = value as? Int
                                     {
                                         planets[key] = count
                                     }
@@ -446,7 +445,8 @@ class PlanetaryResourceCalculator {
                                     // 检查每种行星类型的数量
                                     for planetType in planetTypes {
                                         if let columnName = PlanetaryUtils.planetTypeToColumn[
-                                            planetType],
+                                            planetType
+                                        ],
                                             let count = planets[columnName]
                                         {
                                             planetCount += count
@@ -573,8 +573,8 @@ class PlanetaryResourceCalculator {
             score += neighborScore
 
             // 4. 如果所有资源都可本地获取，无需跳转其他星系，给予显著奖励
-            if !availableResources.isEmpty && additionalResources.isEmpty
-                && missingResources.isEmpty
+            if !availableResources.isEmpty, additionalResources.isEmpty,
+               missingResources.isEmpty
             {
                 let localBonus = 200.0
                 score += localBonus
@@ -588,7 +588,7 @@ class PlanetaryResourceCalculator {
             }
 
             // 5. 如果没有任何可用资源，给予一个基础分，以便排序
-            if availableResources.isEmpty && additionalResources.isEmpty {
+            if availableResources.isEmpty, additionalResources.isEmpty {
                 score = 1.0
                 Logger.debug("没有任何可用资源，设置基础分 1.0")
             }

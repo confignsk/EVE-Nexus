@@ -29,11 +29,17 @@ public class UniverseStructureAPI {
 
     // MARK: - Public Methods
 
-    public func fetchStructureInfo(structureId: Int64, characterId: Int, forceRefresh: Bool = false, cacheTimeOut: Int64 = 168) async throws
+    public func fetchStructureInfo(
+        structureId: Int64, characterId: Int, forceRefresh: Bool = false, cacheTimeOut: Int64 = 168
+    ) async throws
         -> UniverseStructureInfo
     {
         // 1. 检查数据库缓存
-        if !forceRefresh, let cachedStructure = loadStructureFromCache(structureId: structureId, cacheTimeOut: cacheTimeOut) {
+        if !forceRefresh,
+           let cachedStructure = loadStructureFromCache(
+               structureId: structureId, cacheTimeOut: cacheTimeOut
+           )
+        {
             Logger.info("使用数据库缓存的建筑物信息 - 建筑物ID: \(structureId)")
             return cachedStructure
         }
@@ -80,14 +86,16 @@ public class UniverseStructureAPI {
 
     // MARK: - Cache Methods
 
-    private func loadStructureFromCache(structureId: Int64, cacheTimeOut: Int64 = 168) -> UniverseStructureInfo? {
+    private func loadStructureFromCache(structureId: Int64, cacheTimeOut: Int64 = 168)
+        -> UniverseStructureInfo?
+    {
         // 在SQL中直接过滤过期缓存（168小时 = 7天）
         let sql = """
-                SELECT name, owner_id, solar_system_id, type_id, timestamp
-                FROM structure_cache
-                WHERE structure_id = ?
-                AND timestamp > datetime('now', '-\(cacheTimeOut) hour')
-            """  // 自定义缓存超时时间，默认 7 天
+            SELECT name, owner_id, solar_system_id, type_id, timestamp
+            FROM structure_cache
+            WHERE structure_id = ?
+            AND timestamp > datetime('now', '-\(cacheTimeOut) hour')
+        """ // 自定义缓存超时时间，默认 7 天
 
         let result = databaseManager.executeQuery(sql, parameters: [structureId])
 
@@ -120,17 +128,18 @@ public class UniverseStructureAPI {
     private func saveStructuresToCache(_ structures: [(Int64, UniverseStructureInfo)]) {
         // 直接使用SQL的datetime('now')函数获取当前时间
         // 构建批量插入的SQL
-        let valuesSql = structures.map { _ in "(?, ?, ?, ?, ?, datetime('now'))" }.joined(separator: ",")
+        let valuesSql = structures.map { _ in "(?, ?, ?, ?, ?, datetime('now'))" }.joined(
+            separator: ",")
         let sql = """
-                INSERT OR REPLACE INTO structure_cache (
-                    structure_id,
-                    name,
-                    owner_id,
-                    solar_system_id,
-                    type_id,
-                    timestamp
-                ) VALUES \(valuesSql)
-            """
+            INSERT OR REPLACE INTO structure_cache (
+                structure_id,
+                name,
+                owner_id,
+                solar_system_id,
+                type_id,
+                timestamp
+            ) VALUES \(valuesSql)
+        """
 
         // 构建参数数组（不再需要timestamp参数）
         var parameters: [Any] = []

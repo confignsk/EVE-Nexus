@@ -3,8 +3,8 @@ import SQLite3
 
 // SQL查询结果类型
 enum SQLiteResult {
-    case success([[String: Any]])  // 查询成功，返回结果数组
-    case error(String)  // 查询失败，返回错误信息
+    case success([[String: Any]]) // 查询成功，返回结果数组
+    case error(String) // 查询失败，返回错误信息
 }
 
 class SQLiteManager {
@@ -15,7 +15,7 @@ class SQLiteManager {
     // 查询缓存
     private let queryCache: NSCache<NSString, NSArray> = {
         let cache = NSCache<NSString, NSArray>()
-        cache.countLimit = 2000  // 设置最大缓存条数
+        cache.countLimit = 2000 // 设置最大缓存条数
         return cache
     }()
 
@@ -40,14 +40,15 @@ class SQLiteManager {
                 Logger.error(pathError)
                 return false
             }
-            
+
             let result = sqlite3_open(databasePath, &db)
             if result == SQLITE_OK {
                 Logger.info("数据库连接成功: \(databasePath)")
                 return true
             } else {
                 let errorMessage = String(cString: sqlite3_errmsg(db))
-                let connectionError = "[SQLite] 数据库连接失败 - 路径: \(databasePath), 错误代码: \(result), 错误信息: \(errorMessage)"
+                let connectionError =
+                    "[SQLite] 数据库连接失败 - 路径: \(databasePath), 错误代码: \(result), 错误信息: \(errorMessage)"
                 Logger.error(connectionError)
                 return false
             }
@@ -96,8 +97,7 @@ class SQLiteManager {
             let cacheKey = generateCacheKey(query: query, parameters: sortedParameters) as NSString
 
             // 如果启用缓存且缓存中存在结果，直接返回
-            if useCache, let cachedResult = queryCache.object(forKey: cacheKey) as? [[String: Any]]
-            {
+            if useCache, let cachedResult = queryCache.object(forKey: cacheKey) as? [[String: Any]] {
                 Logger.debug("从缓存中获取 \(cacheKey) 的结果: \(cachedResult.count)行")
                 return .success(cachedResult)
             }
@@ -124,7 +124,7 @@ class SQLiteManager {
             for (index, parameter) in parameters.enumerated() {
                 let parameterIndex = Int32(index + 1)
                 var bindResult: Int32 = SQLITE_OK
-                
+
                 switch parameter {
                 case let value as Int:
                     bindResult = sqlite3_bind_int64(statement, parameterIndex, Int64(value))
@@ -144,15 +144,17 @@ class SQLiteManager {
                     bindResult = sqlite3_bind_null(statement, parameterIndex)
                 default:
                     sqlite3_finalize(statement)
-                    let typeError = "[SQLite] 不支持的参数类型: \(type(of: parameter)) - 参数索引: \(index) - SQL: \(query)"
+                    let typeError =
+                        "[SQLite] 不支持的参数类型: \(type(of: parameter)) - 参数索引: \(index) - SQL: \(query)"
                     Logger.error(typeError)
                     return .error(typeError)
                 }
-                
+
                 // 检查参数绑定是否成功
                 if bindResult != SQLITE_OK {
                     let errorMessage = String(cString: sqlite3_errmsg(db))
-                    let bindError = "[SQLite] 参数绑定失败 - 参数索引: \(index), 参数值: \(parameter), 错误: \(errorMessage) - SQL: \(query)"
+                    let bindError =
+                        "[SQLite] 参数绑定失败 - 参数索引: \(index), 参数值: \(parameter), 错误: \(errorMessage) - SQL: \(query)"
                     Logger.error(bindError)
                     sqlite3_finalize(statement)
                     return .error(bindError)
@@ -165,7 +167,7 @@ class SQLiteManager {
                 var row: [String: Any] = [:]
                 let columnCount = sqlite3_column_count(statement)
 
-                for i in 0..<columnCount {
+                for i in 0 ..< columnCount {
                     let columnName = String(cString: sqlite3_column_name(statement, i))
                     if let value = getValue(from: statement, column: i) {
                         row[columnName] = value
@@ -176,11 +178,12 @@ class SQLiteManager {
                 results.append(row)
                 stepResult = sqlite3_step(statement)
             }
-            
+
             // 检查 SQL 执行是否出错
             if stepResult != SQLITE_DONE {
                 let errorMessage = String(cString: sqlite3_errmsg(db))
-                let executionError = "[SQLite] SQL执行失败 - 错误代码: \(stepResult), 错误信息: \(errorMessage) - SQL: \(query) - 参数: \(parameters)"
+                let executionError =
+                    "[SQLite] SQL执行失败 - 错误代码: \(stepResult), 错误信息: \(errorMessage) - SQL: \(query) - 参数: \(parameters)"
                 Logger.error(executionError)
                 sqlite3_finalize(statement)
                 return .error(executionError)
@@ -191,7 +194,7 @@ class SQLiteManager {
 
             // 计算查询耗时
             let endTime = CFAbsoluteTimeGetCurrent()
-            let elapsedTime = (endTime - startTime) * 1000  // 转换为毫秒
+            let elapsedTime = (endTime - startTime) * 1000 // 转换为毫秒
 
             // 记录查询耗时和结果行数
             Logger.info("查询完成: \(results.count)行, 耗时: \(String(format: "%.2f", elapsedTime))ms")
@@ -212,17 +215,17 @@ class SQLiteManager {
         let paramStrings = parameters.map { param -> String in
             switch param {
             case let value as Int:
-                return "i\(value)"  // 添加类型前缀以区分不同类型的相同值
+                return "i\(value)" // 添加类型前缀以区分不同类型的相同值
             case let value as Double:
                 return "d\(value)"
             case let value as String:
                 return "s\(value)"
             case let value as Data:
-                return "b\(value.count)"  // 对于二进制数据，只使用其长度
+                return "b\(value.count)" // 对于二进制数据，只使用其长度
             case is NSNull:
                 return "n"
             default:
-                return "u"  // unknown
+                return "u" // unknown
             }
         }
 
@@ -237,10 +240,10 @@ class SQLiteManager {
             Logger.error("[SQLite] getValue: statement 为 nil")
             return nil
         }
-        
+
         let type = sqlite3_column_type(statement, column)
         let columnName = String(cString: sqlite3_column_name(statement, column))
-        
+
         switch type {
         case SQLITE_INTEGER:
             return Int(sqlite3_column_int64(statement, column))

@@ -97,7 +97,7 @@ struct WealthPieChart: View {
 
         return
             chartView
-            .id(items.map { "\($0.type)\($0.value)" }.joined())
+                .id(items.map { "\($0.type)\($0.value)" }.joined())
     }
 }
 

@@ -28,20 +28,25 @@ struct BoosterSelectorView: View {
                                     dismiss()
                                 }) {
                                     HStack {
-                                        Text(NSLocalizedString("Remove_Current_Booster", comment: "移除现有增效剂"))
-                                            .foregroundColor(.red)
+                                        Text(
+                                            NSLocalizedString(
+                                                "Remove_Current_Booster", comment: "移除现有增效剂"
+                                            )
+                                        )
+                                        .foregroundColor(.red)
                                         Spacer()
                                     }
                                 }
                             }
                         }
-                        
+
                         Section {
                             if filteredItems.isEmpty {
                                 ContentUnavailableView {
                                     Label(
                                         NSLocalizedString("Misc_No_Data", comment: "无数据"),
-                                        systemImage: "exclamationmark.triangle")
+                                        systemImage: "exclamationmark.triangle"
+                                    )
                                 }
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                                 .listRowBackground(Color.clear)
@@ -62,7 +67,11 @@ struct BoosterSelectorView: View {
                     )
                 }
             }
-            .navigationTitle(String(format: NSLocalizedString("Booster_Slot_Num", comment: "增效剂槽位 %d"), slotNumber))
+            .navigationTitle(
+                String(
+                    format: NSLocalizedString("Booster_Slot_Num", comment: "增效剂槽位 %d"), slotNumber
+                )
+            )
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -82,7 +91,7 @@ struct BoosterSelectorView: View {
             loadBoosterItems()
         }
     }
-    
+
     // 根据搜索文本过滤物品
     private var filteredItems: [DatabaseListItem] {
         if searchText.isEmpty {
@@ -93,11 +102,11 @@ struct BoosterSelectorView: View {
             }
         }
     }
-    
+
     // 加载增效剂物品
     private func loadBoosterItems() {
         isLoading = true
-        
+
         // 获取指定槽位的增效剂信息
         let query = """
             SELECT t.type_id as id, t.name, t.en_name, t.published, t.icon_filename as iconFileName,
@@ -110,10 +119,10 @@ struct BoosterSelectorView: View {
             AND t.marketGroupID IS NOT NULL
             ORDER BY t.name
         """
-        
+
         if case let .success(rows) = databaseManager.executeQuery(query, parameters: [slotNumber]) {
             var items: [DatabaseListItem] = []
-            
+
             for row in rows {
                 if let id = row["id"] as? Int,
                    let name = row["name"] as? String,
@@ -124,7 +133,7 @@ struct BoosterSelectorView: View {
                     let published = (row["published"] as? Int) ?? 0
                     let groupID = row["groupID"] as? Int
                     let groupName = row["groupName"] as? String
-                    
+
                     let item = DatabaseListItem(
                         id: id,
                         name: name,
@@ -151,17 +160,17 @@ struct BoosterSelectorView: View {
                         marketGroupID: nil,
                         navigationDestination: AnyView(EmptyView())
                     )
-                    
+
                     items.append(item)
                 }
             }
-            
+
             boosterItems = items
             Logger.info("加载了 \(boosterItems.count) 个增效剂")
         } else {
             Logger.error("加载增效剂信息失败")
         }
-        
+
         isLoading = false
     }
 }

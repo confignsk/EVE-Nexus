@@ -5,21 +5,22 @@ struct CorporationIconView: View {
     let corporationId: Int
     let iconFileName: String
     let size: CGFloat
-    
+
     @Environment(\.colorScheme) private var colorScheme
-    
+
     init(corporationId: Int, iconFileName: String, size: CGFloat = 32) {
         self.corporationId = corporationId
         self.iconFileName = iconFileName
         self.size = size
     }
-    
+
     var body: some View {
         IconManager.shared.loadImage(for: iconFileName)
             .resizable()
             .frame(width: size, height: size)
             .cornerRadius(size == 64 ? 8 : 6)
-            .modifier(CorporationIconModifier(corporationId: corporationId, colorScheme: colorScheme))
+            .modifier(
+                CorporationIconModifier(corporationId: corporationId, colorScheme: colorScheme))
     }
 }
 
@@ -27,9 +28,9 @@ struct CorporationIconView: View {
 struct CorporationIconModifier: ViewModifier {
     let corporationId: Int
     let colorScheme: ColorScheme
-    
+
     func body(content: Content) -> some View {
-        if corporationId == 1000297 && colorScheme == .light {
+        if corporationId == 1_000_297 && colorScheme == .light {
             // 军团ID 1000297 在浅色模式下反色
             content
                 .colorInvert()
@@ -38,4 +39,4 @@ struct CorporationIconModifier: ViewModifier {
             content
         }
     }
-} 
+}

@@ -2,7 +2,7 @@ import Foundation
 
 // 修改位置信息模型
 public struct LocationInfoDetail {
-    public let stationName: String  // 空间站或建筑物名称，如果是星系则为""
+    public let stationName: String // 空间站或建筑物名称，如果是星系则为""
     public let solarSystemName: String
     public let security: Double
 
@@ -47,18 +47,18 @@ class LocationInfoLoader {
         if let solarSystemIds = groupedIds[.solarSystem] {
             Logger.debug("加载星系信息 - 数量: \(solarSystemIds.count), IDs: \(solarSystemIds)")
             let query = """
-                    SELECT u.solarsystem_id, u.system_security,
-                           s.solarSystemName
-                    FROM universe u
-                    JOIN solarsystems s ON s.solarSystemID = u.solarsystem_id
-                    WHERE u.solarsystem_id IN (\(solarSystemIds.sorted().map { String($0) }.joined(separator: ",")))
-                """
+                SELECT u.solarsystem_id, u.system_security,
+                       s.solarSystemName
+                FROM universe u
+                JOIN solarsystems s ON s.solarSystemID = u.solarsystem_id
+                WHERE u.solarsystem_id IN (\(solarSystemIds.sorted().map { String($0) }.joined(separator: ",")))
+            """
 
             if case let .success(rows) = databaseManager.executeQuery(query) {
                 for row in rows {
                     if let systemId = row["solarsystem_id"] as? Int64,
-                        let security = row["system_security"] as? Double,
-                        let systemNameLocal = row["solarSystemName"] as? String
+                       let security = row["system_security"] as? Double,
+                       let systemNameLocal = row["solarSystemName"] as? String
                     {
                         let systemName = systemNameLocal
                         locationInfoCache[systemId] = LocationInfoDetail(
@@ -76,22 +76,22 @@ class LocationInfoLoader {
         if let stationIds = groupedIds[.station] {
             Logger.debug("加载空间站信息 - 数量: \(stationIds.count), IDs: \(stationIds)")
             let query = """
-                    SELECT s.stationID, s.stationName,
-                           ss.solarSystemName, u.system_security
-                    FROM stations s
-                    JOIN solarsystems ss ON s.solarSystemID = ss.solarSystemID
-                    JOIN universe u ON u.solarsystem_id = ss.solarSystemID
-                    WHERE s.stationID IN (\(stationIds.sorted().map { String($0) }.joined(separator: ",")))
-                """
+                SELECT s.stationID, s.stationName,
+                       ss.solarSystemName, u.system_security
+                FROM stations s
+                JOIN solarsystems ss ON s.solarSystemID = ss.solarSystemID
+                JOIN universe u ON u.solarsystem_id = ss.solarSystemID
+                WHERE s.stationID IN (\(stationIds.sorted().map { String($0) }.joined(separator: ",")))
+            """
 
             if case let .success(rows) = databaseManager.executeQuery(query) {
                 Logger.debug("SQL查询返回行数: \(rows.count)")
                 for row in rows {
                     Logger.debug("处理空间站行: \(row)")
                     if let stationId = row["stationID"] as? Int,
-                        let stationName = row["stationName"] as? String,
-                        let systemNameLocal = row["solarSystemName"] as? String,
-                        let security = row["system_security"] as? Double
+                       let stationName = row["stationName"] as? String,
+                       let systemNameLocal = row["solarSystemName"] as? String,
+                       let security = row["system_security"] as? Double
                     {
                         let systemName = systemNameLocal
                         let stationIdInt64 = Int64(stationId)
@@ -125,11 +125,11 @@ class LocationInfoLoader {
                     )
 
                     let query = """
-                            SELECT ss.solarSystemName, u.system_security
-                            FROM solarsystems ss
-                            JOIN universe u ON u.solarsystem_id = ss.solarSystemID
-                            WHERE ss.solarSystemID = ?
-                        """
+                        SELECT ss.solarSystemName, u.system_security
+                        FROM solarsystems ss
+                        JOIN universe u ON u.solarsystem_id = ss.solarSystemID
+                        WHERE ss.solarSystemID = ?
+                    """
 
                     if case let .success(rows) = databaseManager.executeQuery(
                         query, parameters: [structureInfo.solar_system_id]

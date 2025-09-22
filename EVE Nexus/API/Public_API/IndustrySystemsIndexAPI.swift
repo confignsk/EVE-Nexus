@@ -50,7 +50,7 @@ enum IndustrySystemsAPIError: LocalizedError {
 @IndustrySystemsAPIActor
 class IndustrySystemsAPI {
     static let shared = IndustrySystemsAPI()
-    private let cacheDuration: TimeInterval = 8 * 60 * 60  // 8小时缓存
+    private let cacheDuration: TimeInterval = 8 * 60 * 60 // 8小时缓存
 
     private init() {}
 
@@ -88,9 +88,9 @@ class IndustrySystemsAPI {
 
     private func loadFromCache() -> [IndustrySystem]? {
         guard let cacheFile = getCacheFilePath(),
-            let data = try? Data(contentsOf: cacheFile),
-            let cached = try? JSONDecoder().decode(CachedData.self, from: data),
-            cached.timestamp.addingTimeInterval(cacheDuration) > Date()
+              let data = try? Data(contentsOf: cacheFile),
+              let cached = try? JSONDecoder().decode(CachedData.self, from: data),
+              cached.timestamp.addingTimeInterval(cacheDuration) > Date()
         else {
             return nil
         }
@@ -142,4 +142,4 @@ class IndustrySystemsAPI {
 
         return systems
     }
-} 
+}

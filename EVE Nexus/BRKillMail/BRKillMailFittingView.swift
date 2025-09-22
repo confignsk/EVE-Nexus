@@ -27,7 +27,7 @@ struct ShipSlotConfig {
 }
 
 struct BRKillMailFittingView: View {
-    let killMailData: [String: Any]  // 替换 killMailId，直接接收 JSON 数据
+    let killMailData: [String: Any] // 替换 killMailId，直接接收 JSON 数据
     let databaseManager = DatabaseManager.shared
 
     // 添加状态变量存储实际槽位配置
@@ -111,19 +111,18 @@ struct BRKillMailFittingView: View {
 
         let placeholders = String(repeating: "?,", count: uniqueTypeIds.count).dropLast()
         let query = """
-                SELECT type_id, icon_filename, categoryID
-                FROM types 
-                WHERE type_id IN (\(placeholders))
-            """
+            SELECT type_id, icon_filename, categoryID
+            FROM types 
+            WHERE type_id IN (\(placeholders))
+        """
 
         Logger.debug("装配图标: 开始查询 \(uniqueTypeIds.count) 个物品的图标")
         var iconFileNames: [Int: (String, Int)] = [:]
-        if case let .success(rows) = databaseManager.executeQuery(query, parameters: uniqueTypeIds)
-        {
+        if case let .success(rows) = databaseManager.executeQuery(query, parameters: uniqueTypeIds) {
             for row in rows {
                 if let typeId = row["type_id"] as? Int,
-                    let iconFileName = row["icon_filename"] as? String,
-                    let categoryId = row["categoryID"] as? Int
+                   let iconFileName = row["icon_filename"] as? String,
+                   let categoryId = row["categoryID"] as? Int
                 {
                     let finalIconName =
                         iconFileName.isEmpty ? DatabaseConfig.defaultItemIcon : iconFileName
@@ -142,14 +141,14 @@ struct BRKillMailFittingView: View {
     private func loadKillMailData() async {
         // 首先尝试获取飞船ID并加载飞船图片
         if let victInfo = killMailData["vict"] as? [String: Any],
-            let shipId = victInfo["ship"] as? Int
+           let shipId = victInfo["ship"] as? Int
         {
             await loadShipImage(typeId: shipId)
         }
 
         // 然后处理装备数据
         if let victInfo = killMailData["vict"] as? [String: Any],
-            let shipId = victInfo["ship"] as? Int
+           let shipId = victInfo["ship"] as? Int
         {
             Logger.debug("装配图标: 开始处理击毁数据，飞船ID: \(shipId)")
 
@@ -159,7 +158,8 @@ struct BRKillMailFittingView: View {
 
             // 转换植入体为装配格式
             let convertedItems = BRKillMailUtils.shared.convertImplantsToFitting(
-                victInfo: victInfo, items: items)
+                victInfo: victInfo, items: items
+            )
             Logger.debug("装配图标: 转换后的物品数据: \(convertedItems)")
 
             // 按槽位ID分组物品，并收集所有不重复的typeId
@@ -190,14 +190,14 @@ struct BRKillMailFittingView: View {
                 // 过滤掉弹药类装备（categoryId = 8）
                 let nonAmmoItems = items.filter { item in
                     if let typeInfo = typeInfos[item[1]] {
-                        return typeInfo.1 != 8  // 不是弹药类
+                        return typeInfo.1 != 8 // 不是弹药类
                     }
                     return false
                 }
 
                 // 如果有非弹药装备，使用第一个
                 if let firstItem = nonAmmoItems.first,
-                    let typeInfo = typeInfos[firstItem[1]]
+                   let typeInfo = typeInfos[firstItem[1]]
                 {
                     await MainActor.run {
                         equipmentIcons[slotId] = IconManager.shared.loadImage(for: typeInfo.0)
@@ -222,7 +222,7 @@ struct BRKillMailFittingView: View {
         radius: CGFloat,
         startAngle: Double,
         slotIndex: Int,
-        maxSlots: Int,  // 改为使用最大槽位数
+        maxSlots: Int, // 改为使用最大槽位数
         totalAngle: Double
     ) -> CGPoint {
         let slotWidth = totalAngle / Double(maxSlots)
@@ -240,23 +240,23 @@ struct BRKillMailFittingView: View {
         var config = ShipSlotConfig()
 
         // 检查是否为太空舱
-        if [670, 33328].contains(typeId) {  // 太空舱与金蛋的 ID
-            config.highSlots = 5  // 高槽1-5用于植入体1-5
-            config.mediumSlots = 5  // 中槽1-5用于植入体6-10
+        if [670, 33328].contains(typeId) { // 太空舱与金蛋的 ID
+            config.highSlots = 5 // 高槽1-5用于植入体1-5
+            config.mediumSlots = 5 // 中槽1-5用于植入体6-10
             if typeId == 33328 {
-                config.lowSlots = 1  // 低槽1用于植入体79
+                config.lowSlots = 1 // 低槽1用于植入体79
             }
             return config
         }
 
         let query = """
-                SELECT high_slot, mid_slot, low_slot, rig_slot, groupID
-                FROM types
-                WHERE type_id = ?
-            """
+            SELECT high_slot, mid_slot, low_slot, rig_slot, groupID
+            FROM types
+            WHERE type_id = ?
+        """
 
         if case let .success(rows) = databaseManager.executeQuery(query, parameters: [typeId]),
-            let row = rows.first
+           let row = rows.first
         {
             config.highSlots = (row["high_slot"] as? Int) ?? 0
             config.mediumSlots = (row["mid_slot"] as? Int) ?? 0
@@ -287,8 +287,8 @@ struct BRKillMailFittingView: View {
 
             // 检查是否在指定槽位范围内且不是弹药
             if slotRange.contains(slotId),
-                let typeInfo = typeInfos[typeId],
-                typeInfo.1 != 8
+               let typeInfo = typeInfos[typeId],
+               typeInfo.1 != 8
             {
                 fittedSlots.insert(slotId)
             }
@@ -307,8 +307,8 @@ struct BRKillMailFittingView: View {
         // 如果是太空舱，直接设置默认槽位配置
         if shipId == 670 || shipId == 33328 {
             await MainActor.run {
-                actualSlotConfig.highSlots = 5  // 高槽1-5用于植入体1-5
-                actualSlotConfig.mediumSlots = 5  // 中槽1-5用于植入体6-10
+                actualSlotConfig.highSlots = 5 // 高槽1-5用于植入体1-5
+                actualSlotConfig.mediumSlots = 5 // 中槽1-5用于植入体6-10
             }
             Logger.debug(
                 """
@@ -321,19 +321,19 @@ struct BRKillMailFittingView: View {
 
         // 计算实际装配的槽位数量
         let actualHighSlots = calculateActualFittedSlots(
-            items: items, typeInfos: typeInfos, slotRange: 27..<35
+            items: items, typeInfos: typeInfos, slotRange: 27 ..< 35
         )
         let actualMediumSlots = calculateActualFittedSlots(
-            items: items, typeInfos: typeInfos, slotRange: 19..<27
+            items: items, typeInfos: typeInfos, slotRange: 19 ..< 27
         )
         let actualLowSlots = calculateActualFittedSlots(
-            items: items, typeInfos: typeInfos, slotRange: 11..<19
+            items: items, typeInfos: typeInfos, slotRange: 11 ..< 19
         )
         let actualRigSlots = calculateActualFittedSlots(
-            items: items, typeInfos: typeInfos, slotRange: 92..<95
+            items: items, typeInfos: typeInfos, slotRange: 92 ..< 95
         )
         let actualSubsystemSlots = calculateActualFittedSlots(
-            items: items, typeInfos: typeInfos, slotRange: 125..<129
+            items: items, typeInfos: typeInfos, slotRange: 125 ..< 129
         )
 
         // 确定最终槽位数量
@@ -554,7 +554,7 @@ struct BRKillMailFittingView: View {
                 }
 
                 // 高槽装备图标
-                ForEach(0..<actualSlotConfig.highSlots, id: \.self) { index in
+                ForEach(0 ..< actualSlotConfig.highSlots, id: \.self) { index in
                     if let icon = equipmentIcons[highSlots[index].id] {
                         icon
                             .resizable()
@@ -593,7 +593,7 @@ struct BRKillMailFittingView: View {
                 }
 
                 // 低槽装备图标
-                ForEach(0..<actualSlotConfig.lowSlots, id: \.self) { index in
+                ForEach(0 ..< actualSlotConfig.lowSlots, id: \.self) { index in
                     if let icon = equipmentIcons[lowSlots[index].id] {
                         icon
                             .resizable()
@@ -632,7 +632,7 @@ struct BRKillMailFittingView: View {
                 }
 
                 // 中槽装备图标
-                ForEach(0..<actualSlotConfig.mediumSlots, id: \.self) { index in
+                ForEach(0 ..< actualSlotConfig.mediumSlots, id: \.self) { index in
                     if let icon = equipmentIcons[mediumSlots[index].id] {
                         icon
                             .resizable()
@@ -671,7 +671,7 @@ struct BRKillMailFittingView: View {
                 }
 
                 // 改装槽图标
-                ForEach(0..<actualSlotConfig.rigSlots, id: \.self) { index in
+                ForEach(0 ..< actualSlotConfig.rigSlots, id: \.self) { index in
                     if let icon = equipmentIcons[rigSlots[index].id] {
                         icon
                             .resizable()
@@ -710,7 +710,7 @@ struct BRKillMailFittingView: View {
                 }
 
                 // 子系统图标
-                ForEach(0..<actualSlotConfig.subsystemSlots, id: \.self) { index in
+                ForEach(0 ..< actualSlotConfig.subsystemSlots, id: \.self) { index in
                     if let icon = equipmentIcons[subsystemSlots[index].id] {
                         icon
                             .resizable()
@@ -752,7 +752,7 @@ struct SectionDivider: Shape {
     func path(in _: CGRect) -> Path {
         var path = Path()
 
-        let adjustment = -90.0  // 调整角度以匹配12点钟方向为0度
+        let adjustment = -90.0 // 调整角度以匹配12点钟方向为0度
         let radian = (angle + adjustment) * .pi / 180
 
         let outerPoint = CGPoint(
@@ -760,7 +760,7 @@ struct SectionDivider: Shape {
             y: center.y + radius * Foundation.sin(radian)
         )
 
-        let dividerLength: CGFloat = 30 * scale  // 分隔线长度
+        let dividerLength: CGFloat = 30 * scale // 分隔线长度
         let innerPoint = CGPoint(
             x: center.x + (radius - dividerLength) * Foundation.cos(radian),
             y: center.y + (radius - dividerLength) * Foundation.sin(radian)
@@ -781,8 +781,8 @@ struct SlotSection: Shape {
     let startAngle: Double
     let endAngle: Double
     let use12OClock: Bool
-    let maxSlots: Int  // 最大槽位数（用于计算分隔线间距）
-    let actualSlots: Int  // 实际显示的槽位数
+    let maxSlots: Int // 最大槽位数（用于计算分隔线间距）
+    let actualSlots: Int // 实际显示的槽位数
     let strokeWidth: CGFloat
 
     func path(in _: CGRect) -> Path {
@@ -818,7 +818,7 @@ struct SlotSection: Shape {
         )
 
         // 绘制分隔线
-        for i in 0...actualSlots {
+        for i in 0 ... actualSlots {
             let angle = startAngle + slotWidth * Double(i)
             let radian = (angle + adjustment) * .pi / 180
 

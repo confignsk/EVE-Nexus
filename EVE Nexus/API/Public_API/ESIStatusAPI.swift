@@ -65,7 +65,7 @@ enum ESIStatusAPIError: LocalizedError {
 @ESIStatusAPIActor
 class ESIStatusAPI {
     static let shared = ESIStatusAPI()
-    private let cacheDuration: TimeInterval = 5 * 60  // 5分钟缓存
+    private let cacheDuration: TimeInterval = 5 * 60 // 5分钟缓存
 
     private var cachedStatus: [ESIStatus]?
     private var lastFetchTime: Date?
@@ -106,9 +106,9 @@ class ESIStatusAPI {
 
     private func loadFromCache() -> [ESIStatus]? {
         guard let cacheFile = getCacheFilePath(),
-            let data = try? Data(contentsOf: cacheFile),
-            let cached = try? JSONDecoder().decode(CachedData.self, from: data),
-            cached.timestamp.addingTimeInterval(cacheDuration) > Date()
+              let data = try? Data(contentsOf: cacheFile),
+              let cached = try? JSONDecoder().decode(CachedData.self, from: data),
+              cached.timestamp.addingTimeInterval(cacheDuration) > Date()
         else {
             return nil
         }
@@ -178,8 +178,8 @@ class ESIStatusAPI {
     /// - Returns: 缓存时间戳，如果没有缓存则返回nil
     func getLastCacheTimestamp() -> Date? {
         guard let cacheFile = getCacheFilePath(),
-            let data = try? Data(contentsOf: cacheFile),
-            let cached = try? JSONDecoder().decode(CachedData.self, from: data)
+              let data = try? Data(contentsOf: cacheFile),
+              let cached = try? JSONDecoder().decode(CachedData.self, from: data)
         else {
             return nil
         }

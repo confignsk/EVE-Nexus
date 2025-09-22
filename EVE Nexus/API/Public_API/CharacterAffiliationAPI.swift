@@ -41,7 +41,7 @@ class CharacterAffiliationAPI {
         // 将角色ID分批处理
         for batch in stride(from: 0, to: characterIds.count, by: batchSize) {
             let endIndex = min(batch + batchSize, characterIds.count)
-            let batchIds = Array(characterIds[batch..<endIndex])
+            let batchIds = Array(characterIds[batch ..< endIndex])
 
             let batchResults = try await fetchAffiliations(characterIds: batchIds)
             results.append(contentsOf: batchResults)

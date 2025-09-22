@@ -27,13 +27,21 @@ struct MarketItemBasicInfoView: View {
                         Button {
                             UIPasteboard.general.string = itemDetails.name
                         } label: {
-                            Label(NSLocalizedString("Misc_Copy_Name", comment: ""), systemImage: "doc.on.doc")
+                            Label(
+                                NSLocalizedString("Misc_Copy_Name", comment: ""),
+                                systemImage: "doc.on.doc"
+                            )
                         }
-                        if let en_name = itemDetails.en_name, !en_name.isEmpty, en_name != itemDetails.name {
+                        if let en_name = itemDetails.en_name, !en_name.isEmpty,
+                           en_name != itemDetails.name
+                        {
                             Button {
                                 UIPasteboard.general.string = itemDetails.en_name
                             } label: {
-                                Label(NSLocalizedString("Misc_Copy_Trans", comment: ""), systemImage: "translate")
+                                Label(
+                                    NSLocalizedString("Misc_Copy_Trans", comment: ""),
+                                    systemImage: "translate"
+                                )
                             }
                         }
                     }
@@ -43,9 +51,9 @@ struct MarketItemBasicInfoView: View {
                 .font(.subheadline)
                 .foregroundColor(.gray)
             }
-            
+
             Spacer()
-            
+
             // 添加右箭头提示
             Image(systemName: "chevron.right")
                 .foregroundColor(.secondary)
@@ -87,9 +95,9 @@ struct MarketRegionPickerView: View {
         let name: String
         var regionID: Int?
         var regionName: String?
-        var systemName: String?  // 添加星系名称字段
-        var systemNameEn: String?  // 添加英文星系名称
-        var systemNameZh: String?  // 添加中文星系名称
+        var systemName: String? // 添加星系名称字段
+        var systemNameEn: String? // 添加英文星系名称
+        var systemNameZh: String? // 添加中文星系名称
     }
 
     private var unpinnedRegions: [Region] {
@@ -101,17 +109,17 @@ struct MarketRegionPickerView: View {
     // 加载星域数据
     private func loadRegions() {
         let query = """
-                SELECT r.regionID, r.regionName, r.regionName_en, r.regionName_zh
-                FROM regions r
-                WHERE r.regionID < 11000000
-            """
+            SELECT r.regionID, r.regionName, r.regionName_en, r.regionName_zh
+            FROM regions r
+            WHERE r.regionID < 11000000
+        """
 
         if case let .success(rows) = databaseManager.executeQuery(query) {
             allRegions = rows.compactMap { row in
                 guard let id = row["regionID"] as? Int,
-                    let nameLocal = row["regionName"] as? String,
-                    let nameEn = row["regionName_en"] as? String,
-                    let nameZh = row["regionName_zh"] as? String
+                      let nameLocal = row["regionName"] as? String,
+                      let nameEn = row["regionName_en"] as? String,
+                      let nameZh = row["regionName_zh"] as? String
                 else {
                     return nil
                 }
@@ -161,13 +169,13 @@ struct MarketRegionPickerView: View {
 
         // 使用 IN 语句一次性查询所有星系信息
         let query = """
-                SELECT r.regionID, r.regionName, s.solarSystemName, s.solarSystemID, 
-                s.solarSystemName_en, s.solarSystemName_zh
-                FROM universe u
-                JOIN regions r ON u.region_id = r.regionID
-                JOIN solarsystems s ON s.solarSystemID = u.solarsystem_id
-                WHERE s.solarSystemID IN (\(systemIDs.map { String($0) }.joined(separator: ",")))
-            """
+            SELECT r.regionID, r.regionName, s.solarSystemName, s.solarSystemID, 
+            s.solarSystemName_en, s.solarSystemName_zh
+            FROM universe u
+            JOIN regions r ON u.region_id = r.regionID
+            JOIN solarsystems s ON s.solarSystemID = u.solarsystem_id
+            WHERE s.solarSystemID IN (\(systemIDs.map { String($0) }.joined(separator: ",")))
+        """
 
         if case let .success(rows) = databaseManager.executeQuery(query) {
             // 创建星系ID到星系信息的映射
@@ -175,11 +183,11 @@ struct MarketRegionPickerView: View {
                 uniqueKeysWithValues: rows.compactMap {
                     row -> (Int, (Int, String, String, String, String))? in
                     guard let systemID = row["solarSystemID"] as? Int,
-                        let regionID = row["regionID"] as? Int,
-                        let regionName = row["regionName"] as? String,
-                        let systemName = row["solarSystemName"] as? String,
-                        let systemNameEn = row["solarSystemName_en"] as? String,
-                        let systemNameZh = row["solarSystemName_zh"] as? String
+                          let regionID = row["regionID"] as? Int,
+                          let regionName = row["regionName"] as? String,
+                          let systemName = row["solarSystemName"] as? String,
+                          let systemNameEn = row["solarSystemName_en"] as? String,
+                          let systemNameZh = row["solarSystemName_zh"] as? String
                     else {
                         return nil
                     }
@@ -189,9 +197,9 @@ struct MarketRegionPickerView: View {
                 })
 
             // 更新所有星系信息
-            for i in 0..<systems.count {
+            for i in 0 ..< systems.count {
                 if let systemID = Int(systems[i].id),
-                    let info = systemInfoMap[systemID]
+                   let info = systemInfoMap[systemID]
                 {
                     systems[i].regionID = info.0
                     systems[i].regionName = info.1
@@ -222,9 +230,9 @@ struct MarketRegionPickerView: View {
                     system.regionID == region.id
                         && (system.systemName?.localizedCaseInsensitiveContains(searchText) ?? false
                             || system.systemNameEn?.localizedCaseInsensitiveContains(searchText)
-                                ?? false
+                            ?? false
                             || system.systemNameZh?.localizedCaseInsensitiveContains(searchText)
-                                ?? false)
+                            ?? false)
                 }
 
                 return nameMatch || nameEnMatch || nameZhMatch || systemMatch
@@ -293,8 +301,7 @@ struct MarketRegionPickerView: View {
         NavigationStack {
             List {
                 // 置顶星域 Section
-                Section(header: Text(NSLocalizedString("Main_Market_Pinned_Regions", comment: "")))
-                {
+                Section(header: Text(NSLocalizedString("Main_Market_Pinned_Regions", comment: ""))) {
                     if !pinnedRegions.isEmpty {
                         ForEach(pinnedRegions) { region in
                             RegionRow(
@@ -345,8 +352,11 @@ struct MarketRegionPickerView: View {
                 }
 
                 // 市场建筑 Section
-                if !structureManager.structures.isEmpty {
-                    Section(header: Text(NSLocalizedString("Main_Setting_Market_Structure_Select", comment: ""))) {
+                Section(
+                    header: Text(
+                        NSLocalizedString("Main_Setting_Market_Structure_Select", comment: ""))
+                ) {
+                    if !structureManager.structures.isEmpty {
                         ForEach(structureManager.structures) { structure in
                             MarketStructureRow(
                                 structure: structure,
@@ -365,13 +375,31 @@ struct MarketRegionPickerView: View {
                                 }
                             )
                         }
+                    } else {
+                        // 没有建筑时显示设置按钮
+                        NavigationLink(destination: MarketStructureSettingsView()) {
+                            HStack {
+                                Image(systemName: "gear")
+                                    .foregroundColor(.blue)
+                                    .font(.title2)
+
+                                Text(
+                                    NSLocalizedString(
+                                        "Main_Market_Setup_Structure", comment: "设置建筑市场"
+                                    )
+                                )
+                                .foregroundColor(.primary)
+
+                                Spacer()
+                            }
+                        }
                     }
                 }
 
                 // 按首字母分组显示星域列表
                 ForEach(sectionTitles, id: \.self) { sectionTitle in
                     if let regionsInSection = sectionedRegions[sectionTitle],
-                        !regionsInSection.isEmpty
+                       !regionsInSection.isEmpty
                     {
                         Section(header: Text(sectionTitle)) {
                             ForEach(regionsInSection) { region in
@@ -505,11 +533,11 @@ struct MarketItemDetailView: View {
     @State private var isLoadingHistory: Bool = false
     @State private var isFromParent: Bool = true
     @State private var showRegionPicker = false
-    @State private var showItemInfo = false  // 添加显示物品信息的状态
+    @State private var showItemInfo = false // 添加显示物品信息的状态
     @State private var selectedRegionID: Int
     @State private var selectedRegionName: String = ""
     @State private var saveSelection: Bool = true
-    @State private var structureOrdersProgress: StructureOrdersProgress? = nil  // 建筑订单加载进度
+    @State private var structureOrdersProgress: StructureOrdersProgress? = nil // 建筑订单加载进度
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     private var chartHeight: CGFloat {
         // 根据设备类型和方向调整高度
@@ -518,7 +546,7 @@ struct MarketItemDetailView: View {
             return 300
         } else {
             // iPhone 或小屏设备
-            return UIScreen.main.bounds.height * 0.25  // 使用屏幕高度的 25%
+            return UIScreen.main.bounds.height * 0.25 // 使用屏幕高度的 25%
         }
     }
 
@@ -537,7 +565,7 @@ struct MarketItemDetailView: View {
                         itemDetails: details,
                         marketPath: marketPath
                     )
-                    .contentShape(Rectangle())  // 扩展点击区域到整个视图
+                    .contentShape(Rectangle()) // 扩展点击区域到整个视图
                     .onTapGesture {
                         showItemInfo = true
                     }
@@ -569,9 +597,10 @@ struct MarketItemDetailView: View {
                         HStack {
                             if isLoadingPrice {
                                 if StructureMarketManager.isStructureId(selectedRegionID),
-                                   let progress = structureOrdersProgress {
+                                   let progress = structureOrdersProgress
+                                {
                                     switch progress {
-                                    case .loading(let currentPage, let totalPages):
+                                    case let .loading(currentPage, totalPages):
                                         HStack(spacing: 4) {
                                             ProgressView()
                                                 .scaleEffect(0.7)
@@ -623,7 +652,7 @@ struct MarketItemDetailView: View {
                         }
                     }
                 }
-.disabled(isLoadingPrice)
+                .disabled(isLoadingPrice)
             }
 
             // 历史价格图表部分
@@ -659,7 +688,7 @@ struct MarketItemDetailView: View {
                                 .foregroundColor(.secondary)
                         }
                     }
-                    .frame(height: chartHeight)  // 使用动态高度
+                    .frame(height: chartHeight) // 使用动态高度
                 }
             }
         }
@@ -704,7 +733,7 @@ struct MarketItemDetailView: View {
         }
         .onAppear {
             let defaults = UserDefaultsManager.shared
-            
+
             // 验证和设置selectedRegionID
             if selectedRegionID == 0 {
                 let defaultRegionID = defaults.selectedRegionID
@@ -715,7 +744,7 @@ struct MarketItemDetailView: View {
                 } else {
                     // 如果默认区域无效，回退到Jita
                     Logger.warning("默认选择的区域ID \(defaultRegionID) 无效，回退到Jita")
-                    selectedRegionID = 10000002 // The Forge (Jita)
+                    selectedRegionID = 10_000_002 // The Forge (Jita)
                     selectedRegionName = getRegionName(for: selectedRegionID)
                     // 更新默认设置
                     defaults.selectedRegionID = selectedRegionID
@@ -726,7 +755,7 @@ struct MarketItemDetailView: View {
                     selectedRegionName = getRegionName(for: selectedRegionID)
                 } else {
                     Logger.warning("当前选择的区域ID \(selectedRegionID) 无效，回退到Jita")
-                    selectedRegionID = 10000002 // The Forge (Jita)
+                    selectedRegionID = 10_000_002 // The Forge (Jita)
                     selectedRegionName = getRegionName(for: selectedRegionID)
                 }
             }
@@ -754,17 +783,19 @@ struct MarketItemDetailView: View {
 
         do {
             let orders: [MarketOrder]
-            
+
             // 判断是否选择了建筑
             if StructureMarketManager.isStructureId(selectedRegionID) {
                 // 选择了建筑，使用建筑订单API
-                guard let structureId = StructureMarketManager.getStructureId(from: selectedRegionID) else {
+                guard
+                    let structureId = StructureMarketManager.getStructureId(from: selectedRegionID)
+                else {
                     Logger.error("无效的建筑ID: \(selectedRegionID)")
                     marketOrders = []
                     lowestPrice = nil
                     return
                 }
-                
+
                 // 获取建筑对应的角色ID
                 guard let structure = getStructureById(structureId) else {
                     Logger.error("未找到建筑信息: \(structureId)")
@@ -772,7 +803,7 @@ struct MarketItemDetailView: View {
                     lowestPrice = nil
                     return
                 }
-                
+
                 orders = try await StructureMarketManager.shared.getItemOrdersInStructure(
                     structureId: structureId,
                     characterId: structure.characterId,
@@ -784,7 +815,7 @@ struct MarketItemDetailView: View {
                         }
                     }
                 )
-                
+
                 Logger.info("从建筑 \(structure.structureName) 获取到 \(orders.count) 个订单")
             } else {
                 // 选择了星域，使用原有的API
@@ -870,18 +901,19 @@ struct MarketItemDetailView: View {
         // 判断是否是建筑ID
         if StructureMarketManager.isStructureId(regionID) {
             guard let structureId = StructureMarketManager.getStructureId(from: regionID),
-                  let structure = getStructureById(structureId) else {
+                  let structure = getStructureById(structureId)
+            else {
                 return "Unknown Structure"
             }
             return structure.structureName
         }
-        
+
         // 查询数据库获取区域名称
         let query = """
-                SELECT regionName
-                FROM regions
-                WHERE regionID = ?
-            """
+            SELECT regionName
+            FROM regions
+            WHERE regionID = ?
+        """
 
         if case let .success(rows) = databaseManager.executeQuery(query, parameters: [regionID]) {
             if let row = rows.first {
@@ -893,7 +925,7 @@ struct MarketItemDetailView: View {
         // 如果查询失败或未找到，返回一个默认值
         return "Unknown Region"
     }
-    
+
     // 根据建筑ID获取建筑信息
     private func getStructureById(_ structureId: Int64) -> MarketStructure? {
         return MarketStructureManager.shared.structures.first { $0.structureId == Int(structureId) }
@@ -909,20 +941,20 @@ struct MarketItemDetailView: View {
             }
             return getStructureById(structureId) != nil
         }
-        
+
         // 检查是否是有效的星域ID
-        if regionID > 0 && regionID < 11000000 {
+        if regionID > 0 && regionID < 11_000_000 {
             // 查询数据库验证星域是否存在
             let query = """
-                    SELECT regionID
-                    FROM regions
-                    WHERE regionID = ?
-                """
+                SELECT regionID
+                FROM regions
+                WHERE regionID = ?
+            """
             if case let .success(rows) = databaseManager.executeQuery(query, parameters: [regionID]) {
                 return !rows.isEmpty
             }
         }
-        
+
         return false
     }
 }
@@ -933,7 +965,7 @@ struct MarketStructureRow: View {
     let structure: MarketStructure
     let isSelected: Bool
     let onSelect: () -> Void
-    
+
     var body: some View {
         HStack(spacing: 12) {
             // 建筑图标
@@ -953,28 +985,28 @@ struct MarketStructureRow: View {
                             .font(.system(size: 16))
                     )
             }
-            
+
             // 建筑信息
             VStack(alignment: .leading, spacing: 2) {
                 Text(structure.structureName)
                     .font(.body)
                     .foregroundColor(.primary)
                     .lineLimit(1)
-                
+
                 HStack(spacing: 4) {
                     Text(formatSystemSecurity(structure.security))
                         .foregroundColor(getSecurityColor(structure.security))
                         .font(.caption)
-                    
+
                     Text("\(structure.systemName)")
                         .foregroundColor(.secondary)
                         .font(.caption)
                         .lineLimit(1)
                 }
             }
-            
+
             Spacer()
-            
+
             if isSelected {
                 Image(systemName: "checkmark")
                     .foregroundColor(.blue)

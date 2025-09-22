@@ -17,7 +17,8 @@ struct ShowItemInfo: View {
     @State private var attributeGroups: [AttributeGroup] = []
 
     private func buildTraitsText(
-        roleBonuses: [Trait], typeBonuses: [Trait], miscBonuses: [Trait] = [], databaseManager: DatabaseManager
+        roleBonuses: [Trait], typeBonuses: [Trait], miscBonuses: [Trait] = [],
+        databaseManager: DatabaseManager
     ) -> String {
         var text = ""
 
@@ -59,12 +60,12 @@ struct ShowItemInfo: View {
                 }
             }
         }
-        
+
         // 如果有Type Bonuses同时也有Misc Bonuses，添加分隔符
         if !typeBonuses.isEmpty && !miscBonuses.isEmpty {
             text += "\n\n"
         }
-        
+
         // Misc Bonuses
         if !miscBonuses.isEmpty {
             text += "- <b>\(NSLocalizedString("Main_Database_Misc_Bonuses", comment: ""))</b>\n"
@@ -101,7 +102,7 @@ struct ShowItemInfo: View {
 
                 // 技能相关 Section
                 if let categoryID = itemDetails.categoryID,
-                    categoryID == 16
+                   categoryID == 16
                 {
                     SkillSection(
                         skillID: itemID,
@@ -112,7 +113,8 @@ struct ShowItemInfo: View {
 
                 // 工业相关
                 IndustrySection(
-                    itemID: itemID, databaseManager: databaseManager, itemDetails: itemDetails)
+                    itemID: itemID, databaseManager: databaseManager, itemDetails: itemDetails
+                )
 
                 // 突变相关组件
                 MutationSourceItemsSection(itemID: itemID, databaseManager: databaseManager)
@@ -175,7 +177,9 @@ struct ShowItemInfo: View {
 
     // 加载属性
     private func loadAttributes(for itemID: Int) {
-        attributeGroups = databaseManager.loadAttributeGroups(for: itemID, modifiedAttributes: modifiedAttributes)
+        attributeGroups = databaseManager.loadAttributeGroups(
+            for: itemID, modifiedAttributes: modifiedAttributes
+        )
         // 初始化属性单位
         let units = databaseManager.loadAttributeUnits()
         AttributeDisplayConfig.initializeUnits(with: units)

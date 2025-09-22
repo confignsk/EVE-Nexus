@@ -72,7 +72,7 @@ class KbEvetoolAPI {
         return jsonData
     }
 
-    public func getShipInfo(_ record: [String: Any], path: String...) -> (id: Int?, name: String?) {
+    func getShipInfo(_ record: [String: Any], path: String...) -> (id: Int?, name: String?) {
         var current: Any? = record
         for key in path {
             current = (current as? [String: Any])?[key]
@@ -85,7 +85,7 @@ class KbEvetoolAPI {
         return (shipInfo["id"] as? Int, shipInfo["name"] as? String)
     }
 
-    public func getSystemInfo(_ record: [String: Any]) -> (
+    func getSystemInfo(_ record: [String: Any]) -> (
         name: String?, region: String?, security: String?
     ) {
         guard let sysInfo = record["sys"] as? [String: Any] else {
@@ -99,14 +99,14 @@ class KbEvetoolAPI {
         )
     }
 
-    public func getFormattedTime(_ record: [String: Any]) -> String? {
+    func getFormattedTime(_ record: [String: Any]) -> String? {
         guard let timestamp = record["time"] as? Int else {
             return nil
         }
         return formatTime(timestamp)
     }
 
-    public func getFormattedValue(_ record: [String: Any]) -> String? {
+    func getFormattedValue(_ record: [String: Any]) -> String? {
         guard let value = record["sumV"] as? Int else {
             return nil
         }
@@ -128,21 +128,21 @@ class KbEvetoolAPI {
 
         // 1. 从本地数据库搜索物品
         let query = """
-                SELECT type_id, name, icon_filename
-                FROM types
-                WHERE (name LIKE ?1 OR en_name like ?1)
-                AND published = 1
-                AND categoryID IN (6, 65, 87) -- evetools只支持这几个分类
-                order by categoryID
-                LIMIT 20
-            """
+            SELECT type_id, name, icon_filename
+            FROM types
+            WHERE (name LIKE ?1 OR en_name like ?1)
+            AND published = 1
+            AND categoryID IN (6, 65, 87) -- evetools只支持这几个分类
+            order by categoryID
+            LIMIT 20
+        """
 
         if case let .success(rows) = DatabaseManager.shared.executeQuery(
             query, parameters: ["%\(searchText)%"]
         ) {
             for row in rows {
                 if let typeId = row["type_id"] as? Int,
-                    let name = row["name"] as? String
+                   let name = row["name"] as? String
                 {
                     let imageURL = "https://images.evetech.net/types/\(typeId)/icon?size=64"
                     result["inventory_type"]?.append(

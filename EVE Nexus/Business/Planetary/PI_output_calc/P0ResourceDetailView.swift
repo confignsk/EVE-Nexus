@@ -77,23 +77,23 @@ struct P0ResourceDetailView: View {
         DispatchQueue.global(qos: .userInitiated).async {
             // 查询星系内的行星数量
             let query = """
-                    SELECT 
-                        s.solarSystemID,
-                        s.solarSystemName,
-                        u.system_security,
-                        u.temperate,
-                        u.barren,
-                        u.oceanic,
-                        u.ice,
-                        u.gas,
-                        u.lava,
-                        u.storm,
-                        u.plasma
-                    FROM solarsystems s
-                    JOIN universe u ON s.solarSystemID = u.solarsystem_id
-                    WHERE s.solarSystemID IN (\(systemIds.map { String($0) }.joined(separator: ",")))
-                    ORDER BY s.solarSystemName
-                """
+                SELECT 
+                    s.solarSystemID,
+                    s.solarSystemName,
+                    u.system_security,
+                    u.temperate,
+                    u.barren,
+                    u.oceanic,
+                    u.ice,
+                    u.gas,
+                    u.lava,
+                    u.storm,
+                    u.plasma
+                FROM solarsystems s
+                JOIN universe u ON s.solarSystemID = u.solarsystem_id
+                WHERE s.solarSystemID IN (\(systemIds.map { String($0) }.joined(separator: ",")))
+                ORDER BY s.solarSystemName
+            """
 
             var loadedSystemPlanets:
                 [(
@@ -125,16 +125,16 @@ struct P0ResourceDetailView: View {
                 // 查询行星类型名称
                 let planetTypeIds = Array(availablePlanetTypes)
                 let typeQuery = """
-                        SELECT type_id, name 
-                        FROM types 
-                        WHERE type_id IN (\(planetTypeIds.map { String($0) }.joined(separator: ",")))
-                    """
+                    SELECT type_id, name 
+                    FROM types 
+                    WHERE type_id IN (\(planetTypeIds.map { String($0) }.joined(separator: ",")))
+                """
 
                 var planetTypeNames: [Int: String] = [:]
                 if case let .success(typeRows) = DatabaseManager.shared.executeQuery(typeQuery) {
                     for row in typeRows {
                         if let typeId = row["type_id"] as? Int,
-                            let name = row["name"] as? String
+                           let name = row["name"] as? String
                         {
                             planetTypeNames[typeId] = name
                         }
@@ -143,8 +143,8 @@ struct P0ResourceDetailView: View {
 
                 for row in rows {
                     guard let systemId = row["solarSystemID"] as? Int,
-                        let systemName = row["solarSystemName"] as? String,
-                        let security = row["system_security"] as? Double
+                          let systemName = row["solarSystemName"] as? String,
+                          let security = row["system_security"] as? Double
                     else {
                         continue
                     }
@@ -155,10 +155,10 @@ struct P0ResourceDetailView: View {
                     // 检查每种行星类型的数量
                     for planetType in availablePlanetTypes {
                         if let columnName = PlanetaryUtils.planetTypeToColumn[planetType],
-                            let count = row[columnName] as? Int,
-                            count > 0,
-                            let iconFileName = planetTypeToIcon[planetType],
-                            let typeName = planetTypeNames[planetType]
+                           let count = row[columnName] as? Int,
+                           count > 0,
+                           let iconFileName = planetTypeToIcon[planetType],
+                           let typeName = planetTypeNames[planetType]
                         {
                             planetCounts.append(
                                 (

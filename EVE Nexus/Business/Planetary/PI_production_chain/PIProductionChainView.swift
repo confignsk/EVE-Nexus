@@ -24,19 +24,19 @@ final class PIProductionChainViewModel: ObservableObject {
     @Published var selectedItems: Set<Int> = []
     @Published var isLoading = false
     @Published var errorMessage: String?
-    
+
     private let resourceCache = PIResourceCache.shared
-    
+
     func loadProductionChain(for productId: Int) {
         isLoading = true
         errorMessage = nil
         productionChain = []
         selectedItems = []
-        
+
         Task {
             do {
                 let chain = try await calculateProductionChain(for: productId)
-                
+
                 await MainActor.run {
                     self.productionChain = chain
                     self.isLoading = false
@@ -49,34 +49,43 @@ final class PIProductionChainViewModel: ObservableObject {
             }
         }
     }
-    
-    private func calculateProductionChain(for productId: Int) async throws -> [ProductionChainSection] {
+
+    private func calculateProductionChain(for productId: Int) async throws
+        -> [ProductionChainSection]
+    {
         guard let productInfo = resourceCache.getResourceInfo(for: productId),
-              let productLevel = resourceCache.getResourceLevel(for: productId) else {
-            throw NSError(domain: "ProductionChain", code: 1, userInfo: [NSLocalizedDescriptionKey: "无法获取产品信息"])
+              let productLevel = resourceCache.getResourceLevel(for: productId)
+        else {
+            throw NSError(
+                domain: "ProductionChain", code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "无法获取产品信息"]
+            )
         }
-        
+
         // 存储所有轮次的原始数据
         var allRoundsData: [[Int: (name: String, iconFileName: String, quantity: Int)]] = []
-        
+
         // 一次性计算所有轮次
-        var currentLevelItems: [Int: (name: String, iconFileName: String, quantity: Int)] = [productId: (productInfo.name, productInfo.iconFileName, 1)]
+        var currentLevelItems: [Int: (name: String, iconFileName: String, quantity: Int)] = [
+            productId: (productInfo.name, productInfo.iconFileName, 1),
+        ]
         var currentLevel = productLevel.rawValue
-        
-        while currentLevel > 0 && !currentLevelItems.isEmpty {
+
+        while currentLevel > 0, !currentLevelItems.isEmpty {
             let targetLevel = currentLevel - 1
             var nextLevelItems: [Int: (name: String, iconFileName: String, quantity: Int)] = [:]
-            
+
             // 计算当前级别所有产品需要的下一级材料
             for (itemId, itemInfo) in currentLevelItems {
                 if let schematic = resourceCache.getSchematic(for: itemId) {
                     let outputQuantity = Double(schematic.outputValue)
-                    
+
                     for (index, inputTypeId) in schematic.inputTypeIds.enumerated() {
                         if index < schematic.inputValues.count {
                             let inputQuantity = Double(schematic.inputValues[index])
-                            let requiredQuantity = Int(ceil(Double(itemInfo.quantity) * inputQuantity / outputQuantity))
-                            
+                            let requiredQuantity = Int(
+                                ceil(Double(itemInfo.quantity) * inputQuantity / outputQuantity))
+
                             if let inputInfo = resourceCache.getResourceInfo(for: inputTypeId) {
                                 let existingQuantity = nextLevelItems[inputTypeId]?.quantity ?? 0
                                 nextLevelItems[inputTypeId] = (
@@ -89,7 +98,7 @@ final class PIProductionChainViewModel: ObservableObject {
                     }
                 }
             }
-            
+
             if !nextLevelItems.isEmpty {
                 allRoundsData.append(nextLevelItems)
                 currentLevelItems = nextLevelItems
@@ -98,16 +107,16 @@ final class PIProductionChainViewModel: ObservableObject {
                 break
             }
         }
-        
+
         // 根据计算结果创建sections，使用倒序的轮次编号
         let totalRounds = allRoundsData.count
         var sections: [ProductionChainSection] = []
-        
+
         for (index, roundData) in allRoundsData.enumerated() {
-            let sectionItems = roundData.enumerated().map { (itemIndex, element) in
+            let sectionItems = roundData.enumerated().map { itemIndex, element in
                 // 获取物品的真实PI等级
                 let itemLevel = resourceCache.getResourceLevel(for: element.key)?.rawValue ?? 0
-                
+
                 return ProductionChainItem(
                     id: (index + 1) * 1000 + itemIndex,
                     typeId: element.key,
@@ -117,11 +126,14 @@ final class PIProductionChainViewModel: ObservableObject {
                     level: itemLevel
                 )
             }.sorted { $0.name < $1.name }
-            
+
             // 使用倒序的轮次编号：从totalRounds开始递减
             let roundNumber = totalRounds - index
-            let sectionTitle = String(format: NSLocalizedString("PI_Chain_Processing_Round", comment: "第%d轮加工"), roundNumber)
-            
+            let sectionTitle = String(
+                format: NSLocalizedString("PI_Chain_Processing_Round", comment: "第%d轮加工"),
+                roundNumber
+            )
+
             let section = ProductionChainSection(
                 id: index + 1,
                 title: sectionTitle,
@@ -130,10 +142,10 @@ final class PIProductionChainViewModel: ObservableObject {
             )
             sections.append(section)
         }
-        
+
         return sections
     }
-    
+
     func toggleItemSelection(_ item: ProductionChainItem) {
         // 检查当前物品是否已被选中
         if selectedItems.contains(item.typeId) {
@@ -145,30 +157,31 @@ final class PIProductionChainViewModel: ObservableObject {
             findRelatedItems(for: item.typeId)
         }
     }
-    
+
     private func findRelatedItems(for itemId: Int) {
         // 添加当前物品
         selectedItems.insert(itemId)
-        
+
         // 递归查找所有上游物品（需要此物品的产品）
         findUpstreamItems(for: itemId)
-        
+
         // 递归查找所有下游物品（此物品需要的材料）
         findDownstreamItems(for: itemId)
     }
-    
+
     private func findUpstreamItems(for itemId: Int) {
         // 查找所有使用此物品作为输入的配方
         for section in productionChain {
             for item in section.items {
                 if let schematic = resourceCache.getSchematic(for: item.typeId),
-                   schematic.inputTypeIds.contains(itemId) {
+                   schematic.inputTypeIds.contains(itemId)
+                {
                     selectedItems.insert(item.typeId)
                 }
             }
         }
     }
-    
+
     private func findDownstreamItems(for itemId: Int) {
         // 查找此物品的配方中需要的所有输入材料
         if let schematic = resourceCache.getSchematic(for: itemId) {
@@ -186,9 +199,9 @@ struct PIProductionChainView: View {
     @State private var selectedProduct: PlanetaryProduct?
     @State private var showProductSelector = false
     @StateObject private var viewModel = PIProductionChainViewModel()
-    
+
     private static let allowedMarketGroups: Set<Int> = [1334, 1335, 1336, 1337]
-    
+
     var body: some View {
         NavigationView {
             VStack {
@@ -203,19 +216,23 @@ struct PIProductionChainView: View {
                                     .resizable()
                                     .frame(width: 32, height: 32)
                                     .cornerRadius(6)
-                                
+
                                 VStack(alignment: .leading) {
                                     Text(product.name)
                                         .font(.headline)
                                         .foregroundColor(.primary)
-                                    Text(NSLocalizedString("PI_Chain_Tap_To_Change", comment: "点击更换"))
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
+                                    Text(
+                                        NSLocalizedString("PI_Chain_Tap_To_Change", comment: "点击更换")
+                                    )
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
                                 }
                                 Spacer()
                             } else {
-                                Text(NSLocalizedString("PI_Chain_Select_Product", comment: "选择行星产品"))
-                                    .foregroundColor(.blue)
+                                Text(
+                                    NSLocalizedString("PI_Chain_Select_Product", comment: "选择行星产品")
+                                )
+                                .foregroundColor(.blue)
                                 Spacer()
                                 Image(systemName: "chevron.right")
                                     .foregroundColor(.gray)
@@ -227,7 +244,7 @@ struct PIProductionChainView: View {
                     }
                 }
                 .padding()
-                
+
                 // 生产链展示部分
                 if viewModel.isLoading {
                     Spacer()
@@ -286,10 +303,14 @@ struct PIProductionChainView: View {
                         Image(systemName: "cube.box")
                             .font(.largeTitle)
                             .foregroundColor(.gray)
-                        Text(NSLocalizedString("PI_Chain_Select_Product_Hint", comment: "请选择一个行星产品查看生产链"))
-                            .foregroundColor(.gray)
-                            .multilineTextAlignment(.center)
-                            .padding(.top, 8)
+                        Text(
+                            NSLocalizedString(
+                                "PI_Chain_Select_Product_Hint", comment: "请选择一个行星产品查看生产链"
+                            )
+                        )
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .padding(.top, 8)
                     }
                     Spacer()
                 }
@@ -332,26 +353,33 @@ struct ProductionChainItemRow: View {
     let isSelected: Bool
     let isFirstSection: Bool
     let onTap: () -> Void
-    
+
     var body: some View {
         HStack {
             Image(uiImage: IconManager.shared.loadUIImage(for: item.iconFileName))
                 .resizable()
                 .frame(width: 32, height: 32)
                 .cornerRadius(6)
-            
+
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.name)
                     .foregroundColor(.primary)
                     .multilineTextAlignment(.leading)
-                
-                Text(String(format: NSLocalizedString("PI_Chain_Level_And_Quantity_Format", comment: "等级：P%d，数量：%d"), item.level, item.quantity))
-                    .foregroundColor(.secondary)
-                    .font(.caption)
+
+                Text(
+                    String(
+                        format: NSLocalizedString(
+                            "PI_Chain_Level_And_Quantity_Format", comment: "等级：P%d，数量：%d"
+                        ),
+                        item.level, item.quantity
+                    )
+                )
+                .foregroundColor(.secondary)
+                .font(.caption)
             }
-            
+
             Spacer()
-            
+
             if !isFirstSection {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .foregroundColor(isSelected ? .blue : .gray)

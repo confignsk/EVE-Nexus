@@ -26,7 +26,7 @@ struct PlannedSkill: Identifiable {
 struct SkillPlanData: Codable {
     let name: String
     let lastUpdated: Date
-    var skills: [String]  // 格式: "type_id:level"
+    var skills: [String] // 格式: "type_id:level"
 }
 
 class SkillPlanFileManager {
@@ -51,7 +51,7 @@ class SkillPlanFileManager {
         }
     }
 
-    func saveSkillPlan(characterId: Int, plan: SkillPlan) {
+    func saveSkillPlan(characterId _: Int, plan: SkillPlan) {
         let fileName = "\(plan.id).json"
         let fileURL = skillPlansDirectory.appendingPathComponent(fileName)
 
@@ -66,13 +66,13 @@ class SkillPlanFileManager {
                 // 创建新的计划数据，但保持原有的lastUpdated
                 let newPlanData = SkillPlanData(
                     name: plan.name,
-                    lastUpdated: existingPlanData.lastUpdated,  // 保持原有的lastUpdated
+                    lastUpdated: existingPlanData.lastUpdated, // 保持原有的lastUpdated
                     skills: plan.skills.map { "\($0.skillID):\($0.targetLevel)" }
                 )
 
                 // 比较内容是否相同（除了lastUpdated）
                 if existingPlanData.name == newPlanData.name,
-                    Set(existingPlanData.skills) == Set(newPlanData.skills)
+                   Set(existingPlanData.skills) == Set(newPlanData.skills)
                 {
                     Logger.debug("技能计划内容未变化，跳过保存: \(fileName)")
                     return
@@ -85,7 +85,7 @@ class SkillPlanFileManager {
         // 如果文件不存在或内容有变化，则创建新的计划数据并保存
         let planData = SkillPlanData(
             name: plan.name,
-            lastUpdated: Date(),  // 只有在内容真正变化时才更新时间
+            lastUpdated: Date(), // 只有在内容真正变化时才更新时间
             skills: plan.skills.map { "\($0.skillID):\($0.targetLevel)" }
         )
 
@@ -114,7 +114,7 @@ class SkillPlanFileManager {
             Logger.debug("找到文件数量: \(files.count)")
 
             let plans = files.filter { url in
-                return url.pathExtension == "json"
+                url.pathExtension == "json"
             }.compactMap { url -> SkillPlan? in
                 do {
                     Logger.debug("尝试解析文件: \(url.lastPathComponent)")
@@ -126,11 +126,11 @@ class SkillPlanFileManager {
 
                     let fileName = url.lastPathComponent
                     let planIdString = fileName.replacingOccurrences(of: ".json", with: "")
-                    
+
                     // 尝试解析UUID，支持新旧格式
                     var planId: UUID?
                     planId = UUID(uuidString: planIdString)
-                    
+
                     // 如果无法解析，可能是旧格式文件，尝试提取UUID部分
                     if planId == nil {
                         let components = planIdString.split(separator: "_")
@@ -150,8 +150,8 @@ class SkillPlanFileManager {
                     let skills = planData.skills.compactMap { skillString -> PlannedSkill? in
                         let components = skillString.split(separator: ":")
                         guard components.count == 2,
-                            let typeId = Int(components[0]),
-                            let level = Int(components[1])
+                              let typeId = Int(components[0]),
+                              let level = Int(components[1])
                         else {
                             return nil
                         }
@@ -159,8 +159,8 @@ class SkillPlanFileManager {
                         return PlannedSkill(
                             id: UUID(),
                             skillID: typeId,
-                            skillName: "Unknown Skill (\(typeId))",  // 使用临时名称
-                            currentLevel: 0,  // 使用默认值
+                            skillName: "Unknown Skill (\(typeId))", // 使用临时名称
+                            currentLevel: 0, // 使用默认值
                             targetLevel: level,
                             trainingTime: 0,
                             requiredSP: 0,
@@ -213,7 +213,7 @@ class SkillPlanFileManager {
         }
     }
 
-    func deleteSkillPlan(characterId: Int, plan: SkillPlan) {
+    func deleteSkillPlan(characterId _: Int, plan: SkillPlan) {
         let fileName = "\(plan.id).json"
         let fileURL = skillPlansDirectory.appendingPathComponent(fileName)
 
@@ -233,7 +233,7 @@ struct SkillPlanView: View {
     @State private var isShowingAddAlert = false
     @State private var newPlanName = ""
     @State private var searchText = ""
-    @State private var learnedSkills: [Int: CharacterSkill] = [:]  // 添加已学习技能的状态变量
+    @State private var learnedSkills: [Int: CharacterSkill] = [:] // 添加已学习技能的状态变量
 
     // 添加过滤后的计划列表计算属性
     private var filteredPlans: [SkillPlan] {
@@ -326,7 +326,7 @@ struct SkillPlanView: View {
             skillPlans = SkillPlanFileManager.shared.loadSkillPlans(
                 characterId: characterId,
                 databaseManager: databaseManager,
-                learnedSkills: learnedSkills  // 传入已学习的技能
+                learnedSkills: learnedSkills // 传入已学习的技能
             )
         }
     }
@@ -403,7 +403,7 @@ struct SkillPlanView: View {
         do {
             // 调用API获取技能数据
             let skillsResponse = try await CharacterSkillsAPI.shared.fetchCharacterSkills(
-                characterId: characterId, 
+                characterId: characterId,
                 forceRefresh: false
             )
 

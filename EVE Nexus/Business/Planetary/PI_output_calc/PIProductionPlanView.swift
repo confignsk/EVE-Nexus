@@ -5,8 +5,8 @@ struct PIResourceChainView: View {
     let resourceId: Int
     let resourceName: String
     let systemIds: [Int]
-    let maxJumps: Int  // 添加最大跳数参数
-    let centerSystemId: Int?  // 添加中心星系ID参数
+    let maxJumps: Int // 添加最大跳数参数
+    let centerSystemId: Int? // 添加中心星系ID参数
 
     @State private var resourceChain: [PIResourceChainInfo] = []
     @State private var isLoading = true
@@ -86,7 +86,7 @@ struct PIResourceChainView: View {
 
                     // 主权信息
                     if let sovereignty = sovereigntyInfo, let icon = sovereignty.icon,
-                        let name = sovereignty.name
+                       let name = sovereignty.name
                     {
                         HStack {
                             Text(NSLocalizedString("PI_Production_Sov", comment: ""))
@@ -108,13 +108,15 @@ struct PIResourceChainView: View {
                     Section(
                         header: Text(
                             NSLocalizedString(
-                                "PI_Production_Plan_P0Requirements", comment: "需求资源与比例"))
+                                "PI_Production_Plan_P0Requirements", comment: "需求资源与比例"
+                            ))
                     ) {
                         ForEach(p0Resources, id: \.id) { resource in
                             NavigationLink(
                                 destination: P0ResourceDetailView(
                                     resourceId: resource.id, resourceName: resource.name,
-                                    systemIds: systemIds)
+                                    systemIds: systemIds
+                                )
                             ) {
                                 HStack {
                                     Image(
@@ -160,7 +162,7 @@ struct PIResourceChainView: View {
                 } else {
                     self.errorMessage =
                         NSLocalizedString("PI_Resource_Chain_Error", comment: "无法加载资源链信息")
-                        + " (ID: \(resourceId))"
+                            + " (ID: \(resourceId))"
                 }
                 self.isLoading = false
             }
@@ -241,7 +243,7 @@ struct PIResourceChainView: View {
         }
 
         // 逐级向下计算
-        for level in (0..<maxLevel).reversed() {
+        for level in (0 ..< maxLevel).reversed() {
             if let resources = resourcesByLevel[level] {
                 for resource in resources {
                     // 查找需要这个资源的所有上级资源

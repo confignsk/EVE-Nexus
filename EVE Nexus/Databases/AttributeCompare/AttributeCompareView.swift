@@ -148,7 +148,7 @@ struct AttributeCompareView: View {
     @ObservedObject var databaseManager: DatabaseManager
     @State private var compares: [AttributeCompare] = []
     @State private var isShowingAddAlert = false
-    @State private var tempCompareName = ""  // 临时变量，用于接收用户输入
+    @State private var tempCompareName = "" // 临时变量，用于接收用户输入
     @State private var searchText = ""
 
     private var filteredCompares: [AttributeCompare] {
@@ -183,9 +183,9 @@ struct AttributeCompareView: View {
                     } label: {
                         compareRowView(compare)
                     }
-                    .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                 }
                 .onDelete(perform: deleteCompare)
+                .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
             }
         }
         .navigationTitle(NSLocalizedString("Main_Attribute_Compare", comment: ""))
@@ -197,7 +197,7 @@ struct AttributeCompareView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
-                    tempCompareName = ""  // 清空临时变量
+                    tempCompareName = "" // 清空临时变量
                     isShowingAddAlert = true
                 } label: {
                     Image(systemName: "plus")
@@ -210,25 +210,25 @@ struct AttributeCompareView: View {
         ) {
             TextField(
                 NSLocalizedString("Main_Attribute_Compare_Name", comment: ""),
-                text: $tempCompareName  // 绑定到临时变量
+                text: $tempCompareName // 绑定到临时变量
             )
 
             Button(NSLocalizedString("Misc_Done", comment: "")) {
                 Logger.info("用户新增对比列表: \(tempCompareName)")
                 if !tempCompareName.isEmpty {
                     let newCompare = AttributeCompare(
-                        name: tempCompareName,  // 使用临时变量的值
+                        name: tempCompareName, // 使用临时变量的值
                         items: []
                     )
                     compares.append(newCompare)
                     AttributeCompareManager.shared.saveCompare(newCompare)
-                    tempCompareName = ""  // 清空临时变量
+                    tempCompareName = "" // 清空临时变量
                 }
             }
-            .disabled(tempCompareName.isEmpty)  // 根据临时变量判断是否禁用
+            .disabled(tempCompareName.isEmpty) // 根据临时变量判断是否禁用
 
             Button(NSLocalizedString("Main_EVE_Mail_Cancel", comment: ""), role: .cancel) {
-                tempCompareName = ""  // 取消时清空临时变量
+                tempCompareName = "" // 取消时清空临时变量
             }
         }
         .task {
@@ -338,8 +338,8 @@ struct AttributeCompareDetailView: View {
         }
 
         // 设置初始状态
-        self._compare = State(initialValue: initialCompare)
-        self._items = State(initialValue: temporaryItems)
+        _compare = State(initialValue: initialCompare)
+        _items = State(initialValue: temporaryItems)
     }
 
     var body: some View {
@@ -401,7 +401,8 @@ struct AttributeCompareDetailView: View {
                             Text(
                                 String(
                                     format: NSLocalizedString(
-                                        "Main_Attribute_Compare_Items", comment: ""),
+                                        "Main_Attribute_Compare_Items", comment: ""
+                                    ),
                                     compare.items.count
                                 )
                             )
@@ -412,13 +413,15 @@ struct AttributeCompareDetailView: View {
                     if items.count >= 2 {
                         Toggle(
                             NSLocalizedString(
-                                "Main_Attribute_Compare_Show_Only_Differences", comment: ""),
+                                "Main_Attribute_Compare_Show_Only_Differences", comment: ""
+                            ),
                             isOn: $showOnlyDifferences
                         )
                         .onChange(of: showOnlyDifferences) { _, _ in
                             // 切换时不需要重新计算，只需要更新显示
                             UserDefaults.standard.set(
-                                showOnlyDifferences, forKey: "showOnlyDifferences")
+                                showOnlyDifferences, forKey: "showOnlyDifferences"
+                            )
                         }
                         .padding(.top, 4)
                     }
@@ -444,10 +447,13 @@ struct AttributeCompareDetailView: View {
                             ForEach(items) { item in
                                 HStack {
                                     // 物品图标
-                                    Image(uiImage: IconManager.shared.loadUIImage(for: item.iconFileName))
-                                        .resizable()
-                                        .frame(width: 32, height: 32)
-                                        .cornerRadius(4)
+                                    Image(
+                                        uiImage: IconManager.shared.loadUIImage(
+                                            for: item.iconFileName)
+                                    )
+                                    .resizable()
+                                    .frame(width: 32, height: 32)
+                                    .cornerRadius(4)
 
                                     // 物品名称
                                     Text(item.name)
@@ -467,6 +473,7 @@ struct AttributeCompareDetailView: View {
                                     }
                                 }
                             }
+                            .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                         }
                     } header: {
                         HStack {
@@ -474,7 +481,7 @@ struct AttributeCompareDetailView: View {
                                 .resizable()
                                 .frame(width: 24, height: 24)
                                 .cornerRadius(6)
-                            
+
                             Text(NSLocalizedString("Main_Market_Price_Jita", comment: "Jita 市场价格"))
                                 .font(.headline)
                         }
@@ -511,7 +518,7 @@ struct AttributeCompareDetailView: View {
                     // 过滤出要显示的属性
                     let attributesToShow =
                         showOnlyDifferences
-                        ? getAttributesWithDifferences(result) : sortedAttributeIDs
+                            ? getAttributesWithDifferences(result) : sortedAttributeIDs
 
                     // 过滤并按属性ID排序显示属性
                     let filteredAttributes = sortedAttributeIDs.filter {
@@ -521,9 +528,8 @@ struct AttributeCompareDetailView: View {
                     // 每个属性单独一个Section
                     ForEach(filteredAttributes, id: \.self) { attributeID in
                         if let attributeValues = result.compareResult[attributeID],
-                            let attributeName = allAttributes[attributeID]
+                           let attributeName = allAttributes[attributeID]
                         {
-
                             AttributeCompareSection(
                                 attributeName: attributeName,
                                 attributeID: attributeID,
@@ -535,6 +541,7 @@ struct AttributeCompareDetailView: View {
                             )
                         }
                     }
+                    .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                 }
             }
         }
@@ -640,29 +647,29 @@ struct AttributeCompareDetailView: View {
         guard let currentPrice = marketPrices[item.id] else {
             return .secondary
         }
-        
+
         // 获取所有有效价格
         let allPrices = marketPrices.values.filter { $0 > 0 }
-        
+
         // 如果价格数量少于2个，不标颜色
         if allPrices.count < 2 {
             return .secondary
         }
-        
+
         // 找到最高价和最低价
         let maxPrice = allPrices.max() ?? currentPrice
         let minPrice = allPrices.min() ?? currentPrice
-        
+
         // 如果最高价和最低价相同，说明所有价格都一样，不标颜色
         if maxPrice == minPrice {
             return .secondary
         }
-        
+
         // 根据价格判断颜色：最贵标橙色，最便宜标绿色
         if currentPrice == maxPrice {
-            return .green  // 最贵的
+            return .green // 最贵的
         } else if currentPrice == minPrice {
-            return .orange   // 最便宜的
+            return .orange // 最便宜的
         } else {
             return .secondary
         }
@@ -682,7 +689,7 @@ struct AttributeCompareDetailView: View {
             do {
                 Logger.info("开始获取市场价格，物品数量: \(typeIDs.count)")
                 let prices = await MarketPriceUtil.getMarketOrderPrices(typeIds: typeIDs)
-                
+
                 await MainActor.run {
                     self.marketPrices = prices
                     self.isLoadingPrices = false
@@ -711,7 +718,8 @@ struct AttributeCompareDetailView: View {
         DispatchQueue.global(qos: .userInitiated).async {
             // 使用静态工具方法获取对比结果
             let result = AttributeCompareUtil.compareAttributesWithResult(
-                typeIDs: typeIDs, databaseManager: databaseManager)
+                typeIDs: typeIDs, databaseManager: databaseManager
+            )
 
             // 回到主线程更新UI
             DispatchQueue.main.async {
@@ -791,26 +799,26 @@ struct AttributeCompareSection: View {
     // 计算每个物品的颜色
     private func getValueColor(for item: DatabaseListItem) -> Color {
         let typeIDString = String(item.id)
-        
+
         // 如果该物品没有这个属性值，返回默认颜色
         guard let currentValueInfo = values[typeIDString] else {
             return .secondary
         }
-        
+
         // 获取所有存在的属性值
         let existingValues = values.values.map { $0.value }
-        
+
         // 如果只有一个物品有这个属性，不标颜色
         if existingValues.count <= 1 {
             return .secondary
         }
-        
+
         let currentValue = currentValueInfo.value
-        
+
         // 根据highIsGood确定最好和最差的值
         let bestValue: Double
         let worstValue: Double
-        
+
         if highIsGood {
             // 数值越大越好
             bestValue = existingValues.max() ?? currentValue
@@ -820,12 +828,12 @@ struct AttributeCompareSection: View {
             bestValue = existingValues.min() ?? currentValue
             worstValue = existingValues.max() ?? currentValue
         }
-        
+
         // 如果最好和最差的值相同，说明所有值都一样，不标颜色
         if bestValue == worstValue {
             return .secondary
         }
-        
+
         // 根据当前值判断颜色
         if currentValue == bestValue {
             return .green
@@ -869,26 +877,26 @@ extension AttributeCompareUtil {
 
         // 查询SQL - 获取属性值和单位信息
         let query = """
-                SELECT
-                    ta.type_id,
-                    ta.attribute_id,
-                    a.display_name,
-                    a.name,
-                    ta.value,
-                    COALESCE(ta.unitID, a.unitID) as unitID,
-                    a.unitName,
-                    a.iconID,
-                    COALESCE(a.icon_filename, '') as icon_filename,
-                    a.highIsGood
-                FROM
-                    typeAttributes ta
-                LEFT JOIN
-                    dogmaAttributes a ON ta.attribute_id = a.attribute_id
-                WHERE
-                    ta.type_id IN (\(typeIDsString))
-                ORDER BY 
-                    ta.attribute_id
-            """
+            SELECT
+                ta.type_id,
+                ta.attribute_id,
+                a.display_name,
+                a.name,
+                ta.value,
+                COALESCE(ta.unitID, a.unitID) as unitID,
+                a.unitName,
+                a.iconID,
+                COALESCE(a.icon_filename, '') as icon_filename,
+                a.highIsGood
+            FROM
+                typeAttributes ta
+            LEFT JOIN
+                dogmaAttributes a ON ta.attribute_id = a.attribute_id
+            WHERE
+                ta.type_id IN (\(typeIDsString))
+            ORDER BY 
+                ta.attribute_id
+        """
 
         // 执行查询
         guard case let .success(rows) = databaseManager.executeQuery(query) else {
@@ -910,8 +918,8 @@ extension AttributeCompareUtil {
         // 处理查询结果
         for row in rows {
             guard let typeID = row["type_id"] as? Int,
-                let attributeID = row["attribute_id"] as? Int,
-                let value = row["value"] as? Double
+                  let attributeID = row["attribute_id"] as? Int,
+                  let value = row["value"] as? Double
             else {
                 continue
             }
@@ -937,10 +945,11 @@ extension AttributeCompareUtil {
 
             // 添加当前物品的属性值信息
             attributeValues[attributeIDString]?[typeIDString] = AttributeValueInfo(
-                value: value, unitID: unitID)
+                value: value, unitID: unitID
+            )
 
             // 保存属性图标信息（只需保存一次）
-            if !attributeIcons.keys.contains(attributeIDString) && iconID != nil && iconID != 0 {
+            if !attributeIcons.keys.contains(attributeIDString), iconID != nil, iconID != 0 {
                 let finalIconFileName =
                     iconFileName.isEmpty ? DatabaseConfig.defaultIcon : iconFileName
                 attributeIcons[attributeIDString] = finalIconFileName
@@ -958,53 +967,56 @@ extension AttributeCompareUtil {
 
         // 查询 types 表中的额外属性值 - mass(4), capacity(38), volume(161)
         let typesQuery = """
-                SELECT 
-                    type_id, 
-                    name,
-                    volume,
-                    capacity,
-                    mass
-                FROM 
-                    types
-                WHERE 
-                    type_id IN (\(typeIDsString))
-            """
+            SELECT 
+                type_id, 
+                name,
+                volume,
+                capacity,
+                mass
+            FROM 
+                types
+            WHERE 
+                type_id IN (\(typeIDsString))
+        """
 
         var typeInfo: [String: String] = [:]
-        
+
         // 定义 types 表属性的真实属性ID映射
         let typesAttributeMapping = [
-            (161, "volume"),    // 体积
-            (38, "capacity"),   // 容量  
-            (4, "mass")         // 质量
+            (161, "volume"), // 体积
+            (38, "capacity"), // 容量
+            (4, "mass"), // 质量
         ]
-        
+
         if case let .success(typeRows) = databaseManager.executeQuery(typesQuery) {
             for row in typeRows {
                 guard let typeID = row["type_id"] as? Int,
-                    let name = row["name"] as? String
+                      let name = row["name"] as? String
                 else {
                     continue
                 }
 
                 typeInfo[String(typeID)] = name
-                
+
                 // 处理 types 表中的属性值，使用真实的属性ID
                 for (realAttributeID, columnName) in typesAttributeMapping {
                     if let value = row[columnName] as? Double {
                         let attributeIDString = String(realAttributeID)
                         let typeIDString = String(typeID)
-                        
+
                         // 如果该属性ID还没有在结果字典中，添加它
                         if attributeValues[attributeIDString] == nil {
                             attributeValues[attributeIDString] = [:]
                         }
-                        
+
                         // 添加当前物品的属性值信息，单位ID先设为nil，后面从dogmaAttributes获取
                         attributeValues[attributeIDString]?[typeIDString] = AttributeValueInfo(
-                            value: value, unitID: nil)
-                        
-                        Logger.debug("添加 types 属性: \(attributeIDString) (\(columnName)), 物品ID: \(typeIDString), 值: \(value)")
+                            value: value, unitID: nil
+                        )
+
+                        Logger.debug(
+                            "添加 types 属性: \(attributeIDString) (\(columnName)), 物品ID: \(typeIDString), 值: \(value)"
+                        )
                     }
                 }
             }
@@ -1015,20 +1027,20 @@ extension AttributeCompareUtil {
         let attributeIDsString = attributeIDs.map { String($0) }.joined(separator: ",")
 
         let attributeQuery = """
-                SELECT 
-                    attribute_id, 
-                    display_name,
-                    name,
-                    highIsGood,
-                    COALESCE(unitID, 0) as unitID,
-                    iconID,
-                    COALESCE(icon_filename, '') as icon_filename
-                FROM 
-                    dogmaAttributes
-                WHERE 
-                    attribute_id IN (\(attributeIDsString))
-                AND unitID NOT IN (115, 116, 119)  -- typeid类的属性值不看
-            """
+            SELECT 
+                attribute_id, 
+                display_name,
+                name,
+                highIsGood,
+                COALESCE(unitID, 0) as unitID,
+                iconID,
+                COALESCE(icon_filename, '') as icon_filename
+            FROM 
+                dogmaAttributes
+            WHERE 
+                attribute_id IN (\(attributeIDsString))
+            AND unitID NOT IN (115, 116, 119)  -- typeid类的属性值不看
+        """
 
         // 已发布属性信息 (有display_name的)
         var publishedAttributeInfo: [String: String] = [:]
@@ -1064,7 +1076,7 @@ extension AttributeCompareUtil {
                 }
 
                 // 保存属性图标信息（只需保存一次）
-                if !attributeIcons.keys.contains(attributeIDString) && iconID != nil && iconID != 0 {
+                if !attributeIcons.keys.contains(attributeIDString), iconID != nil, iconID != 0 {
                     let finalIconFileName =
                         iconFileName.isEmpty ? DatabaseConfig.defaultIcon : iconFileName
                     attributeIcons[attributeIDString] = finalIconFileName

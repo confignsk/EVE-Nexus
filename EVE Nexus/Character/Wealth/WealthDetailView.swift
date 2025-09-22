@@ -7,7 +7,7 @@ struct WealthDetailView: View {
     @State private var itemInfos: [[String: Any]] = []
     @State private var isLoading = true
     @State private var itemsWithoutPrice: [NoMarketPriceItem] = []
-    @State private var hasInitialized = false  // 追踪是否已执行初始化
+    @State private var hasInitialized = false // 追踪是否已执行初始化
 
     struct NoMarketPriceItem: Identifiable {
         let id: Int
@@ -99,10 +99,16 @@ struct WealthDetailView: View {
             } else {
                 // 有市场估价的物品
                 if !valuedItems.isEmpty {
-                    Section(header: Text(NSLocalizedString("Wealth_Detail_HasPrice", comment: "")))
-                    {
+                    Section(header: Text(NSLocalizedString("Wealth_Detail_HasPrice", comment: ""))) {
                         ForEach(
-                            valuedItems.sorted(by: { $0.totalValue > $1.totalValue }),
+                            valuedItems.sorted(by: {
+                                // 首先按总价值降序排列
+                                if $0.totalValue != $1.totalValue {
+                                    return $0.totalValue > $1.totalValue
+                                }
+                                // 如果价值相同，按typeId升序排列作为兜底
+                                return $0.typeId < $1.typeId
+                            }),
                             id: \.identifier
                         ) { item in
                             if let itemInfo = getItemInfo(typeId: item.typeId) {
@@ -137,7 +143,12 @@ struct WealthDetailView: View {
                                         Button {
                                             UIPasteboard.general.string = itemInfo.name
                                         } label: {
-                                            Label(NSLocalizedString("Misc_Copy_Item_Name", comment: ""), systemImage: "doc.on.doc")
+                                            Label(
+                                                NSLocalizedString(
+                                                    "Misc_Copy_Item_Name", comment: ""
+                                                ),
+                                                systemImage: "doc.on.doc"
+                                            )
                                         }
                                     }
                                 }
@@ -150,7 +161,16 @@ struct WealthDetailView: View {
                 // 只在资产类型时显示无市场价格的物品
                 if wealthType == .assets && !itemsWithoutPrice.isEmpty {
                     Section(header: Text(NSLocalizedString("Wealth_Detail_NoPrice", comment: ""))) {
-                        ForEach(itemsWithoutPrice) { item in
+                        ForEach(
+                            itemsWithoutPrice.sorted(by: {
+                                // 首先按数量降序排列
+                                if $0.quantity != $1.quantity {
+                                    return $0.quantity > $1.quantity
+                                }
+                                // 如果数量相同，按typeId升序排列作为兜底
+                                return $0.typeId < $1.typeId
+                            })
+                        ) { item in
                             NavigationLink {
                                 MarketItemDetailView(
                                     databaseManager: DatabaseManager(), itemID: item.typeId
@@ -173,7 +193,10 @@ struct WealthDetailView: View {
                                     Button {
                                         UIPasteboard.general.string = item.name
                                     } label: {
-                                        Label(NSLocalizedString("Misc_Copy_Item_Name", comment: ""), systemImage: "doc.on.doc")
+                                        Label(
+                                            NSLocalizedString("Misc_Copy_Item_Name", comment: ""),
+                                            systemImage: "doc.on.doc"
+                                        )
                                     }
                                 }
                             }

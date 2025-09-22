@@ -1,8 +1,8 @@
 import SwiftUI
 
 // 移除HTML标签的扩展
-extension String {
-    fileprivate func removeHTMLTags() -> String {
+private extension String {
+    func removeHTMLTags() -> String {
         // 移除所有HTML标签
         let text = replacingOccurrences(
             of: "<[^>]+>",
@@ -115,7 +115,7 @@ class CorpMemberListViewModel: ObservableObject {
             let cacheKey = "PinnedMembers_\(characterId)"
 
             if let data = UserDefaults.standard.data(forKey: cacheKey),
-                let ids = try? JSONDecoder().decode(Set<Int>.self, from: data)
+               let ids = try? JSONDecoder().decode(Set<Int>.self, from: data)
             {
                 return ids
             }
@@ -185,7 +185,7 @@ class CorpMemberListViewModel: ObservableObject {
             }
             // 搜索船名
             if let shipName = member.shipInfo?.name,
-                shipName.lowercased().contains(searchQuery)
+               shipName.lowercased().contains(searchQuery)
             {
                 return true
             }
@@ -208,7 +208,7 @@ class CorpMemberListViewModel: ObservableObject {
             return
         }
 
-        members = Array(filtered[start..<end])
+        members = Array(filtered[start ..< end])
     }
 
     @MainActor
@@ -264,12 +264,12 @@ class CorpMemberListViewModel: ObservableObject {
         if let solarSystemIds = groupedIds[.solarSystem] {
             Logger.debug("加载星系信息 - 数量: \(solarSystemIds.count)")
             let query = """
-                    SELECT u.solarsystem_id, u.system_security,
-                           s.solarSystemName
-                    FROM universe u
-                    JOIN solarsystems s ON s.solarSystemID = u.solarsystem_id
-                    WHERE u.solarsystem_id IN (\(solarSystemIds.sorted().map { String($0) }.joined(separator: ",")))
-                """
+                SELECT u.solarsystem_id, u.system_security,
+                       s.solarSystemName
+                FROM universe u
+                JOIN solarsystems s ON s.solarSystemID = u.solarsystem_id
+                WHERE u.solarsystem_id IN (\(solarSystemIds.sorted().map { String($0) }.joined(separator: ",")))
+            """
 
             if case let .success(rows) = databaseManager.executeQuery(query) {
                 Logger.debug("查询到星系数量: \(rows.count)")
@@ -331,13 +331,13 @@ class CorpMemberListViewModel: ObservableObject {
         if let stationIds = groupedIds[.station] {
             Logger.debug("加载空间站信息 - 数量: \(stationIds.count)")
             let query = """
-                    SELECT s.stationID, s.stationName,
-                           ss.solarSystemName, u.system_security
-                    FROM stations s
-                    JOIN solarsystems ss ON s.solarSystemID = ss.solarSystemID
-                    JOIN universe u ON u.solarsystem_id = ss.solarSystemID
-                    WHERE s.stationID IN (\(stationIds.map { String($0) }.joined(separator: ",")))
-                """
+                SELECT s.stationID, s.stationName,
+                       ss.solarSystemName, u.system_security
+                FROM stations s
+                JOIN solarsystems ss ON s.solarSystemID = ss.solarSystemID
+                JOIN universe u ON u.solarsystem_id = ss.solarSystemID
+                WHERE s.stationID IN (\(stationIds.map { String($0) }.joined(separator: ",")))
+            """
 
             if case let .success(rows) = databaseManager.executeQuery(query) {
                 Logger.debug("查询到空间站数量: \(rows.count)")
@@ -417,11 +417,11 @@ class CorpMemberListViewModel: ObservableObject {
             )
 
             let query = """
-                    SELECT s.solarSystemName, u.system_security
-                    FROM solarsystems s
-                    JOIN universe u ON u.solarsystem_id = s.solarSystemID
-                    WHERE s.solarSystemID = ?
-                """
+                SELECT s.solarSystemName, u.system_security
+                FROM solarsystems s
+                JOIN universe u ON u.solarsystem_id = s.solarSystemID
+                WHERE s.solarSystemID = ?
+            """
 
             if case let .success(rows) = databaseManager.executeQuery(
                 query, parameters: [structureInfo.solar_system_id]
@@ -452,7 +452,7 @@ class CorpMemberListViewModel: ObservableObject {
     @MainActor
     func loadMembers(forceRefresh: Bool = false) {
         // 如果已经加载过且不是强制刷新，则跳过
-        if initialLoadDone && !forceRefresh {
+        if initialLoadDone, !forceRefresh {
             return
         }
 
@@ -487,16 +487,16 @@ class CorpMemberListViewModel: ObservableObject {
 
                 if !shipTypeIds.isEmpty {
                     let query = """
-                            SELECT type_id, name, icon_filename 
-                            FROM types 
-                            WHERE type_id IN (\(shipTypeIds.sorted().map { String($0) }.joined(separator: ",")))
-                        """
+                        SELECT type_id, name, icon_filename 
+                        FROM types 
+                        WHERE type_id IN (\(shipTypeIds.sorted().map { String($0) }.joined(separator: ",")))
+                    """
 
                     if case let .success(rows) = databaseManager.executeQuery(query) {
                         for row in rows {
                             if let typeId = row["type_id"] as? Int,
-                                let typeName = row["name"] as? String,
-                                let iconFilename = row["icon_filename"] as? String
+                               let typeName = row["name"] as? String,
+                               let iconFilename = row["icon_filename"] as? String
                             {
                                 shipInfoMap[typeId] = (name: typeName, iconFilename: iconFilename)
                             }
@@ -645,7 +645,7 @@ class CorpMemberListViewModel: ObservableObject {
                 let ship1 = member1.shipInfo?.name ?? ""
                 let ship2 = member2.shipInfo?.name ?? ""
                 // 如果两个都是空，则按人名排序
-                if ship1.isEmpty && ship2.isEmpty {
+                if ship1.isEmpty, ship2.isEmpty {
                     return member1.characterName.localizedCaseInsensitiveCompare(
                         member2.characterName) == .orderedAscending
                 }
@@ -750,7 +750,7 @@ struct LocationView: View {
 
                     // 创建新的延迟加载任务
                     loadingTask = Task {
-                        try? await Task.sleep(nanoseconds: 100_000_000)  // 0.1秒延迟
+                        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1秒延迟
                         if !Task.isCancelled {
                             locationInfo = await viewModel.getLocationInfo(locationId: locationId)
                         }
@@ -861,7 +861,7 @@ struct MemberRowView: View {
     }
 
     private func loadPortrait() async {
-        guard !isLoadingPortrait && !hasAttemptedPortraitLoad else { return }
+        guard !isLoadingPortrait, !hasAttemptedPortraitLoad else { return }
 
         isLoadingPortrait = true
         hasAttemptedPortraitLoad = true
@@ -970,10 +970,12 @@ struct CorpMemberListView: View {
                                         Text(
                                             viewModel.searchText.isEmpty
                                                 ? NSLocalizedString(
-                                                    "Main_Corporation_Members_No_Data", comment: "")
+                                                    "Main_Corporation_Members_No_Data", comment: ""
+                                                )
                                                 : NSLocalizedString(
                                                     "Main_Corporation_Members_No_Search_Results",
-                                                    comment: "")
+                                                    comment: ""
+                                                )
                                         )
                                         .foregroundColor(.gray)
                                     }
@@ -1066,10 +1068,14 @@ struct CorpMemberListView: View {
                     }) {
                         Image(systemName: "arrow.clockwise")
                             .rotationEffect(.degrees(isRefreshing ? 360 : 0))
-                            .animation(isRefreshing ? .linear(duration: 1).repeatForever(autoreverses: false) : .default, value: isRefreshing)
+                            .animation(
+                                isRefreshing
+                                    ? .linear(duration: 1).repeatForever(autoreverses: false)
+                                    : .default, value: isRefreshing
+                            )
                     }
                     .disabled(isRefreshing || viewModel.isLoading)
-                    
+
                     SortMenuView(viewModel: viewModel, isPresented: .constant(false))
                 }
             }
@@ -1089,10 +1095,10 @@ struct CorpMemberListView: View {
             )
         }
     }
-    
+
     private func refreshData() {
         isRefreshing = true
-        
+
         Task {
             viewModel.loadMembers(forceRefresh: true)
             isRefreshing = false
@@ -1159,7 +1165,8 @@ struct FavoriteMembersView: View {
                                             )
                                             : NSLocalizedString(
                                                 "Main_Corporation_Members_No_Search_Results",
-                                                comment: "")
+                                                comment: ""
+                                            )
                                     )
                                     .foregroundColor(.gray)
                                 }

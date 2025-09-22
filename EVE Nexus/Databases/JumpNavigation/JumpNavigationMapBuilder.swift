@@ -2,7 +2,7 @@ import Foundation
 
 class JumpNavigationHandler {
     // 光年转换常量
-    private static let LY_CONVERSION: Double = 1.0 / 9460528400000000.0
+    private static let LY_CONVERSION: Double = 1.0 / 9_460_528_400_000_000.0
 
     // 计算两点之间的距离（光年）
     static func calculateDistanceLY(
@@ -40,7 +40,8 @@ class JumpNavigationHandler {
 
         // 通知进度：开始计算距离 - 计算过程占进度98%
         progressUpdate?(
-            NSLocalizedString("Jump_Navigation_Processing_System_Data", comment: ""), 0.01)
+            NSLocalizedString("Jump_Navigation_Processing_System_Data", comment: ""), 0.01
+        )
 
         // 创建星系数据的简化版本，仅包含计算所需的字段
         let filteredSystems = jumpSystems.map { system in
@@ -49,18 +50,19 @@ class JumpNavigationHandler {
 
         // 通知进度：开始计算距离 - 计算过程占进度98%
         progressUpdate?(
-            NSLocalizedString("Jump_Navigation_Calculating_Jump_Distance", comment: ""), 0.01)
+            NSLocalizedString("Jump_Navigation_Calculating_Jump_Distance", comment: ""), 0.01
+        )
         let totalPairs = (filteredSystems.count * (filteredSystems.count - 1)) / 2
         var processedPairs = 0
 
         // 计算所有星系对之间的距离
-        for i in 0..<filteredSystems.count {
-            for j in (i + 1)..<filteredSystems.count {
+        for i in 0 ..< filteredSystems.count {
+            for j in (i + 1) ..< filteredSystems.count {
                 let sys1 = filteredSystems[i]
                 let sys2 = filteredSystems[j]
 
                 // 检查安全等级要求：至少有一个星系的安全等级小于0.5
-                if sys1.sec >= 0.5 && sys2.sec >= 0.5 {
+                if sys1.sec >= 0.5, sys2.sec >= 0.5 {
                     processedPairs += 1
                     continue
                 }
@@ -78,7 +80,8 @@ class JumpNavigationHandler {
                 if processedPairs % 500 == 0 {
                     progressUpdate?(
                         NSLocalizedString("Jump_Navigation_Calculating_Jump_Distance", comment: ""),
-                        progress)
+                        progress
+                    )
                 }
 
                 if distanceLY <= 10 {
@@ -117,7 +120,8 @@ class JumpNavigationHandler {
         let filename = jumpMapPath.appendingPathComponent("jump_map.json")
         do {
             let jsonData = try JSONSerialization.data(
-                withJSONObject: data, options: [.prettyPrinted])
+                withJSONObject: data, options: [.prettyPrinted]
+            )
             try jsonData.write(to: filename)
             Logger.info("数据已保存到: \(filename.path)")
         } catch {
@@ -136,11 +140,13 @@ class JumpNavigationHandler {
         if let preloadedSystems = preloadedSystems {
             // 使用预加载的星系数据
             results = getNearbySystems(
-                preloadedSystems: preloadedSystems, progressUpdate: progressUpdate)
+                preloadedSystems: preloadedSystems, progressUpdate: progressUpdate
+            )
         } else {
             // 使用常规方法加载星系数据
             results = getNearbySystems(
-                databaseManager: databaseManager, progressUpdate: progressUpdate)
+                databaseManager: databaseManager, progressUpdate: progressUpdate
+            )
         }
 
         // 通知进度：保存数据 - 保存文件占进度1%

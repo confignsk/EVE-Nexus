@@ -5,32 +5,30 @@ struct ItemBasicInfoView: View {
     @State private var renderImage: UIImage?
     @ObservedObject var databaseManager: DatabaseManager
     let modifiedAttributes: [Int: Double]?
-    
+
     // 监听屏幕方向变化
     @State private var orientation = UIDevice.current.orientation
-    
+
     // 布局状态标识符（用于判断是否需要重新渲染视图）
     @State private var layoutMode: LayoutMode = .portrait
-    
+
     // 存储市场目录路径
     @State private var marketPath: String = ""
-    
+
     // 保存图片状态
     @State private var showSaveSuccess = false
     @State private var showSaveError = false
-    
-
 
     // iOS 标准圆角半径
     private let cornerRadius: CGFloat = 10
     // 标准边距
     private let standardPadding: CGFloat = 16
-    
+
     // 判断是否应该使用小图模式（横屏或iPad）
     private var shouldUseCompactLayout: Bool {
         DeviceUtils.shouldUseCompactLayout
     }
-    
+
     // 获取图片尺寸
     private var imageSize: CGFloat {
         if DeviceUtils.isIPad {
@@ -49,34 +47,35 @@ struct ItemBasicInfoView: View {
         }
         return originalValue
     }
-    
+
     // 获取属性值的颜色
     private func getAttributeColor(attributeId: Int, originalValue: Double?) -> Color {
         guard let originalValue = originalValue,
-              let modifiedValue = modifiedAttributes?[attributeId] else {
+              let modifiedValue = modifiedAttributes?[attributeId]
+        else {
             return .secondary
         }
-        
+
         if abs(modifiedValue - originalValue) < 0.0001 {
             return .secondary // 没有变化
         }
-        
+
         // 对于 mass 和 capacity，通常值越大越好（capacity）或越小越好（mass）
         // mass(4): 质量，越小越好，所以 highIsGood = false
         // capacity(38): 容量，越大越好，所以 highIsGood = true
         let highIsGood = (attributeId == 38) // capacity 是 highIsGood
-        
+
         if highIsGood {
             return modifiedValue > originalValue ? .green : .red
         } else {
             return modifiedValue < originalValue ? .green : .red
         }
     }
-    
+
     // 保存渲染图到相册
     private func saveRenderImageToPhotos() {
         guard let renderImage = renderImage else { return }
-        
+
         ImageSaver.saveImage(renderImage) { success in
             if success {
                 self.showSaveSuccess = true
@@ -85,14 +84,14 @@ struct ItemBasicInfoView: View {
             }
         }
     }
-    
+
     // 获取市场目录路径
     private func fetchMarketPath(for marketGroupID: Int?) {
         guard let marketGroupID = marketGroupID else {
             marketPath = ""
             return
         }
-        
+
         Task {
             do {
                 let path = try await getMarketGroupPath(groupID: marketGroupID)
@@ -107,31 +106,32 @@ struct ItemBasicInfoView: View {
             }
         }
     }
-    
+
     // 递归获取市场目录路径
     private func getMarketGroupPath(groupID: Int) async throws -> [String] {
         var path: [String] = []
         var currentGroupID = groupID
         var iterations = 0
         let maxIterations = 100 // 设置最大递归深度，避免无限循环
-        
-        while currentGroupID != 0 && iterations < maxIterations {
+
+        while currentGroupID != 0, iterations < maxIterations {
             iterations += 1 // 增加迭代计数
-            
+
             // 查询市场组信息
             let query = "SELECT name, parentgroup_id FROM marketGroups WHERE group_id = ?"
             let result = databaseManager.executeQuery(query, parameters: [currentGroupID])
-            
+
             switch result {
             case let .success(rows):
                 guard let row = rows.first,
-                      let name = row["name"] as? String else {
+                      let name = row["name"] as? String
+                else {
                     return path // 如果找不到数据，直接返回当前路径
                 }
-                
+
                 // 添加当前组名称到路径
                 path.insert(name, at: 0)
-                
+
                 // 获取父组ID，如果为nil或0则结束循环
                 if let parentGroupID = row["parentgroup_id"] as? Int, parentGroupID > 0 {
                     // 检查是否形成循环引用（子项引用了已经在路径中的父项）
@@ -148,17 +148,17 @@ struct ItemBasicInfoView: View {
                 return path // 查询出错，返回已收集的路径
             }
         }
-        
+
         // 如果达到最大迭代次数，记录警告
         if iterations >= maxIterations {
             Logger.warning("市场目录路径查询达到最大迭代次数 \(maxIterations)，可能存在循环引用")
         }
-        
+
         return path
     }
-    
+
     // MARK: - 布局视图函数
-    
+
     // 小图布局（横屏或iPad）
     @ViewBuilder
     private func compactLayoutView(renderImage: UIImage) -> some View {
@@ -169,7 +169,7 @@ struct ItemBasicInfoView: View {
                 .frame(width: imageSize, height: imageSize)
                 .cornerRadius(cornerRadius)
                 .padding(.trailing, 8)
-            
+
             VStack(alignment: .leading, spacing: 8) {
                 Text(itemDetails.name)
                     .font(.title)
@@ -178,42 +178,57 @@ struct ItemBasicInfoView: View {
                         Button {
                             UIPasteboard.general.string = itemDetails.name
                         } label: {
-                            Label(NSLocalizedString("Misc_Copy_Name", comment: ""), systemImage: "doc.on.doc")
+                            Label(
+                                NSLocalizedString("Misc_Copy_Name", comment: ""),
+                                systemImage: "doc.on.doc"
+                            )
                         }
-                        if let en_detail = itemDetails.en_name, !en_detail.isEmpty, en_detail != itemDetails.name {
+                        if let en_detail = itemDetails.en_name, !en_detail.isEmpty,
+                           en_detail != itemDetails.name
+                        {
                             Button {
                                 UIPasteboard.general.string = itemDetails.en_name
                             } label: {
-                                Label(NSLocalizedString("Misc_Copy_Trans", comment: ""), systemImage: "translate")
+                                Label(
+                                    NSLocalizedString("Misc_Copy_Trans", comment: ""),
+                                    systemImage: "translate"
+                                )
                             }
                         }
                         Button {
                             saveRenderImageToPhotos()
                         } label: {
-                            Label(NSLocalizedString("Misc_Save_Render_Image", comment: ""), systemImage: "photo")
+                            Label(
+                                NSLocalizedString("Misc_Save_Render_Image", comment: ""),
+                                systemImage: "photo"
+                            )
                         }
                     }
-                
-                Text("\(NSLocalizedString("Main_Database_Category", comment: "")): \(itemDetails.categoryName) / \(itemDetails.groupName) / ID:\(itemDetails.typeId)")
+
+                Text(
+                    "\(NSLocalizedString("Main_Database_Category", comment: "")): \(itemDetails.categoryName) / \(itemDetails.groupName) / ID:\(itemDetails.typeId)"
+                )
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .lineLimit(2)
+
+                // 显示市场目录路径（如果有）
+                if !marketPath.isEmpty {
+                    Text(
+                        "\(NSLocalizedString("Main_Database_Market_Category", comment: "")): \(marketPath)"
+                    )
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .lineLimit(2)
-                
-                // 显示市场目录路径（如果有）
-                if !marketPath.isEmpty {
-                    Text("\(NSLocalizedString("Main_Database_Market_Category", comment: "")): \(marketPath)")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .lineLimit(2)
                 }
             }
             .padding(.vertical, 8)
-            
+
             Spacer()
         }
         .padding(.horizontal, 8)
     }
-    
+
     // 渲染图大图布局（竖屏手机）
     @ViewBuilder
     private func renderImageLayoutView(renderImage: UIImage) -> some View {
@@ -239,19 +254,29 @@ struct ItemBasicInfoView: View {
                 Button {
                     UIPasteboard.general.string = itemDetails.name
                 } label: {
-                    Label(NSLocalizedString("Misc_Copy_Name", comment: ""), systemImage: "doc.on.doc")
+                    Label(
+                        NSLocalizedString("Misc_Copy_Name", comment: ""), systemImage: "doc.on.doc"
+                    )
                 }
-                if let en_detail = itemDetails.en_name, !en_detail.isEmpty, en_detail != itemDetails.name {
+                if let en_detail = itemDetails.en_name, !en_detail.isEmpty,
+                   en_detail != itemDetails.name
+                {
                     Button {
                         UIPasteboard.general.string = itemDetails.en_name
                     } label: {
-                        Label(NSLocalizedString("Misc_Copy_Trans", comment: ""), systemImage: "translate")
+                        Label(
+                            NSLocalizedString("Misc_Copy_Trans", comment: ""),
+                            systemImage: "translate"
+                        )
                     }
                 }
                 Button {
                     saveRenderImageToPhotos()
                 } label: {
-                    Label(NSLocalizedString("Misc_Save_Render_Image", comment: ""), systemImage: "photo")
+                    Label(
+                        NSLocalizedString("Misc_Save_Render_Image", comment: ""),
+                        systemImage: "photo"
+                    )
                 }
             }
             .padding(.horizontal, standardPadding * 2)
@@ -264,9 +289,9 @@ struct ItemBasicInfoView: View {
             .padding(.horizontal, standardPadding)
             .padding(.bottom, standardPadding)
         }
-        .listRowInsets(EdgeInsets())  // 移除 List 的默认边距
+        .listRowInsets(EdgeInsets()) // 移除 List 的默认边距
     }
-    
+
     // 原始布局（无渲染图时的回退布局）
     @ViewBuilder
     private func originalLayoutView() -> some View {
@@ -283,13 +308,21 @@ struct ItemBasicInfoView: View {
                         Button {
                             UIPasteboard.general.string = itemDetails.name
                         } label: {
-                            Label(NSLocalizedString("Misc_Copy_Name", comment: ""), systemImage: "doc.on.doc")
+                            Label(
+                                NSLocalizedString("Misc_Copy_Name", comment: ""),
+                                systemImage: "doc.on.doc"
+                            )
                         }
-                        if let en_name = itemDetails.en_name , en_name != itemDetails.name, !en_name.isEmpty {
+                        if let en_name = itemDetails.en_name, en_name != itemDetails.name,
+                           !en_name.isEmpty
+                        {
                             Button {
                                 UIPasteboard.general.string = itemDetails.en_name
                             } label: {
-                                Label(NSLocalizedString("Misc_Copy_Trans", comment: ""), systemImage: "translate")
+                                Label(
+                                    NSLocalizedString("Misc_Copy_Trans", comment: ""),
+                                    systemImage: "translate"
+                                )
                             }
                         }
                     }
@@ -338,7 +371,7 @@ struct ItemBasicInfoView: View {
                     fetchMarketPath(for: marketGroupID)
                 }
             }
-            
+
             // 设置方向变化通知
             setupOrientationNotification()
         }
@@ -346,13 +379,18 @@ struct ItemBasicInfoView: View {
             // 移除方向变化通知
             removeOrientationNotification()
         }
-        .alert(NSLocalizedString("Misc_Save_Render_Image", comment: ""), isPresented: $showSaveSuccess) {
-            Button("OK") { }
+        .alert(
+            NSLocalizedString("Misc_Save_Render_Image", comment: ""), isPresented: $showSaveSuccess
+        ) {
+            Button("OK") {}
         } message: {
             Text(NSLocalizedString("Misc_Save_Render_Image_Success", comment: ""))
         }
-        .alert(NSLocalizedString("Misc_Save_Render_Image_Error_Title", comment: ""), isPresented: $showSaveError) {
-            Button("OK") { }
+        .alert(
+            NSLocalizedString("Misc_Save_Render_Image_Error_Title", comment: ""),
+            isPresented: $showSaveError
+        ) {
+            Button("OK") {}
         } message: {
             Text(NSLocalizedString("Misc_Save_Render_Image_Error", comment: ""))
         }
@@ -390,8 +428,7 @@ struct ItemBasicInfoView: View {
         if itemDetails.volume != nil || itemDetails.capacity != nil || itemDetails.mass != nil
             || itemDetails.repackagedVolume != nil
         {
-            Section(header: Text(NSLocalizedString("Item_Basic_Info", comment: "")).font(.headline))
-            {
+            Section(header: Text(NSLocalizedString("Item_Basic_Info", comment: "")).font(.headline)) {
                 if let volume = itemDetails.volume {
                     HStack {
                         Image("structure")
@@ -421,9 +458,13 @@ struct ItemBasicInfoView: View {
                 }
 
                 if let capacity = itemDetails.capacity {
-                    let finalCapacity = getAttributeValue(attributeId: 38, originalValue: Double(capacity)) ?? Double(capacity)
-                    let capacityColor = getAttributeColor(attributeId: 38, originalValue: Double(capacity))
-                    
+                    let finalCapacity =
+                        getAttributeValue(attributeId: 38, originalValue: Double(capacity))
+                            ?? Double(capacity)
+                    let capacityColor = getAttributeColor(
+                        attributeId: 38, originalValue: Double(capacity)
+                    )
+
                     HStack {
                         Image("cargo_fit")
                             .resizable()
@@ -438,9 +479,11 @@ struct ItemBasicInfoView: View {
                 }
 
                 if let mass = itemDetails.mass {
-                    let finalMass = getAttributeValue(attributeId: 4, originalValue: Double(mass)) ?? Double(mass)
+                    let finalMass =
+                        getAttributeValue(attributeId: 4, originalValue: Double(mass))
+                            ?? Double(mass)
                     let massColor = getAttributeColor(attributeId: 4, originalValue: Double(mass))
-                    
+
                     HStack {
                         Image("hull")
                             .resizable()
@@ -453,7 +496,7 @@ struct ItemBasicInfoView: View {
                             .frame(alignment: .trailing)
                     }
                 }
-            }
+            }.listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
         }
     }
 
@@ -473,7 +516,7 @@ struct ItemBasicInfoView: View {
             }
         }
     }
-    
+
     // 设置方向变化通知
     private func setupOrientationNotification() {
         NotificationCenter.default.addObserver(
@@ -482,7 +525,7 @@ struct ItemBasicInfoView: View {
             queue: .main
         ) { _ in
             self.orientation = UIDevice.current.orientation
-            
+
             // 只有当布局模式真正发生变化时才更新layoutMode
             let newLayoutMode = DeviceUtils.currentLayoutMode
             if DeviceUtils.shouldUpdateLayout(from: self.layoutMode, to: newLayoutMode) {
@@ -491,7 +534,7 @@ struct ItemBasicInfoView: View {
             }
         }
     }
-    
+
     // 移除方向变化通知
     private func removeOrientationNotification() {
         NotificationCenter.default.removeObserver(

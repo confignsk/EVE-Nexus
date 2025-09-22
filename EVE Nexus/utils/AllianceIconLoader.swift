@@ -6,10 +6,10 @@ class AllianceIconLoader: ObservableObject {
     @Published var loadingIconIds: Set<Int> = []
     private var tasks: [Int: Task<Void, Never>] = [:]
     private var pendingIds: [Int] = []
-    private let maxConcurrentTasks = 5  // 最大并发
+    private let maxConcurrentTasks = 5 // 最大并发
 
     func loadIcon(for id: Int) {
-        guard !icons.keys.contains(id) && !loadingIconIds.contains(id) else { return }
+        guard !icons.keys.contains(id), !loadingIconIds.contains(id) else { return }
 
         // 如果已经有maxConcurrentTasks个任务在执行，则加入等待队列
         if loadingIconIds.count >= maxConcurrentTasks {
@@ -78,4 +78,4 @@ class AllianceIconLoader: ObservableObject {
     deinit {
         cancelAllTasks()
     }
-} 
+}

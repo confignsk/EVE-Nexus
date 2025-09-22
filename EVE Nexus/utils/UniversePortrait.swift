@@ -3,20 +3,20 @@ import SwiftUI
 @MainActor
 class UniversePortraitLoader: ObservableObject {
     static let shared = UniversePortraitLoader()
-    
+
     @Published private(set) var portraits: [String: UIImage] = [:]
     private var loadingTasks: [String: Task<Void, Never>] = [:]
-    
+
     private init() {}
-    
+
     func loadPortrait(for id: Int, type: MailRecipient.RecipientType, size: Int) {
         let key = "\(type.rawValue)_\(id)_\(size)"
-        
+
         // 如果已经在加载中或已加载完成，直接返回
         if loadingTasks[key] != nil || portraits[key] != nil {
             return
         }
-        
+
         // 创建新的加载任务
         let task = Task {
             do {
@@ -35,22 +35,22 @@ class UniversePortraitLoader: ObservableObject {
                         allianceID: id
                     )
                 case .mailingList:
-                    throw NetworkError.invalidURL  // 邮件列表不需要头像
+                    throw NetworkError.invalidURL // 邮件列表不需要头像
                 }
-                
+
                 await MainActor.run {
                     self.portraits[key] = portrait
                 }
-                
+
                 Logger.debug("成功加载\(type.rawValue)头像 - ID: \(id)")
             } catch {
                 Logger.error("加载\(type.rawValue)头像失败 - ID: \(id), 错误: \(error)")
             }
         }
-        
+
         loadingTasks[key] = task
     }
-    
+
     func getPortrait(for id: Int, type: MailRecipient.RecipientType, size: Int) -> UIImage? {
         return portraits["\(type.rawValue)_\(id)_\(size)"]
     }
@@ -62,9 +62,9 @@ struct UniversePortrait: View {
     let size: CGFloat
     let displaySize: CGFloat
     let cornerRadius: CGFloat
-    
+
     @StateObject private var portraitLoader = UniversePortraitLoader.shared
-    
+
     init(
         id: Int, type: MailRecipient.RecipientType, size: CGFloat, displaySize: CGFloat? = nil,
         cornerRadius: CGFloat = 6
@@ -75,7 +75,7 @@ struct UniversePortrait: View {
         self.displaySize = displaySize ?? size
         self.cornerRadius = cornerRadius
     }
-    
+
     var body: some View {
         ZStack {
             if let image = portraitLoader.getPortrait(for: id, type: type, size: Int(size)) {

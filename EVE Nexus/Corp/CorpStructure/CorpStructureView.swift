@@ -79,10 +79,14 @@ struct CorpStructureView: View {
                     }) {
                         Image(systemName: "arrow.clockwise")
                             .rotationEffect(.degrees(isRefreshing ? 360 : 0))
-                            .animation(isRefreshing ? .linear(duration: 1).repeatForever(autoreverses: false) : .default, value: isRefreshing)
+                            .animation(
+                                isRefreshing
+                                    ? .linear(duration: 1).repeatForever(autoreverses: false)
+                                    : .default, value: isRefreshing
+                            )
                     }
                     .disabled(isRefreshing)
-                    
+
                     Button(action: {
                         tempDays = String(fuelMonitorDays)
                         showSettings = true
@@ -193,7 +197,7 @@ struct CorpStructureView: View {
 
     private func refreshData() {
         isRefreshing = true
-        
+
         Task {
             do {
                 try await viewModel.loadStructures(forceRefresh: true)
@@ -204,7 +208,7 @@ struct CorpStructureView: View {
                     Logger.error("刷新建筑信息失败: \(error)")
                 }
             }
-            
+
             isRefreshing = false
         }
     }
@@ -233,7 +237,7 @@ struct CorpStructureView: View {
                 Section(
                     header: {
                         if let systemId = structures.first?["system_id"] as? Int,
-                            let securityLevel = viewModel.regionSecs[systemId]
+                           let securityLevel = viewModel.regionSecs[systemId]
                         {
                             (Text(formatSystemSecurity(securityLevel))
                                 .foregroundColor(getSecurityColor(securityLevel)) + Text(" ")
@@ -372,8 +376,7 @@ struct StructureCell: View {
         }
     }
 
-    private func formatDateTime(_ dateString: String) -> (localTime: String, remainingTime: String)
-    {
+    private func formatDateTime(_ dateString: String) -> (localTime: String, remainingTime: String) {
         guard let date = ISO8601DateFormatter().date(from: dateString) else {
             return ("error time format", "error time format")
         }
@@ -414,7 +417,7 @@ struct StructureCell: View {
     private func getStateColor(state: String) -> Color {
         switch state {
         case "shield_reinforce":
-            return .blue.opacity(0.7)  // 淡蓝色
+            return .blue.opacity(0.7) // 淡蓝色
         case "armor_reinforce":
             return .orange
         case "hull_reinforce":
@@ -493,7 +496,7 @@ class CorpStructureViewModel: ObservableObject {
 
         lowFuelStructuresCache = structures.filter { structure in
             guard let fuelExpires = structure["fuel_expires"] as? String,
-                let expirationDate = ISO8601DateFormatter().date(from: fuelExpires)
+                  let expirationDate = ISO8601DateFormatter().date(from: fuelExpires)
             else {
                 return false
             }
@@ -502,9 +505,9 @@ class CorpStructureViewModel: ObservableObject {
             return timeInterval > 0 && timeInterval <= Double(monitorDays) * 24 * 3600
         }.sorted { structure1, structure2 in
             guard let fuelExpires1 = structure1["fuel_expires"] as? String,
-                let fuelExpires2 = structure2["fuel_expires"] as? String,
-                let date1 = ISO8601DateFormatter().date(from: fuelExpires1),
-                let date2 = ISO8601DateFormatter().date(from: fuelExpires2)
+                  let fuelExpires2 = structure2["fuel_expires"] as? String,
+                  let date1 = ISO8601DateFormatter().date(from: fuelExpires1),
+                  let date2 = ISO8601DateFormatter().date(from: fuelExpires2)
             else {
                 return false
             }
@@ -598,7 +601,7 @@ class CorpStructureViewModel: ObservableObject {
         if case let .success(rows) = result {
             for row in rows {
                 if let typeId = row["type_id"] as? Int,
-                    let iconFilename = row["icon_filename"] as? String
+                   let iconFilename = row["icon_filename"] as? String
                 {
                     typeIcons[typeId] = iconFilename
                 }
@@ -609,15 +612,15 @@ class CorpStructureViewModel: ObservableObject {
     private func loadLocationInfo(systemIds: [Int]) async {
         // 1. 获取星系名称
         let systemQuery = """
-                SELECT solarSystemID, solarSystemName
-                FROM solarsystems
-                WHERE solarSystemID IN (\(Array(systemIds).map { String($0) }.joined(separator: ",")))
-            """
+            SELECT solarSystemID, solarSystemName
+            FROM solarsystems
+            WHERE solarSystemID IN (\(Array(systemIds).map { String($0) }.joined(separator: ",")))
+        """
         let systemResult = DatabaseManager.shared.executeQuery(systemQuery)
         if case let .success(rows) = systemResult {
             for row in rows {
                 if let systemId = row["solarSystemID"] as? Int,
-                    let systemNameLocal = row["solarSystemName"] as? String
+                   let systemNameLocal = row["solarSystemName"] as? String
                 {
                     let systemName = systemNameLocal
                     systemNames[systemId] = systemName
@@ -627,17 +630,17 @@ class CorpStructureViewModel: ObservableObject {
 
         // 2. 获取星域信息
         let universeQuery = """
-                SELECT DISTINCT u.solarsystem_id, u.region_id, 
-                       r.regionName
-                FROM universe u
-                JOIN regions r ON r.regionID = u.region_id
-                WHERE u.solarsystem_id IN (\(Array(systemIds).sorted().map { String($0) }.joined(separator: ",")))
-            """
+            SELECT DISTINCT u.solarsystem_id, u.region_id, 
+                   r.regionName
+            FROM universe u
+            JOIN regions r ON r.regionID = u.region_id
+            WHERE u.solarsystem_id IN (\(Array(systemIds).sorted().map { String($0) }.joined(separator: ",")))
+        """
         let universeResult = DatabaseManager.shared.executeQuery(universeQuery)
         if case let .success(rows) = universeResult {
             for row in rows {
                 if let systemId = row["solarsystem_id"] as? Int,
-                    let regionNameLocal = row["regionName"] as? String
+                   let regionNameLocal = row["regionName"] as? String
                 {
                     let regionName = regionNameLocal
                     regionNames[systemId] = regionName
@@ -647,15 +650,15 @@ class CorpStructureViewModel: ObservableObject {
 
         // 3. 获取星系安等
         let systemSecQuery = """
-                SELECT solarsystem_id, system_security
-                FROM universe 
-                WHERE solarsystem_id IN (\(systemIds.sorted().map(String.init).joined(separator: ",")))
-            """
+            SELECT solarsystem_id, system_security
+            FROM universe 
+            WHERE solarsystem_id IN (\(systemIds.sorted().map(String.init).joined(separator: ",")))
+        """
         let systemSecResult = DatabaseManager.shared.executeQuery(systemSecQuery)
         if case let .success(rows) = systemSecResult {
             for row in rows {
                 if let systemId = row["solarsystem_id"] as? Int,
-                    let systemSecurity = row["system_security"] as? Double
+                   let systemSecurity = row["system_security"] as? Double
                 {
                     regionSecs[systemId] = systemSecurity
                 }

@@ -6,7 +6,7 @@ class CharacterMiningAPI {
 
     // 缓存相关常量
     private let lastMiningQueryKey = "LastMiningLedgerQuery_"
-    private let queryInterval: TimeInterval = 3600  // 1小时的查询间隔
+    private let queryInterval: TimeInterval = 3600 // 1小时的查询间隔
 
     // 挖矿记录数据模型
     struct MiningLedgerEntry: Codable {
@@ -18,7 +18,7 @@ class CharacterMiningAPI {
 
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"  // 修改为与数据库匹配的格式
+        formatter.dateFormat = "yyyy-MM-dd" // 修改为与数据库匹配的格式
         formatter.timeZone = TimeZone(identifier: "UTC")!
         formatter.locale = Locale(identifier: "en_US_POSIX")
         return formatter
@@ -75,12 +75,12 @@ class CharacterMiningAPI {
     // 从数据库获取挖矿记录
     private func getMiningLedgerFromDB(characterId: Int) -> [MiningLedgerEntry]? {
         let query = """
-                SELECT date, quantity, solar_system_id, type_id
-                FROM mining_ledger 
-                WHERE character_id = ? 
-                ORDER BY date DESC 
-                LIMIT 1000
-            """
+            SELECT date, quantity, solar_system_id, type_id
+            FROM mining_ledger 
+            WHERE character_id = ? 
+            ORDER BY date DESC 
+            LIMIT 1000
+        """
 
         let result = CharacterDatabaseManager.shared.executeQuery(query, parameters: [characterId])
 
@@ -93,12 +93,12 @@ class CharacterMiningAPI {
 
                 // 尝试类型转换
                 guard let date = row["date"] as? String,
-                    let quantity = (row["quantity"] as? Int64).map(Int.init)
-                        ?? (row["quantity"] as? Int),
-                    let solarSystemId = (row["solar_system_id"] as? Int64).map(Int.init)
-                        ?? (row["solar_system_id"] as? Int),
-                    let typeId = (row["type_id"] as? Int64).map(Int.init)
-                        ?? (row["type_id"] as? Int)
+                      let quantity = (row["quantity"] as? Int64).map(Int.init)
+                      ?? (row["quantity"] as? Int),
+                      let solarSystemId = (row["solar_system_id"] as? Int64).map(Int.init)
+                      ?? (row["solar_system_id"] as? Int),
+                      let typeId = (row["type_id"] as? Int64).map(Int.init)
+                      ?? (row["type_id"] as? Int)
                 else {
                     Logger.error("转换挖矿记录失败：\(row)")
                     return nil
@@ -124,10 +124,10 @@ class CharacterMiningAPI {
     // 保存挖矿记录到数据库
     private func saveMiningLedgerToDB(characterId: Int, entries: [MiningLedgerEntry]) -> Bool {
         let insertSQL = """
-                INSERT OR REPLACE INTO mining_ledger (
-                    character_id, date, quantity, solar_system_id, type_id
-                ) VALUES (?, ?, ?, ?, ?)
-            """
+            INSERT OR REPLACE INTO mining_ledger (
+                character_id, date, quantity, solar_system_id, type_id
+            ) VALUES (?, ?, ?, ?, ?)
+        """
 
         var updateCount = 0
         for entry in entries {
@@ -163,7 +163,7 @@ class CharacterMiningAPI {
         let entries = try await NetworkManager.shared.fetchPaginatedData(
             from: baseUrl,
             characterId: characterId,
-            maxConcurrentPages: 3,  // 设置合理的并发数
+            maxConcurrentPages: 3, // 设置合理的并发数
             decoder: { data in
                 try JSONDecoder().decode([MiningLedgerEntry].self, from: data)
             }
@@ -194,8 +194,8 @@ class CharacterMiningAPI {
         // 检查是否需要刷新数据
         if !forceRefresh {
             if let entries = getMiningLedgerFromDB(characterId: characterId),
-                !entries.isEmpty,
-                !shouldRefreshData(characterId: characterId)
+               !entries.isEmpty,
+               !shouldRefreshData(characterId: characterId)
             {
                 return entries
             }

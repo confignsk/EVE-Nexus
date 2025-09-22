@@ -119,339 +119,370 @@ class CharacterDatabaseManager: ObservableObject, @unchecked Sendable {
 
     private func setupBaseTables() {
         let createTablesSQL = """
-                -- 角色当前状态表
-                CREATE TABLE IF NOT EXISTS character_current_state (
-                    character_id INTEGER NOT NULL PRIMARY KEY,
-                    solar_system_id INTEGER,
-                    station_id INTEGER,
-                    structure_id INTEGER,
-                    location_status TEXT,
-                    ship_item_id INTEGER,
-                    ship_type_id INTEGER,
-                    ship_name TEXT,
-                    online_status INTEGER DEFAULT 0,
-                    last_update INTEGER
-                );
+            -- 角色当前状态表
+            CREATE TABLE IF NOT EXISTS character_current_state (
+                character_id INTEGER NOT NULL PRIMARY KEY,
+                solar_system_id INTEGER,
+                station_id INTEGER,
+                structure_id INTEGER,
+                location_status TEXT,
+                ship_item_id INTEGER,
+                ship_type_id INTEGER,
+                ship_name TEXT,
+                online_status INTEGER DEFAULT 0,
+                last_update INTEGER
+            );
 
-                -- 邮箱表
-                CREATE TABLE IF NOT EXISTS mailbox (
-                    mail_id INTEGER NOT NULL,
-                    character_id INTEGER NOT NULL,
-                    from_id INTEGER NOT NULL,
-                    is_read BOOLEAN NOT NULL DEFAULT 0,
-                    subject TEXT NOT NULL,
-                    recipients TEXT NOT NULL,
-                    timestamp TEXT NOT NULL,
-                    last_updated TEXT DEFAULT CURRENT_TIMESTAMP,
-                    PRIMARY KEY (mail_id, character_id)
-                );
+            -- 邮箱表
+            CREATE TABLE IF NOT EXISTS mailbox (
+                mail_id INTEGER NOT NULL,
+                character_id INTEGER NOT NULL,
+                from_id INTEGER NOT NULL,
+                is_read BOOLEAN NOT NULL DEFAULT 0,
+                subject TEXT NOT NULL,
+                recipients TEXT NOT NULL,
+                timestamp TEXT NOT NULL,
+                last_updated TEXT DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (mail_id, character_id)
+            );
 
-                -- 邮件内容表
-                CREATE TABLE IF NOT EXISTS mail_content (
-                    mail_id INTEGER NOT NULL PRIMARY KEY,
-                    body TEXT NOT NULL,
-                    from_id INTEGER NOT NULL,
-                    subject TEXT NOT NULL,
-                    recipients TEXT NOT NULL,
-                    labels TEXT NOT NULL,
-                    timestamp TEXT NOT NULL
-                );
-                CREATE INDEX IF NOT EXISTS idx_mail_content_from_id ON mail_content(from_id);
+            -- 邮件内容表
+            CREATE TABLE IF NOT EXISTS mail_content (
+                mail_id INTEGER NOT NULL PRIMARY KEY,
+                body TEXT NOT NULL,
+                from_id INTEGER NOT NULL,
+                subject TEXT NOT NULL,
+                recipients TEXT NOT NULL,
+                labels TEXT NOT NULL,
+                timestamp TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_mail_content_from_id ON mail_content(from_id);
 
-                -- 邮件标签关系表
-                CREATE TABLE IF NOT EXISTS mail_labels (
-                    mail_id INTEGER NOT NULL,
-                    label_id INTEGER NOT NULL,
-                    PRIMARY KEY (mail_id, label_id),
-                    FOREIGN KEY (mail_id) REFERENCES mailbox(mail_id)
-                );
+            -- 邮件标签关系表
+            CREATE TABLE IF NOT EXISTS mail_labels (
+                mail_id INTEGER NOT NULL,
+                label_id INTEGER NOT NULL,
+                PRIMARY KEY (mail_id, label_id),
+                FOREIGN KEY (mail_id) REFERENCES mailbox(mail_id)
+            );
 
-                -- 创建邮箱相关索引
-                CREATE INDEX IF NOT EXISTS idx_mailbox_character_id ON mailbox(character_id);
-                CREATE INDEX IF NOT EXISTS idx_mailbox_timestamp ON mailbox(timestamp);
-                CREATE INDEX IF NOT EXISTS idx_mailbox_from_id ON mailbox(from_id);
-                CREATE INDEX IF NOT EXISTS idx_mail_labels_label_id ON mail_labels(label_id);
+            -- 创建邮箱相关索引
+            CREATE INDEX IF NOT EXISTS idx_mailbox_character_id ON mailbox(character_id);
+            CREATE INDEX IF NOT EXISTS idx_mailbox_timestamp ON mailbox(timestamp);
+            CREATE INDEX IF NOT EXISTS idx_mailbox_from_id ON mailbox(from_id);
+            CREATE INDEX IF NOT EXISTS idx_mail_labels_label_id ON mail_labels(label_id);
 
-                -- 通用名称缓存表
-                CREATE TABLE IF NOT EXISTS universe_names (
-                    id INTEGER NOT NULL PRIMARY KEY,
-                    category TEXT NOT NULL,
-                    name TEXT NOT NULL
-                );
-                CREATE INDEX IF NOT EXISTS idx_universe_names_category ON universe_names(category);
+            -- 通用名称缓存表
+            CREATE TABLE IF NOT EXISTS universe_names (
+                id INTEGER NOT NULL PRIMARY KEY,
+                category TEXT NOT NULL,
+                name TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_universe_names_category ON universe_names(category);
 
-                -- 邮件订阅列表
-                CREATE TABLE IF NOT EXISTS mail_lists (
-                    list_id INTEGER NOT NULL,
-                    character_id INTEGER NOT NULL,
-                    name TEXT NOT NULL,
-                    last_updated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    PRIMARY KEY (list_id, character_id)
-                );
-                CREATE INDEX IF NOT EXISTS idx_mail_lists_character_id ON mail_lists(character_id);
+            -- 邮件订阅列表
+            CREATE TABLE IF NOT EXISTS mail_lists (
+                list_id INTEGER NOT NULL,
+                character_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                last_updated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (list_id, character_id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_mail_lists_character_id ON mail_lists(character_id);
 
-                -- 钱包流水表
-                CREATE TABLE IF NOT EXISTS wallet_journal (
-                    id INTEGER NOT NULL,
-                    character_id INTEGER NOT NULL,
-                    amount REAL,
-                    balance REAL,
-                    context_id INTEGER,
-                    context_id_type TEXT,
-                    date TEXT,
-                    description TEXT,
-                    first_party_id INTEGER,
-                    reason TEXT,
-                    ref_type TEXT,
-                    second_party_id INTEGER,
-                    tax REAL,
-                    tax_receiver_id INTEGER,
-                    last_updated TEXT DEFAULT CURRENT_TIMESTAMP,
-                    PRIMARY KEY (character_id, id)
-                );
+            -- 钱包流水表
+            CREATE TABLE IF NOT EXISTS wallet_journal (
+                id INTEGER NOT NULL,
+                character_id INTEGER NOT NULL,
+                amount REAL,
+                balance REAL,
+                context_id INTEGER,
+                context_id_type TEXT,
+                date TEXT,
+                description TEXT,
+                first_party_id INTEGER,
+                reason TEXT,
+                ref_type TEXT,
+                second_party_id INTEGER,
+                tax REAL,
+                tax_receiver_id INTEGER,
+                last_updated TEXT DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (character_id, id)
+            );
 
-                -- 军团钱包流水表
-                CREATE TABLE IF NOT EXISTS corp_wallet_journal (
-                    id INTEGER NOT NULL,
-                    corporation_id INTEGER NOT NULL,
-                    division INTEGER NOT NULL,
-                    amount REAL,
-                    balance REAL,
-                    context_id INTEGER,
-                    context_id_type TEXT,
-                    date TEXT,
-                    description TEXT,
-                    first_party_id INTEGER,
-                    reason TEXT,
-                    ref_type TEXT,
-                    second_party_id INTEGER,
-                    last_updated TEXT DEFAULT CURRENT_TIMESTAMP,
-                    PRIMARY KEY (corporation_id, division, id)
-                );
-                CREATE INDEX IF NOT EXISTS idx_corp_wallet_journal_date ON corp_wallet_journal(date);
-                CREATE INDEX IF NOT EXISTS idx_corp_wallet_journal_division ON corp_wallet_journal(corporation_id, division);
+            -- 军团钱包流水表
+            CREATE TABLE IF NOT EXISTS corp_wallet_journal (
+                id INTEGER NOT NULL,
+                corporation_id INTEGER NOT NULL,
+                division INTEGER NOT NULL,
+                amount REAL,
+                balance REAL,
+                context_id INTEGER,
+                context_id_type TEXT,
+                date TEXT,
+                description TEXT,
+                first_party_id INTEGER,
+                reason TEXT,
+                ref_type TEXT,
+                second_party_id INTEGER,
+                last_updated TEXT DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (corporation_id, division, id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_corp_wallet_journal_date ON corp_wallet_journal(date);
+            CREATE INDEX IF NOT EXISTS idx_corp_wallet_journal_division ON corp_wallet_journal(corporation_id, division);
 
-                -- 钱包交易记录表
-                CREATE TABLE IF NOT EXISTS wallet_transactions (
-                    transaction_id INTEGER NOT NULL,
-                    character_id INTEGER NOT NULL,
-                    client_id INTEGER,
-                    date TEXT,
-                    is_buy BOOLEAN,
-                    is_personal BOOLEAN,
-                    journal_ref_id INTEGER,
-                    location_id INTEGER,
-                    quantity INTEGER,
-                    type_id INTEGER,
-                    unit_price REAL,
-                    last_updated TEXT DEFAULT CURRENT_TIMESTAMP,
-                    PRIMARY KEY (character_id, transaction_id)
-                );
+            -- 钱包交易记录表
+            CREATE TABLE IF NOT EXISTS wallet_transactions (
+                transaction_id INTEGER NOT NULL,
+                character_id INTEGER NOT NULL,
+                client_id INTEGER,
+                date TEXT,
+                is_buy BOOLEAN,
+                is_personal BOOLEAN,
+                journal_ref_id INTEGER,
+                location_id INTEGER,
+                quantity INTEGER,
+                type_id INTEGER,
+                unit_price REAL,
+                last_updated TEXT DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (character_id, transaction_id)
+            );
 
-                -- 军团钱包交易记录表
-                CREATE TABLE IF NOT EXISTS corp_wallet_transactions (
-                    transaction_id INTEGER NOT NULL,
-                    corporation_id INTEGER NOT NULL,
-                    division INTEGER NOT NULL,
-                    client_id INTEGER,
-                    date TEXT,
-                    is_buy BOOLEAN,
-                    is_personal BOOLEAN,
-                    journal_ref_id INTEGER,
-                    location_id INTEGER,
-                    quantity INTEGER,
-                    type_id INTEGER,
-                    unit_price REAL,
-                    last_updated TEXT DEFAULT CURRENT_TIMESTAMP,
-                    PRIMARY KEY (corporation_id, division, transaction_id)
-                );
+            -- 军团钱包交易记录表
+            CREATE TABLE IF NOT EXISTS corp_wallet_transactions (
+                transaction_id INTEGER NOT NULL,
+                corporation_id INTEGER NOT NULL,
+                division INTEGER NOT NULL,
+                client_id INTEGER,
+                date TEXT,
+                is_buy BOOLEAN,
+                is_personal BOOLEAN,
+                journal_ref_id INTEGER,
+                location_id INTEGER,
+                quantity INTEGER,
+                type_id INTEGER,
+                unit_price REAL,
+                last_updated TEXT DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (corporation_id, division, transaction_id)
+            );
 
-                -- 合同表
-                CREATE TABLE IF NOT EXISTS contracts (
-                    contract_id INTEGER NOT NULL,
-                    character_id INTEGER NOT NULL,
-                    status TEXT,
-                    acceptor_id INTEGER,
-                    assignee_id INTEGER,
-                    availability TEXT,
-                    buyout REAL,
-                    collateral REAL DEFAULT NULL,
-                    date_accepted TEXT,
-                    date_completed TEXT,
-                    date_expired TEXT,
-                    date_issued TEXT,
-                    days_to_complete INTEGER,
-                    end_location_id INTEGER,
-                    for_corporation BOOLEAN,
-                    issuer_corporation_id INTEGER,
-                    issuer_id INTEGER,
-                    price REAL,
-                    reward REAL,
-                    start_location_id INTEGER,
-                    title TEXT,
-                    type TEXT,
-                    volume REAL,
-                    items_fetched BOOLEAN DEFAULT 0,
-                    PRIMARY KEY (contract_id, character_id)
-                );
+            -- 合同表
+            CREATE TABLE IF NOT EXISTS contracts (
+                contract_id INTEGER NOT NULL,
+                character_id INTEGER NOT NULL,
+                status TEXT,
+                acceptor_id INTEGER,
+                assignee_id INTEGER,
+                availability TEXT,
+                buyout REAL,
+                collateral REAL DEFAULT NULL,
+                date_accepted TEXT,
+                date_completed TEXT,
+                date_expired TEXT,
+                date_issued TEXT,
+                days_to_complete INTEGER,
+                end_location_id INTEGER,
+                for_corporation BOOLEAN,
+                issuer_corporation_id INTEGER,
+                issuer_id INTEGER,
+                price REAL,
+                reward REAL,
+                start_location_id INTEGER,
+                title TEXT,
+                type TEXT,
+                volume REAL,
+                items_fetched BOOLEAN DEFAULT 0,
+                PRIMARY KEY (contract_id, character_id)
+            );
 
-                -- 军团合同表
-                CREATE TABLE IF NOT EXISTS corporation_contracts (
-                    contract_id INTEGER NOT NULL,
-                    corporation_id INTEGER NOT NULL,
-                    status TEXT,
-                    acceptor_id INTEGER,
-                    assignee_id INTEGER,
-                    availability TEXT,
-                    buyout REAL,
-                    collateral REAL DEFAULT NULL,
-                    date_accepted TEXT,
-                    date_completed TEXT,
-                    date_expired TEXT,
-                    date_issued TEXT,
-                    days_to_complete INTEGER,
-                    end_location_id INTEGER,
-                    for_corporation BOOLEAN,
-                    issuer_corporation_id INTEGER,
-                    issuer_id INTEGER,
-                    price REAL,
-                    reward REAL,
-                    start_location_id INTEGER,
-                    title TEXT,
-                    type TEXT,
-                    volume REAL,
-                    items_fetched BOOLEAN DEFAULT 0,
-                    PRIMARY KEY (contract_id, corporation_id)
-                );
+            -- 军团合同表
+            CREATE TABLE IF NOT EXISTS corporation_contracts (
+                contract_id INTEGER NOT NULL,
+                corporation_id INTEGER NOT NULL,
+                status TEXT,
+                acceptor_id INTEGER,
+                assignee_id INTEGER,
+                availability TEXT,
+                buyout REAL,
+                collateral REAL DEFAULT NULL,
+                date_accepted TEXT,
+                date_completed TEXT,
+                date_expired TEXT,
+                date_issued TEXT,
+                days_to_complete INTEGER,
+                end_location_id INTEGER,
+                for_corporation BOOLEAN,
+                issuer_corporation_id INTEGER,
+                issuer_id INTEGER,
+                price REAL,
+                reward REAL,
+                start_location_id INTEGER,
+                title TEXT,
+                type TEXT,
+                volume REAL,
+                items_fetched BOOLEAN DEFAULT 0,
+                PRIMARY KEY (contract_id, corporation_id)
+            );
 
-                -- 合同物品表
-                CREATE TABLE IF NOT EXISTS contract_items (
-                    record_id INTEGER NOT NULL,
-                    contract_id INTEGER NOT NULL,
-                    is_included BOOLEAN,
-                    is_singleton BOOLEAN,
-                    quantity INTEGER,
-                    type_id INTEGER,
-                    raw_quantity INTEGER,
-                    PRIMARY KEY (contract_id, record_id)
-                );
+            -- 联盟合同表
+            CREATE TABLE IF NOT EXISTS alliance_contracts (
+                contract_id INTEGER NOT NULL,
+                alliance_id INTEGER NOT NULL,
+                status TEXT,
+                acceptor_id INTEGER,
+                assignee_id INTEGER,
+                availability TEXT,
+                buyout REAL,
+                collateral REAL DEFAULT NULL,
+                date_accepted TEXT,
+                date_completed TEXT,
+                date_expired TEXT,
+                date_issued TEXT,
+                days_to_complete INTEGER,
+                end_location_id INTEGER,
+                for_corporation BOOLEAN,
+                issuer_corporation_id INTEGER,
+                issuer_id INTEGER,
+                price REAL,
+                reward REAL,
+                start_location_id INTEGER,
+                title TEXT,
+                type TEXT,
+                volume REAL,
+                items_fetched BOOLEAN DEFAULT 0,
+                PRIMARY KEY (contract_id, alliance_id)
+            );
 
-                -- 创建索引以提高查询性能
-                CREATE INDEX IF NOT EXISTS idx_contracts_date ON contracts(date_issued);
-                CREATE INDEX IF NOT EXISTS idx_corporation_contracts_date ON corporation_contracts(date_issued);
-                CREATE INDEX IF NOT EXISTS idx_corporation_contracts_corp ON corporation_contracts(corporation_id);
+            -- 合同物品表
+            CREATE TABLE IF NOT EXISTS contract_items (
+                record_id INTEGER NOT NULL,
+                contract_id INTEGER NOT NULL,
+                is_included BOOLEAN,
+                is_singleton BOOLEAN,
+                quantity INTEGER,
+                type_id INTEGER,
+                raw_quantity INTEGER,
+                PRIMARY KEY (contract_id, record_id)
+            );
 
-                -- LP商店数据表
-                CREATE TABLE IF NOT EXISTS LPStoreOffers (
-                    corporation_id INTEGER NOT NULL,
-                    offer_id INTEGER NOT NULL,
-                    type_id INTEGER NOT NULL,
-                    offers_data TEXT NOT NULL,
-                    last_updated INTEGER DEFAULT (strftime('%s', 'now')),
-                    PRIMARY KEY (corporation_id, offer_id)
-                );
-                CREATE INDEX IF NOT EXISTS idx_lpstore_offers_last_updated ON LPStoreOffers(last_updated);
-                CREATE INDEX IF NOT EXISTS idx_lpstore_offers_corporation ON LPStoreOffers(corporation_id);
-                CREATE INDEX IF NOT EXISTS idx_lpstore_offers_type ON LPStoreOffers(type_id);
+            -- 创建索引以提高查询性能
+            CREATE INDEX IF NOT EXISTS idx_contracts_date ON contracts(date_issued);
+            CREATE INDEX IF NOT EXISTS idx_corporation_contracts_date ON corporation_contracts(date_issued);
+            CREATE INDEX IF NOT EXISTS idx_corporation_contracts_corp ON corporation_contracts(corporation_id);
+            CREATE INDEX IF NOT EXISTS idx_alliance_contracts_date ON alliance_contracts(date_issued);
+            CREATE INDEX IF NOT EXISTS idx_alliance_contracts_alliance ON alliance_contracts(alliance_id);
 
-                -- LP商店数据表 v2 (新版本，去掉last_updated字段)
-                CREATE TABLE IF NOT EXISTS LPStoreOffers_v2 (
-                    corporation_id INTEGER NOT NULL,
-                    offer_id INTEGER NOT NULL,
-                    type_id INTEGER NOT NULL,
-                    offers_data TEXT NOT NULL,
-                    PRIMARY KEY (corporation_id, offer_id)
-                );
-                CREATE INDEX IF NOT EXISTS idx_lpstore_offers_v2_corporation ON LPStoreOffers_v2(corporation_id);
-                CREATE INDEX IF NOT EXISTS idx_lpstore_offers_v2_type ON LPStoreOffers_v2(type_id);
+            -- LP商店数据表
+            CREATE TABLE IF NOT EXISTS LPStoreOffers (
+                corporation_id INTEGER NOT NULL,
+                offer_id INTEGER NOT NULL,
+                type_id INTEGER NOT NULL,
+                offers_data TEXT NOT NULL,
+                last_updated INTEGER DEFAULT (strftime('%s', 'now')),
+                PRIMARY KEY (corporation_id, offer_id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_lpstore_offers_last_updated ON LPStoreOffers(last_updated);
+            CREATE INDEX IF NOT EXISTS idx_lpstore_offers_corporation ON LPStoreOffers(corporation_id);
+            CREATE INDEX IF NOT EXISTS idx_lpstore_offers_type ON LPStoreOffers(type_id);
 
-                -- LP商店物品索引表
-                CREATE TABLE IF NOT EXISTS LPStoreItemIndex (
-                    type_id INTEGER NOT NULL,
-                    type_name_zh TEXT,
-                    type_name_en TEXT,
-                    offer_id INTEGER NOT NULL,
-                    faction_id INTEGER,
-                    corporation_id INTEGER NOT NULL,
-                    PRIMARY KEY (corporation_id, offer_id, type_id)
-                );
-                CREATE INDEX IF NOT EXISTS idx_lpstore_itemindex_type_id ON LPStoreItemIndex(type_id);
-                CREATE INDEX IF NOT EXISTS idx_lpstore_itemindex_type_name_zh ON LPStoreItemIndex(type_name_zh);
-                CREATE INDEX IF NOT EXISTS idx_lpstore_itemindex_type_name_en ON LPStoreItemIndex(type_name_en);
-                CREATE INDEX IF NOT EXISTS idx_lpstore_itemindex_faction ON LPStoreItemIndex(faction_id);
-                CREATE INDEX IF NOT EXISTS idx_lpstore_itemindex_corporation ON LPStoreItemIndex(corporation_id);
+            -- LP商店数据表 v2 (新版本，去掉last_updated字段)
+            CREATE TABLE IF NOT EXISTS LPStoreOffers_v2 (
+                corporation_id INTEGER NOT NULL,
+                offer_id INTEGER NOT NULL,
+                type_id INTEGER NOT NULL,
+                offers_data TEXT NOT NULL,
+                PRIMARY KEY (corporation_id, offer_id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_lpstore_offers_v2_corporation ON LPStoreOffers_v2(corporation_id);
+            CREATE INDEX IF NOT EXISTS idx_lpstore_offers_v2_type ON LPStoreOffers_v2(type_id);
 
-                -- 创建索引以提高查询性能
-                CREATE INDEX IF NOT EXISTS idx_wallet_journal_character_date ON wallet_journal(character_id, date);
-                CREATE INDEX IF NOT EXISTS idx_wallet_transactions_character_date ON wallet_transactions(character_id, date);
-                CREATE INDEX IF NOT EXISTS idx_mining_ledger_character_date ON mining_ledger(character_id, date);
-                CREATE INDEX IF NOT EXISTS idx_character_current_state_update ON character_current_state(last_update);
+            -- LP商店物品索引表
+            CREATE TABLE IF NOT EXISTS LPStoreItemIndex (
+                type_id INTEGER NOT NULL,
+                type_name_zh TEXT,
+                type_name_en TEXT,
+                offer_id INTEGER NOT NULL,
+                faction_id INTEGER,
+                corporation_id INTEGER NOT NULL,
+                PRIMARY KEY (corporation_id, offer_id, type_id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_lpstore_itemindex_type_id ON LPStoreItemIndex(type_id);
+            CREATE INDEX IF NOT EXISTS idx_lpstore_itemindex_type_name_zh ON LPStoreItemIndex(type_name_zh);
+            CREATE INDEX IF NOT EXISTS idx_lpstore_itemindex_type_name_en ON LPStoreItemIndex(type_name_en);
+            CREATE INDEX IF NOT EXISTS idx_lpstore_itemindex_faction ON LPStoreItemIndex(faction_id);
+            CREATE INDEX IF NOT EXISTS idx_lpstore_itemindex_corporation ON LPStoreItemIndex(corporation_id);
 
-                -- 建筑物缓存表
-                CREATE TABLE IF NOT EXISTS structure_cache (
-                    structure_id INTEGER PRIMARY KEY,
-                    name TEXT NOT NULL,
-                    owner_id INTEGER NOT NULL,
-                    solar_system_id INTEGER NOT NULL,
-                    type_id INTEGER NOT NULL,
-                    timestamp INTEGER NOT NULL
-                );
-                CREATE INDEX IF NOT EXISTS idx_structure_cache_timestamp ON structure_cache(timestamp);
+            -- 创建索引以提高查询性能
+            CREATE INDEX IF NOT EXISTS idx_wallet_journal_character_date ON wallet_journal(character_id, date);
+            CREATE INDEX IF NOT EXISTS idx_wallet_transactions_character_date ON wallet_transactions(character_id, date);
+            CREATE INDEX IF NOT EXISTS idx_mining_ledger_character_date ON mining_ledger(character_id, date);
+            CREATE INDEX IF NOT EXISTS idx_character_current_state_update ON character_current_state(last_update);
 
-                -- 挖矿记录表
-                CREATE TABLE IF NOT EXISTS mining_ledger (
-                    character_id INTEGER NOT NULL,
-                    date TEXT NOT NULL,
-                    quantity INTEGER NOT NULL,
-                    solar_system_id INTEGER NOT NULL,
-                    type_id INTEGER NOT NULL,
-                    last_updated TEXT DEFAULT CURRENT_TIMESTAMP,
-                    PRIMARY KEY (character_id, date, type_id, solar_system_id)
-                );
+            -- 建筑物缓存表
+            CREATE TABLE IF NOT EXISTS structure_cache (
+                structure_id INTEGER PRIMARY KEY,
+                name TEXT NOT NULL,
+                owner_id INTEGER NOT NULL,
+                solar_system_id INTEGER NOT NULL,
+                type_id INTEGER NOT NULL,
+                timestamp INTEGER NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_structure_cache_timestamp ON structure_cache(timestamp);
 
-                -- 角色信息缓存表
-                CREATE TABLE IF NOT EXISTS character_info (
-                    character_id INTEGER NOT NULL PRIMARY KEY,
-                    alliance_id INTEGER,
-                    birthday TEXT NOT NULL,
-                    bloodline_id INTEGER NOT NULL,
-                    corporation_id INTEGER NOT NULL,
-                    faction_id INTEGER,
-                    gender TEXT NOT NULL,
-                    name TEXT NOT NULL,
-                    race_id INTEGER NOT NULL,
-                    security_status REAL,
-                    title TEXT,
-                    last_updated TEXT DEFAULT CURRENT_TIMESTAMP
-                );
-                CREATE INDEX IF NOT EXISTS idx_character_info_last_updated ON character_info(last_updated);
+            -- 挖矿记录表
+            CREATE TABLE IF NOT EXISTS mining_ledger (
+                character_id INTEGER NOT NULL,
+                date TEXT NOT NULL,
+                quantity INTEGER NOT NULL,
+                solar_system_id INTEGER NOT NULL,
+                type_id INTEGER NOT NULL,
+                last_updated TEXT DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (character_id, date, type_id, solar_system_id)
+            );
 
-                -- 克隆体状态表
-                CREATE TABLE IF NOT EXISTS clones (
-                    character_id INTEGER NOT NULL PRIMARY KEY,
-                    clones_data TEXT NOT NULL,
-                    home_location_id INTEGER NOT NULL,
-                    last_clone_jump_date TEXT,
-                    last_station_change_date TEXT,
-                    last_updated TEXT DEFAULT CURRENT_TIMESTAMP
-                );
-                CREATE INDEX IF NOT EXISTS idx_clones_last_updated ON clones(last_updated);
+            -- 角色信息缓存表
+            CREATE TABLE IF NOT EXISTS character_info (
+                character_id INTEGER NOT NULL PRIMARY KEY,
+                alliance_id INTEGER,
+                birthday TEXT NOT NULL,
+                bloodline_id INTEGER NOT NULL,
+                corporation_id INTEGER NOT NULL,
+                faction_id INTEGER,
+                gender TEXT NOT NULL,
+                name TEXT NOT NULL,
+                race_id INTEGER NOT NULL,
+                security_status REAL,
+                title TEXT,
+                last_updated TEXT DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE INDEX IF NOT EXISTS idx_character_info_last_updated ON character_info(last_updated);
 
-                -- 市场价格表
-                CREATE TABLE IF NOT EXISTS market_prices (
-                    type_id INTEGER NOT NULL PRIMARY KEY,
-                    adjusted_price REAL,
-                    average_price REAL
-                );
+            -- 克隆体状态表
+            CREATE TABLE IF NOT EXISTS clones (
+                character_id INTEGER NOT NULL PRIMARY KEY,
+                clones_data TEXT NOT NULL,
+                home_location_id INTEGER NOT NULL,
+                last_clone_jump_date TEXT,
+                last_station_change_date TEXT,
+                last_updated TEXT DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE INDEX IF NOT EXISTS idx_clones_last_updated ON clones(last_updated);
 
-                -- 日历缓存表（仅在网络失败时使用）
-                CREATE TABLE IF NOT EXISTS calendar_cache (
-                    character_id INTEGER NOT NULL PRIMARY KEY,
-                    calendar_data TEXT NOT NULL,
-                    last_updated TEXT DEFAULT CURRENT_TIMESTAMP
-                );
-                CREATE INDEX IF NOT EXISTS idx_calendar_cache_last_updated ON calendar_cache(last_updated);
-            """
+            -- 市场价格表
+            CREATE TABLE IF NOT EXISTS market_prices (
+                type_id INTEGER NOT NULL PRIMARY KEY,
+                adjusted_price REAL,
+                average_price REAL
+            );
+
+            -- 日历缓存表（仅在网络失败时使用）
+            CREATE TABLE IF NOT EXISTS calendar_cache (
+                character_id INTEGER NOT NULL PRIMARY KEY,
+                calendar_data TEXT NOT NULL,
+                last_updated TEXT DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE INDEX IF NOT EXISTS idx_calendar_cache_last_updated ON calendar_cache(last_updated);
+        """
 
         // 分割SQL语句并逐个执行
         let statements = createTablesSQL.components(separatedBy: ";")
@@ -525,7 +556,7 @@ class CharacterDatabaseManager: ObservableObject, @unchecked Sendable {
                 var row: [String: Any] = [:]
                 let columnCount = sqlite3_column_count(statement)
 
-                for i in 0..<columnCount {
+                for i in 0 ..< columnCount {
                     let columnName = String(cString: sqlite3_column_name(statement, i))
                     let type = sqlite3_column_type(statement, i)
 

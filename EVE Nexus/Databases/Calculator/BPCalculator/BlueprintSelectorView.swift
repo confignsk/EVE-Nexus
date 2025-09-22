@@ -2,13 +2,13 @@ import SwiftUI
 
 struct BlueprintSelectorView: View {
     @ObservedObject var databaseManager: DatabaseManager
-    
+
     let onBlueprintSelected: (DatabaseListItem) -> Void
     let onDismiss: () -> Void
-    
+
     // 蓝图分类ID
     private let blueprintCategoryId = 9
-    
+
     var body: some View {
         NavigationStack {
             DatabaseBlueprintBrowserView(
@@ -16,7 +16,9 @@ struct BlueprintSelectorView: View {
                 categoryId: blueprintCategoryId,
                 onBlueprintSelected: onBlueprintSelected
             )
-            .navigationTitle(NSLocalizedString("Blueprint_Calculator_Select_Blueprint", comment: "选择蓝图"))
+            .navigationTitle(
+                NSLocalizedString("Blueprint_Calculator_Select_Blueprint", comment: "选择蓝图")
+            )
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -34,13 +36,13 @@ struct DatabaseBlueprintBrowserView: View {
     @ObservedObject var databaseManager: DatabaseManager
     let categoryId: Int
     let onBlueprintSelected: (DatabaseListItem) -> Void
-    
+
     @State private var navigationPath = NavigationPath()
     @State private var allBlueprints: [DatabaseListItem] = []
     @State private var blueprintGroups: [BlueprintGroup] = []
     @State private var reactionMarketGroups: Set<Int> = []
     @State private var isLoading = true
-    
+
     var body: some View {
         NavigationStack(path: $navigationPath) {
             if isLoading {
@@ -73,45 +75,45 @@ struct DatabaseBlueprintBrowserView: View {
             }
         }
     }
-    
+
     private func loadAllBlueprintData() {
         isLoading = true
-        
+
         Task {
             await MainActor.run {
                 // 1. 获取反应市场组
                 reactionMarketGroups = getReactionMarketGroups()
                 Logger.info("加载了 \(reactionMarketGroups.count) 个反应市场组")
-                
+
                 // 2. 加载所有蓝图物品
                 let blueprints = loadAllBlueprints()
                 Logger.info("加载了 \(blueprints.count) 个蓝图物品")
-                
+
                 // 3. 构建组结构
                 let groups = buildGroupsFromBlueprints(blueprints)
                 Logger.info("构建了 \(groups.count) 个蓝图组")
-                
+
                 allBlueprints = blueprints
                 blueprintGroups = groups
                 isLoading = false
             }
         }
     }
-    
+
     // 获取反应市场组集合 - 复用现有代码
     private func getReactionMarketGroups() -> Set<Int> {
         let reactionRootGroupId = 1849
         var reactionGroups = Set<Int>()
-        
+
         let query = """
             WITH RECURSIVE market_group_tree AS (
                 -- 基础查询：获取根组1849(反应公式)
                 SELECT group_id, parentgroup_id
                 FROM marketGroups
                 WHERE group_id = ?
-                
+
                 UNION ALL
-                
+
                 -- 递归查询：获取所有子组
                 SELECT mg.group_id, mg.parentgroup_id
                 FROM marketGroups mg
@@ -119,18 +121,20 @@ struct DatabaseBlueprintBrowserView: View {
             )
             SELECT group_id FROM market_group_tree
         """
-        
-        if case let .success(rows) = databaseManager.executeQuery(query, parameters: [reactionRootGroupId]) {
+
+        if case let .success(rows) = databaseManager.executeQuery(
+            query, parameters: [reactionRootGroupId]
+        ) {
             for row in rows {
                 if let groupId = row["group_id"] as? Int {
                     reactionGroups.insert(groupId)
                 }
             }
         }
-        
+
         return reactionGroups
     }
-    
+
     // 加载所有蓝图物品
     private func loadAllBlueprints() -> [DatabaseListItem] {
         let query = """
@@ -145,21 +149,21 @@ struct DatabaseBlueprintBrowserView: View {
             LEFT JOIN groups g ON t.groupID = g.group_id
             WHERE t.categoryID = ? and t.published = 1
         """
-        
+
         var blueprints: [DatabaseListItem] = []
-        
+
         if case let .success(rows) = databaseManager.executeQuery(query, parameters: [categoryId]) {
             for row in rows {
                 if let id = row["id"] as? Int,
                    let name = row["name"] as? String,
-                   let categoryId = row["categoryID"] as? Int {
-                    
+                   let categoryId = row["categoryID"] as? Int
+                {
                     let enName = row["en_name"] as? String
                     let iconFileName = (row["iconFileName"] as? String) ?? "not_found"
                     let published = (row["published"] as? Int) ?? 0
                     let groupID = row["groupID"] as? Int
                     let groupName = row["groupName"] as? String
-                    
+
                     let blueprint = DatabaseListItem(
                         id: id,
                         name: name,
@@ -186,12 +190,12 @@ struct DatabaseBlueprintBrowserView: View {
                         marketGroupID: row["marketGroupID"] as? Int, // 现在可以正确获取
                         navigationDestination: AnyView(EmptyView())
                     )
-                    
+
                     blueprints.append(blueprint)
                 }
             }
         }
-        
+
         // 使用localizedCompare对蓝图进行排序
         return blueprints.sorted { blueprint1, blueprint2 in
             // 首先按组ID排序
@@ -204,18 +208,18 @@ struct DatabaseBlueprintBrowserView: View {
             return blueprint1.name.localizedCompare(blueprint2.name) == .orderedAscending
         }
     }
-    
+
     // 从蓝图列表构建组结构
     private func buildGroupsFromBlueprints(_ blueprints: [DatabaseListItem]) -> [BlueprintGroup] {
         // 按组ID分组
         let groupedBlueprints = Dictionary(grouping: blueprints) { $0.groupID ?? -1 }
-        
+
         // 构建组列表
         var groups: [BlueprintGroup] = []
-        
+
         for (groupId, groupBlueprints) in groupedBlueprints {
             guard groupId != -1, let firstBlueprint = groupBlueprints.first else { continue }
-            
+
             // 加载组信息
             if let groupInfo = loadGroupInfo(groupId: groupId) {
                 let group = BlueprintGroup(
@@ -236,7 +240,7 @@ struct DatabaseBlueprintBrowserView: View {
                 groups.append(group)
             }
         }
-        
+
         // 排序：已发布的在前，然后按名称排序
         return groups.sorted { group1, group2 in
             if group1.published != group2.published {
@@ -245,24 +249,27 @@ struct DatabaseBlueprintBrowserView: View {
             return group1.name.localizedCompare(group2.name) == .orderedAscending
         }
     }
-    
+
     // 加载组信息
-    private func loadGroupInfo(groupId: Int) -> (name: String, iconFileName: String, published: Bool)? {
+    private func loadGroupInfo(groupId: Int) -> (
+        name: String, iconFileName: String, published: Bool
+    )? {
         let query = """
             SELECT name, icon_filename, published
             FROM groups
             WHERE group_id = ?
         """
-        
+
         if case let .success(rows) = databaseManager.executeQuery(query, parameters: [groupId]),
-           let row = rows.first {
+           let row = rows.first
+        {
             let name = (row["name"] as? String) ?? "未知组"
             let iconFileName = (row["icon_filename"] as? String) ?? "not_found"
             let published = ((row["published"] as? Int) ?? 1) == 1
-            
+
             return (name: name, iconFileName: iconFileName, published: published)
         }
-        
+
         return nil
     }
 }
@@ -284,10 +291,10 @@ struct BlueprintGroupsListView: View {
     let allBlueprints: [DatabaseListItem]
     let blueprintGroups: [BlueprintGroup]
     let reactionMarketGroups: Set<Int>
-    
+
     @State private var searchText = ""
     @State private var isSearching = false
-    
+
     var body: some View {
         List {
             if isSearching && !searchText.isEmpty {
@@ -308,13 +315,13 @@ struct BlueprintGroupsListView: View {
                             .resizable()
                             .frame(width: 32, height: 32)
                             .cornerRadius(6)
-                        
+
                         VStack(alignment: .leading, spacing: 2) {
                             // 组名称
                             Text(group.name)
                                 .foregroundColor(.primary)
                                 .font(.body)
-                            
+
                             // 显示该组中的蓝图数量和反应蓝图数量
                             let groupBlueprints = allBlueprints.filter { $0.groupID == group.id }
                             let reactionCount = groupBlueprints.filter { blueprint in
@@ -323,26 +330,40 @@ struct BlueprintGroupsListView: View {
                                 }
                                 return false
                             }.count
-                            
+
                             HStack(spacing: 8) {
-                                Text(String(format: NSLocalizedString("Blueprint_Calculator_Blueprints_Count", comment: "%d 个蓝图"), groupBlueprints.count))
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                
+                                Text(
+                                    String(
+                                        format: NSLocalizedString(
+                                            "Blueprint_Calculator_Blueprints_Count",
+                                            comment: "%d 个蓝图"
+                                        ), groupBlueprints.count
+                                    )
+                                )
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+
                                 if reactionCount > 0 {
-                                    Text(String(format: NSLocalizedString("Blueprint_Calculator_Reactions_Count", comment: "其中 %d 个反应"), reactionCount))
-                                        .font(.caption)
-                                        .foregroundColor(.orange)
-                                        .padding(.horizontal, 6)
-                                        .padding(.vertical, 2)
-                                        .background(Color.orange.opacity(0.2))
-                                        .cornerRadius(4)
+                                    Text(
+                                        String(
+                                            format: NSLocalizedString(
+                                                "Blueprint_Calculator_Reactions_Count",
+                                                comment: "其中 %d 个反应"
+                                            ), reactionCount
+                                        )
+                                    )
+                                    .font(.caption)
+                                    .foregroundColor(.orange)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(Color.orange.opacity(0.2))
+                                    .cornerRadius(4)
                                 }
                             }
                         }
-                        
+
                         Spacer()
-                        
+
                         Image(systemName: "chevron.right")
                             .foregroundColor(.secondary)
                             .font(.caption)
@@ -355,14 +376,14 @@ struct BlueprintGroupsListView: View {
             }
         }
         .searchable(
-            text: $searchText, 
+            text: $searchText,
             isPresented: $isSearching,
             prompt: NSLocalizedString("Main_Database_search_placeholder", comment: "搜索")
         )
         .navigationTitle(NSLocalizedString("Main_Database_Blueprints", comment: "蓝图"))
         .navigationBarTitleDisplayMode(.large)
     }
-    
+
     private var filteredGroups: [BlueprintGroup] {
         if searchText.isEmpty {
             return blueprintGroups
@@ -372,23 +393,23 @@ struct BlueprintGroupsListView: View {
             return blueprintGroups.filter { matchingGroupIds.contains($0.id) }
         }
     }
-    
+
     private var searchResults: [DatabaseListItem] {
         guard !searchText.isEmpty else { return [] }
-        
+
         return allBlueprints.filter { blueprint in
-            blueprint.name.localizedCaseInsensitiveContains(searchText) ||
-            blueprint.enName?.localizedCaseInsensitiveContains(searchText) == true ||
-            blueprint.groupName?.localizedCaseInsensitiveContains(searchText) == true
+            blueprint.name.localizedCaseInsensitiveContains(searchText)
+                || blueprint.enName?.localizedCaseInsensitiveContains(searchText) == true
+                || blueprint.groupName?.localizedCaseInsensitiveContains(searchText) == true
         }.sorted { blueprint1, blueprint2 in
             // 优先显示名称匹配的
             let name1Match = blueprint1.name.localizedCaseInsensitiveContains(searchText)
             let name2Match = blueprint2.name.localizedCaseInsensitiveContains(searchText)
-            
+
             if name1Match != name2Match {
                 return name1Match
             }
-            
+
             // 然后按名称排序
             return blueprint1.name.localizedCompare(blueprint2.name) == .orderedAscending
         }
@@ -400,14 +421,14 @@ struct BlueprintSearchResultRow: View {
     let blueprint: DatabaseListItem
     let reactionMarketGroups: Set<Int>
     let onSelected: (DatabaseListItem) -> Void
-    
+
     private var isReaction: Bool {
         if let marketGroupID = blueprint.marketGroupID {
             return reactionMarketGroups.contains(marketGroupID)
         }
         return false
     }
-    
+
     var body: some View {
         HStack(spacing: 12) {
             // 蓝图图标
@@ -415,31 +436,33 @@ struct BlueprintSearchResultRow: View {
                 .resizable()
                 .frame(width: 40, height: 40)
                 .cornerRadius(6)
-            
+
             VStack(alignment: .leading, spacing: 2) {
                 HStack {
                     Text(blueprint.name)
                         .foregroundColor(.primary)
                         .font(.body)
-                    
+
                     if isReaction {
-                        Text(NSLocalizedString("Blueprint_Calculator_Reaction_Label", comment: "反应"))
-                            .font(.caption)
-                            .foregroundColor(.orange)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.orange.opacity(0.2))
-                            .cornerRadius(4)
+                        Text(
+                            NSLocalizedString("Blueprint_Calculator_Reaction_Label", comment: "反应")
+                        )
+                        .font(.caption)
+                        .foregroundColor(.orange)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.orange.opacity(0.2))
+                        .cornerRadius(4)
                     }
                 }
-                
+
                 if let groupName = blueprint.groupName {
                     Text(groupName)
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
             }
-            
+
             Spacer()
         }
         .padding(.vertical, 4)
@@ -457,15 +480,15 @@ struct BlueprintItemsListView: View {
     let onBlueprintSelected: (DatabaseListItem) -> Void
     let allBlueprints: [DatabaseListItem]
     let reactionMarketGroups: Set<Int>
-    
+
     @State private var metaGroupNames: [Int: String] = [:]
     @State private var searchText = ""
-    
+
     // 使用传入的蓝图数据而不是重新加载
     private var items: [DatabaseListItem] {
         return allBlueprints
     }
-    
+
     var body: some View {
         List {
             if !searchText.isEmpty {
@@ -504,7 +527,10 @@ struct BlueprintItemsListView: View {
                 }
             }
         }
-        .searchable(text: $searchText, prompt: NSLocalizedString("Main_Database_search_placeholder", comment: "搜索"))
+        .searchable(
+            text: $searchText,
+            prompt: NSLocalizedString("Main_Database_search_placeholder", comment: "搜索")
+        )
         .navigationTitle(group.name)
         .navigationBarTitleDisplayMode(.large)
         .onAppear {
@@ -513,7 +539,7 @@ struct BlueprintItemsListView: View {
             metaGroupNames = databaseManager.loadMetaGroupNames(for: Array(metaGroupIDs))
         }
     }
-    
+
     private var filteredItems: [DatabaseListItem] {
         if searchText.isEmpty {
             return items
@@ -523,40 +549,47 @@ struct BlueprintItemsListView: View {
             }
         }
     }
-    
+
     private var groupedItems: [ItemGroup] {
         // 按MetaGroup分组
         let publishedItems = items.filter { $0.published }
         let unpublishedItems = items.filter { !$0.published }
-        
+
         var groups: [ItemGroup] = []
-        
+
         // 处理已发布物品
         let publishedGrouped = Dictionary(grouping: publishedItems) { item in
             item.metaGroupID ?? -1
         }
-        
+
         for (metaGroupId, groupItems) in publishedGrouped.sorted(by: { $0.key < $1.key }) {
-            let groupName = metaGroupNames[metaGroupId] ?? NSLocalizedString("Main_Database_unknown_meta_group", comment: "未知科技组")
-            groups.append(ItemGroup(
-                id: metaGroupId,
-                name: groupName,
-                items: groupItems.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
-            ))
+            let groupName =
+                metaGroupNames[metaGroupId]
+                    ?? NSLocalizedString("Main_Database_unknown_meta_group", comment: "未知科技组")
+            groups.append(
+                ItemGroup(
+                    id: metaGroupId,
+                    name: groupName,
+                    items: groupItems.sorted {
+                        $0.name.localizedCompare($1.name) == .orderedAscending
+                    }
+                ))
         }
-        
+
         // 处理未发布物品
         if !unpublishedItems.isEmpty {
-            groups.append(ItemGroup(
-                id: -999,
-                name: NSLocalizedString("Main_Database_unpublished", comment: "未发布"),
-                items: unpublishedItems.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
-            ))
+            groups.append(
+                ItemGroup(
+                    id: -999,
+                    name: NSLocalizedString("Main_Database_unpublished", comment: "未发布"),
+                    items: unpublishedItems.sorted {
+                        $0.name.localizedCompare($1.name) == .orderedAscending
+                    }
+                ))
         }
-        
+
         return groups
     }
-
 }
 
 // 物品组数据模型
@@ -572,14 +605,14 @@ struct BlueprintItemRowView: View {
     let metaGroupNames: [Int: String]
     let reactionMarketGroups: Set<Int>
     let onSelected: (DatabaseListItem) -> Void
-    
+
     private var isReaction: Bool {
         if let marketGroupID = item.marketGroupID {
             return reactionMarketGroups.contains(marketGroupID)
         }
         return false
     }
-    
+
     var body: some View {
         HStack {
             // 蓝图图标
@@ -587,7 +620,7 @@ struct BlueprintItemRowView: View {
                 .resizable()
                 .frame(width: 32, height: 32)
                 .cornerRadius(6)
-            
+
             VStack(alignment: .leading, spacing: 2) {
                 // 蓝图名称和反应标识
                 HStack {
@@ -595,23 +628,26 @@ struct BlueprintItemRowView: View {
                         .foregroundColor(.primary)
                         .font(.body)
                         .multilineTextAlignment(.leading)
-                    
+
                     if isReaction {
-                        Text(NSLocalizedString("Blueprint_Calculator_Reaction_Label", comment: "反应"))
-                            .font(.caption)
-                            .foregroundColor(.orange)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.orange.opacity(0.2))
-                            .cornerRadius(4)
+                        Text(
+                            NSLocalizedString("Blueprint_Calculator_Reaction_Label", comment: "反应")
+                        )
+                        .font(.caption)
+                        .foregroundColor(.orange)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.orange.opacity(0.2))
+                        .cornerRadius(4)
                     }
-                    
+
                     Spacer()
                 }
-                
+
                 // MetaGroup信息
                 if let metaGroupId = item.metaGroupID,
-                   let metaGroupName = metaGroupNames[metaGroupId] {
+                   let metaGroupName = metaGroupNames[metaGroupId]
+                {
                     Text(metaGroupName)
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -627,16 +663,21 @@ struct BlueprintItemRowView: View {
                 Button {
                     UIPasteboard.general.string = item.name
                 } label: {
-                    Label(NSLocalizedString("Misc_Copy_Name", comment: ""), systemImage: "doc.on.doc")
+                    Label(
+                        NSLocalizedString("Misc_Copy_Name", comment: ""), systemImage: "doc.on.doc"
+                    )
                 }
                 if let enName = item.enName, !enName.isEmpty && enName != item.name {
                     Button {
                         UIPasteboard.general.string = enName
                     } label: {
-                        Label(NSLocalizedString("Misc_Copy_Trans", comment: ""), systemImage: "translate")
+                        Label(
+                            NSLocalizedString("Misc_Copy_Trans", comment: ""),
+                            systemImage: "translate"
+                        )
                     }
                 }
             }
         }
     }
-} 
+}

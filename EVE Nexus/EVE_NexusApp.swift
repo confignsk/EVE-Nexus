@@ -69,7 +69,7 @@ struct EVE_NexusApp: App {
         }
 
         // 初始化数据库
-        _ = CharacterDatabaseManager.shared  // 确保角色数据库被初始化
+        _ = CharacterDatabaseManager.shared // 确保角色数据库被初始化
 
         // 加载本地化账单信息的文本数据
         LocalizationManager.shared.loadAccountingEntryTypes()
@@ -81,7 +81,7 @@ struct EVE_NexusApp: App {
         UNUserNotificationCenter.current().delegate = NotificationDelegate.shared
         Logger.info("通知代理设置完成")
     }
-    
+
     private func configureLanguage() {
         // 只在首次启动或语言未设置时配置
         if selectedLanguage == nil {
@@ -111,13 +111,16 @@ struct EVE_NexusApp: App {
         // 检查是否已经设置过语言映射配置
         if UserDefaults.standard.object(forKey: LanguageMapConstants.userDefaultsKey) == nil {
             // 首次使用，设置默认语言映射配置
-            UserDefaults.standard.set(LanguageMapConstants.languageMapDefaultLanguages, forKey: LanguageMapConstants.userDefaultsKey)
+            UserDefaults.standard.set(
+                LanguageMapConstants.languageMapDefaultLanguages,
+                forKey: LanguageMapConstants.userDefaultsKey
+            )
             Logger.info("首次使用，初始化语言映射配置为默认值: \(LanguageMapConstants.languageMapDefaultLanguages)")
         } else {
             Logger.debug("语言映射配置已存在，跳过初始化")
         }
     }
-    
+
     private func validateRefreshTokens() {
         // 获取所有有效的 token
         let characterIdsWithValidRefreshToken = SecureStorage.shared.listValidRefreshTokens()
@@ -170,11 +173,11 @@ struct EVE_NexusApp: App {
 
         // 检查是否已经成功解压过
         if !needsReExtract,
-            IconManager.shared.isExtractionComplete,
-            FileManager.default.fileExists(atPath: destinationPath.path),
-            let contents = try? FileManager.default.contentsOfDirectory(
-                atPath: destinationPath.path),
-            !contents.isEmpty
+           IconManager.shared.isExtractionComplete,
+           FileManager.default.fileExists(atPath: destinationPath.path),
+           let contents = try? FileManager.default.contentsOfDirectory(
+               atPath: destinationPath.path),
+           !contents.isEmpty
         {
             Logger.debug(
                 "Icons folder exists and contains \(contents.count) files, skipping extraction.")

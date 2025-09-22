@@ -49,7 +49,7 @@ enum MarketHistoryAPIError: LocalizedError {
 @MarketHistoryAPIActor
 class MarketHistoryAPI {
     static let shared = MarketHistoryAPI()
-    private let cacheDuration: TimeInterval = 60 * 60  // 1小时缓存
+    private let cacheDuration: TimeInterval = 60 * 60 // 1小时缓存
 
     private init() {}
 
@@ -87,9 +87,9 @@ class MarketHistoryAPI {
 
     private func loadFromCache(typeID: Int, regionID: Int) -> [MarketHistory]? {
         guard let cacheFile = getCacheFilePath(typeID: typeID, regionID: regionID),
-            let data = try? Data(contentsOf: cacheFile),
-            let cached = try? JSONDecoder().decode(CachedData.self, from: data),
-            cached.timestamp.addingTimeInterval(cacheDuration) > Date()
+              let data = try? Data(contentsOf: cacheFile),
+              let cached = try? JSONDecoder().decode(CachedData.self, from: data),
+              cached.timestamp.addingTimeInterval(cacheDuration) > Date()
         else {
             return nil
         }
@@ -118,37 +118,48 @@ class MarketHistoryAPI {
         fillToCurrentDate: Bool = true
     ) async throws -> [MarketHistory] {
         var actualRegionID = regionID
-        
+
         // PLEX 特殊处理
         if typeID == 44992 {
-            actualRegionID = 19000001
-            
+            actualRegionID = 19_000_001
+
             // 读取本地plex_history.json文件
             if let plexHistory = loadPlexHistory() {
                 // 获取API数据
-                let apiHistory = try await fetchApiHistory(typeID: typeID, regionID: actualRegionID, forceRefresh: forceRefresh)
-                
+                let apiHistory = try await fetchApiHistory(
+                    typeID: typeID, regionID: actualRegionID, forceRefresh: forceRefresh
+                )
+
                 // 简单合并：本地数据 + API数据
                 let combined = plexHistory + apiHistory
-                
-                return interpolate ? interpolateMarketHistory(combined, fillToCurrentDate: fillToCurrentDate) : combined
+
+                return interpolate
+                    ? interpolateMarketHistory(combined, fillToCurrentDate: fillToCurrentDate)
+                    : combined
             }
         }
-        
+
         // 普通流程
-        return try await fetchApiHistory(typeID: typeID, regionID: actualRegionID, forceRefresh: forceRefresh, interpolate: interpolate, fillToCurrentDate: fillToCurrentDate)
+        return try await fetchApiHistory(
+            typeID: typeID, regionID: actualRegionID, forceRefresh: forceRefresh,
+            interpolate: interpolate, fillToCurrentDate: fillToCurrentDate
+        )
     }
-    
+
     private func loadPlexHistory() -> [MarketHistory]? {
         guard let path = Bundle.main.path(forResource: "plex_history", ofType: "json"),
               let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
-              let history = try? JSONDecoder().decode([MarketHistory].self, from: data) else {
+              let history = try? JSONDecoder().decode([MarketHistory].self, from: data)
+        else {
             return nil
         }
         return history
     }
-    
-    private func fetchApiHistory(typeID: Int, regionID: Int, forceRefresh: Bool, interpolate: Bool = true, fillToCurrentDate: Bool = true) async throws -> [MarketHistory] {
+
+    private func fetchApiHistory(
+        typeID: Int, regionID: Int, forceRefresh: Bool, interpolate: Bool = true,
+        fillToCurrentDate: Bool = true
+    ) async throws -> [MarketHistory] {
         if regionID < 0 {
             return []
         }
@@ -181,7 +192,8 @@ class MarketHistoryAPI {
         saveToCache(history, typeID: typeID, regionID: regionID)
 
         // 返回处理后的数据
-        return interpolate ? interpolateMarketHistory(history, fillToCurrentDate: fillToCurrentDate) : history
+        return interpolate
+            ? interpolateMarketHistory(history, fillToCurrentDate: fillToCurrentDate) : history
     }
 
     // MARK: - 数据插值处理
@@ -201,9 +213,9 @@ class MarketHistoryAPI {
 
         // 获取最早和最晚的日期
         guard let firstDateString = sortedHistory.first?.date,
-            let lastDateString = sortedHistory.last?.date,
-            let firstDate = dateFromString(firstDateString),
-            var lastDate = dateFromString(lastDateString)
+              let lastDateString = sortedHistory.last?.date,
+              let firstDate = dateFromString(firstDateString),
+              var lastDate = dateFromString(lastDateString)
         else {
             return sortedHistory
         }

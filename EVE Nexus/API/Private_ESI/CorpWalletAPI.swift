@@ -25,41 +25,48 @@ struct DivisionInfo: Codable {
 @CorpWalletAPIActor
 class CorpWalletAPI {
     static let shared = CorpWalletAPI()
-    
+
     // 军团钱包流水缓存超时时间
-    private let journalCacheTimeout: TimeInterval = 3600  // 1小时的流水缓存超时时间
+    private let journalCacheTimeout: TimeInterval = 3600 // 1小时的流水缓存超时时间
 
     private init() {}
-    
+
     // 获取军团钱包流水缓存目录
     private func getCorpWalletJournalCacheDirectory() -> URL {
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[
+            0
+        ]
         let cacheDirectory = documentsPath.appendingPathComponent("CorpWallet")
-        
+
         // 如果目录不存在，创建它
         if !FileManager.default.fileExists(atPath: cacheDirectory.path) {
             Logger.info("创建军团钱包流水缓存目录: \(cacheDirectory.path)")
-            try? FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
+            try? FileManager.default.createDirectory(
+                at: cacheDirectory, withIntermediateDirectories: true
+            )
         }
-        
+
         return cacheDirectory
     }
 
     // 获取军团钱包流水缓存文件路径
     private func getCorpJournalCacheFilePath(corporationId: Int, division: Int) -> URL {
         let cacheDirectory = getCorpWalletJournalCacheDirectory()
-        return cacheDirectory.appendingPathComponent("CorpJournal_\(corporationId)_\(division).json")
+        return cacheDirectory.appendingPathComponent(
+            "CorpJournal_\(corporationId)_\(division).json")
     }
 
     // 检查军团钱包流水缓存是否过期
     private func isCorpJournalCacheExpired(corporationId: Int, division: Int) -> Bool {
         let filePath = getCorpJournalCacheFilePath(corporationId: corporationId, division: division)
-        
+
         guard FileManager.default.fileExists(atPath: filePath.path) else {
-            Logger.info("军团钱包流水缓存文件不存在，需要刷新 - 军团ID: \(corporationId), 部门: \(division), 文件路径: \(filePath.path)")
+            Logger.info(
+                "军团钱包流水缓存文件不存在，需要刷新 - 军团ID: \(corporationId), 部门: \(division), 文件路径: \(filePath.path)"
+            )
             return true
         }
-        
+
         do {
             let attributes = try FileManager.default.attributesOfItem(atPath: filePath.path)
             if let modificationDate = attributes[.modificationDate] as? Date {
@@ -68,14 +75,18 @@ class CorpWalletAPI {
                 let remainingMinutes = Int(remainingTime / 60)
                 let remainingSeconds = Int(remainingTime.truncatingRemainder(dividingBy: 60))
                 let isExpired = timeInterval > journalCacheTimeout
-                
-                Logger.info("军团钱包流水缓存状态检查 - 军团ID: \(corporationId), 部门: \(division), 文件修改时间: \(modificationDate), 当前时间: \(Date()), 时间间隔: \(timeInterval)秒, 剩余时间: \(remainingMinutes)分\(remainingSeconds)秒, 是否过期: \(isExpired)")
+
+                Logger.info(
+                    "军团钱包流水缓存状态检查 - 军团ID: \(corporationId), 部门: \(division), 文件修改时间: \(modificationDate), 当前时间: \(Date()), 时间间隔: \(timeInterval)秒, 剩余时间: \(remainingMinutes)分\(remainingSeconds)秒, 是否过期: \(isExpired)"
+                )
                 return isExpired
             }
         } catch {
-            Logger.error("获取军团钱包流水缓存文件属性失败: \(error) - 军团ID: \(corporationId), 部门: \(division), 文件路径: \(filePath.path)")
+            Logger.error(
+                "获取军团钱包流水缓存文件属性失败: \(error) - 军团ID: \(corporationId), 部门: \(division), 文件路径: \(filePath.path)"
+            )
         }
-        
+
         return true
     }
 
@@ -84,8 +95,7 @@ class CorpWalletAPI {
     ///   - characterId: 角色ID
     ///   - forceRefresh: 是否强制刷新缓存
     /// - Returns: 军团钱包数组
-    func fetchCorpWallets(characterId: Int, forceRefresh: Bool = false) async throws -> [CorpWallet]
-    {
+    func fetchCorpWallets(characterId: Int, forceRefresh: Bool = false) async throws -> [CorpWallet] {
         // 1. 获取角色的军团ID
         guard
             let corporationId = try await CharacterDatabaseManager.shared.getCharacterCorporationId(
@@ -104,17 +114,16 @@ class CorpWalletAPI {
         let cacheTimeKey = "corp_wallets_\(corporationId)_time"
 
         if !forceRefresh,
-            let cachedData = UserDefaults.standard.data(forKey: cacheKey),
-            let lastUpdateTime = UserDefaults.standard.object(forKey: cacheTimeKey) as? Date,
-            Date().timeIntervalSince(lastUpdateTime) < 60 * 60
-        {  // 60 分钟缓存
+           let cachedData = UserDefaults.standard.data(forKey: cacheKey),
+           let lastUpdateTime = UserDefaults.standard.object(forKey: cacheTimeKey) as? Date,
+           Date().timeIntervalSince(lastUpdateTime) < 60 * 60
+        { // 60 分钟缓存
             do {
                 var wallets = try JSONDecoder().decode([CorpWallet].self, from: cachedData)
                 // 添加部门名称
-                for i in 0..<wallets.count {
+                for i in 0 ..< wallets.count {
                     let division = wallets[i].division
-                    if let divisionInfo = divisions.wallet.first(where: { $0.division == division })
-                    {
+                    if let divisionInfo = divisions.wallet.first(where: { $0.division == division }) {
                         wallets[i].name = getDivisionName(
                             division: division, type: "wallet", customName: divisionInfo.name
                         )
@@ -140,7 +149,7 @@ class CorpWalletAPI {
         var wallets = try JSONDecoder().decode([CorpWallet].self, from: data)
 
         // 6. 添加部门名称
-        for i in 0..<wallets.count {
+        for i in 0 ..< wallets.count {
             let division = wallets[i].division
             if let divisionInfo = divisions.wallet.first(where: { $0.division == division }) {
                 wallets[i].name = getDivisionName(
@@ -178,10 +187,10 @@ class CorpWalletAPI {
         let cacheTimeKey = "corp_divisions_\(corporationId)_time"
 
         if !forceRefresh,
-            let cachedData = UserDefaults.standard.data(forKey: cacheKey),
-            let lastUpdateTime = UserDefaults.standard.object(forKey: cacheTimeKey) as? Date,
-            Date().timeIntervalSince(lastUpdateTime) < 60 * 60
-        {  // 1小时缓存
+           let cachedData = UserDefaults.standard.data(forKey: cacheKey),
+           let lastUpdateTime = UserDefaults.standard.object(forKey: cacheTimeKey) as? Date,
+           Date().timeIntervalSince(lastUpdateTime) < 60 * 60
+        { // 1小时缓存
             do {
                 let divisions = try JSONDecoder().decode(CorpDivisions.self, from: cachedData)
                 Logger.info("使用缓存的军团部门数据 - 军团ID: \(corporationId)")
@@ -224,21 +233,23 @@ class CorpWalletAPI {
             if type == "wallet" {
                 let pattern = "^Wallet Division \\d+$"
                 if let regex = try? NSRegularExpression(pattern: pattern, options: []),
-                    regex.firstMatch(
-                        in: name, options: [], range: NSRange(location: 0, length: name.utf16.count)
-                    ) != nil
+                   regex.firstMatch(
+                       in: name, options: [], range: NSRange(location: 0, length: name.utf16.count)
+                   ) != nil
                 {
                     // 使用默认格式
                     if division == 1 {
                         return String(
                             format: NSLocalizedString(
-                                "Main_Corporation_Wallet_Division1", comment: ""),
+                                "Main_Corporation_Wallet_Division1", comment: ""
+                            ),
                             division
                         )
                     } else {
                         return String(
                             format: NSLocalizedString(
-                                "Main_Corporation_Wallet_Default", comment: ""),
+                                "Main_Corporation_Wallet_Default", comment: ""
+                            ),
                             division
                         )
                     }
@@ -299,7 +310,7 @@ class CorpWalletAPI {
                 }
                 return entries
             },
-            progressCallback: { currentPage, totalPages in
+            progressCallback: { currentPage, _ in
                 progressCallback?(.loading(page: currentPage))
             }
         )
@@ -310,29 +321,39 @@ class CorpWalletAPI {
     ///   - corporationId: 军团ID
     ///   - division: 部门编号
     /// - Returns: 钱包流水数组
-    private func getCorpWalletJournalFromCache(corporationId: Int, division: Int) -> [[String: Any]]? {
+    private func getCorpWalletJournalFromCache(corporationId: Int, division: Int) -> [[String:
+            Any]]?
+    {
         let filePath = getCorpJournalCacheFilePath(corporationId: corporationId, division: division)
-        
+
         guard FileManager.default.fileExists(atPath: filePath.path) else {
-            Logger.info("军团钱包流水缓存文件不存在 - 军团ID: \(corporationId), 部门: \(division), 文件路径: \(filePath.path)")
+            Logger.info(
+                "军团钱包流水缓存文件不存在 - 军团ID: \(corporationId), 部门: \(division), 文件路径: \(filePath.path)")
             return nil
         }
-        
-        Logger.info("开始读取军团钱包流水缓存文件 - 军团ID: \(corporationId), 部门: \(division), 文件路径: \(filePath.path)")
-        
+
+        Logger.info(
+            "开始读取军团钱包流水缓存文件 - 军团ID: \(corporationId), 部门: \(division), 文件路径: \(filePath.path)")
+
         do {
             let data = try Data(contentsOf: filePath)
             let jsonObject = try JSONSerialization.jsonObject(with: data, options: [])
-            
+
             if let journalEntries = jsonObject as? [[String: Any]] {
-                Logger.info("成功从缓存文件读取军团钱包流水 - 军团ID: \(corporationId), 部门: \(division), 记录数量: \(journalEntries.count), 文件大小: \(data.count) bytes")
+                Logger.info(
+                    "成功从缓存文件读取军团钱包流水 - 军团ID: \(corporationId), 部门: \(division), 记录数量: \(journalEntries.count), 文件大小: \(data.count) bytes"
+                )
                 return journalEntries
             } else {
-                Logger.error("军团钱包流水缓存文件格式不正确 - 军团ID: \(corporationId), 部门: \(division), 文件路径: \(filePath.path)")
+                Logger.error(
+                    "军团钱包流水缓存文件格式不正确 - 军团ID: \(corporationId), 部门: \(division), 文件路径: \(filePath.path)"
+                )
                 return nil
             }
         } catch {
-            Logger.error("读取军团钱包流水缓存文件失败 - 军团ID: \(corporationId), 部门: \(division), 错误: \(error), 文件路径: \(filePath.path)")
+            Logger.error(
+                "读取军团钱包流水缓存文件失败 - 军团ID: \(corporationId), 部门: \(division), 错误: \(error), 文件路径: \(filePath.path)"
+            )
             return nil
         }
     }
@@ -347,16 +368,24 @@ class CorpWalletAPI {
         corporationId: Int, division: Int, entries: [[String: Any]]
     ) -> Bool {
         let filePath = getCorpJournalCacheFilePath(corporationId: corporationId, division: division)
-        
-        Logger.info("开始保存军团钱包流水到缓存文件 - 军团ID: \(corporationId), 部门: \(division), 记录数量: \(entries.count), 文件路径: \(filePath.path)")
-        
+
+        Logger.info(
+            "开始保存军团钱包流水到缓存文件 - 军团ID: \(corporationId), 部门: \(division), 记录数量: \(entries.count), 文件路径: \(filePath.path)"
+        )
+
         do {
-            let jsonData = try JSONSerialization.data(withJSONObject: entries, options: [.prettyPrinted, .sortedKeys])
+            let jsonData = try JSONSerialization.data(
+                withJSONObject: entries, options: [.prettyPrinted, .sortedKeys]
+            )
             try jsonData.write(to: filePath)
-            Logger.info("成功保存军团钱包流水到缓存文件 - 军团ID: \(corporationId), 部门: \(division), 记录数量: \(entries.count), 文件大小: \(jsonData.count) bytes, 文件路径: \(filePath.path)")
+            Logger.info(
+                "成功保存军团钱包流水到缓存文件 - 军团ID: \(corporationId), 部门: \(division), 记录数量: \(entries.count), 文件大小: \(jsonData.count) bytes, 文件路径: \(filePath.path)"
+            )
             return true
         } catch {
-            Logger.error("保存军团钱包流水到缓存文件失败 - 军团ID: \(corporationId), 部门: \(division), 错误: \(error), 文件路径: \(filePath.path)")
+            Logger.error(
+                "保存军团钱包流水到缓存文件失败 - 军团ID: \(corporationId), 部门: \(division), 错误: \(error), 文件路径: \(filePath.path)"
+            )
             return false
         }
     }
@@ -368,7 +397,7 @@ class CorpWalletAPI {
     ///   - forceRefresh: 是否强制刷新
     ///   - progressCallback: 加载进度回调
     /// - Returns: JSON格式的日志数据
-    public func getCorpWalletJournal(
+    func getCorpWalletJournal(
         characterId: Int,
         division: Int,
         forceRefresh: Bool = false,
@@ -382,10 +411,14 @@ class CorpWalletAPI {
             throw NetworkError.authenticationError("无法获取军团ID")
         }
 
-        Logger.info("开始获取军团钱包流水 - 角色ID: \(characterId), 军团ID: \(corporationId), 部门: \(division), 强制刷新: \(forceRefresh)")
+        Logger.info(
+            "开始获取军团钱包流水 - 角色ID: \(characterId), 军团ID: \(corporationId), 部门: \(division), 强制刷新: \(forceRefresh)"
+        )
 
         // 2. 如果强制刷新或缓存过期，则从网络获取
-        if forceRefresh || isCorpJournalCacheExpired(corporationId: corporationId, division: division) {
+        if forceRefresh
+            || isCorpJournalCacheExpired(corporationId: corporationId, division: division)
+        {
             Logger.info("军团钱包流水缓存过期或需要强制刷新，从网络获取数据 - 军团ID: \(corporationId), 部门: \(division)")
             let journalData = try await fetchCorpJournalFromServer(
                 characterId: characterId,
@@ -409,16 +442,18 @@ class CorpWalletAPI {
             let jsonData = try JSONSerialization.data(
                 withJSONObject: results, options: [.prettyPrinted, .sortedKeys]
             )
-            Logger.info("军团钱包流水数据处理完成 - 军团ID: \(corporationId), 部门: \(division), JSON大小: \(jsonData.count) bytes")
+            Logger.info(
+                "军团钱包流水数据处理完成 - 军团ID: \(corporationId), 部门: \(division), JSON大小: \(jsonData.count) bytes"
+            )
             return String(data: jsonData, encoding: .utf8)
         }
-        
+
         Logger.error("无法获取军团钱包流水数据 - 军团ID: \(corporationId), 部门: \(division)")
         return nil
     }
 
     /// 获取军团钱包交易记录（公开方法）
-    public func getCorpWalletTransactions(
+    func getCorpWalletTransactions(
         characterId: Int, division: Int, forceRefresh: Bool = false
     ) async throws -> String? {
         // 1. 获取军团ID
@@ -437,9 +472,8 @@ class CorpWalletAPI {
         )
         let isEmpty =
             if case let .success(rows) = result,
-                let row = rows.first,
-                let count = row["count"] as? Int64
-            {
+            let row = rows.first,
+            let count = row["count"] as? Int64 {
                 count == 0
             } else {
                 true
@@ -498,17 +532,17 @@ class CorpWalletAPI {
 
     /// 从数据库获取军团钱包交易记录
     private func getCorpWalletTransactionsFromDB(corporationId: Int, division: Int) -> [[String:
-        Any]]?
+            Any]]?
     {
         let query = """
-                SELECT transaction_id, client_id, date, is_buy, is_personal,
-                       journal_ref_id, location_id, quantity, type_id,
-                       unit_price, last_updated
-                FROM corp_wallet_transactions 
-                WHERE corporation_id = ? AND division = ?
-                ORDER BY date DESC 
-                LIMIT 1000
-            """
+            SELECT transaction_id, client_id, date, is_buy, is_personal,
+                   journal_ref_id, location_id, quantity, type_id,
+                   unit_price, last_updated
+            FROM corp_wallet_transactions 
+            WHERE corporation_id = ? AND division = ?
+            ORDER BY date DESC 
+            LIMIT 1000
+        """
 
         if case let .success(results) = CharacterDatabaseManager.shared.executeQuery(
             query, parameters: [corporationId, division]
@@ -562,25 +596,25 @@ class CorpWalletAPI {
         _ = CharacterDatabaseManager.shared.executeQuery(beginTransaction)
 
         // 计算每批次的大小（每条记录12个参数）
-        let batchSize = 500  // 每批次处理500条记录
+        let batchSize = 500 // 每批次处理500条记录
         var success = true
 
         // 分批处理数据
         for batchStart in stride(from: 0, to: newEntries.count, by: batchSize) {
             let batchEnd = min(batchStart + batchSize, newEntries.count)
-            let currentBatch = Array(newEntries[batchStart..<batchEnd])
+            let currentBatch = Array(newEntries[batchStart ..< batchEnd])
 
             // 构建批量插入语句
             let placeholders = Array(
                 repeating: "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", count: currentBatch.count
             ).joined(separator: ",")
             let insertSQL = """
-                    INSERT OR REPLACE INTO corp_wallet_transactions (
-                        transaction_id, corporation_id, division, client_id, date, is_buy,
-                        is_personal, journal_ref_id, location_id, quantity,
-                        type_id, unit_price
-                    ) VALUES \(placeholders)
-                """
+                INSERT OR REPLACE INTO corp_wallet_transactions (
+                    transaction_id, corporation_id, division, client_id, date, is_buy,
+                    is_personal, journal_ref_id, location_id, quantity,
+                    type_id, unit_price
+                ) VALUES \(placeholders)
+            """
 
             // 准备参数数组
             var parameters: [Any] = []

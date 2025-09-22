@@ -1,6 +1,6 @@
+import Kingfisher
 import SwiftUI
 import UIKit
-import Kingfisher
 
 // MARK: - 数据模型
 
@@ -74,22 +74,22 @@ class CacheManager {
 
     // 定义需要清理的目录列表
     private let cacheDirs = [
-        "StructureCache",  // 建筑缓存
-        "AssetCache",  // 资产缓存
-        "StaticDataSet",  // 临时静态数据
-        "ContactsCache",  // 声望
-        "kb",  // 战斗日志
-        "BRKillmails",  // 战斗日志细节
-        "MarketCache",  // 市场价格细节
-        "Planetary",  // 行星开发
-        "CharacterOrders",  // 人物市场订单
+        "StructureCache", // 建筑缓存
+        "AssetCache", // 资产缓存
+        "StaticDataSet", // 临时静态数据
+        "ContactsCache", // 声望
+        "kb", // 战斗日志
+        "BRKillmails", // 战斗日志细节
+        "MarketCache", // 市场价格细节
+        "Planetary", // 行星开发
+        "CharacterOrders", // 人物市场订单
         // "Fitting",  // 舰船配置目录
-        "fw",  // 势力战争
-        "CorpCache",  // 军团缓存
-        "char_standings",  // 人物声望
-        "Structure_Orders",  // 建筑订单
+        "fw", // 势力战争
+        "CorpCache", // 军团缓存
+        "char_standings", // 人物声望
+        "Structure_Orders", // 建筑订单
         "IndustryJobs", // 工业项目
-        "CharacterSkills" // 角色技能相关缓存（技能、技能队列、属性、克隆体、植入体、忠诚点）
+        "CharacterSkills", // 角色技能相关缓存（技能、技能队列、属性、克隆体、植入体、忠诚点）
     ]
 
     // 获取缓存目录列表
@@ -135,7 +135,7 @@ class CacheManager {
                         while let fileURL = enumerator.nextObject() as? URL {
                             do {
                                 let resourceValues = try fileURL.resourceValues(forKeys: [
-                                    .isRegularFileKey
+                                    .isRegularFileKey,
                                 ])
                                 // 只计算文件，不计算目录本身
                                 if resourceValues.isRegularFile == true {
@@ -164,13 +164,13 @@ class CacheManager {
 
         Logger.info("目录缓存清理完成，共删除 \(totalFilesRemoved) 个文件")
     }
-    
+
     // 清理头像加载器缓存
     private func clearPortraitLoaderCaches() {
         // 清理 Kingfisher 的内存缓存和磁盘缓存
         KingfisherManager.shared.cache.clearMemoryCache()
         KingfisherManager.shared.cache.clearDiskCache()
-        
+
         Logger.info("头像加载器缓存清理完成")
     }
 
@@ -222,7 +222,7 @@ class CacheManager {
 
         // 8. 清理建筑物缓存
         await UniverseStructureAPI.shared.clearCache()
-        
+
         // 9. 清理头像加载器缓存
         await MainActor.run {
             clearPortraitLoaderCaches()
@@ -233,7 +233,7 @@ class CacheManager {
             URLCache.shared.removeAllCachedResponses()
             Logger.info("URLCache 清理完成")
         }
-        
+
         Logger.info("所有缓存清理完成")
     }
 }
@@ -303,7 +303,7 @@ struct SettingView: View {
                     while let fileURL = enumerator.nextObject() as? URL {
                         do {
                             let resourceValues = try fileURL.resourceValues(forKeys: [
-                                .isRegularFileKey
+                                .isRegularFileKey,
                             ])
                             // 只统计文件，跳过目录
                             if resourceValues.isRegularFile == true {
@@ -335,16 +335,16 @@ struct SettingView: View {
                 let dirPath = documentPath.appendingPathComponent(dirName)
 
                 if fileManager.fileExists(atPath: dirPath.path),
-                    let enumerator = fileManager.enumerator(
-                        at: dirPath,
-                        includingPropertiesForKeys: [.fileSizeKey, .isRegularFileKey],
-                        options: [.skipsHiddenFiles]
-                    )
+                   let enumerator = fileManager.enumerator(
+                       at: dirPath,
+                       includingPropertiesForKeys: [.fileSizeKey, .isRegularFileKey],
+                       options: [.skipsHiddenFiles]
+                   )
                 {
                     while let fileURL = enumerator.nextObject() as? URL {
                         do {
                             let resourceValues = try fileURL.resourceValues(forKeys: [
-                                .isRegularFileKey
+                                .isRegularFileKey,
                             ])
                             // 只统计文件，跳过目录
                             if resourceValues.isRegularFile == true {
@@ -393,11 +393,11 @@ struct SettingView: View {
             items: [
                 SettingItem(
                     title: NSLocalizedString("Main_Setting_ColorMode", comment: ""),
-                    detail: getAppearanceDetail(),  // 将当前主题状态作为详情文本
+                    detail: getAppearanceDetail(), // 将当前主题状态作为详情文本
                     icon: getThemeIcon(),
                     iconColor: .blue,
                     action: toggleAppearance
-                )
+                ),
             ]
         )
     }
@@ -450,7 +450,8 @@ struct SettingView: View {
                     VStack(alignment: .leading) {
                         Text(
                             NSLocalizedString(
-                                "Main_Database_Show_Important_Only", comment: "只显示重要属性")
+                                "Main_Database_Show_Important_Only", comment: "只显示重要属性"
+                            )
                         )
                         .font(.system(size: 16))
                         .foregroundColor(.primary)
@@ -483,7 +484,7 @@ struct SettingView: View {
                     action: {}
                 ) { _ in
                     AnyView(CorporationAffairsToggle())
-                }
+                },
             ]
         )
     }
@@ -523,18 +524,23 @@ struct SettingView: View {
             items: [
                 SettingItem(
                     title: NSLocalizedString("Main_Setting_Market_Structure_Manage", comment: ""),
-                    detail: NSLocalizedString("Main_Setting_Market_Structure_Manage_Detail", comment: ""),
+                    detail: NSLocalizedString(
+                        "Main_Setting_Market_Structure_Manage_Detail", comment: ""
+                    ),
                     action: { showingMarketStructureView = true }
-                )
+                ),
             ]
         )
     }
 
-    private struct LoggingToggle: View {
+    // 高性能的日志组件 - 使用简单的条件渲染
+    private struct LoggingSection: View {
         @AppStorage("enableLogging") private var enableLogging: Bool = false
+        @Binding var showingLogsBrowserView: Bool
 
         var body: some View {
-            HStack {
+            VStack(spacing: 0) {
+                // 日志开关
                 Toggle(isOn: $enableLogging) {
                     VStack(alignment: .leading) {
                         Text(NSLocalizedString("Main_Setting_Enable_Logging", comment: ""))
@@ -546,40 +552,47 @@ struct SettingView: View {
                     }
                 }
                 .tint(.green)
+
+                // 查看日志按钮 - 简单的条件显示，无复杂动画
+                if enableLogging {
+                    Divider()
+                        .padding(.vertical, 8)
+
+                    Button(action: { showingLogsBrowserView = true }) {
+                        HStack {
+                            VStack(alignment: .leading) {
+                                Text(NSLocalizedString("Main_Setting_View_Logs", comment: ""))
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.primary)
+                                Text(NSLocalizedString("Main_Setting_View_Logs_Detail", comment: ""))
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.gray)
+                            }
+                            Spacer()
+                            Image(systemName: "doc.text.magnifyingglass")
+                                .font(.system(size: 20))
+                                .frame(width: 36)
+                                .foregroundColor(.blue)
+                        }
+                    }
+                }
             }
         }
     }
 
     private func createLogsGroup() -> SettingGroup {
-        let enableLogging = UserDefaults.standard.bool(forKey: "enableLogging")
-        
-        var items: [SettingItem] = [
-            SettingItem(
-                title: NSLocalizedString("Main_Setting_Enable_Logging", comment: ""),
-                detail: nil,
-                iconColor: .blue,
-                action: {}
-            ) { _ in
-                AnyView(LoggingToggle())
-            }
-        ]
-        
-        // 只有在启用日志功能时才显示"查看日志"选项
-        if enableLogging {
-            items.append(
-                SettingItem(
-                    title: NSLocalizedString("Main_Setting_View_Logs", comment: ""),
-                    detail: NSLocalizedString("Main_Setting_View_Logs_Detail", comment: ""),
-                    icon: "doc.text.magnifyingglass",
-                    iconColor: .blue,
-                    action: { showingLogsBrowserView = true }
-                )
-            )
-        }
-        
         return SettingGroup(
             header: NSLocalizedString("Main_Setting_Logs_Section", comment: ""),
-            items: items
+            items: [
+                SettingItem(
+                    title: "", // 空标题，使用自定义组件
+                    detail: nil,
+                    iconColor: .blue,
+                    action: {}
+                ) { _ in
+                    AnyView(LoggingSection(showingLogsBrowserView: $showingLogsBrowserView))
+                },
+            ]
         )
     }
 
@@ -739,20 +752,15 @@ struct SettingView: View {
             Text(NSLocalizedString("Main_Setting_Reset_Database_Success_Message", comment: ""))
         }
         .onAppear {
-            updateAllData()  // 首次加载时异步计算并更新缓存大小
+            updateAllData() // 首次加载时异步计算并更新缓存大小
         }
         .onReceive(
             NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)
         ) { _ in
-            updateAllData()  // 从后台返回时更新
+            updateAllData() // 从后台返回时更新
         }
         .onChange(of: selectedTheme) { _, _ in
-            updateSettingGroups()  // 主题改变时更新
-        }
-        .onReceive(
-            NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
-        ) { _ in
-            updateSettingGroups()  // UserDefaults改变时更新（包括日志开关）
+            updateSettingGroups() // 主题改变时更新
         }
         .navigationTitle(NSLocalizedString("Main_Setting_Title", comment: ""))
         .fullScreenCover(isPresented: $showingLoadingView) {
@@ -761,7 +769,7 @@ struct SettingView: View {
                 loadingState: $loadingState,
                 onComplete: {
                     showingLoadingView = false
-                    updateAllData()  // 重置图标完成后更新
+                    updateAllData() // 重置图标完成后更新
                 }
             )
         }

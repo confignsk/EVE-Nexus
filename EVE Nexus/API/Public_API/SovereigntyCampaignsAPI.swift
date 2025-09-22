@@ -42,7 +42,7 @@ class SovereigntyCampaignsAPI {
 
     // 缓存相关常量
     private let cacheKey = "sovereignty_campaigns_data"
-    private let cacheDuration: TimeInterval = 3600 * 8  // 8小时缓存
+    private let cacheDuration: TimeInterval = 3600 * 8 // 8小时缓存
 
     struct CachedData: Codable {
         let data: [SovereigntyCampaign]
@@ -68,7 +68,7 @@ class SovereigntyCampaignsAPI {
         let baseURL = "https://esi.evetech.net/sovereignty/campaigns/"
         var components = URLComponents(string: baseURL)
         components?.queryItems = [
-            URLQueryItem(name: "datasource", value: "tranquility")
+            URLQueryItem(name: "datasource", value: "tranquility"),
         ]
 
         guard let url = components?.url else {
@@ -89,8 +89,8 @@ class SovereigntyCampaignsAPI {
 
     private func loadFromCache() throws -> [SovereigntyCampaign]? {
         guard let cachedData = UserDefaults.standard.data(forKey: cacheKey),
-            let cached = try? JSONDecoder().decode(CachedData.self, from: cachedData),
-            cached.timestamp.addingTimeInterval(cacheDuration) > Date()
+              let cached = try? JSONDecoder().decode(CachedData.self, from: cachedData),
+              cached.timestamp.addingTimeInterval(cacheDuration) > Date()
         else {
             return nil
         }

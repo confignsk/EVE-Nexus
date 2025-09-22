@@ -2,7 +2,7 @@ import Foundation
 
 class CharacterIndustryAPI {
     static let shared = CharacterIndustryAPI()
-    
+
     // 缓存过期时间（1小时）
     private let cacheExpirationInterval: TimeInterval = 3600
 
@@ -61,7 +61,7 @@ class CharacterIndustryAPI {
         // 从网络获取最新数据
         let url = URL(
             string:
-                "https://esi.evetech.net/characters/\(characterId)/industry/jobs/?datasource=tranquility&include_completed=\(includeCompleted)"
+            "https://esi.evetech.net/characters/\(characterId)/industry/jobs/?datasource=tranquility&include_completed=\(includeCompleted)"
         )!
 
         let data = try await NetworkManager.shared.fetchDataWithToken(
@@ -73,10 +73,10 @@ class CharacterIndustryAPI {
         let jobs = try decoder.decode([IndustryJob].self, from: data)
 
         Logger.debug("从 API 获取到 \(jobs.count) 个工业项目")
-        
+
         // 保存到文件缓存
         saveJobsToCache(jobs, characterId: characterId)
-        
+
         return jobs
     }
 
@@ -126,7 +126,9 @@ class CharacterIndustryAPI {
             if let modificationDate = fileAttributes[.modificationDate] as? Date {
                 let timeSinceModification = Date().timeIntervalSince(modificationDate)
                 if timeSinceModification > cacheExpirationInterval {
-                    Logger.info("缓存文件已过期 - 角色ID: \(characterId), 路径: \(cacheFile.path), 修改时间: \(modificationDate)")
+                    Logger.info(
+                        "缓存文件已过期 - 角色ID: \(characterId), 路径: \(cacheFile.path), 修改时间: \(modificationDate)"
+                    )
                     try? FileManager.default.removeItem(at: cacheFile)
                     return nil
                 }
@@ -137,7 +139,8 @@ class CharacterIndustryAPI {
             decoder.dateDecodingStrategy = .iso8601
             let jobs = try decoder.decode([IndustryJob].self, from: data)
 
-            Logger.info("成功从缓存加载工业项目信息 - 角色ID: \(characterId), 路径: \(cacheFile.path), 数据条数: \(jobs.count)")
+            Logger.info(
+                "成功从缓存加载工业项目信息 - 角色ID: \(characterId), 路径: \(cacheFile.path), 数据条数: \(jobs.count)")
             return jobs
         } catch {
             Logger.error("读取缓存文件失败 - 角色ID: \(characterId), 路径: \(cacheFile.path), 错误: \(error)")
@@ -158,7 +161,8 @@ class CharacterIndustryAPI {
             encoder.dateEncodingStrategy = .iso8601
             let encodedData = try encoder.encode(jobs)
             try encodedData.write(to: cacheFile)
-            Logger.info("工业项目信息已缓存到文件 - 角色ID: \(characterId), 路径: \(cacheFile.path), 数据条数: \(jobs.count)")
+            Logger.info(
+                "工业项目信息已缓存到文件 - 角色ID: \(characterId), 路径: \(cacheFile.path), 数据条数: \(jobs.count)")
         } catch {
             Logger.error("保存工业项目信息缓存失败 - 角色ID: \(characterId), 路径: \(cacheFile.path), 错误: \(error)")
             try? FileManager.default.removeItem(at: cacheFile)

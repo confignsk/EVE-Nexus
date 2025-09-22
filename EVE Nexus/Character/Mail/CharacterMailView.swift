@@ -10,7 +10,7 @@ struct CharacterMailView: View {
     @State private var isLoading = false
     @State private var error: Error?
     @State private var showingComposeView = false
-    @State private var hasInitialized = false  // 追踪是否已执行初始化
+    @State private var hasInitialized = false // 追踪是否已执行初始化
 
     // 初始化数据加载方法
     private func loadInitialDataIfNeeded() {
@@ -73,10 +73,10 @@ struct CharacterMailView: View {
                                 Image("alliances")
                                     .resizable()
                                     .frame(width: 24, height: 24)
-                            // case .spam:
-                            //     Image("reprocess")
-                            //         .resizable()
-                            //         .frame(width: 24, height: 24)
+                                // case .spam:
+                                //     Image("reprocess")
+                                //         .resizable()
+                                //         .frame(width: 24, height: 24)
                             }
                             Text(mailbox.title)
                             // Spacer()
@@ -191,7 +191,7 @@ enum MailboxType: CaseIterable {
         case .sent: return NSLocalizedString("Main_EVE_Mail_Sent", comment: "")
         case .corporation: return NSLocalizedString("Main_EVE_Mail_Corporation", comment: "")
         case .alliance: return NSLocalizedString("Main_EVE_Mail_Alliance", comment: "")
-        // case .spam: return NSLocalizedString("Main_EVE_Mail_Spam", comment: "")
+            // case .spam: return NSLocalizedString("Main_EVE_Mail_Spam", comment: "")
         }
     }
 
@@ -201,7 +201,7 @@ enum MailboxType: CaseIterable {
         case .sent: return 2
         case .corporation: return 4
         case .alliance: return 8
-        // case .spam: return 16
+            // case .spam: return 16
         }
     }
 }

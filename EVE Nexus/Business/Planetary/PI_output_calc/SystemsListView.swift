@@ -96,22 +96,22 @@ struct SystemsListView: View {
         DispatchQueue.global(qos: .userInitiated).async {
             // 查询星系信息
             let query = """
-                    SELECT s.solarSystemID, s.solarSystemName, u.system_security, r.regionName
-                    FROM solarsystems s
-                    JOIN universe u ON s.solarSystemID = u.solarsystem_id
-                    JOIN regions r ON r.regionID = u.region_id
-                    WHERE s.solarSystemID IN (\(systemIds.map { String($0) }.joined(separator: ",")))
-                    ORDER BY s.solarSystemName
-                """
+                SELECT s.solarSystemID, s.solarSystemName, u.system_security, r.regionName
+                FROM solarsystems s
+                JOIN universe u ON s.solarSystemID = u.solarsystem_id
+                JOIN regions r ON r.regionID = u.region_id
+                WHERE s.solarSystemID IN (\(systemIds.map { String($0) }.joined(separator: ",")))
+                ORDER BY s.solarSystemName
+            """
 
             var loadedSystems: [(id: Int, name: String, security: Double, region: String)] = []
 
             if case let .success(rows) = DatabaseManager.shared.executeQuery(query) {
                 for row in rows {
                     if let systemId = row["solarSystemID"] as? Int,
-                        let systemName = row["solarSystemName"] as? String,
-                        let security = row["system_security"] as? Double,
-                        let regionName = row["regionName"] as? String
+                       let systemName = row["solarSystemName"] as? String,
+                       let security = row["system_security"] as? Double,
+                       let regionName = row["regionName"] as? String
                     {
                         loadedSystems.append(
                             (

@@ -11,6 +11,7 @@ struct CharacterSearchView {
 
     var corporationFilter: String
     var allianceFilter: String
+    var strictMatch: Bool = false
 
     func search() async {
         do {
@@ -20,7 +21,8 @@ struct CharacterSearchView {
             let data = try await CharacterSearchAPI.shared.search(
                 characterId: characterId,
                 categories: [.character],
-                searchText: searchText
+                searchText: searchText,
+                strict: strictMatch
             )
 
             if Task.isCancelled { return }
@@ -55,9 +57,9 @@ struct CharacterSearchView {
                     let starts2 = name2Lower.hasPrefix(searchTextLower)
 
                     if starts1 != starts2 {
-                        return starts1  // 以搜索文本开头的排在前面
+                        return starts1 // 以搜索文本开头的排在前面
                     }
-                    return result1.name < result2.name  // 其次按字母顺序排序
+                    return result1.name < result2.name // 其次按字母顺序排序
                 }
 
                 if Task.isCancelled { return }
@@ -141,7 +143,7 @@ struct CharacterSearchView {
         let corpFilter = corporationFilter.lowercased()
         let allianceFilter = allianceFilter.lowercased()
 
-        if corpFilter.isEmpty && allianceFilter.isEmpty {
+        if corpFilter.isEmpty, allianceFilter.isEmpty {
             // 如果没有过滤条件，显示所有结果
             filteredResults = searchResults
         } else {
@@ -149,10 +151,10 @@ struct CharacterSearchView {
             filteredResults = searchResults.filter { result in
                 let matchCorp =
                     corpFilter.isEmpty
-                    || (result.corporationName?.lowercased().contains(corpFilter) ?? false)
+                        || (result.corporationName?.lowercased().contains(corpFilter) ?? false)
                 let matchAlliance =
                     allianceFilter.isEmpty
-                    || (result.allianceName?.lowercased().contains(allianceFilter) ?? false)
+                        || (result.allianceName?.lowercased().contains(allianceFilter) ?? false)
                 return matchCorp && matchAlliance
             }
         }

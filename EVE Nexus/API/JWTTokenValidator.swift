@@ -13,9 +13,9 @@ class JWTTokenValidator {
 
             // 从JWT中提取基本信息
             guard let characterID = jwt.claim(name: "sub").string,
-                let characterName = jwt.claim(name: "name").string,
-                let ownerHash = jwt.claim(name: "owner").string,
-                let scopes = jwt.claim(name: "scp").array
+                  let characterName = jwt.claim(name: "name").string,
+                  let ownerHash = jwt.claim(name: "owner").string,
+                  let scopes = jwt.claim(name: "scp").array
             else {
                 Logger.error("JWT令牌缺少必要的声明")
                 return nil

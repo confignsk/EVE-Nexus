@@ -14,7 +14,7 @@ struct CharacterMailDetailView: View {
     @State private var showingComposeView = false
     @State private var composeType: ComposeType?
     @ObservedObject var databaseManager = DatabaseManager.shared
-    @State private var hasInitialized = false  // 追踪是否已执行初始化
+    @State private var hasInitialized = false // 追踪是否已执行初始化
 
     enum ComposeType {
         case reply, replyAll, forward
@@ -76,16 +76,20 @@ struct CharacterMailDetailView: View {
                                 }
                                 Spacer()
                             }
-                            
+
                             // 收件人信息
                             if !detail.content.recipients.isEmpty {
-                                let recipientsString = detail.content.recipients.compactMap { recipient in
-                                    detail.recipientNames[recipient.recipient_id] ?? NSLocalizedString("Main_EVE_Mail_Unknown_Recipient", comment: "")
+                                let recipientsString = detail.content.recipients.compactMap {
+                                    recipient in
+                                    detail.recipientNames[recipient.recipient_id]
+                                        ?? NSLocalizedString(
+                                            "Main_EVE_Mail_Unknown_Recipient", comment: ""
+                                        )
                                 }.joined(separator: ", ")
-                                
+
                                 (Text(NSLocalizedString("Main_EVE_Mail_To", comment: ""))
                                     .foregroundColor(.secondary)
-                                + Text(recipientsString))
+                                    + Text(recipientsString))
                                     .font(.subheadline)
                             }
                         }
@@ -93,17 +97,31 @@ struct CharacterMailDetailView: View {
                             Button {
                                 UIPasteboard.general.string = detail.senderName
                             } label: {
-                                Label(NSLocalizedString("Main_EVE_Mail_Copy_Sender", comment: "Copy Sender"), systemImage: "person")
+                                Label(
+                                    NSLocalizedString(
+                                        "Main_EVE_Mail_Copy_Sender", comment: "Copy Sender"
+                                    ),
+                                    systemImage: "person"
+                                )
                             }
-                            
+
                             if !detail.content.recipients.isEmpty {
                                 Button {
-                                    let recipientsString = detail.content.recipients.compactMap { recipient in
-                                        detail.recipientNames[recipient.recipient_id] ?? NSLocalizedString("Main_EVE_Mail_Unknown_Recipient", comment: "")
+                                    let recipientsString = detail.content.recipients.compactMap {
+                                        recipient in
+                                        detail.recipientNames[recipient.recipient_id]
+                                            ?? NSLocalizedString(
+                                                "Main_EVE_Mail_Unknown_Recipient", comment: ""
+                                            )
                                     }.joined(separator: ", ")
                                     UIPasteboard.general.string = recipientsString
                                 } label: {
-                                    Label(NSLocalizedString("Main_EVE_Mail_Copy_Recipients", comment: "Copy Recipients"), systemImage: "person.2")
+                                    Label(
+                                        NSLocalizedString(
+                                            "Main_EVE_Mail_Copy_Recipients",
+                                            comment: "Copy Recipients"
+                                        ), systemImage: "person.2"
+                                    )
                                 }
                             }
                         }
@@ -184,18 +202,17 @@ struct CharacterMailDetailView: View {
         }
     }
 
-    private func getInitialRecipients(type: ComposeType, detail: MailDetailData) -> [MailRecipient]
-    {
+    private func getInitialRecipients(type: ComposeType, detail: MailDetailData) -> [MailRecipient] {
         switch type {
         case .reply:
             // 只回复给原发件人
             return [
-                MailRecipient(id: detail.content.from, name: detail.senderName, type: .character)
+                MailRecipient(id: detail.content.from, name: detail.senderName, type: .character),
             ]
         case .replyAll:
             // 回复给原发件人和所有收件人
             var recipients = [
-                MailRecipient(id: detail.content.from, name: detail.senderName, type: .character)
+                MailRecipient(id: detail.content.from, name: detail.senderName, type: .character),
             ]
             recipients.append(
                 contentsOf: detail.content.recipients.map { recipient in
@@ -328,7 +345,7 @@ class CharacterMailDetailViewModel: ObservableObject {
                     }
                 case "character", "corporation", "alliance":
                     if let nameInfo = try await UniverseAPI.shared.getNamesWithFallback(ids: [
-                        recipient.recipient_id
+                        recipient.recipient_id,
                     ])[recipient.recipient_id] {
                         recipientNames[recipient.recipient_id] = nameInfo.name
                     } else {
@@ -337,7 +354,8 @@ class CharacterMailDetailViewModel: ObservableObject {
                     }
                 default:
                     recipientNames[recipient.recipient_id] = NSLocalizedString(
-                        "Unknown", comment: "")
+                        "Unknown", comment: ""
+                    )
                 }
             }
 

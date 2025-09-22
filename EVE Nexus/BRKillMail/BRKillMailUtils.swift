@@ -9,7 +9,7 @@ class BRKillMailUtils {
     func convertImplantsToFitting(victInfo: [String: Any], items: [[Int]]) -> [[Int]] {
         // 检查是否为太空舱
         guard let shipId = victInfo["ship"] as? Int,
-            shipId == 670 || shipId == 33328
+              shipId == 670 || shipId == 33328
         else {
             return items
         }
@@ -26,19 +26,18 @@ class BRKillMailUtils {
         // 查询植入体的槽位信息
         let placeholders = String(repeating: "?,", count: implantTypeIds.count).dropLast()
         let query = """
-                SELECT type_id, value 
-                FROM typeAttributes 
-                WHERE type_id IN (\(placeholders)) 
-                AND attribute_id = 331 
-                AND value <= 10
-            """
+            SELECT type_id, value 
+            FROM typeAttributes 
+            WHERE type_id IN (\(placeholders)) 
+            AND attribute_id = 331 
+            AND value <= 10
+        """
 
-        var implantSlots: [Int: Int] = [:]  // type_id -> slot
-        if case let .success(rows) = databaseManager.executeQuery(query, parameters: implantTypeIds)
-        {
+        var implantSlots: [Int: Int] = [:] // type_id -> slot
+        if case let .success(rows) = databaseManager.executeQuery(query, parameters: implantTypeIds) {
             for row in rows {
                 if let typeId = row["type_id"] as? Int,
-                    let slot = row["value"] as? Double
+                   let slot = row["value"] as? Double
                 {
                     implantSlots[typeId] = Int(slot)
                 }

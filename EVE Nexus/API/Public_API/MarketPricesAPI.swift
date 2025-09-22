@@ -49,42 +49,45 @@ enum MarketPricesAPIError: LocalizedError {
 @MarketPricesAPIActor
 class MarketPricesAPI {
     static let shared = MarketPricesAPI()
-    private let cacheDuration: TimeInterval = 8 * 60 * 60  // 8小时缓存
-    
+    private let cacheDuration: TimeInterval = 8 * 60 * 60 // 8小时缓存
+
     private init() {}
-    
+
     // MARK: - 文件路径管理
-    
+
     private var cacheDirectory: URL {
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+            .first!
         return documentsPath.appendingPathComponent("MarketCache")
     }
-    
+
     private var cacheFileURL: URL {
         return cacheDirectory.appendingPathComponent("MarketAvgPrices.json")
     }
-    
+
     // MARK: - 缓存管理
-    
+
     private func ensureCacheDirectoryExists() throws {
         if !FileManager.default.fileExists(atPath: cacheDirectory.path) {
-            try FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(
+                at: cacheDirectory, withIntermediateDirectories: true
+            )
         }
     }
-    
+
     private func isCacheValid() -> Bool {
-        guard FileManager.default.fileExists(atPath: cacheFileURL.path) else { 
+        guard FileManager.default.fileExists(atPath: cacheFileURL.path) else {
             Logger.info("缓存文件不存在")
-            return false 
+            return false
         }
-        
+
         do {
             let attributes = try FileManager.default.attributesOfItem(atPath: cacheFileURL.path)
-            guard let modificationDate = attributes[.modificationDate] as? Date else { 
+            guard let modificationDate = attributes[.modificationDate] as? Date else {
                 Logger.info("无法获取文件修改时间")
-                return false 
+                return false
             }
-            
+
             let isValid = Date().timeIntervalSince(modificationDate) < cacheDuration
             if isValid {
                 Logger.info("市场估价信息有效，上次更新: \(modificationDate)")
@@ -97,13 +100,13 @@ class MarketPricesAPI {
             return false
         }
     }
-    
+
     // MARK: - 文件操作方法
-    
+
     private func loadFromCache() -> [MarketPrice]? {
         // 检查缓存是否有效
         guard isCacheValid() else { return nil }
-        
+
         do {
             let data = try Data(contentsOf: cacheFileURL)
             let prices = try JSONDecoder().decode([MarketPrice].self, from: data)
@@ -114,26 +117,26 @@ class MarketPricesAPI {
             return nil
         }
     }
-    
+
     private func saveToCache(_ prices: [MarketPrice]) {
         do {
             // 确保缓存目录存在
             try ensureCacheDirectoryExists()
-            
+
             // 编码数据
             let data = try JSONEncoder().encode(prices)
-            
+
             // 写入文件
             try data.write(to: cacheFileURL)
-            
+
             Logger.info("市场价格数据已保存到缓存文件，共 \(prices.count) 条记录")
         } catch {
             Logger.error("保存市场价格数据到缓存文件失败: \(error)")
         }
     }
-    
+
     // MARK: - 公共方法
-    
+
     func fetchMarketPrices(forceRefresh: Bool = false) async throws -> [MarketPrice] {
         // 如果不是强制刷新，尝试从缓存获取
         if !forceRefresh {
@@ -142,28 +145,28 @@ class MarketPricesAPI {
                 return cached
             }
         }
-        
+
         // 构建URL
         let baseURL = "https://esi.evetech.net/markets/prices/"
         var components = URLComponents(string: baseURL)
         components?.queryItems = [
-            URLQueryItem(name: "datasource", value: "tranquility")
+            URLQueryItem(name: "datasource", value: "tranquility"),
         ]
-        
+
         guard let url = components?.url else {
             throw MarketPricesAPIError.invalidURL
         }
-        
+
         // 执行请求
         let data = try await NetworkManager.shared.fetchData(
             from: url,
             timeouts: [5, 10, 10, 10, 10]
         )
         let prices = try JSONDecoder().decode([MarketPrice].self, from: data)
-        
+
         // 保存到缓存文件
         saveToCache(prices)
-        
+
         return prices
     }
 }

@@ -3,13 +3,13 @@ import SwiftUI
 
 // 搜索结果
 struct AssetSearchResult: Identifiable {
-    let node: AssetTreeNode  // 目标物品节点（用于显示基本信息）
-    let itemInfo: ItemInfo  // 物品基本信息
-    let locationPath: [AssetTreeNode]  // 从顶层位置到物品的完整路径
-    let containerNode: AssetTreeNode  // 直接容器节点
-    let totalQuantity: Int  // 合并后的总数量
+    let node: AssetTreeNode // 目标物品节点（用于显示基本信息）
+    let itemInfo: ItemInfo // 物品基本信息
+    let locationPath: [AssetTreeNode] // 从顶层位置到物品的完整路径
+    let containerNode: AssetTreeNode // 直接容器节点
+    let totalQuantity: Int // 合并后的总数量
 
-    var id: String { 
+    var id: String {
         // 使用type_id和容器路径组合作为唯一标识
         "\(node.type_id)_\(containerNode.item_id)_\(formattedPath.hashValue)"
     }
@@ -42,6 +42,7 @@ struct ItemInfo {
 @MainActor
 class CharacterAssetsViewModel: ObservableObject {
     // MARK: - 发布属性
+
     @Published var isLoading = false
     @Published var assetLocations: [AssetTreeNode] = []
     @Published var error: Error?
@@ -53,12 +54,14 @@ class CharacterAssetsViewModel: ObservableObject {
     @Published var solarSystemNameCache: [Int: String] = [:]
 
     // MARK: - 私有属性
+
     private var isCurrentlyLoading = false
     private(set) var itemInfoCache: [Int: ItemInfo] = [:]
     private let characterId: Int
     private let databaseManager: DatabaseManager
 
     // MARK: - 计算属性
+
     // 获取置顶的位置
     var pinnedLocations: [AssetTreeNode] {
         let pinnedIDs = UserDefaultsManager.shared.getPinnedAssetLocationIDs(for: characterId)
@@ -66,18 +69,18 @@ class CharacterAssetsViewModel: ObservableObject {
             pinnedIDs.contains(location.location_id)
         }.sorted { $0.location_id < $1.location_id }
     }
-    
+
     // 获取非置顶的位置（按星域分组）
     var unpinnedLocationsByRegion: [(region: String, locations: [AssetTreeNode])] {
         let pinnedIDs = UserDefaultsManager.shared.getPinnedAssetLocationIDs(for: characterId)
         let unpinnedLocations = assetLocations.filter { location in
             !pinnedIDs.contains(location.location_id)
         }
-        
+
         // 1. 按区域分组
         let grouped = Dictionary(grouping: unpinnedLocations) { location in
             if let regionId = location.region_id,
-                let regionName = regionNames[regionId]
+               let regionName = regionNames[regionId]
             {
                 return regionName
             }
@@ -100,45 +103,55 @@ class CharacterAssetsViewModel: ObservableObject {
     }
 
     // MARK: - 初始化
+
     init(characterId: Int, databaseManager: DatabaseManager = DatabaseManager()) {
         self.characterId = characterId
         self.databaseManager = databaseManager
     }
-    
+
     // MARK: - 置顶功能方法
+
     // 切换置顶状态
     func togglePinLocation(_ location: AssetTreeNode) {
-        let isPinned = UserDefaultsManager.shared.isAssetLocationPinned(location.location_id, for: characterId)
-        
+        let isPinned = UserDefaultsManager.shared.isAssetLocationPinned(
+            location.location_id, for: characterId
+        )
+
         if isPinned {
-            UserDefaultsManager.shared.removePinnedAssetLocation(location.location_id, for: characterId)
+            UserDefaultsManager.shared.removePinnedAssetLocation(
+                location.location_id, for: characterId
+            )
         } else {
-            UserDefaultsManager.shared.addPinnedAssetLocation(location.location_id, for: characterId)
+            UserDefaultsManager.shared.addPinnedAssetLocation(
+                location.location_id, for: characterId
+            )
         }
-        
+
         // 触发UI更新
         objectWillChange.send()
     }
-    
+
     // MARK: - 私有辅助方法
+
     // 清理无效的置顶位置ID
     private func cleanupInvalidPinnedLocations() {
         let currentLocationIds = Set(assetLocations.map { $0.location_id })
-        let pinnedLocationIds = UserDefaultsManager.shared.getPinnedAssetLocationIDs(for: characterId)
-        
+        let pinnedLocationIds = UserDefaultsManager.shared.getPinnedAssetLocationIDs(
+            for: characterId)
+
         // 找出不再存在于当前资产列表中的置顶ID
         let invalidPinnedIds = pinnedLocationIds.filter { pinnedId in
             !currentLocationIds.contains(pinnedId)
         }
-        
+
         // 如果有无效的置顶ID，从缓存中移除它们
         if !invalidPinnedIds.isEmpty {
             Logger.info("清理无效的置顶位置ID: \(invalidPinnedIds)")
-            
+
             let validPinnedIds = pinnedLocationIds.filter { pinnedId in
                 currentLocationIds.contains(pinnedId)
             }
-            
+
             UserDefaultsManager.shared.setPinnedAssetLocationIDs(validPinnedIds, for: characterId)
         }
     }
@@ -148,7 +161,7 @@ class CharacterAssetsViewModel: ObservableObject {
         locations.sorted { loc1, loc2 in
             // 按照system_id名称排序，如果没有system_id信息则排在后面
             if let system1 = loc1.system_id,
-                let system2 = loc2.system_id
+               let system2 = loc2.system_id
             {
                 return system1 < system2
             }
@@ -214,24 +227,24 @@ class CharacterAssetsViewModel: ObservableObject {
 
         // 构建查询语句，获取物品名称
         let query = """
-                SELECT t.type_id, t.name, t.zh_name, t.en_name
-                FROM types t
-                WHERE t.type_id IN (\(typeIds.sorted().map { String($0) }.joined(separator: ",")))
-            """
+            SELECT t.type_id, t.name, t.zh_name, t.en_name
+            FROM types t
+            WHERE t.type_id IN (\(typeIds.sorted().map { String($0) }.joined(separator: ",")))
+        """
 
         if case let .success(rows) = databaseManager.executeQuery(query) {
             for row in rows {
                 if let typeId = row["type_id"] as? Int,
-                    let name = row["name"] as? String,
-                    let zh_name = row["zh_name"] as? String,
-                    let en_name = row["en_name"] as? String
+                   let name = row["name"] as? String,
+                   let zh_name = row["zh_name"] as? String,
+                   let en_name = row["en_name"] as? String
                 {
                     // 保存到物品信息缓存
                     itemInfoCache[typeId] = ItemInfo(
                         name: name,
                         zh_name: zh_name,
                         en_name: en_name,
-                        iconFileName: DatabaseConfig.defaultItemIcon  // 默认图标，实际使用时会从节点获取
+                        iconFileName: DatabaseConfig.defaultItemIcon // 默认图标，实际使用时会从节点获取
                     )
                 }
             }
@@ -281,6 +294,7 @@ class CharacterAssetsViewModel: ObservableObject {
     }
 
     // MARK: - 公共方法
+
     // 加载资产数据
     func loadAssets(forceRefresh: Bool = false) async {
         // 如果已经在加载中，直接返回
@@ -335,8 +349,8 @@ class CharacterAssetsViewModel: ObservableObject {
                     await fillNodeNamesInMemory()
 
                     // 成功加载数据后，清除错误状态
-                    self.error = nil
-                    
+                    error = nil
+
                     // 清理无效的置顶位置ID
                     cleanupInvalidPinnedLocations()
                 }
@@ -344,7 +358,7 @@ class CharacterAssetsViewModel: ObservableObject {
         } catch {
             // 检查是否是取消错误
             if let nsError = error as NSError?,
-                nsError.domain == NSURLErrorDomain && nsError.code == NSURLErrorCancelled
+               nsError.domain == NSURLErrorDomain, nsError.code == NSURLErrorCancelled
             {
                 Logger.info("资产加载任务被取消")
             } else if error is CancellationError {
@@ -408,15 +422,15 @@ class CharacterAssetsViewModel: ObservableObject {
         // 构建SQL查询，一次性获取所有空间站名称
         let stationIdStrings = stationIds.map { String($0) }.joined(separator: ",")
         let query = """
-                SELECT stationID, stationName 
-                FROM stations 
-                WHERE stationID IN (\(stationIdStrings))
-            """
+            SELECT stationID, stationName 
+            FROM stations 
+            WHERE stationID IN (\(stationIdStrings))
+        """
 
         if case let .success(rows) = databaseManager.executeQuery(query) {
             for row in rows {
                 if let stationId = row["stationID"] as? Int,
-                    let name = row["stationName"] as? String
+                   let name = row["stationName"] as? String
                 {
                     stationNameCache[Int64(stationId)] = name
                 }
@@ -457,22 +471,25 @@ class CharacterAssetsViewModel: ObservableObject {
         var rawResults: [AssetSearchResult] = []
         for location in assetLocations {
             findItems(
-                in: location, matchingTypeIds: matchingTypeIds, currentPath: [], results: &rawResults)
+                in: location, matchingTypeIds: matchingTypeIds, currentPath: [],
+                results: &rawResults
+            )
         }
 
         // 按位置和物品类型合并结果
         var mergedResults: [String: AssetSearchResult] = [:]
-        
+
         for result in rawResults {
             // 创建合并键：type_id + 容器ID + 位置路径
-            let mergeKey = "\(result.node.type_id)_\(result.containerNode.item_id)_\(result.formattedPath.hashValue)"
-            
+            let mergeKey =
+                "\(result.node.type_id)_\(result.containerNode.item_id)_\(result.formattedPath.hashValue)"
+
             if let existingResult = mergedResults[mergeKey] {
                 // 合并数量
                 let newTotalQuantity = existingResult.totalQuantity + result.node.quantity
-                
+
                 let mergedResult = AssetSearchResult(
-                    node: existingResult.node,  // 保持第一个节点的信息
+                    node: existingResult.node, // 保持第一个节点的信息
                     itemInfo: existingResult.itemInfo,
                     locationPath: existingResult.locationPath,
                     containerNode: existingResult.containerNode,
@@ -493,7 +510,9 @@ class CharacterAssetsViewModel: ObservableObject {
         }
 
         // 转换为数组并排序
-        let finalResults = Array(mergedResults.values).sorted { $0.itemInfo.name < $1.itemInfo.name }
+        let finalResults = Array(mergedResults.values).sorted {
+            $0.itemInfo.name < $1.itemInfo.name
+        }
 
         // 更新搜索结果
         searchResults = finalResults
@@ -504,20 +523,20 @@ class CharacterAssetsViewModel: ObservableObject {
         // 递归函数，填充节点及其所有子节点的名称
         func fillNodeName(_ node: inout AssetTreeNode) {
             // 为空间站节点填充名称
-            if node.location_type == "station" && node.name == nil {
+            if node.location_type == "station", node.name == nil {
                 node.name = stationNameCache[node.location_id]
             }
 
             // 为星系节点填充名称
-            if node.location_type == "solar_system" && node.name == nil,
-                let systemId = node.system_id
+            if node.location_type == "solar_system", node.name == nil,
+               let systemId = node.system_id
             {
                 node.name = solarSystemNameCache[systemId]
             }
 
             // 递归处理子节点
             if var items = node.items {
-                for i in 0..<items.count {
+                for i in 0 ..< items.count {
                     fillNodeName(&items[i])
                 }
                 node.items = items
@@ -525,7 +544,7 @@ class CharacterAssetsViewModel: ObservableObject {
         }
 
         // 遍历并处理所有顶层位置节点
-        for i in 0..<assetLocations.count {
+        for i in 0 ..< assetLocations.count {
             var location = assetLocations[i]
             fillNodeName(&location)
             assetLocations[i] = location

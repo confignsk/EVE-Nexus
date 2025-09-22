@@ -21,7 +21,7 @@ final class CharacterOrdersViewModel: ObservableObject {
     @Published private(set) var locationInfoCache: [Int64: OrderLocationInfo] = [:]
     @Published var showBuyOrders = false
     @Published private(set) var isDataReady = false
-    @Published var searchText = ""  // 添加搜索文本状态
+    @Published var searchText = "" // 添加搜索文本状态
 
     // 添加一个标志，表示是否已经开始加载数据
     private var hasStartedLoading = false
@@ -83,10 +83,13 @@ final class CharacterOrdersViewModel: ObservableObject {
 
         // 创建新的加载任务
         loadingTask = Task {
-            isLoading = true
-            errorMessage = nil
-            showError = false
-            isDataReady = false
+            // 立即更新UI状态
+            await MainActor.run {
+                self.isLoading = true
+                self.errorMessage = nil
+                self.showError = false
+                self.isDataReady = false
+            }
 
             do {
                 if let jsonString = try await CharacterMarketAPI.shared.getMarketOrders(
@@ -98,9 +101,14 @@ final class CharacterOrdersViewModel: ObservableObject {
                     // 解析JSON数据
                     let jsonData = jsonString.data(using: .utf8)!
                     let decoder = JSONDecoder()
-                    orders = try decoder.decode([CharacterMarketOrder].self, from: jsonData)
+                    let newOrders = try decoder.decode([CharacterMarketOrder].self, from: jsonData)
 
                     if Task.isCancelled { return }
+
+                    // 立即更新订单数据
+                    await MainActor.run {
+                        self.orders = newOrders
+                    }
 
                     // 同步加载所有信息
                     await loadAllInformation()
@@ -108,12 +116,17 @@ final class CharacterOrdersViewModel: ObservableObject {
                     if Task.isCancelled { return }
 
                     // 初始化订单显示类型
-                    initializeOrderType()
+                    await MainActor.run {
+                        self.initializeOrderType()
+                    }
 
                 } else {
-                    orders = []
+                    await MainActor.run {
+                        self.orders = []
+                    }
                 }
 
+                // 确保UI状态正确更新
                 await MainActor.run {
                     self.isDataReady = true
                     self.isLoading = false
@@ -141,26 +154,32 @@ final class CharacterOrdersViewModel: ObservableObject {
         let typeIds = Set(orders.map { $0.typeId })
         if !typeIds.isEmpty {
             let query = """
-                    SELECT type_id, name, en_name, zh_name, icon_filename
-                    FROM types
-                    WHERE type_id IN (\(typeIds.sorted().map { String($0) }.joined(separator: ",")))
-                """
+                SELECT type_id, name, en_name, zh_name, icon_filename
+                FROM types
+                WHERE type_id IN (\(typeIds.sorted().map { String($0) }.joined(separator: ",")))
+            """
 
             if case let .success(rows) = databaseManager.executeQuery(query) {
+                var newItemInfoCache: [Int64: OrderItemInfo] = [:]
                 for row in rows {
                     if let typeIdInt = (row["type_id"] as? NSNumber)?.int64Value,
-                        let name = row["name"] as? String,
-                        let enName = row["en_name"] as? String,
-                        let zhName = row["zh_name"] as? String,
-                        let iconFileName = row["icon_filename"] as? String
+                       let name = row["name"] as? String,
+                       let enName = row["en_name"] as? String,
+                       let zhName = row["zh_name"] as? String,
+                       let iconFileName = row["icon_filename"] as? String
                     {
-                        itemInfoCache[typeIdInt] = OrderItemInfo(
+                        newItemInfoCache[typeIdInt] = OrderItemInfo(
                             name: name,
                             enName: enName,
                             zhName: zhName,
                             iconFileName: iconFileName
                         )
                     }
+                }
+
+                // 在主线程更新缓存
+                await MainActor.run {
+                    self.itemInfoCache = newItemInfoCache
                 }
             }
         }
@@ -170,7 +189,12 @@ final class CharacterOrdersViewModel: ObservableObject {
         let locationLoader = LocationInfoLoader(
             databaseManager: databaseManager, characterId: characterId
         )
-        locationInfoCache = await locationLoader.loadLocationInfo(locationIds: locationIds)
+        let newLocationInfoCache = await locationLoader.loadLocationInfo(locationIds: locationIds)
+
+        // 在主线程更新位置信息缓存
+        await MainActor.run {
+            self.locationInfoCache = newLocationInfoCache
+        }
 
         Logger.debug("加载的物品信息数量: \(itemInfoCache.count)")
         Logger.debug("加载的位置信息数量: \(locationInfoCache.count)")

@@ -26,18 +26,17 @@ class ExtractorYieldCalculator {
             length: endCycle + 1
         )
 
-        return (startCycle...endCycle).map { cycle in
+        return (startCycle ... endCycle).map { cycle in
             (cycle: cycle + 1, yield: Int(results[cycle]))
         }
     }
 
-    static func calculateTotalCycles(installTime: String, expiryTime: String, cycleTime: Int) -> Int
-    {
+    static func calculateTotalCycles(installTime: String, expiryTime: String, cycleTime: Int) -> Int {
         let dateFormatter = ISO8601DateFormatter()
         dateFormatter.formatOptions = [.withInternetDateTime]
 
         guard let installDate = dateFormatter.date(from: installTime),
-            let expiryDate = dateFormatter.date(from: expiryTime)
+              let expiryDate = dateFormatter.date(from: expiryTime)
         else {
             return 0
         }
@@ -51,7 +50,7 @@ class ExtractorYieldCalculator {
         dateFormatter.formatOptions = [.withInternetDateTime]
 
         guard let installDate = dateFormatter.date(from: installTime),
-            let expiryDate = dateFormatter.date(from: expiryTime)
+              let expiryDate = dateFormatter.date(from: expiryTime)
         else {
             return 0
         }
@@ -89,11 +88,10 @@ struct ExtractorYieldChartView: View {
     private let yAxisWidth: CGFloat = 40
     private let gridLines: Int = 5
 
-    init(extractor: PlanetaryExtractor, installTime: String, expiryTime: String?, currentTime: Date)
-    {
+    init(extractor: PlanetaryExtractor, installTime: String, expiryTime: String?, currentTime: Date) {
         guard let qtyPerCycle = extractor.qtyPerCycle,
-            let cycleTime = extractor.cycleTime,
-            let expiryTime = expiryTime
+              let cycleTime = extractor.cycleTime,
+              let expiryTime = expiryTime
         else {
             yields = []
             currentCycle = 0
@@ -174,7 +172,7 @@ struct ExtractorYieldChartView: View {
                 ZStack(alignment: .trailing) {
                     // Y轴标签
                     VStack(spacing: 0) {
-                        ForEach(0...gridLines, id: \.self) { i in
+                        ForEach(0 ... gridLines, id: \.self) { i in
                             Text(formatYAxisLabel(maxYield * (gridLines - i) / gridLines))
                                 .font(.system(size: 9))
                                 .foregroundColor(.primary)
@@ -194,7 +192,7 @@ struct ExtractorYieldChartView: View {
 
                         // 网格线
                         VStack(spacing: 0) {
-                            ForEach(0...gridLines, id: \.self) { i in
+                            ForEach(0 ... gridLines, id: \.self) { i in
                                 if i < gridLines {
                                     Spacer()
                                 }
@@ -205,7 +203,7 @@ struct ExtractorYieldChartView: View {
 
                         // 垂直网格线
                         HStack(spacing: 0) {
-                            ForEach(0...4, id: \.self) { i in
+                            ForEach(0 ... 4, id: \.self) { i in
                                 if i > 0 {
                                     Divider()
                                         .background(Color.gray.opacity(0.2))

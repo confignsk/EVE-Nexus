@@ -48,7 +48,7 @@ class ExtractionSimulation {
         let startTime: Int64 = 0
         let cycleTime = Int64(cycleDuration * Double(SEC))
 
-        for i in 0..<length {
+        for i in 0 ..< length {
             let currentTime = Int64(i + 1) * cycleTime
             results.append(
                 getProgramOutput(

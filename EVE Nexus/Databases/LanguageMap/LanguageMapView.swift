@@ -2,27 +2,28 @@ import SwiftUI
 
 struct LanguageMapView: View {
     // State 属性
-    @State private var exactMatchResults: [(id: Int, names: [String: String])] = []  // 完全匹配结果
-    @State private var prefixMatchResults: [(id: Int, names: [String: String])] = []  // 前缀匹配结果
-    @State private var fuzzyMatchResults: [(id: Int, names: [String: String])] = []  // 模糊匹配结果
+    @State private var exactMatchResults: [(id: Int, names: [String: String])] = [] // 完全匹配结果
+    @State private var prefixMatchResults: [(id: Int, names: [String: String])] = [] // 前缀匹配结果
+    @State private var fuzzyMatchResults: [(id: Int, names: [String: String])] = [] // 模糊匹配结果
     @State private var searchText = ""
     @State private var isSearchActive = false
     @State private var hasTypeIdMatch = false
     @State private var showingSettings = false
-    @State private var selectedLanguages: [String] = LanguageMapConstants.languageMapDefaultLanguages
+    @State private var selectedLanguages: [String] = LanguageMapConstants
+        .languageMapDefaultLanguages
 
     let availableLanguages = LanguageMapConstants.availableLanguages
 
     var body: some View {
         VStack {
             // 搜索结果或提示信息
-            if exactMatchResults.isEmpty && prefixMatchResults.isEmpty && fuzzyMatchResults.isEmpty
-            {
+            if exactMatchResults.isEmpty && prefixMatchResults.isEmpty && fuzzyMatchResults.isEmpty {
                 // 显示提示信息
                 VStack(spacing: 16) {
                     Text(
                         NSLocalizedString(
-                            "Main_Language_Map_Supported_Search_Objects", comment: "支持的搜索对象：")
+                            "Main_Language_Map_Supported_Search_Objects", comment: "支持的搜索对象："
+                        )
                     )
                     .font(.headline)
                     .foregroundColor(.secondary)
@@ -30,32 +31,38 @@ struct LanguageMapView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(
                             NSLocalizedString(
-                                "Main_Language_Map_Search_Object_1", comment: "1. 物品（舰船、装备、空间实体等）")
+                                "Main_Language_Map_Search_Object_1", comment: "1. 物品（舰船、装备、空间实体等）"
+                            )
                         )
                         .foregroundColor(.secondary)
                         Text(
                             NSLocalizedString(
-                                "Main_Language_Map_Search_Object_2", comment: "2. 星系、星座、星域名")
+                                "Main_Language_Map_Search_Object_2", comment: "2. 星系、星座、星域名"
+                            )
                         )
                         .foregroundColor(.secondary)
                         Text(
                             NSLocalizedString(
-                                "Main_Language_Map_Search_Object_3", comment: "3. NPC势力名、军团名")
+                                "Main_Language_Map_Search_Object_3", comment: "3. NPC势力名、军团名"
+                            )
                         )
                         .foregroundColor(.secondary)
                         Text(
                             NSLocalizedString(
-                                "Main_Language_Map_Search_Object_4", comment: "4. 物品 TypeID")
+                                "Main_Language_Map_Search_Object_4", comment: "4. 物品 TypeID"
+                            )
                         )
                         .foregroundColor(.secondary)
                         Text(
                             NSLocalizedString(
-                                "Main_Language_Map_Search_Object_5", comment: "5. 物品目录名")
+                                "Main_Language_Map_Search_Object_5", comment: "5. 物品目录名"
+                            )
                         )
                         .foregroundColor(.secondary)
                         Text(
                             NSLocalizedString(
-                                "Main_Language_Map_Search_Object_6", comment: "6. 物品组名")
+                                "Main_Language_Map_Search_Object_6", comment: "6. 物品组名"
+                            )
                         )
                         .foregroundColor(.secondary)
                     }
@@ -153,7 +160,9 @@ struct LanguageMapView: View {
         }
         .onAppear {
             // 从UserDefaults读取选中的语言
-            selectedLanguages = UserDefaults.standard.stringArray(forKey: LanguageMapConstants.userDefaultsKey) ?? LanguageMapConstants.languageMapDefaultLanguages
+            selectedLanguages =
+                UserDefaults.standard.stringArray(forKey: LanguageMapConstants.userDefaultsKey)
+                    ?? LanguageMapConstants.languageMapDefaultLanguages
         }
     }
 
@@ -161,7 +170,8 @@ struct LanguageMapView: View {
     private struct ResultRow: View {
         let result: (id: Int, names: [String: String])
         let availableLanguages: [String: String]
-        @State private var selectedLanguages: [String] = LanguageMapConstants.languageMapDefaultLanguages
+        @State private var selectedLanguages: [String] = LanguageMapConstants
+            .languageMapDefaultLanguages
 
         var body: some View {
             VStack(alignment: .leading, spacing: 8) {
@@ -179,25 +189,34 @@ struct LanguageMapView: View {
                                             Button {
                                                 UIPasteboard.general.string = text
                                             } label: {
-                                                Label("\(NSLocalizedString("Misc_Copy", comment: "")) \(availableLanguages[lang] ?? lang)", systemImage: "doc.on.doc")
+                                                Label(
+                                                    "\(NSLocalizedString("Misc_Copy", comment: "")) \(availableLanguages[lang] ?? lang)",
+                                                    systemImage: "doc.on.doc"
+                                                )
                                             }
                                         }
                                     }
-                                    
+
                                     Divider()
-                                    
+
                                     Button {
                                         // 构建所有选中语言的文本
                                         let allLanguagesText = selectedLanguages.sorted().compactMap { lang in
                                             if let text = result.names[lang] {
-                                                return "\(availableLanguages[lang] ?? lang): \(text)"
+                                                return
+                                                    "\(availableLanguages[lang] ?? lang): \(text)"
                                             }
                                             return nil
                                         }.joined(separator: "\n")
-                                        
+
                                         UIPasteboard.general.string = allLanguagesText
                                     } label: {
-                                        Label(NSLocalizedString("Misc_Copy_All_Languages", comment: "复制所有语言"), systemImage: "doc.on.doc.fill")
+                                        Label(
+                                            NSLocalizedString(
+                                                "Misc_Copy_All_Languages", comment: "复制所有语言"
+                                            ),
+                                            systemImage: "doc.on.doc.fill"
+                                        )
                                     }
                                 }
                         }
@@ -207,7 +226,9 @@ struct LanguageMapView: View {
             .padding(.vertical, 4)
             .onAppear {
                 // 从UserDefaults读取选中的语言
-                selectedLanguages = UserDefaults.standard.stringArray(forKey: LanguageMapConstants.userDefaultsKey) ?? LanguageMapConstants.languageMapDefaultLanguages
+                selectedLanguages =
+                    UserDefaults.standard.stringArray(forKey: LanguageMapConstants.userDefaultsKey)
+                        ?? LanguageMapConstants.languageMapDefaultLanguages
             }
         }
     }
@@ -233,19 +254,19 @@ struct LanguageMapView: View {
 
         // 搜索物品 - 使用简化的SQL，在代码中进行匹配类型分类
         let typesQuery = """
-                SELECT DISTINCT type_id, de_name, en_name, es_name, fr_name, ja_name, ko_name, ru_name, zh_name, 
-                       LENGTH(en_name) as name_length
-                FROM types
-                WHERE (
-                      -- type_id精确匹配（如果searchText是数字）
-                      (\(typeIdToSearch != nil ? "type_id = \(typeIdToSearch!)" : "0=1"))
-                      -- 名称模糊匹配（包含所有匹配类型）
-                      OR de_name LIKE ? OR en_name LIKE ? OR es_name LIKE ? OR fr_name LIKE ?
-                      OR ja_name LIKE ? OR ko_name LIKE ? OR ru_name LIKE ? OR zh_name LIKE ?
-                )
-                ORDER BY name_length, en_name
-                LIMIT 200
-            """
+            SELECT DISTINCT type_id, de_name, en_name, es_name, fr_name, ja_name, ko_name, ru_name, zh_name, 
+                   LENGTH(en_name) as name_length
+            FROM types
+            WHERE (
+                  -- type_id精确匹配（如果searchText是数字）
+                  (\(typeIdToSearch != nil ? "type_id = \(typeIdToSearch!)" : "0=1"))
+                  -- 名称模糊匹配（包含所有匹配类型）
+                  OR de_name LIKE ? OR en_name LIKE ? OR es_name LIKE ? OR fr_name LIKE ?
+                  OR ja_name LIKE ? OR ko_name LIKE ? OR ru_name LIKE ? OR zh_name LIKE ?
+            )
+            ORDER BY name_length, en_name
+            LIMIT 200
+        """
 
         // 简化的查询参数：只需要模糊匹配的参数
         let searchPattern = "%\(searchText)%"
@@ -288,16 +309,16 @@ struct LanguageMapView: View {
 
         // 搜索星系 - 简化的SQL，在代码中进行匹配类型分类
         let systemsQuery = """
-                SELECT DISTINCT solarSystemID, solarSystemName_de, solarSystemName_en, solarSystemName_es, solarSystemName_fr,
-                       solarSystemName_ja, solarSystemName_ko, solarSystemName_ru, solarSystemName_zh,
-                       LENGTH(solarSystemName_en) as name_length
-                FROM solarsystems
-                WHERE solarSystemName_de LIKE ? OR solarSystemName_en LIKE ? OR solarSystemName_es LIKE ?
-                OR solarSystemName_fr LIKE ? OR solarSystemName_ja LIKE ? OR solarSystemName_ko LIKE ?
-                OR solarSystemName_ru LIKE ? OR solarSystemName_zh LIKE ?
-                ORDER BY name_length, solarSystemName_en
-                LIMIT 200
-            """
+            SELECT DISTINCT solarSystemID, solarSystemName_de, solarSystemName_en, solarSystemName_es, solarSystemName_fr,
+                   solarSystemName_ja, solarSystemName_ko, solarSystemName_ru, solarSystemName_zh,
+                   LENGTH(solarSystemName_en) as name_length
+            FROM solarsystems
+            WHERE solarSystemName_de LIKE ? OR solarSystemName_en LIKE ? OR solarSystemName_es LIKE ?
+            OR solarSystemName_fr LIKE ? OR solarSystemName_ja LIKE ? OR solarSystemName_ko LIKE ?
+            OR solarSystemName_ru LIKE ? OR solarSystemName_zh LIKE ?
+            ORDER BY name_length, solarSystemName_en
+            LIMIT 200
+        """
         if case let .success(rows) = DatabaseManager.shared.executeQuery(
             systemsQuery, parameters: simplifiedParams, useCache: false
         ) {
@@ -313,7 +334,7 @@ struct LanguageMapView: View {
                 if let zhName = row["solarSystemName_zh"] as? String { names["zh"] = zhName }
                 if let systemId = row["solarSystemID"] as? Int {
                     let result = (id: systemId, names: names)
-                    
+
                     // 在代码中判断匹配类型
                     if isExactNameMatch(names: names, searchText: searchText) {
                         exact.append(result)
@@ -328,16 +349,16 @@ struct LanguageMapView: View {
 
         // 搜索星座 - 简化的SQL，在代码中进行匹配类型分类
         let constellationsQuery = """
-                SELECT DISTINCT constellationID, constellationName_de, constellationName_en, constellationName_es, constellationName_fr,
-                       constellationName_ja, constellationName_ko, constellationName_ru, constellationName_zh,
-                       LENGTH(constellationName_en) as name_length
-                FROM constellations
-                WHERE constellationName_de LIKE ? OR constellationName_en LIKE ? OR constellationName_es LIKE ?
-                OR constellationName_fr LIKE ? OR constellationName_ja LIKE ? OR constellationName_ko LIKE ?
-                OR constellationName_ru LIKE ? OR constellationName_zh LIKE ?
-                ORDER BY name_length, constellationName_en
-                LIMIT 200
-            """
+            SELECT DISTINCT constellationID, constellationName_de, constellationName_en, constellationName_es, constellationName_fr,
+                   constellationName_ja, constellationName_ko, constellationName_ru, constellationName_zh,
+                   LENGTH(constellationName_en) as name_length
+            FROM constellations
+            WHERE constellationName_de LIKE ? OR constellationName_en LIKE ? OR constellationName_es LIKE ?
+            OR constellationName_fr LIKE ? OR constellationName_ja LIKE ? OR constellationName_ko LIKE ?
+            OR constellationName_ru LIKE ? OR constellationName_zh LIKE ?
+            ORDER BY name_length, constellationName_en
+            LIMIT 200
+        """
         if case let .success(rows) = DatabaseManager.shared.executeQuery(
             constellationsQuery, parameters: simplifiedParams, useCache: false
         ) {
@@ -353,7 +374,7 @@ struct LanguageMapView: View {
                 if let zhName = row["constellationName_zh"] as? String { names["zh"] = zhName }
                 if let constellationId = row["constellationID"] as? Int {
                     let result = (id: constellationId, names: names)
-                    
+
                     // 在代码中判断匹配类型
                     if isExactNameMatch(names: names, searchText: searchText) {
                         exact.append(result)
@@ -368,16 +389,16 @@ struct LanguageMapView: View {
 
         // 搜索星域 - 简化的SQL，在代码中进行匹配类型分类
         let regionsQuery = """
-                SELECT DISTINCT regionID, regionName_de, regionName_en, regionName_es, regionName_fr,
-                       regionName_ja, regionName_ko, regionName_ru, regionName_zh,
-                       LENGTH(regionName_en) as name_length
-                FROM regions
-                WHERE regionName_de LIKE ? OR regionName_en LIKE ? OR regionName_es LIKE ?
-                OR regionName_fr LIKE ? OR regionName_ja LIKE ? OR regionName_ko LIKE ?
-                OR regionName_ru LIKE ? OR regionName_zh LIKE ?
-                ORDER BY name_length, regionName_en
-                LIMIT 200
-            """
+            SELECT DISTINCT regionID, regionName_de, regionName_en, regionName_es, regionName_fr,
+                   regionName_ja, regionName_ko, regionName_ru, regionName_zh,
+                   LENGTH(regionName_en) as name_length
+            FROM regions
+            WHERE regionName_de LIKE ? OR regionName_en LIKE ? OR regionName_es LIKE ?
+            OR regionName_fr LIKE ? OR regionName_ja LIKE ? OR regionName_ko LIKE ?
+            OR regionName_ru LIKE ? OR regionName_zh LIKE ?
+            ORDER BY name_length, regionName_en
+            LIMIT 200
+        """
         if case let .success(rows) = DatabaseManager.shared.executeQuery(
             regionsQuery, parameters: simplifiedParams, useCache: false
         ) {
@@ -393,7 +414,7 @@ struct LanguageMapView: View {
                 if let zhName = row["regionName_zh"] as? String { names["zh"] = zhName }
                 if let regionId = row["regionID"] as? Int {
                     let result = (id: regionId, names: names)
-                    
+
                     // 在代码中判断匹配类型
                     if isExactNameMatch(names: names, searchText: searchText) {
                         exact.append(result)
@@ -408,14 +429,14 @@ struct LanguageMapView: View {
 
         // 搜索势力 - 简化的SQL，在代码中进行匹配类型分类
         let factionsQuery = """
-                SELECT DISTINCT id, de_name, en_name, es_name, fr_name, ja_name, ko_name, ru_name, zh_name,
-                       LENGTH(en_name) as name_length
-                FROM factions
-                WHERE de_name LIKE ? OR en_name LIKE ? OR es_name LIKE ? OR fr_name LIKE ?
-                OR ja_name LIKE ? OR ko_name LIKE ? OR ru_name LIKE ? OR zh_name LIKE ?
-                ORDER BY name_length, en_name
-                LIMIT 200
-            """
+            SELECT DISTINCT id, de_name, en_name, es_name, fr_name, ja_name, ko_name, ru_name, zh_name,
+                   LENGTH(en_name) as name_length
+            FROM factions
+            WHERE de_name LIKE ? OR en_name LIKE ? OR es_name LIKE ? OR fr_name LIKE ?
+            OR ja_name LIKE ? OR ko_name LIKE ? OR ru_name LIKE ? OR zh_name LIKE ?
+            ORDER BY name_length, en_name
+            LIMIT 200
+        """
         if case let .success(rows) = DatabaseManager.shared.executeQuery(
             factionsQuery, parameters: simplifiedParams, useCache: false
         ) {
@@ -431,7 +452,7 @@ struct LanguageMapView: View {
                 if let zhName = row["zh_name"] as? String { names["zh"] = zhName }
                 if let factionId = row["id"] as? Int {
                     let result = (id: factionId, names: names)
-                    
+
                     // 在代码中判断匹配类型
                     if isExactNameMatch(names: names, searchText: searchText) {
                         exact.append(result)
@@ -446,14 +467,14 @@ struct LanguageMapView: View {
 
         // 搜索 NPC 军团 - 简化的SQL，在代码中进行匹配类型分类
         let npcCorpsQuery = """
-                SELECT DISTINCT corporation_id, de_name, en_name, es_name, fr_name, ja_name, ko_name, ru_name, zh_name,
-                       LENGTH(en_name) as name_length
-                FROM npcCorporations
-                WHERE de_name LIKE ? OR en_name LIKE ? OR es_name LIKE ? OR fr_name LIKE ?
-                OR ja_name LIKE ? OR ko_name LIKE ? OR ru_name LIKE ? OR zh_name LIKE ?
-                ORDER BY name_length, en_name
-                LIMIT 200
-            """
+            SELECT DISTINCT corporation_id, de_name, en_name, es_name, fr_name, ja_name, ko_name, ru_name, zh_name,
+                   LENGTH(en_name) as name_length
+            FROM npcCorporations
+            WHERE de_name LIKE ? OR en_name LIKE ? OR es_name LIKE ? OR fr_name LIKE ?
+            OR ja_name LIKE ? OR ko_name LIKE ? OR ru_name LIKE ? OR zh_name LIKE ?
+            ORDER BY name_length, en_name
+            LIMIT 200
+        """
         if case let .success(rows) = DatabaseManager.shared.executeQuery(
             npcCorpsQuery, parameters: simplifiedParams, useCache: false
         ) {
@@ -469,7 +490,7 @@ struct LanguageMapView: View {
                 if let zhName = row["zh_name"] as? String { names["zh"] = zhName }
                 if let corpId = row["corporation_id"] as? Int {
                     let result = (id: corpId, names: names)
-                    
+
                     // 在代码中判断匹配类型
                     if isExactNameMatch(names: names, searchText: searchText) {
                         exact.append(result)
@@ -484,14 +505,14 @@ struct LanguageMapView: View {
 
         // 搜索物品目录名 - 简化的SQL，在代码中进行匹配类型分类
         let categoriesQuery = """
-                SELECT DISTINCT category_id, de_name, en_name, es_name, fr_name, ja_name, ko_name, ru_name, zh_name,
-                       LENGTH(en_name) as name_length
-                FROM categories
-                WHERE de_name LIKE ? OR en_name LIKE ? OR es_name LIKE ? OR fr_name LIKE ?
-                OR ja_name LIKE ? OR ko_name LIKE ? OR ru_name LIKE ? OR zh_name LIKE ?
-                ORDER BY name_length, en_name
-                LIMIT 200
-            """
+            SELECT DISTINCT category_id, de_name, en_name, es_name, fr_name, ja_name, ko_name, ru_name, zh_name,
+                   LENGTH(en_name) as name_length
+            FROM categories
+            WHERE de_name LIKE ? OR en_name LIKE ? OR es_name LIKE ? OR fr_name LIKE ?
+            OR ja_name LIKE ? OR ko_name LIKE ? OR ru_name LIKE ? OR zh_name LIKE ?
+            ORDER BY name_length, en_name
+            LIMIT 200
+        """
         if case let .success(rows) = DatabaseManager.shared.executeQuery(
             categoriesQuery, parameters: simplifiedParams, useCache: false
         ) {
@@ -507,7 +528,7 @@ struct LanguageMapView: View {
                 if let zhName = row["zh_name"] as? String { names["zh"] = zhName }
                 if let categoryId = row["category_id"] as? Int {
                     let result = (id: categoryId, names: names)
-                    
+
                     // 在代码中判断匹配类型
                     if isExactNameMatch(names: names, searchText: searchText) {
                         exact.append(result)
@@ -522,14 +543,14 @@ struct LanguageMapView: View {
 
         // 搜索物品组名 - 简化的SQL，在代码中进行匹配类型分类
         let groupsQuery = """
-                SELECT DISTINCT group_id, de_name, en_name, es_name, fr_name, ja_name, ko_name, ru_name, zh_name,
-                       LENGTH(en_name) as name_length
-                FROM groups
-                WHERE de_name LIKE ? OR en_name LIKE ? OR es_name LIKE ? OR fr_name LIKE ?
-                OR ja_name LIKE ? OR ko_name LIKE ? OR ru_name LIKE ? OR zh_name LIKE ?
-                ORDER BY name_length, en_name
-                LIMIT 200
-            """
+            SELECT DISTINCT group_id, de_name, en_name, es_name, fr_name, ja_name, ko_name, ru_name, zh_name,
+                   LENGTH(en_name) as name_length
+            FROM groups
+            WHERE de_name LIKE ? OR en_name LIKE ? OR es_name LIKE ? OR fr_name LIKE ?
+            OR ja_name LIKE ? OR ko_name LIKE ? OR ru_name LIKE ? OR zh_name LIKE ?
+            ORDER BY name_length, en_name
+            LIMIT 200
+        """
         if case let .success(rows) = DatabaseManager.shared.executeQuery(
             groupsQuery, parameters: simplifiedParams, useCache: false
         ) {
@@ -545,7 +566,7 @@ struct LanguageMapView: View {
                 if let zhName = row["zh_name"] as? String { names["zh"] = zhName }
                 if let groupId = row["group_id"] as? Int {
                     let result = (id: groupId, names: names)
-                    
+
                     // 在代码中判断匹配类型
                     if isExactNameMatch(names: names, searchText: searchText) {
                         exact.append(result)

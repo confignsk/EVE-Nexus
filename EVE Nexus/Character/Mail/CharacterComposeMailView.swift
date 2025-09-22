@@ -57,7 +57,8 @@ struct CharacterComposeMailView: View {
                     HStack {
                         if recipient.type != .mailingList {
                             UniversePortrait(
-                                id: recipient.id, type: recipient.type, size: 64, displaySize: 32)
+                                id: recipient.id, type: recipient.type, size: 64, displaySize: 32
+                            )
                         }
                         VStack(alignment: .leading) {
                             Text(recipient.name)
@@ -539,7 +540,7 @@ class RecipientPickerViewModel: ObservableObject {
 
         // 创建新的搜索任务，延迟500毫秒
         searchTask = Task {
-            try? await Task.sleep(nanoseconds: 500_000_000)  // 500ms
+            try? await Task.sleep(nanoseconds: 500_000_000) // 500ms
 
             // 如果任务被取消了，就直接返回
             if Task.isCancelled { return }
@@ -707,8 +708,8 @@ class CharacterComposeMailViewModel: ObservableObject {
                     recipient_type: recipient.type == .mailingList
                         ? "mailing_list"
                         : recipient.type == .character
-                            ? "character"
-                            : recipient.type == .corporation ? "corporation" : "alliance"
+                        ? "character"
+                        : recipient.type == .corporation ? "corporation" : "alliance"
                 )
             }
 

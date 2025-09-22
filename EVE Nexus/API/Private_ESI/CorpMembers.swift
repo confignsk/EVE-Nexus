@@ -46,8 +46,7 @@ public class CorpMembersAPI {
         }
 
         // 2. 检查缓存
-        if !forceRefresh, let cachedData = loadMemberTrackingFromCache(corporationId: corporationId)
-        {
+        if !forceRefresh, let cachedData = loadMemberTrackingFromCache(corporationId: corporationId) {
             Logger.info("使用缓存的军团成员信息 - 军团ID: \(corporationId)")
             return cachedData
         }

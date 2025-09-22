@@ -1,5 +1,5 @@
-import SwiftUI
 import Foundation
+import SwiftUI
 
 struct LogsBrowserView: View {
     @State private var logFiles: [URL] = []
@@ -8,19 +8,19 @@ struct LogsBrowserView: View {
     @State private var isSelectionMode = false
     @State private var selectedFiles: Set<URL> = []
     @State private var showingDeleteAlert = false
-    
+
     var body: some View {
         VStack {
             if isLoading {
-                                    ProgressView(NSLocalizedString("Main_Setting_Logs_Loading", comment: ""))
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                ProgressView(NSLocalizedString("Main_Setting_Logs_Loading", comment: ""))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let error = errorMessage {
                 VStack {
                     Image(systemName: "exclamationmark.triangle")
                         .font(.largeTitle)
                         .foregroundColor(.orange)
-                                            Text(NSLocalizedString("Main_Setting_Logs_Load_Failed", comment: ""))
-                            .font(.headline)
+                    Text(NSLocalizedString("Main_Setting_Logs_Load_Failed", comment: ""))
+                        .font(.headline)
                     Text(error)
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -33,11 +33,11 @@ struct LogsBrowserView: View {
                     Image(systemName: "doc.text")
                         .font(.largeTitle)
                         .foregroundColor(.gray)
-                                            Text(NSLocalizedString("Main_Setting_Logs_No_Files", comment: ""))
-                            .font(.headline)
-                        Text(NSLocalizedString("Main_Setting_Logs_No_Files_Detail", comment: ""))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                    Text(NSLocalizedString("Main_Setting_Logs_No_Files", comment: ""))
+                        .font(.headline)
+                    Text(NSLocalizedString("Main_Setting_Logs_No_Files_Detail", comment: ""))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
                 .padding()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -60,41 +60,43 @@ struct LogsBrowserView: View {
                             LogFileRowView(logFile: logFile)
                         }
                     }
-                    
-
                 }
             }
         }
-                    .navigationTitle(NSLocalizedString("Main_Setting_Logs_Browser_Title", comment: ""))
+        .navigationTitle(NSLocalizedString("Main_Setting_Logs_Browser_Title", comment: ""))
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
-                            ToolbarItem(placement: .navigationBarLeading) {
-                    if isSelectionMode {
-                        Button(NSLocalizedString("Main_Setting_Logs_Cancel", comment: "")) {
-                            isSelectionMode = false
+            ToolbarItem(placement: .navigationBarLeading) {
+                if isSelectionMode {
+                    Button(NSLocalizedString("Main_Setting_Logs_Cancel", comment: "")) {
+                        isSelectionMode = false
+                        selectedFiles.removeAll()
+                    }
+                }
+            }
+
+            ToolbarItem(placement: .navigationBarTrailing) {
+                HStack {
+                    if !isSelectionMode {
+                        Button(NSLocalizedString("Main_Setting_Logs_Refresh", comment: "")) {
+                            loadLogFiles()
+                        }
+                    }
+
+                    Button(
+                        isSelectionMode
+                            ? NSLocalizedString("Main_Setting_Logs_Done", comment: "")
+                            : NSLocalizedString("Main_Setting_Logs_Select", comment: "")
+                    ) {
+                        isSelectionMode.toggle()
+                        if !isSelectionMode {
                             selectedFiles.removeAll()
                         }
                     }
-                }
-            
-            ToolbarItem(placement: .navigationBarTrailing) {
-                HStack {
-                                            if !isSelectionMode {
-                            Button(NSLocalizedString("Main_Setting_Logs_Refresh", comment: "")) {
-                                loadLogFiles()
-                            }
-                        }
-                        
-                        Button(isSelectionMode ? NSLocalizedString("Main_Setting_Logs_Done", comment: "") : NSLocalizedString("Main_Setting_Logs_Select", comment: "")) {
-                            isSelectionMode.toggle()
-                            if !isSelectionMode {
-                                selectedFiles.removeAll()
-                            }
-                        }
                     .disabled(logFiles.isEmpty)
                 }
             }
-            
+
             ToolbarItemGroup(placement: .bottomBar) {
                 if isSelectionMode && !selectedFiles.isEmpty {
                     Button(action: {
@@ -103,9 +105,9 @@ struct LogsBrowserView: View {
                         Image(systemName: "trash")
                     }
                     .foregroundColor(.red)
-                    
+
                     Spacer()
-                    
+
                     Button(action: shareSelectedFiles) {
                         Image(systemName: "square.and.arrow.up")
                     }
@@ -116,24 +118,34 @@ struct LogsBrowserView: View {
         .onAppear {
             loadLogFiles()
         }
-        .alert(NSLocalizedString("Main_Setting_Logs_Delete_Confirm_Title", comment: ""), isPresented: $showingDeleteAlert) {
-            Button(NSLocalizedString("Main_Setting_Logs_Cancel", comment: ""), role: .cancel) { }
+        .alert(
+            NSLocalizedString("Main_Setting_Logs_Delete_Confirm_Title", comment: ""),
+            isPresented: $showingDeleteAlert
+        ) {
+            Button(NSLocalizedString("Main_Setting_Logs_Cancel", comment: ""), role: .cancel) {}
             Button(NSLocalizedString("Main_Setting_Clean", comment: ""), role: .destructive) {
                 deleteSelectedFiles()
             }
         } message: {
-            Text(String(format: NSLocalizedString("Main_Setting_Logs_Delete_Confirm_Message", comment: ""), selectedFiles.count))
+            Text(
+                String(
+                    format: NSLocalizedString(
+                        "Main_Setting_Logs_Delete_Confirm_Message", comment: ""
+                    ),
+                    selectedFiles.count
+                ))
         }
     }
-    
+
     private func loadLogFiles() {
         isLoading = true
         errorMessage = nil
-        
+
         Task {
             do {
-                let logPath = StaticResourceManager.shared.getStaticDataSetPath().appendingPathComponent("Logs")
-                
+                let logPath = StaticResourceManager.shared.getStaticDataSetPath()
+                    .appendingPathComponent("Logs")
+
                 let fileManager = FileManager.default
                 guard fileManager.fileExists(atPath: logPath.path) else {
                     await MainActor.run {
@@ -142,29 +154,34 @@ struct LogsBrowserView: View {
                     }
                     return
                 }
-                
+
                 let files = try fileManager.contentsOfDirectory(
                     at: logPath,
                     includingPropertiesForKeys: [.creationDateKey, .fileSizeKey],
                     options: [.skipsHiddenFiles]
                 )
-                
-                let logFiles = files
-                    .filter { $0.pathExtension == "log" }
-                    .sorted { file1, file2 in
-                        // 优先使用创建时间排序
-                        let date1 = (try? file1.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? Date.distantPast
-                        let date2 = (try? file2.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? Date.distantPast
-                        
-                        // 如果创建时间相同，则按文件名排序
-                        if date1 == date2 {
-                            return file1.lastPathComponent > file2.lastPathComponent
+
+                let logFiles =
+                    files
+                        .filter { $0.pathExtension == "log" }
+                        .sorted { file1, file2 in
+                            // 优先使用创建时间排序
+                            let date1 =
+                                (try? file1.resourceValues(forKeys: [.creationDateKey]).creationDate)
+                                    ?? Date.distantPast
+                            let date2 =
+                                (try? file2.resourceValues(forKeys: [.creationDateKey]).creationDate)
+                                    ?? Date.distantPast
+
+                            // 如果创建时间相同，则按文件名排序
+                            if date1 == date2 {
+                                return file1.lastPathComponent > file2.lastPathComponent
+                            }
+
+                            // 最新的文件排在前面
+                            return date1 > date2
                         }
-                        
-                        // 最新的文件排在前面
-                        return date1 > date2
-                    }
-                
+
                 await MainActor.run {
                     self.logFiles = logFiles
                     self.isLoading = false
@@ -177,42 +194,52 @@ struct LogsBrowserView: View {
             }
         }
     }
-    
+
     private func deleteSelectedFiles() {
         let fileManager = FileManager.default
         var deletedCount = 0
-        
+
         for file in selectedFiles {
             do {
                 try fileManager.removeItem(at: file)
                 deletedCount += 1
             } catch {
-                Logger.error(String(format: NSLocalizedString("Main_Setting_Logs_Delete_Failed", comment: ""), file.lastPathComponent, error.localizedDescription))
+                Logger.error(
+                    String(
+                        format: NSLocalizedString("Main_Setting_Logs_Delete_Failed", comment: ""),
+                        file.lastPathComponent, error.localizedDescription
+                    ))
             }
         }
-        
-        Logger.info(String(format: NSLocalizedString("Main_Setting_Logs_Delete_Success", comment: ""), deletedCount))
+
+        Logger.info(
+            String(
+                format: NSLocalizedString("Main_Setting_Logs_Delete_Success", comment: ""),
+                deletedCount
+            ))
         selectedFiles.removeAll()
         isSelectionMode = false
         loadLogFiles()
     }
-    
+
     private func shareSelectedFiles() {
         let activityViewController = UIActivityViewController(
             activityItems: Array(selectedFiles),
             applicationActivities: nil
         )
-        
+
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let window = windowScene.windows.first {
-            
+           let window = windowScene.windows.first
+        {
             // 适配iPad
             if let popover = activityViewController.popoverPresentationController {
                 popover.sourceView = window
-                popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
+                popover.sourceRect = CGRect(
+                    x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0
+                )
                 popover.permittedArrowDirections = []
             }
-            
+
             window.rootViewController?.present(activityViewController, animated: true)
         }
     }
@@ -222,21 +249,21 @@ struct LogFileRowView: View {
     let logFile: URL
     @State private var fileSize: String = ""
     @State private var creationDate: String = ""
-    
+
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
                 Text(logFile.lastPathComponent)
                     .font(.headline)
                     .lineLimit(1)
-                
+
                 Text(creationDate)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
-            
+
             Spacer()
-            
+
             Text(fileSize)
                 .font(.caption)
                 .foregroundColor(.secondary)
@@ -246,18 +273,20 @@ struct LogFileRowView: View {
             loadFileInfo()
         }
     }
-    
+
     private func loadFileInfo() {
         do {
-            let resourceValues = try logFile.resourceValues(forKeys: [.creationDateKey, .fileSizeKey])
-            
+            let resourceValues = try logFile.resourceValues(forKeys: [
+                .creationDateKey, .fileSizeKey,
+            ])
+
             if let date = resourceValues.creationDate {
                 let formatter = DateFormatter()
                 formatter.dateStyle = .medium
                 formatter.timeStyle = .short
                 creationDate = formatter.string(from: date)
             }
-            
+
             if let size = resourceValues.fileSize {
                 fileSize = FormatUtil.formatFileSize(Int64(size))
             }
@@ -274,7 +303,7 @@ struct LogFileSelectionRowView: View {
     let onToggle: () -> Void
     @State private var fileSize: String = ""
     @State private var creationDate: String = ""
-    
+
     var body: some View {
         HStack {
             Button(action: onToggle) {
@@ -283,19 +312,19 @@ struct LogFileSelectionRowView: View {
                     .font(.title2)
             }
             .buttonStyle(PlainButtonStyle())
-            
+
             VStack(alignment: .leading, spacing: 4) {
                 Text(logFile.lastPathComponent)
                     .font(.headline)
                     .lineLimit(1)
-                
+
                 Text(creationDate)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
-            
+
             Spacer()
-            
+
             Text(fileSize)
                 .font(.caption)
                 .foregroundColor(.secondary)
@@ -309,18 +338,20 @@ struct LogFileSelectionRowView: View {
             loadFileInfo()
         }
     }
-    
+
     private func loadFileInfo() {
         do {
-            let resourceValues = try logFile.resourceValues(forKeys: [.creationDateKey, .fileSizeKey])
-            
+            let resourceValues = try logFile.resourceValues(forKeys: [
+                .creationDateKey, .fileSizeKey,
+            ])
+
             if let date = resourceValues.creationDate {
                 let formatter = DateFormatter()
                 formatter.dateStyle = .medium
                 formatter.timeStyle = .short
                 creationDate = formatter.string(from: date)
             }
-            
+
             if let size = resourceValues.fileSize {
                 fileSize = FormatUtil.formatFileSize(Int64(size))
             }
@@ -331,8 +362,6 @@ struct LogFileSelectionRowView: View {
     }
 }
 
-
-
 #Preview {
     LogsBrowserView()
-} 
+}

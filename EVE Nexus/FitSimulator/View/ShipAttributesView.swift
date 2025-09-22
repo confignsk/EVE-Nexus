@@ -13,7 +13,7 @@ struct ShipAttributesView: View {
     private var turretUsed: Int {
         var count = 0
         for module in viewModel.simulationInput.modules {
-            if module.effects.contains(42) {  // 炮台效果
+            if module.effects.contains(42) { // 炮台效果
                 count += 1
             }
         }
@@ -24,7 +24,7 @@ struct ShipAttributesView: View {
     private var launcherUsed: Int {
         var count = 0
         for module in viewModel.simulationInput.modules {
-            if module.effects.contains(40) {  // 发射器效果
+            if module.effects.contains(40) { // 发射器效果
                 count += 1
             }
         }
@@ -96,21 +96,21 @@ struct ShipAttributesView: View {
             updateResourceUsage()
         }
     }
-    
+
     // 更新资源使用情况
     private func updateResourceUsage() {
         // 计算已使用的CPU和电力
         var cpuTotal: Double = 0
         var pgTotal: Double = 0
         var rigTotal: Double = 0
-        
+
         // 使用计算后的属性值，从simulationOutput中获取
         if let output = viewModel.simulationOutput {
             Logger.info("使用计算后的属性值计算资源使用情况")
             // 获取计算后的挂点数
-            self.turretHardpoints = Int(output.ship.attributesByName["turretSlotsLeft"] ?? 0)
-            self.launcherHardpoints = Int(output.ship.attributesByName["launcherSlotsLeft"] ?? 0)
-            
+            turretHardpoints = Int(output.ship.attributesByName["turretSlotsLeft"] ?? 0)
+            launcherHardpoints = Int(output.ship.attributesByName["launcherSlotsLeft"] ?? 0)
+
             for module in output.modules {
                 // 只计算在线状态（status >= 1）的装备的资源消耗
                 if module.status >= 1 {
@@ -124,9 +124,11 @@ struct ShipAttributesView: View {
             // 如果没有计算结果，回退到使用原始值
             Logger.info("没有计算结果，回退到使用原始值计算资源使用情况")
             // 获取原始挂点数
-            self.turretHardpoints = Int(viewModel.simulationInput.ship.baseAttributesByName["turretSlotsLeft"] ?? 0)
-            self.launcherHardpoints = Int(viewModel.simulationInput.ship.baseAttributesByName["launcherSlotsLeft"] ?? 0)
-            
+            turretHardpoints = Int(
+                viewModel.simulationInput.ship.baseAttributesByName["turretSlotsLeft"] ?? 0)
+            launcherHardpoints = Int(
+                viewModel.simulationInput.ship.baseAttributesByName["launcherSlotsLeft"] ?? 0)
+
             for module in viewModel.simulationInput.modules {
                 // 只计算在线状态（status >= 1）的装备的资源消耗
                 if module.status >= 1 {
@@ -136,11 +138,11 @@ struct ShipAttributesView: View {
                 }
             }
         }
-        
+
         // 更新状态
-        self.cpuUsed = cpuTotal
-        self.pgUsed = pgTotal
-        self.rigUsed = rigTotal
+        cpuUsed = cpuTotal
+        pgUsed = pgTotal
+        rigUsed = rigTotal
     }
 }
 
@@ -178,9 +180,9 @@ struct AttributeProgressView: View {
 
     private var progressColor: Color {
         if isOverLimit {
-            return Color(red: 176/255, green: 53/255, blue: 50/255)  // 红色
+            return Color(red: 176 / 255, green: 53 / 255, blue: 50 / 255) // 红色
         } else {
-            return Color(red: 74/255, green: 128/255, blue: 192/255)  // 浅蓝色
+            return Color(red: 74 / 255, green: 128 / 255, blue: 192 / 255) // 浅蓝色
         }
     }
 
@@ -208,12 +210,14 @@ struct AttributeProgressView: View {
                         .frame(width: geometry.size.width * min(1.0, isOverLimit ? 1.0 : progress))
 
                     // 数值文本
-                    Text("\(formatLong(current))/\(formatLong(total))\(unit.isEmpty ? "" : " \(unit)")")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.white)
-                        .shadow(color: .black.opacity(0.5), radius: 1, x: 0, y: 0)
-                        .padding(.horizontal, 4)
-                        .frame(maxWidth: .infinity, alignment: .center)
+                    Text(
+                        "\(formatLong(current))/\(formatLong(total))\(unit.isEmpty ? "" : " \(unit)")"
+                    )
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.white)
+                    .shadow(color: .black.opacity(0.5), radius: 1, x: 0, y: 0)
+                    .padding(.horizontal, 4)
+                    .frame(maxWidth: .infinity, alignment: .center)
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 2))
             }
@@ -240,4 +244,4 @@ struct AttributeValueView: View {
             Spacer()
         }
     }
-} 
+}

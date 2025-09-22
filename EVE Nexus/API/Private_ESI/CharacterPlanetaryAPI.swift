@@ -23,9 +23,9 @@ struct CharacterPlanetaryInfo: Codable {
 }
 
 struct PlanetaryDetail: Codable {
-    let links: [PlanetaryLink]  // maxItems: 500
-    let pins: [PlanetaryPin]  // maxItems: 100
-    let routes: [PlanetaryRoute]  // maxItems: 1000
+    let links: [PlanetaryLink] // maxItems: 500
+    let pins: [PlanetaryPin] // maxItems: 100
+    let routes: [PlanetaryRoute] // maxItems: 1000
 
     enum CodingKeys: String, CodingKey {
         case links, pins, routes
@@ -34,7 +34,7 @@ struct PlanetaryDetail: Codable {
 
 struct PlanetaryPin: Codable {
     let contentTypeId: Int?
-    let contents: [PlanetaryContent]?  // maxItems: 90
+    let contents: [PlanetaryContent]? // maxItems: 90
     let expiryTime: String?
     let extractorDetails: PlanetaryExtractor?
     let factoryDetails: PlanetaryFactory?
@@ -73,9 +73,9 @@ struct PlanetaryContent: Codable {
 }
 
 struct PlanetaryExtractor: Codable {
-    let heads: [PlanetaryHead]  // maxItems: 10
+    let heads: [PlanetaryHead] // maxItems: 10
     let productTypeId: Int?
-    let cycleTime: Int?  // in seconds
+    let cycleTime: Int? // in seconds
     let headRadius: Double?
     let qtyPerCycle: Int?
 
@@ -89,7 +89,7 @@ struct PlanetaryExtractor: Codable {
 }
 
 struct PlanetaryHead: Codable {
-    let headId: Int  // maximum: 9, minimum: 0
+    let headId: Int // maximum: 9, minimum: 0
     let latitude: Double
     let longitude: Double
 
@@ -114,7 +114,7 @@ struct PlanetaryRoute: Codable {
     let quantity: Double
     let routeId: Int64
     let sourcePinId: Int64
-    let waypoints: [Int64]?  // maxItems: 5
+    let waypoints: [Int64]? // maxItems: 5
 
     enum CodingKeys: String, CodingKey {
         case contentTypeId = "content_type_id"
@@ -167,7 +167,7 @@ class CharacterPlanetaryAPI {
 
         // 检查缓存（除非强制刷新）
         if !forceRefresh,
-            let cachedData = checkPlanetCache(characterId: characterId, planetId: planetId)
+           let cachedData = checkPlanetCache(characterId: characterId, planetId: planetId)
         {
             Logger.info("Fetch Planetary Detail from cache.")
             return cachedData
@@ -203,7 +203,7 @@ class CharacterPlanetaryAPI {
 
         // 检查文件修改时间
         guard let attributes = try? fileManager.attributesOfItem(atPath: cacheFile.path),
-            let modificationDate = attributes[.modificationDate] as? Date
+              let modificationDate = attributes[.modificationDate] as? Date
         else {
             return nil
         }
@@ -216,7 +216,7 @@ class CharacterPlanetaryAPI {
 
         // 读取缓存数据
         guard let data = try? Data(contentsOf: cacheFile),
-            let planetaryInfo = try? JSONDecoder().decode([CharacterPlanetaryInfo].self, from: data)
+              let planetaryInfo = try? JSONDecoder().decode([CharacterPlanetaryInfo].self, from: data)
         else {
             return nil
         }
@@ -254,7 +254,7 @@ class CharacterPlanetaryAPI {
 
         // 检查文件修改时间
         guard let attributes = try? fileManager.attributesOfItem(atPath: cacheFile.path),
-            let modificationDate = attributes[.modificationDate] as? Date
+              let modificationDate = attributes[.modificationDate] as? Date
         else {
             return nil
         }
@@ -267,7 +267,7 @@ class CharacterPlanetaryAPI {
 
         // 读取缓存数据
         guard let data = try? Data(contentsOf: cacheFile),
-            let planetaryDetail = try? JSONDecoder().decode(PlanetaryDetail.self, from: data)
+              let planetaryDetail = try? JSONDecoder().decode(PlanetaryDetail.self, from: data)
         else {
             return nil
         }

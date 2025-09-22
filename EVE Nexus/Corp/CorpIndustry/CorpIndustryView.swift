@@ -5,7 +5,7 @@ typealias CorpIndustryJob = CorpIndustryAPI.CorpIndustryJob
 // 军团工业项目倒计时组件 - 使用SwiftUI原生TimelineView
 struct CorpIndustryCountdownView: View {
     let endDate: Date
-    
+
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1.0)) { context in
             Text(getDisplayText(at: context.date))
@@ -13,29 +13,29 @@ struct CorpIndustryCountdownView: View {
                 .foregroundColor(.secondary)
         }
     }
-    
+
     private func getDisplayText(at currentDate: Date) -> String {
         let remainingTime = endDate.timeIntervalSince(currentDate)
-        
+
         if remainingTime <= 0 {
             return NSLocalizedString("Industry_Status_completed", comment: "")
         }
-        
+
         let totalSeconds = Int(remainingTime)
         let days = totalSeconds / (24 * 3600)
         let hours = (totalSeconds % (24 * 3600)) / 3600
         let minutes = (totalSeconds % 3600) / 60
         let seconds = totalSeconds % 60
-        
+
         if days > 0 {
             if hours > 0 {
                 return String(
-                    format: NSLocalizedString("Industry_Remaining_Days_Hours", comment: ""), 
+                    format: NSLocalizedString("Industry_Remaining_Days_Hours", comment: ""),
                     days, hours
                 )
             } else {
                 return String(
-                    format: NSLocalizedString("Industry_Remaining_Days", comment: ""), 
+                    format: NSLocalizedString("Industry_Remaining_Days", comment: ""),
                     days
                 )
             }
@@ -47,7 +47,7 @@ struct CorpIndustryCountdownView: View {
                 )
             } else {
                 return String(
-                    format: NSLocalizedString("Industry_Remaining_Hours", comment: ""), 
+                    format: NSLocalizedString("Industry_Remaining_Hours", comment: ""),
                     hours
                 )
             }
@@ -68,7 +68,7 @@ struct CorpIndustryCountdownView: View {
 // 军团工业项目实时进度条组件
 struct CorpIndustryProgressView: View {
     let job: CorpIndustryJob
-    
+
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1.0)) { context in
             GeometryReader { geometry in
@@ -78,54 +78,56 @@ struct CorpIndustryProgressView: View {
                         .fill(Color.gray.opacity(0.2))
                         .frame(height: 4)
                         .cornerRadius(2)
-                    
+
                     // 进度
                     Rectangle()
                         .fill(getProgressColor(at: context.date))
-                        .frame(width: geometry.size.width * getProgress(at: context.date), height: 4)
+                        .frame(
+                            width: geometry.size.width * getProgress(at: context.date), height: 4
+                        )
                         .cornerRadius(2)
                 }
             }
             .frame(height: 4)
         }
     }
-    
+
     private func getProgress(at currentDate: Date) -> Double {
         // 先检查是否已完成（根据状态或时间）
         if job.status == "delivered" || job.status == "ready" || currentDate >= job.end_date {
             return 1.0
         }
-        
+
         switch job.status {
-        case "cancelled", "revoked", "failed":  // 已取消或失败
+        case "cancelled", "revoked", "failed": // 已取消或失败
             return 1.0
-        default:  // 进行中
+        default: // 进行中
             let totalDuration = Double(job.duration)
             let elapsedTime = currentDate.timeIntervalSince(job.start_date)
             let progress = elapsedTime / totalDuration
             return min(max(progress, 0), 1)
         }
     }
-    
-    private func getProgressColor(at currentDate: Date) -> Color {
+
+    private func getProgressColor(at _: Date) -> Color {
         // 先检查特殊状态
         switch job.status {
-        case "cancelled", "revoked", "failed":  // 已取消或失败
+        case "cancelled", "revoked", "failed": // 已取消或失败
             return .red
-        case "delivered", "ready":  // 已完成
+        case "delivered", "ready": // 已完成
             return .green
-        case "active", "paused":  // 进行中或暂停
+        case "active", "paused": // 进行中或暂停
             // 根据活动类型返回不同颜色
             switch job.activity_id {
-            case 1:  // 制造
+            case 1: // 制造
                 return Color(red: 204 / 255, green: 153 / 255, blue: 0 / 255)
-            case 3, 4:  // 时间效率研究、材料效率研究
+            case 3, 4: // 时间效率研究、材料效率研究
                 return Color.blue
-            case 5:  // 复制
+            case 5: // 复制
                 return Color.blue
-            case 8:  // 发明
+            case 8: // 发明
                 return Color.blue
-            case 9:  // 反应
+            case 9: // 反应
                 return Color.cyan
             default:
                 return Color.gray
@@ -139,24 +141,26 @@ struct CorpIndustryProgressView: View {
 @MainActor
 class CorpIndustryViewModel: ObservableObject {
     @Published var jobs: [CorpIndustryJob] = []
-    @Published var groupedJobs: [String: [CorpIndustryJob]] = [:]  // 按日期分组的工作项目
+    @Published var groupedJobs: [String: [CorpIndustryJob]] = [:] // 按日期分组的工作项目
     @Published var isLoading = true
-    @Published var isFiltering = false  // 新增：过滤刷新状态
+    @Published var isFiltering = false // 新增：过滤刷新状态
     @Published var error: Error?
     @Published var showError = false
     @Published var itemNames: [Int: String] = [:]
     @Published var locationInfoCache: [Int64: LocationInfoDetail] = [:]
     @Published var itemIcons: [Int: String] = [:]
-    @Published var loadingProgress: String = ""  // 加载进度信息
-    
+    @Published var loadingProgress: String = "" // 加载进度信息
+
     // 发起人信息缓存
     @Published var installerNames: [Int: String] = [:]
     @Published var installerImages: [Int: UIImage] = [:]
-    
+
     // 过滤设置
     @Published var hideCompletedAndCancelled = false {
         didSet {
-            UserDefaults.standard.set(hideCompletedAndCancelled, forKey: "hideCompletedAndCancelled_global")
+            UserDefaults.standard.set(
+                hideCompletedAndCancelled, forKey: "hideCompletedAndCancelled_global"
+            )
             // 当隐藏完成项目设置发生变化时，强制刷新数据
             if initialLoadDone {
                 Task {
@@ -165,64 +169,64 @@ class CorpIndustryViewModel: ObservableObject {
             }
         }
     }
+
     @Published var selectedActivityTypes: Set<Int> = [1, 3, 4, 5, 8, 9] // 默认全选
     @Published var selectedInstallers: Set<Int> = []
     @Published var selectedSolarSystems: Set<String> = []
-    
+
     // 可用的活动类型
     let availableActivityTypes = [1, 3, 4, 5, 8, 9] // 制造、ME研究、TE研究、复制、发明、反应
-    
+
     // 可用的发起人列表
     @Published var availableInstallers: [Int] = []
-    
+
     // 可用的星系列表
     @Published var availableSolarSystems: [String] = []
-    
-    
-    
+
     private let characterId: Int
     private let databaseManager: DatabaseManager
     var initialLoadDone = false
-    private var cachedJobs: [CorpIndustryJob]? = nil  // 缓存工业项目数据
-    
+    private var cachedJobs: [CorpIndustryJob]? // 缓存工业项目数据
+
     init(characterId: Int, databaseManager: DatabaseManager = DatabaseManager()) {
         self.characterId = characterId
         self.databaseManager = databaseManager
-        
-        // 从 UserDefaults 读取全局设置
-        self.hideCompletedAndCancelled = UserDefaults.standard.bool(forKey: "hideCompletedAndCancelled_global")
-    }
-    
 
-    
+        // 从 UserDefaults 读取全局设置
+        hideCompletedAndCancelled = UserDefaults.standard.bool(
+            forKey: "hideCompletedAndCancelled_global")
+    }
+
     // 将工作项目按状态分组
     private func groupJobsByStatus() {
         var grouped = [String: [CorpIndustryJob]]()
         let currentTime = Date()
-        
+
         for job in jobs {
             let groupKey: String
-            
+
             if job.status == "ready" || (job.status == "active" && job.end_date <= currentTime) {
                 // 已完成但未交付的项目
                 groupKey = "ready"
             } else if job.status == "active" && job.end_date > currentTime {
                 // 正在进行中的项目
                 groupKey = "active"
-            } else if job.status == "delivered" || job.status == "cancelled" || job.status == "revoked" || job.status == "failed" {
+            } else if job.status == "delivered" || job.status == "cancelled"
+                || job.status == "revoked" || job.status == "failed"
+            {
                 // 已交付或已取消的项目
                 groupKey = "completed"
             } else {
                 // 其他状态归为已完成
                 groupKey = "completed"
             }
-            
+
             if grouped[groupKey] == nil {
                 grouped[groupKey] = []
             }
             grouped[groupKey]?.append(job)
         }
-        
+
         // 对每个组内的工作项目排序
         for (key, value) in grouped {
             switch key {
@@ -243,67 +247,65 @@ class CorpIndustryViewModel: ObservableObject {
                 break
             }
         }
-        
+
         groupedJobs = grouped
     }
-    
+
     func loadJobs(forceRefresh: Bool = false, isFiltering: Bool = false) async {
         // 如果已经加载过且不是强制刷新，则跳过
-        if initialLoadDone && !forceRefresh {
+        if initialLoadDone, !forceRefresh {
             return
         }
-        
 
-        
         // 根据是否是过滤刷新来设置不同的加载状态
         if isFiltering {
             self.isFiltering = true
         } else {
-            self.isLoading = true
+            isLoading = true
         }
         error = nil
         showError = false
         loadingProgress = NSLocalizedString("Loading_Corp_Industry_Jobs", comment: "正在加载军团工业项目...")
-        
+
         do {
             // 加载数据
             let jobs = try await fetchJobs(forceRefresh: forceRefresh)
-            
+
             // 更新数据
             self.jobs = jobs
             loadingProgress = NSLocalizedString("Loading_Item_Names", comment: "正在加载物品名称...")
             await loadItemNames()
-            
+
             loadingProgress = NSLocalizedString("Loading_Location_Names", comment: "正在加载位置信息...")
             await loadLocationNames()
-            
+
             loadingProgress = NSLocalizedString("Loading_Installer_Info", comment: "正在加载发起人信息...")
             await loadInstallerInfo()
-            
+
             loadingProgress = NSLocalizedString("Processing_Data", comment: "正在处理数据...")
             groupJobsByStatus()
-            
+
             // 更新过滤选项
             updateFilterOptions()
-            
+
             // 根据是否是过滤刷新来清除相应的加载状态
             if isFiltering {
                 self.isFiltering = false
             } else {
-                self.isLoading = false
+                isLoading = false
             }
-            self.initialLoadDone = true
-            self.loadingProgress = ""
-            
+            initialLoadDone = true
+            loadingProgress = ""
+
         } catch {
             self.error = error
-            self.showError = true
-            self.isLoading = false
+            showError = true
+            isLoading = false
             self.isFiltering = false
-            self.loadingProgress = ""
+            loadingProgress = ""
         }
     }
-    
+
     // 封装获取数据逻辑，处理缓存
     private func fetchJobs(forceRefresh: Bool = false) async throws -> [CorpIndustryJob] {
         // 如果不是强制刷新且有缓存，直接返回缓存
@@ -311,7 +313,7 @@ class CorpIndustryViewModel: ObservableObject {
             Logger.info("使用内存缓存的军团工业项目数据 - 角色ID: \(characterId)")
             return cached
         }
-        
+
         // 从API获取数据，带进度回调
         let jobs = try await CorpIndustryAPI.shared.fetchCorpIndustryJobs(
             characterId: characterId,
@@ -320,43 +322,45 @@ class CorpIndustryViewModel: ObservableObject {
             progressCallback: { currentPage, totalPages in
                 Task { @MainActor in
                     self.loadingProgress = String(
-                        format: NSLocalizedString("Loading_Corp_Industry_Page_Progress", comment: "正在加载第 %d/%d 页军团工业项目..."),
+                        format: NSLocalizedString(
+                            "Loading_Corp_Industry_Page_Progress", comment: "正在加载第 %d/%d 页军团工业项目..."
+                        ),
                         currentPage, totalPages
                     )
                 }
             }
         )
-        
+
         // 更新缓存
-        self.cachedJobs = jobs
-        
+        cachedJobs = jobs
+
         return jobs
     }
-    
+
     private func loadItemNames() async {
         var typeIds = Set<Int>()
         for job in jobs {
             typeIds.insert(job.blueprint_type_id)
         }
-        
+
         // 如果没有物品ID，直接返回
         if typeIds.isEmpty {
             return
         }
-        
+
         Logger.debug("开始批量加载\(typeIds.count)个蓝图信息")
-        
+
         // 使用IN查询一次性获取所有物品信息
         let placeholders = Array(repeating: "?", count: typeIds.count).joined(separator: ",")
         let query = """
-                SELECT type_id, name, icon_filename
-                FROM types
-                WHERE type_id IN (\(placeholders))
-            """
-        
+            SELECT type_id, name, icon_filename
+            FROM types
+            WHERE type_id IN (\(placeholders))
+        """
+
         // 将Set转换为数组作为参数
         let parameters = typeIds.map { $0 as Any }
-        
+
         if case let .success(rows) = databaseManager.executeQuery(query, parameters: parameters) {
             for row in rows {
                 if let typeId = row["type_id"] as? Int,
@@ -373,38 +377,38 @@ class CorpIndustryViewModel: ObservableObject {
             Logger.error("批量加载蓝图信息失败")
         }
     }
-    
+
     private func loadLocationNames() async {
         var locationIds = Set<Int64>()
         for job in jobs {
             locationIds.insert(job.location_id)
             locationIds.insert(job.facility_id)
         }
-        
+
         let locationLoader = LocationInfoLoader(
             databaseManager: databaseManager, characterId: Int64(characterId)
         )
         locationInfoCache = await locationLoader.loadLocationInfo(locationIds: locationIds)
     }
-    
+
     // 加载发起人信息
     private func loadInstallerInfo() async {
         var installerIds = Set<Int>()
         for job in jobs {
             installerIds.insert(job.installer_id)
         }
-        
+
         // 如果没有发起人ID，直接返回
         if installerIds.isEmpty {
             return
         }
-        
+
         Logger.debug("开始加载\(installerIds.count)个发起人信息")
-        
+
         // 计数器
         var successCount = 0
         var failureCount = 0
-        
+
         // 并发获取发起人信息
         await withTaskGroup(of: Void.self) { group in
             for installerId in installerIds {
@@ -415,13 +419,14 @@ class CorpIndustryViewModel: ObservableObject {
                             characterId: installerId, forceRefresh: false
                         )
                         self.installerNames[installerId] = info.name
-                        
+
                         // 获取发起人头像
                         let image = try await CharacterAPI.shared.fetchCharacterPortrait(
-                            characterId: installerId, size: 64, forceRefresh: false, catchImage: true
+                            characterId: installerId, size: 64, forceRefresh: false,
+                            catchImage: true
                         )
                         self.installerImages[installerId] = image
-                        
+
                         Logger.debug("成功加载发起人信息 - ID: \(installerId), 名称: \(info.name)")
                         successCount += 1
                     } catch {
@@ -433,48 +438,50 @@ class CorpIndustryViewModel: ObservableObject {
                 }
             }
         }
-        
+
         Logger.debug("完成加载发起人信息 - 成功: \(successCount)个, 失败: \(failureCount)个")
     }
-    
+
     // 过滤后的分组数据
     var filteredGroupedJobs: [String: [CorpIndustryJob]] {
         var filtered = [String: [CorpIndustryJob]]()
-        
+
         for (groupKey, jobs) in groupedJobs {
             // 如果隐藏已交付和已取消，跳过completed组
-            if hideCompletedAndCancelled && groupKey == "completed" {
+            if hideCompletedAndCancelled, groupKey == "completed" {
                 continue
             }
-            
+
             let filteredJobs = jobs.filter { job in
                 // 按活动类型过滤
                 let activityMatches = selectedActivityTypes.contains(job.activity_id)
-                
+
                 // 按发起人过滤
-                let installerMatches = selectedInstallers.isEmpty || selectedInstallers.contains(job.installer_id)
-                
+                let installerMatches =
+                    selectedInstallers.isEmpty || selectedInstallers.contains(job.installer_id)
+
                 // 按星系过滤
                 var solarSystemMatches = true
                 if !selectedSolarSystems.isEmpty {
                     if let locationInfo = locationInfoCache[job.location_id] {
-                        solarSystemMatches = selectedSolarSystems.contains(locationInfo.solarSystemName)
+                        solarSystemMatches = selectedSolarSystems.contains(
+                            locationInfo.solarSystemName)
                     } else {
                         solarSystemMatches = false
                     }
                 }
-                
+
                 return activityMatches && installerMatches && solarSystemMatches
             }
-            
+
             if !filteredJobs.isEmpty {
                 filtered[groupKey] = filteredJobs
             }
         }
-        
+
         return filtered
     }
-    
+
     // 更新过滤选项
     private func updateFilterOptions() {
         // 更新可用的发起人列表，按人物名称排序
@@ -484,7 +491,7 @@ class CorpIndustryViewModel: ObservableObject {
             let name2 = installerNames[id2] ?? "Unknown"
             return name1.localizedCompare(name2) == .orderedAscending
         }
-        
+
         // 更新可用的星系列表，按星系名称排序
         var solarSystems = Set<String>()
         for job in jobs {
@@ -492,33 +499,35 @@ class CorpIndustryViewModel: ObservableObject {
                 solarSystems.insert(locationInfo.solarSystemName)
             }
         }
-        let newAvailableSolarSystems = Array(solarSystems).sorted { $0.localizedCompare($1) == .orderedAscending }
-        
+        let newAvailableSolarSystems = Array(solarSystems).sorted {
+            $0.localizedCompare($1) == .orderedAscending
+        }
+
         // 检查发起人列表是否发生了变化
         let installersChanged = Set(newAvailableInstallers) != Set(availableInstallers)
         availableInstallers = newAvailableInstallers
-        
+
         // 检查星系列表是否发生了变化
         let solarSystemsChanged = Set(newAvailableSolarSystems) != Set(availableSolarSystems)
         availableSolarSystems = newAvailableSolarSystems
-        
+
         // 如果发起人列表发生了变化，自动选中所有发起人
-        if installersChanged && !availableInstallers.isEmpty {
+        if installersChanged, !availableInstallers.isEmpty {
             selectedInstallers = Set(availableInstallers)
-        } else if selectedInstallers.isEmpty && !availableInstallers.isEmpty {
+        } else if selectedInstallers.isEmpty, !availableInstallers.isEmpty {
             // 自动初始化过滤器选择（只在首次加载时）
             selectedInstallers = Set(availableInstallers)
         }
-        
+
         // 如果星系列表发生了变化，自动选中所有星系
-        if solarSystemsChanged && !availableSolarSystems.isEmpty {
+        if solarSystemsChanged, !availableSolarSystems.isEmpty {
             selectedSolarSystems = Set(availableSolarSystems)
-        } else if selectedSolarSystems.isEmpty && !availableSolarSystems.isEmpty {
+        } else if selectedSolarSystems.isEmpty, !availableSolarSystems.isEmpty {
             // 自动初始化过滤器选择（只在首次加载时）
             selectedSolarSystems = Set(availableSolarSystems)
         }
     }
-    
+
     // 获取星系的安全等级信息
     func getSolarSystemSecurity(_ systemName: String) -> Double? {
         // 从locationInfoCache中查找该星系的安全等级
@@ -536,15 +545,16 @@ struct CorpIndustryView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel: CorpIndustryViewModel
     @State private var showFilterSheet = false
-    
+
     init(characterId: Int, databaseManager: DatabaseManager = DatabaseManager()) {
         self.characterId = characterId
         // 创建ViewModel
         let vm = CorpIndustryViewModel(
-            characterId: characterId, databaseManager: databaseManager)
+            characterId: characterId, databaseManager: databaseManager
+        )
         _viewModel = StateObject(wrappedValue: vm)
     }
-    
+
     // 格式化状态组标题
     private func formatStatusGroupHeader(_ statusKey: String) -> String {
         switch statusKey {
@@ -558,7 +568,7 @@ struct CorpIndustryView: View {
             return statusKey
         }
     }
-    
+
     var body: some View {
         List {
             if viewModel.isLoading {
@@ -568,7 +578,7 @@ struct CorpIndustryView: View {
                         ProgressView()
                         Spacer()
                     }
-                    
+
                     if !viewModel.loadingProgress.isEmpty {
                         Text(viewModel.loadingProgress)
                             .font(.caption)
@@ -588,15 +598,16 @@ struct CorpIndustryView: View {
                     // 计算各类任务的活跃项目数量（参考人物工业项目的过滤逻辑）
                     let currentTime = Date()
                     let activeJobs = viewModel.jobs.filter { job in
-                        (job.status == "active" && job.end_date > currentTime)  // 正在进行中
-                        || job.status == "ready"  // 已完成但未交付
-                        || (job.status == "active" && job.end_date <= currentTime)  // 已完成但状态未更新
+                        (job.status == "active" && job.end_date > currentTime) // 正在进行中
+                            || job.status == "ready" // 已完成但未交付
+                            || (job.status == "active" && job.end_date <= currentTime) // 已完成但状态未更新
                     }
-                    
+
                     let manufacturingCount = activeJobs.filter { $0.activity_id == 1 }.count
-                    let researchCount = activeJobs.filter { [3, 4, 5, 8].contains($0.activity_id) }.count
+                    let researchCount = activeJobs.filter { [3, 4, 5, 8].contains($0.activity_id) }
+                        .count
                     let reactionCount = activeJobs.filter { $0.activity_id == 9 }.count
-                    
+
                     // 加工任务
                     HStack {
                         Text(NSLocalizedString("Industry_Slots_Manufacturing", comment: "加工任务"))
@@ -607,7 +618,7 @@ struct CorpIndustryView: View {
                             .fontDesign(.monospaced)
                             .foregroundColor(Color(red: 204 / 255, green: 153 / 255, blue: 0 / 255))
                     }
-                    
+
                     // 科研任务
                     HStack {
                         Text(NSLocalizedString("Industry_Slots_Research", comment: "研究任务"))
@@ -618,7 +629,7 @@ struct CorpIndustryView: View {
                             .fontDesign(.monospaced)
                             .foregroundColor(Color.blue)
                     }
-                    
+
                     // 反应任务
                     HStack {
                         Text(NSLocalizedString("Industry_Slots_Reaction", comment: "反应任务"))
@@ -632,7 +643,7 @@ struct CorpIndustryView: View {
                 }
                 .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                 .listSectionSpacing(.compact)
-                
+
                 // 过滤刷新指示器
                 if viewModel.isFiltering {
                     Section {
@@ -641,9 +652,13 @@ struct CorpIndustryView: View {
                             VStack(spacing: 8) {
                                 ProgressView()
                                     .scaleEffect(0.8)
-                                Text(NSLocalizedString("Industry_Filtering_Data", comment: "正在更新数据..."))
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+                                Text(
+                                    NSLocalizedString(
+                                        "Industry_Filtering_Data", comment: "正在更新数据..."
+                                    )
+                                )
+                                .font(.caption)
+                                .foregroundColor(.secondary)
                             }
                             .padding()
                             Spacer()
@@ -651,14 +666,16 @@ struct CorpIndustryView: View {
                     }
                     .listSectionSpacing(.compact)
                 }
-                
+
                 // 工业任务列表部分
                 if viewModel.filteredGroupedJobs.isEmpty && !viewModel.isFiltering {
                     Section {
                         // 计算总项目数和过滤后的项目数
-                        let totalJobsCount = viewModel.groupedJobs.values.reduce(0) { $0 + $1.count }
+                        let totalJobsCount = viewModel.groupedJobs.values.reduce(0) {
+                            $0 + $1.count
+                        }
                         let _ = viewModel.filteredGroupedJobs.values.reduce(0) { $0 + $1.count }
-                        
+
                         HStack {
                             Spacer()
                             VStack(spacing: 8) {
@@ -667,12 +684,19 @@ struct CorpIndustryView: View {
                                     .foregroundColor(.secondary)
                                 Text(NSLocalizedString("Misc_No_Data", comment: ""))
                                     .foregroundColor(.secondary)
-                                
+
                                 // 如果有总项目但被过滤完了，显示过滤信息
                                 if totalJobsCount > 0 {
-                                    Text(String(format: NSLocalizedString("Industry_Filtered_Count", comment: "已过滤 %d 个项目"), totalJobsCount))
-                                        .font(.caption)
-                                        .foregroundColor(.orange)
+                                    Text(
+                                        String(
+                                            format: NSLocalizedString(
+                                                "Industry_Filtered_Count", comment: "已过滤 %d 个项目"
+                                            ),
+                                            totalJobsCount
+                                        )
+                                    )
+                                    .font(.caption)
+                                    .foregroundColor(.orange)
                                 }
                             }
                             .padding()
@@ -683,7 +707,9 @@ struct CorpIndustryView: View {
                 } else if !viewModel.isFiltering {
                     // 按优先级排序：ready -> active -> completed
                     ForEach(
-                        ["ready", "active", "completed"].filter { viewModel.filteredGroupedJobs.keys.contains($0) },
+                        ["ready", "active", "completed"].filter {
+                            viewModel.filteredGroupedJobs.keys.contains($0)
+                        },
                         id: \.self
                     ) { statusKey in
                         Section(
@@ -693,21 +719,23 @@ struct CorpIndustryView: View {
                                     .font(.system(size: 18))
                                     .foregroundColor(.primary)
                                     .textCase(.none)
-                                
+
                                 Spacer()
-                                
+
                                 // 显示每个section的项目数量
-                                let sectionCount = viewModel.filteredGroupedJobs[statusKey]?.count ?? 0
+                                let sectionCount =
+                                    viewModel.filteredGroupedJobs[statusKey]?.count ?? 0
                                 Text("(\(sectionCount))")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             }
                         ) {
-                            ForEach(viewModel.filteredGroupedJobs[statusKey] ?? [], id: \.job_id) { job in
+                            ForEach(viewModel.filteredGroupedJobs[statusKey] ?? [], id: \.job_id) {
+                                job in
                                 CorpIndustryJobRow(
                                     job: job,
                                     blueprintName: viewModel.itemNames[job.blueprint_type_id]
-                                    ?? "Unknown BP",
+                                        ?? "Unknown BP",
                                     blueprintIcon: viewModel.itemIcons[job.blueprint_type_id],
                                     locationInfo: viewModel.locationInfoCache[job.location_id],
                                     currentTime: Date(), // 使用当前时间作为倒计时基准
@@ -751,7 +779,7 @@ struct CorpIndustryView: View {
                 title: Text(NSLocalizedString("Common_Error", comment: "")),
                 message: Text(
                     viewModel.error?.localizedDescription
-                    ?? NSLocalizedString("Common_Unknown_Error", comment: "")),
+                        ?? NSLocalizedString("Common_Unknown_Error", comment: "")),
                 dismissButton: .default(Text(NSLocalizedString("Common_OK", comment: ""))) {
                     dismiss()
                 }
@@ -769,35 +797,31 @@ struct CorpIndustryJobRow: View {
     let installerName: String?
     let installerImage: UIImage?
     @StateObject private var databaseManager = DatabaseManager()
-    
+
     // 带颜色的状态文本结构体
     struct StatusText {
         let text: String
         let color: Color
     }
-    
 
-    
-
-    
     // 修改时间显示格式
     private func getTimeDisplay() -> String {
         let currentTime = Date()
         let dateStr = formatDate(job.end_date)
-        
+
         // 如果已经完成，只显示完成时间
         if job.status == "delivered" || job.status == "ready" || currentTime >= job.end_date {
             return dateStr
         }
-        
+
         // 如果是活动状态，添加剩余时间
         if job.status == "active" {
             return "\(dateStr)"
         }
-        
+
         return dateStr
     }
-    
+
     // 获取活动状态文本和颜色
     private func getActivityStatus() -> StatusText {
         // 先检查特殊状态
@@ -828,25 +852,27 @@ struct CorpIndustryJobRow: View {
             return StatusText(text: finalText, color: .secondary)
         case "ready":
             return StatusText(
-                text: "\(getActivityTypeText())·\(NSLocalizedString("Industry_Status_ready", comment: ""))",
+                text:
+                "\(getActivityTypeText())·\(NSLocalizedString("Industry_Status_ready", comment: ""))",
                 color: .green
             )
         default:
             // 检查是否已完成但未交付
             if Date() >= job.end_date {
                 return StatusText(
-                    text: "\(getActivityTypeText())·\(NSLocalizedString("Industry_Status_ready", comment: ""))",
+                    text:
+                    "\(getActivityTypeText())·\(NSLocalizedString("Industry_Status_ready", comment: ""))",
                     color: .green
                 )
             }
-            
+
             if job.status != "active" {
                 return StatusText(
                     text: NSLocalizedString("Industry_Status_\(job.status)", comment: ""),
                     color: .secondary
                 )
             }
-            
+
             // 如果是活动状态，根据活动类型返回对应文本和颜色
             // https://sde.hoboleaks.space/tq/industryactivities.json
             switch job.activity_id {
@@ -888,7 +914,7 @@ struct CorpIndustryJobRow: View {
             }
         }
     }
-    
+
     // 格式化日期
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
@@ -897,7 +923,7 @@ struct CorpIndustryJobRow: View {
         formatter.timeZone = TimeZone.current
         return formatter.string(from: date)
     }
-    
+
     // 获取活动类型文本
     private func getActivityTypeText() -> String {
         switch job.activity_id {
@@ -917,7 +943,7 @@ struct CorpIndustryJobRow: View {
             return ""
         }
     }
-    
+
     var body: some View {
         NavigationLink(
             destination: ShowBluePrintInfo(
@@ -938,24 +964,28 @@ struct CorpIndustryJobRow: View {
                             .fill(Color.gray.opacity(0.3))
                             .frame(width: 32, height: 32)
                     }
-                    
+
                     VStack(alignment: .leading, spacing: 4) {
                         // 蓝图名称和状态
                         Text(blueprintName)
                             .font(.headline)
                             .lineLimit(1)
-                        
+
                         // 数量信息
                         HStack {
                             Text(
                                 job.activity_id == 5
-                                ? String(
-                                    format: NSLocalizedString(
-                                        "Industry_Runs_With_Copies_Format", comment: ""),
-                                    job.runs, job.licensed_runs ?? 1)
-                                : String(
-                                    format: NSLocalizedString(
-                                        "Industry_Runs_Format", comment: ""), job.runs)
+                                    ? String(
+                                        format: NSLocalizedString(
+                                            "Industry_Runs_With_Copies_Format", comment: ""
+                                        ),
+                                        job.runs, job.licensed_runs ?? 1
+                                    )
+                                    : String(
+                                        format: NSLocalizedString(
+                                            "Industry_Runs_Format", comment: ""
+                                        ), job.runs
+                                    )
                             )
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -966,11 +996,11 @@ struct CorpIndustryJobRow: View {
                         }
                     }
                 }
-                
+
                 // 进度条
                 CorpIndustryProgressView(job: job)
                     .padding(.vertical, 4)
-                
+
                 // 第二行：位置信息和发起人信息
                 GeometryReader { geometry in
                     HStack(spacing: 8) {
@@ -984,9 +1014,9 @@ struct CorpIndustryJobRow: View {
                         )
                         .lineLimit(1)
                         .frame(width: geometry.size.width * 0.67, alignment: .leading)
-                        
+
                         Spacer()
-                        
+
                         // 右侧 1/3：发起人信息
                         if let installerName = installerName {
                             HStack(spacing: 4) {
@@ -1001,7 +1031,7 @@ struct CorpIndustryJobRow: View {
                                         .fill(Color.gray.opacity(0.3))
                                         .frame(width: 18, height: 18)
                                 }
-                                
+
                                 // 发起人名称
                                 Text(installerName)
                                     .font(.caption)
@@ -1038,11 +1068,13 @@ struct CorpIndustryJobRow: View {
                     )
                 }
             }
-            
+
             // 复制地点信息
             if let locationInfo = locationInfo {
                 Button {
-                    let locationText = !locationInfo.stationName.isEmpty ? locationInfo.stationName : locationInfo.solarSystemName
+                    let locationText =
+                        !locationInfo.stationName.isEmpty
+                            ? locationInfo.stationName : locationInfo.solarSystemName
                     UIPasteboard.general.string = locationText
                 } label: {
                     Label(
@@ -1059,7 +1091,7 @@ struct CorpIndustryFilterSheet: View {
     @ObservedObject var viewModel: CorpIndustryViewModel
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
-    
+
     // 获取活动类型的本地化名称
     private func getActivityTypeName(_ activityId: Int) -> String {
         switch activityId {
@@ -1079,41 +1111,41 @@ struct CorpIndustryFilterSheet: View {
             return "Unknown Activity \(activityId)"
         }
     }
-    
+
     // 获取活动类型对应的颜色
     private func getActivityTypeColor(_ activityId: Int) -> Color {
         switch activityId {
-        case 1:  // 制造
+        case 1: // 制造
             return Color(red: 0.9, green: 0.7, blue: 0.3) // 土黄色
-        case 3, 4, 5, 8:  // 时间效率研究、材料效率研究、复制、发明
+        case 3, 4, 5, 8: // 时间效率研究、材料效率研究、复制、发明
             return Color.blue // 蓝色
-        case 9:  // 反应
+        case 9: // 反应
             return Color.cyan // 青蓝色
         default:
             return Color.gray
         }
     }
-    
+
     // 获取活动类型对应的图标文件名
     private func getActivityTypeIcon(_ activityId: Int) -> String {
         switch activityId {
-        case 1:  // 制造
+        case 1: // 制造
             return "Icon_Manufacturing.png"
-        case 3:  // 时间效率研究
+        case 3: // 时间效率研究
             return "Icon_ResearchTime.png"
-        case 4:  // 材料效率研究
+        case 4: // 材料效率研究
             return "Icon_ResearchMaterial.png"
-        case 5:  // 复制
+        case 5: // 复制
             return "Icon_Copying.png"
-        case 8:  // 发明
+        case 8: // 发明
             return "Icon_Invention.png"
-        case 9:  // 反应
+        case 9: // 反应
             return "Icon_reaction.png"
         default:
             return "Icon_Manufacturing.png"
         }
     }
-    
+
     var body: some View {
         NavigationView {
             Form {
@@ -1121,14 +1153,22 @@ struct CorpIndustryFilterSheet: View {
                 Section {
                     Toggle(isOn: $viewModel.hideCompletedAndCancelled) {
                         VStack(alignment: .leading) {
-                            Text(NSLocalizedString("Industry_Filter_Hide_Completed", comment: "隐藏已交付和已取消的项目"))
-                            Text(NSLocalizedString("Industry_Filter_Hide_Completed_Description", comment: "隐藏已完成、已取消、已撤销等状态的项目"))
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                            Text(
+                                NSLocalizedString(
+                                    "Industry_Filter_Hide_Completed", comment: "隐藏已交付和已取消的项目"
+                                ))
+                            Text(
+                                NSLocalizedString(
+                                    "Industry_Filter_Hide_Completed_Description",
+                                    comment: "隐藏已完成、已取消、已撤销等状态的项目"
+                                )
+                            )
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                         }
                     }
                 }
-                
+
                 // 第二个section：按项目类型过滤
                 Section {
                     ForEach(viewModel.availableActivityTypes, id: \.self) { activityId in
@@ -1144,19 +1184,23 @@ struct CorpIndustryFilterSheet: View {
                                 Circle()
                                     .fill(getActivityTypeColor(activityId))
                                     .frame(width: 8, height: 8)
-                                
+
                                 // 添加工业类型图标
                                 if colorScheme == .light {
-                                    IconManager.shared.loadImage(for: getActivityTypeIcon(activityId))
-                                        .resizable()
-                                        .frame(width: 16, height: 16)
-                                        .cornerRadius(4)
-                                        .colorInvert()
+                                    IconManager.shared.loadImage(
+                                        for: getActivityTypeIcon(activityId)
+                                    )
+                                    .resizable()
+                                    .frame(width: 16, height: 16)
+                                    .cornerRadius(4)
+                                    .colorInvert()
                                 } else {
-                                    IconManager.shared.loadImage(for: getActivityTypeIcon(activityId))
-                                        .resizable()
-                                        .frame(width: 16, height: 16)
-                                        .cornerRadius(4)
+                                    IconManager.shared.loadImage(
+                                        for: getActivityTypeIcon(activityId)
+                                    )
+                                    .resizable()
+                                    .frame(width: 16, height: 16)
+                                    .cornerRadius(4)
                                 }
                                 Text(getActivityTypeName(activityId))
                                     .foregroundColor(.primary)
@@ -1175,16 +1219,21 @@ struct CorpIndustryFilterSheet: View {
                         Text(NSLocalizedString("Industry_Filter_Activity_Types", comment: "项目类型"))
                         Spacer()
                         Button(action: {
-                            if viewModel.selectedActivityTypes.count == viewModel.availableActivityTypes.count {
+                            if viewModel.selectedActivityTypes.count
+                                == viewModel.availableActivityTypes.count
+                            {
                                 viewModel.selectedActivityTypes = []
                             } else {
-                                viewModel.selectedActivityTypes = Set(viewModel.availableActivityTypes)
+                                viewModel.selectedActivityTypes = Set(
+                                    viewModel.availableActivityTypes)
                             }
                         }) {
                             HStack(spacing: 4) {
                                 Text(NSLocalizedString("Industry_Filter_Select_All", comment: "全选"))
                                     .font(.caption)
-                                if viewModel.selectedActivityTypes.count == viewModel.availableActivityTypes.count {
+                                if viewModel.selectedActivityTypes.count
+                                    == viewModel.availableActivityTypes.count
+                                {
                                     Image(systemName: "checkmark.circle.fill")
                                         .foregroundColor(.blue)
                                 } else {
@@ -1197,7 +1246,7 @@ struct CorpIndustryFilterSheet: View {
                         .buttonStyle(PlainButtonStyle())
                     }
                 }
-                
+
                 // 第三个section：按发起人过滤
                 if !viewModel.availableInstallers.isEmpty {
                     Section {
@@ -1221,7 +1270,7 @@ struct CorpIndustryFilterSheet: View {
                                             .fill(Color.gray.opacity(0.3))
                                             .frame(width: 32, height: 32)
                                     }
-                                    
+
                                     Text(viewModel.installerNames[installerId] ?? "Unknown")
                                         .foregroundColor(.primary)
                                     Spacer()
@@ -1239,16 +1288,25 @@ struct CorpIndustryFilterSheet: View {
                             Text(NSLocalizedString("Industry_Filter_Installers", comment: "发起人"))
                             Spacer()
                             Button(action: {
-                                if viewModel.selectedInstallers.count == viewModel.availableInstallers.count {
+                                if viewModel.selectedInstallers.count
+                                    == viewModel.availableInstallers.count
+                                {
                                     viewModel.selectedInstallers = []
                                 } else {
-                                    viewModel.selectedInstallers = Set(viewModel.availableInstallers)
+                                    viewModel.selectedInstallers = Set(
+                                        viewModel.availableInstallers)
                                 }
                             }) {
                                 HStack(spacing: 4) {
-                                    Text(NSLocalizedString("Industry_Filter_Select_All", comment: "全选"))
-                                        .font(.caption)
-                                    if viewModel.selectedInstallers.count == viewModel.availableInstallers.count {
+                                    Text(
+                                        NSLocalizedString(
+                                            "Industry_Filter_Select_All", comment: "全选"
+                                        )
+                                    )
+                                    .font(.caption)
+                                    if viewModel.selectedInstallers.count
+                                        == viewModel.availableInstallers.count
+                                    {
                                         Image(systemName: "checkmark.circle.fill")
                                             .foregroundColor(.blue)
                                     } else {
@@ -1262,7 +1320,7 @@ struct CorpIndustryFilterSheet: View {
                         }
                     }
                 }
-                
+
                 // 第四个section：按星系过滤
                 if !viewModel.availableSolarSystems.isEmpty {
                     Section {
@@ -1286,7 +1344,7 @@ struct CorpIndustryFilterSheet: View {
                                         Text(solarSystem)
                                             .foregroundColor(.primary)
                                     }
-                                    
+
                                     Spacer()
                                     if viewModel.selectedSolarSystems.contains(solarSystem) {
                                         Image(systemName: "checkmark")
@@ -1302,16 +1360,25 @@ struct CorpIndustryFilterSheet: View {
                             Text(NSLocalizedString("Industry_Filter_Solar_Systems", comment: "星系"))
                             Spacer()
                             Button(action: {
-                                if viewModel.selectedSolarSystems.count == viewModel.availableSolarSystems.count {
+                                if viewModel.selectedSolarSystems.count
+                                    == viewModel.availableSolarSystems.count
+                                {
                                     viewModel.selectedSolarSystems = []
                                 } else {
-                                    viewModel.selectedSolarSystems = Set(viewModel.availableSolarSystems)
+                                    viewModel.selectedSolarSystems = Set(
+                                        viewModel.availableSolarSystems)
                                 }
                             }) {
                                 HStack(spacing: 4) {
-                                    Text(NSLocalizedString("Industry_Filter_Select_All", comment: "全选"))
-                                        .font(.caption)
-                                    if viewModel.selectedSolarSystems.count == viewModel.availableSolarSystems.count {
+                                    Text(
+                                        NSLocalizedString(
+                                            "Industry_Filter_Select_All", comment: "全选"
+                                        )
+                                    )
+                                    .font(.caption)
+                                    if viewModel.selectedSolarSystems.count
+                                        == viewModel.availableSolarSystems.count
+                                    {
                                         Image(systemName: "checkmark.circle.fill")
                                             .foregroundColor(.blue)
                                     } else {

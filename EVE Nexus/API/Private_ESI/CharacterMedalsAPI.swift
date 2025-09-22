@@ -11,7 +11,7 @@ public class CharacterMedalsAPI {
     public static let shared = CharacterMedalsAPI()
 
     private let cachePrefix = "character_medals_"
-    private let cacheTimeout: TimeInterval = 3600  // 1小时缓存
+    private let cacheTimeout: TimeInterval = 3600 // 1小时缓存
 
     private init() {}
 
@@ -46,8 +46,8 @@ public class CharacterMedalsAPI {
     private func getCachedMedals(characterId: Int) -> [CharacterMedal]? {
         let key = cachePrefix + String(characterId)
         guard let data = UserDefaults.standard.data(forKey: key),
-            let cache = try? JSONDecoder().decode(CacheEntry.self, from: data),
-            Date().timeIntervalSince(cache.timestamp) < cacheTimeout
+              let cache = try? JSONDecoder().decode(CacheEntry.self, from: data),
+              Date().timeIntervalSince(cache.timestamp) < cacheTimeout
         else {
             return nil
         }

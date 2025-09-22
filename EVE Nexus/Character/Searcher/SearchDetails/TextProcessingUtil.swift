@@ -50,7 +50,7 @@ class TextProcessingUtil {
 
             // 转换为Unicode字符
             guard let codePoint = UInt32(hexString, radix: 16),
-                let scalar = UnicodeScalar(codePoint)
+                  let scalar = UnicodeScalar(codePoint)
             else { continue }
 
             let unicodeChar = String(scalar)
@@ -74,7 +74,7 @@ class TextProcessingUtil {
 
         // 移除可能残留的a标签和url标签（它们在cleanRichText中被保留）
         if let regex = try? NSRegularExpression(pattern: "</?a[^>]*>|</?url[^>]*>", options: []) {
-            let range = NSRange(currentText.startIndex..<currentText.endIndex, in: currentText)
+            let range = NSRange(currentText.startIndex ..< currentText.endIndex, in: currentText)
             currentText = regex.stringByReplacingMatches(
                 in: currentText, options: [], range: range, withTemplate: ""
             )

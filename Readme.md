@@ -15,7 +15,9 @@
 # 格式化
 
 ```bash
-cd "EVE Nexus" && $(xcrun --find swift-format) -r . -i --configuration .swift-format.json
+# cd "EVE Nexus" && $(xcrun --find swift-format) -r . -i --configuration .swift-format.json
+# brew install swiftformat
+swiftformat .
 ```
 
 # 扫描未被使用的函数

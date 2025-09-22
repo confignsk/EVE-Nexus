@@ -1,7 +1,7 @@
 import SwiftUI
 
 // 共用的图标尺寸常量
-private struct IconSize {
+private enum IconSize {
     static let standard: CGFloat = 32
     static let location: CGFloat = 36
 }
@@ -85,7 +85,7 @@ private struct LocationNameView: View {
     // 获取星系名称，优先使用缓存
     private func getSolarSystemName() -> String? {
         if let systemId = location.system_id,
-            let name = viewModel.solarSystemNameCache[systemId]
+           let name = viewModel.solarSystemNameCache[systemId]
         {
             return name
         }
@@ -107,7 +107,7 @@ private struct SearchResultRowView: View {
                     // 物品名称和数量
                     HStack(spacing: 4) {
                         Text(result.itemInfo.name)
-                        
+
                         // 显示数量（如果大于1）
                         if result.totalQuantity > 1 {
                             Text("×\(result.totalQuantity)")
@@ -162,7 +162,8 @@ struct CharacterAssetsView: View {
                                     NSLocalizedString("Assets_Loading_Building_Tree", comment: "")
                                 case .processingLocations:
                                     NSLocalizedString(
-                                        "Assets_Loading_Processing_Locations", comment: "")
+                                        "Assets_Loading_Processing_Locations", comment: ""
+                                    )
                                 case let .fetchingStructureInfo(current, total):
                                     String(
                                         format: NSLocalizedString(
@@ -171,7 +172,8 @@ struct CharacterAssetsView: View {
                                     )
                                 case .preparingContainers:
                                     NSLocalizedString(
-                                        "Assets_Loading_Preparing_Containers", comment: "")
+                                        "Assets_Loading_Preparing_Containers", comment: ""
+                                    )
                                 case let .loadingNames(current, total):
                                     String(
                                         format: NSLocalizedString(
@@ -207,7 +209,7 @@ struct CharacterAssetsView: View {
             }
             // 显示错误信息
             else if let error = viewModel.error,
-                !viewModel.isLoading && viewModel.assetLocations.isEmpty
+                    !viewModel.isLoading && viewModel.assetLocations.isEmpty
             {
                 Section {
                     HStack {
@@ -250,7 +252,8 @@ struct CharacterAssetsView: View {
                             location: result.containerNode,
                             preloadedItemInfo: viewModel.itemInfoCache,
                             stationNameCache: viewModel.stationNameCache,
-                            solarSystemNameCache: viewModel.solarSystemNameCache)
+                            solarSystemNameCache: viewModel.solarSystemNameCache
+                        )
                     ) {
                         SearchResultRowView(result: result)
                     }
@@ -278,7 +281,8 @@ struct CharacterAssetsView: View {
                                     location: location,
                                     preloadedItemInfo: viewModel.itemInfoCache,
                                     stationNameCache: viewModel.stationNameCache,
-                                    solarSystemNameCache: viewModel.solarSystemNameCache)
+                                    solarSystemNameCache: viewModel.solarSystemNameCache
+                                )
                             ) {
                                 LocationRowView(location: location)
                                     .environmentObject(viewModel)
@@ -287,14 +291,17 @@ struct CharacterAssetsView: View {
                                 Button(role: .destructive) {
                                     viewModel.togglePinLocation(location)
                                 } label: {
-                                    Label(NSLocalizedString("Assets_Unpin", comment: ""), systemImage: "pin.slash")
+                                    Label(
+                                        NSLocalizedString("Assets_Unpin", comment: ""),
+                                        systemImage: "pin.slash"
+                                    )
                                 }
                                 .tint(.red)
                             }
                         }
                     }
                 }
-                
+
                 // 其他位置按星域分组
                 ForEach(viewModel.unpinnedLocationsByRegion, id: \.region) { group in
                     Section(
@@ -313,7 +320,8 @@ struct CharacterAssetsView: View {
                                     location: location,
                                     preloadedItemInfo: viewModel.itemInfoCache,
                                     stationNameCache: viewModel.stationNameCache,
-                                    solarSystemNameCache: viewModel.solarSystemNameCache)
+                                    solarSystemNameCache: viewModel.solarSystemNameCache
+                                )
                             ) {
                                 LocationRowView(location: location)
                                     .environmentObject(viewModel)
@@ -322,7 +330,10 @@ struct CharacterAssetsView: View {
                                 Button {
                                     viewModel.togglePinLocation(location)
                                 } label: {
-                                    Label(NSLocalizedString("Assets_Pin", comment: ""), systemImage: "pin")
+                                    Label(
+                                        NSLocalizedString("Assets_Pin", comment: ""),
+                                        systemImage: "pin"
+                                    )
                                 }
                                 .tint(.blue)
                             }
@@ -357,16 +368,20 @@ struct CharacterAssetsView: View {
                 }) {
                     Image(systemName: "arrow.clockwise")
                         .rotationEffect(.degrees(isRefreshing ? 360 : 0))
-                        .animation(isRefreshing ? .linear(duration: 1).repeatForever(autoreverses: false) : .default, value: isRefreshing)
+                        .animation(
+                            isRefreshing
+                                ? .linear(duration: 1).repeatForever(autoreverses: false)
+                                : .default, value: isRefreshing
+                        )
                 }
                 .disabled(isRefreshing || viewModel.isLoading)
             }
         }
     }
-    
+
     private func refreshData() {
         isRefreshing = true
-        
+
         Task {
             await viewModel.loadAssets(forceRefresh: true)
             isRefreshing = false

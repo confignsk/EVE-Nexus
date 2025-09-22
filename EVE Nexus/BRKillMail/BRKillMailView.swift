@@ -51,8 +51,7 @@ class KillMailViewModel: ObservableObject {
         return cacheDirectory.appendingPathComponent("\(type)_\(characterId).json")
     }
 
-    private func saveToCache(_ data: [String: Any], for type: String, filter: KillMailFilter = .all)
-    {
+    private func saveToCache(_ data: [String: Any], for type: String, filter: KillMailFilter = .all) {
         let cacheKey = "\(type)_\(filter.rawValue)"
         let filePath = getCacheFilePath(for: cacheKey)
         var cacheData = data
@@ -60,7 +59,8 @@ class KillMailViewModel: ObservableObject {
 
         do {
             let jsonData = try JSONSerialization.data(
-                withJSONObject: cacheData, options: .prettyPrinted)
+                withJSONObject: cacheData, options: .prettyPrinted
+            )
             try jsonData.write(to: filePath)
             Logger.info("保存到缓存文件: \(filePath)")
         } catch {
@@ -73,8 +73,8 @@ class KillMailViewModel: ObservableObject {
         let filePath = getCacheFilePath(for: cacheKey)
 
         guard let data = try? Data(contentsOf: filePath),
-            let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-            let updateTime = dict["update_time"] as? TimeInterval
+              let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let updateTime = dict["update_time"] as? TimeInterval
         else {
             return nil
         }
@@ -159,7 +159,7 @@ class KillMailViewModel: ObservableObject {
                     userInfo: [
                         NSLocalizedDescriptionKey: NSLocalizedString(
                             "KillMail_Invalid_Response_Format", comment: ""
-                        )
+                        ),
                     ]
                 )
             }
@@ -225,7 +225,7 @@ class KillMailViewModel: ObservableObject {
                     userInfo: [
                         NSLocalizedDescriptionKey: NSLocalizedString(
                             "KillMail_Invalid_Response_Format", comment: ""
-                        )
+                        ),
                     ]
                 )
             }
@@ -270,22 +270,22 @@ class KillMailViewModel: ObservableObject {
             if let victInfo = mail["vict"] as? [String: Any] {
                 // 优先检查联盟ID
                 if let allyInfo = victInfo["ally"] as? [String: Any],
-                    let allyId = allyInfo["id"] as? Int,
-                    allyId > 0
+                   let allyId = allyInfo["id"] as? Int,
+                   allyId > 0
                 {
                     // 只有当联盟ID有效且图标未加载时才加载联盟图标
                     if allianceIcons[allyId] == nil,
-                        let icon = await loadSingleOrganizationIcon(type: "alliance", id: allyId)
+                       let icon = await loadSingleOrganizationIcon(type: "alliance", id: allyId)
                     {
                         allianceIcons[allyId] = icon
                     }
                 } else if let corpInfo = victInfo["corp"] as? [String: Any],
-                    let corpId = corpInfo["id"] as? Int,
-                    corpId > 0
+                          let corpId = corpInfo["id"] as? Int,
+                          corpId > 0
                 {
                     // 只有在没有有效联盟ID的情况下才加载军团图标
                     if corporationIcons[corpId] == nil,
-                        let icon = await loadSingleOrganizationIcon(type: "corporation", id: corpId)
+                       let icon = await loadSingleOrganizationIcon(type: "corporation", id: corpId)
                     {
                         corporationIcons[corpId] = icon
                     }
@@ -303,7 +303,8 @@ class KillMailViewModel: ObservableObject {
                 return try await AllianceAPI.shared.fetchAllianceLogo(allianceID: id, size: 64)
             case "corporation":
                 return try await CorporationAPI.shared.fetchCorporationLogo(
-                    corporationId: id, size: 64)
+                    corporationId: id, size: 64
+                )
             default:
                 return nil
             }
@@ -318,10 +319,10 @@ class KillMailViewModel: ObservableObject {
 
         let placeholders = String(repeating: "?,", count: typeIds.count).dropLast()
         let query = """
-                SELECT type_id, name, icon_filename 
-                FROM types 
-                WHERE type_id IN (\(placeholders))
-            """
+            SELECT type_id, name, icon_filename 
+            FROM types 
+            WHERE type_id IN (\(placeholders))
+        """
 
         let result = databaseManager.executeQuery(query, parameters: typeIds)
         var infoMap: [Int: (name: String, iconFileName: String)] = [:]
@@ -329,8 +330,8 @@ class KillMailViewModel: ObservableObject {
         if case let .success(rows) = result {
             for row in rows {
                 if let typeId = row["type_id"] as? Int,
-                    let name = row["name"] as? String,
-                    let iconFileName = row["icon_filename"] as? String
+                   let name = row["name"] as? String,
+                   let iconFileName = row["icon_filename"] as? String
                 {
                     infoMap[typeId] = (name: name, iconFileName: iconFileName)
                 }
@@ -341,7 +342,7 @@ class KillMailViewModel: ObservableObject {
     }
 
     func loadStats(forceRefresh: Bool = false) async {
-        if !forceRefresh && characterStats != nil {
+        if !forceRefresh, characterStats != nil {
             return
         }
 
@@ -351,8 +352,9 @@ class KillMailViewModel: ObservableObject {
 
         // 如果不是强制刷新，尝试从缓存加载
         if !forceRefresh, let cachedData = loadFromCache(for: "stats"),
-            let stats = try? JSONDecoder().decode(
-                CharBattleIsk.self, from: try JSONSerialization.data(withJSONObject: cachedData))
+           let stats = try? JSONDecoder().decode(
+               CharBattleIsk.self, from: try JSONSerialization.data(withJSONObject: cachedData)
+           )
         {
             await MainActor.run {
                 self.characterStats = stats
@@ -367,7 +369,7 @@ class KillMailViewModel: ObservableObject {
             let stats = try await ZKillMailsAPI.shared.fetchCharacterStats(characterId: characterId)
             // 保存到缓存
             if let jsonData = try? JSONEncoder().encode(stats),
-                let dict = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any]
+               let dict = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any]
             {
                 saveToCache(dict, for: "stats")
             }
@@ -393,7 +395,7 @@ class KillMailViewModel: ObservableObject {
     }
 
     func loadMoreData(for filter: KillMailFilter = .all) async {
-        guard !isLoadingMore && currentPage < totalPages else { return }
+        guard !isLoadingMore, currentPage < totalPages else { return }
 
         await MainActor.run { isLoadingMore = true }
 
@@ -482,7 +484,7 @@ class KillMailViewModel: ObservableObject {
             let stats = try await ZKillMailsAPI.shared.fetchCharacterStats(characterId: characterId)
             // 保存到缓存
             if let jsonData = try? JSONEncoder().encode(stats),
-                let dict = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any]
+               let dict = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any]
             {
                 saveToCache(dict, for: "stats")
             }
@@ -505,7 +507,7 @@ struct BRKillMailView: View {
     @StateObject private var viewModel: KillMailViewModel
     @State private var selectedFilter: KillMailFilter = .all
     @State private var isLoading = false
-    @State private var hasInitialized = false  // 跟踪是否已执行初始加载
+    @State private var hasInitialized = false // 跟踪是否已执行初始加载
 
     init(characterId: Int) {
         self.characterId = characterId
@@ -514,7 +516,7 @@ struct BRKillMailView: View {
 
     // 执行初始数据加载，但只在第一次调用时执行
     private func loadInitialDataIfNeeded() {
-        guard !hasInitialized && !isLoading else { return }
+        guard !hasInitialized, !isLoading else { return }
 
         hasInitialized = true
         isLoading = true
@@ -620,7 +622,8 @@ struct BRKillMailView: View {
                                     name: String(
                                         format: NSLocalizedString(
                                             "KillMail_Unknown_Item", comment: ""
-                                        ), shipId),
+                                        ), shipId
+                                    ),
                                     iconFileName: DatabaseConfig.defaultItemIcon
                                 ),
                                 allianceIcon: allyId.flatMap { viewModel.allianceIconMap[$0] },
@@ -686,19 +689,19 @@ struct BRKillMailCell: View {
             switch searchResult.category {
             case .character:
                 if let charInfo = victInfo["char"] as? [String: Any],
-                    let victimId = charInfo["id"] as? Int
+                   let victimId = charInfo["id"] as? Int
                 {
                     return victimId == searchResult.id
                 }
             case .corporation:
                 if let corpInfo = victInfo["corp"] as? [String: Any],
-                    let corpId = corpInfo["id"] as? Int
+                   let corpId = corpInfo["id"] as? Int
                 {
                     return corpId == searchResult.id
                 }
             case .alliance:
                 if let allyInfo = victInfo["ally"] as? [String: Any],
-                    let allyId = allyInfo["id"] as? Int
+                   let allyId = allyInfo["id"] as? Int
                 {
                     return allyId == searchResult.id
                 }
@@ -713,7 +716,7 @@ struct BRKillMailCell: View {
         } else {
             // 非搜索场景，使用原有逻辑
             if let charInfo = victInfo["char"] as? [String: Any],
-                let victimId = charInfo["id"] as? Int
+               let victimId = charInfo["id"] as? Int
             {
                 return victimId == characterId
             }
@@ -762,21 +765,21 @@ struct BRKillMailCell: View {
 
     private var displayName: String {
         let victInfo = killmail["vict"] as? [String: Any]
-        let charInfo = victInfo?["char"]  // 先获取原始值，不做类型转换
+        let charInfo = victInfo?["char"] // 先获取原始值，不做类型转换
         let allyInfo = victInfo?["ally"] as? [String: Any]
         let corpInfo = victInfo?["corp"] as? [String: Any]
 
         // 如果char是字典类型，说明有完整的角色信息
         if let charDict = charInfo as? [String: Any],
-            let name = charDict["name"] as? String
+           let name = charDict["name"] as? String
         {
             return name
         }
 
         // 如果char是数字类型且为0，或者不存在，尝试使用联盟名
         if let allyName = allyInfo?["name"] as? String,
-            let allyId = allyInfo?["id"] as? Int,
-            allyId > 0
+           let allyId = allyInfo?["id"] as? Int,
+           allyId > 0
         {
             return allyName
         }

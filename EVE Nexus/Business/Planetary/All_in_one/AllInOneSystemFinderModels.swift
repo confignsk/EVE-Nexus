@@ -7,20 +7,20 @@ struct SelectedProduct: Identifiable, Hashable {
     let iconFileName: String
     let productLevel: Int
     let compatiblePlanetTypes: [AllInOnePlanetTypeInfo]
-    
+
     init(from result: AllInOneSinglePlanetProductResult) {
-        self.id = result.productId
-        self.name = result.productName
-        self.iconFileName = result.iconFileName
-        self.productLevel = result.productLevel
-        self.compatiblePlanetTypes = result.compatiblePlanetTypes
+        id = result.productId
+        name = result.productName
+        iconFileName = result.iconFileName
+        productLevel = result.productLevel
+        compatiblePlanetTypes = result.compatiblePlanetTypes
     }
-    
+
     // 实现 Equatable
     static func == (lhs: SelectedProduct, rhs: SelectedProduct) -> Bool {
         return lhs.id == rhs.id
     }
-    
+
     // 实现 Hashable
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
@@ -79,4 +79,4 @@ struct SystemScoringConfig {
     let balanceBonus: Double = 50.0
     let allProductsSupportedBonus: Double = 100.0
     let multiPlanetTypeBonus: Double = 25.0
-} 
+}

@@ -42,24 +42,24 @@ final class CharacterAPI: @unchecked Sendable {
     private init() {
         // 配置 Kingfisher 的全局设置
         let cache = ImageCache.default
-        cache.memoryStorage.config.totalCostLimit = 300 * 1024 * 1024  // 300MB
-        cache.diskStorage.config.sizeLimit = 1000 * 1024 * 1024  // 1GB
-        cache.diskStorage.config.expiration = .days(7)  // 7天过期
+        cache.memoryStorage.config.totalCostLimit = 300 * 1024 * 1024 // 300MB
+        cache.diskStorage.config.sizeLimit = 1000 * 1024 * 1024 // 1GB
+        cache.diskStorage.config.expiration = .days(7) // 7天过期
 
         // 配置下载器
         let downloader = ImageDownloader.default
-        downloader.downloadTimeout = 15.0  // 15秒超时
+        downloader.downloadTimeout = 15.0 // 15秒超时
     }
 
     // 保存角色信息到数据库
     private func saveCharacterInfoToCache(_ info: CharacterPublicInfo, characterId: Int) -> Bool {
         let query = """
-                INSERT OR REPLACE INTO character_info (
-                    character_id, alliance_id, birthday, bloodline_id, corporation_id,
-                    faction_id, gender, name, race_id, security_status, title,
-                    last_updated
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-            """
+            INSERT OR REPLACE INTO character_info (
+                character_id, alliance_id, birthday, bloodline_id, corporation_id,
+                faction_id, gender, name, race_id, security_status, title,
+                last_updated
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        """
 
         let parameters: [Any] = [
             characterId,
@@ -108,10 +108,10 @@ final class CharacterAPI: @unchecked Sendable {
     // 从数据库读取角色信息
     private func loadCharacterInfoFromCache(characterId: Int) -> CharacterPublicInfo? {
         let query = """
-                SELECT * FROM character_info 
-                WHERE character_id = ? 
-                AND datetime(last_updated) > datetime('now', '-1 hour')
-            """
+            SELECT * FROM character_info 
+            WHERE character_id = ? 
+            AND datetime(last_updated) > datetime('now', '-1 hour')
+        """
 
         if case let .success(rows) = CharacterDatabaseManager.shared.executeQuery(
             query, parameters: [characterId]
@@ -120,11 +120,11 @@ final class CharacterAPI: @unchecked Sendable {
         {
             // 安全地处理数值类型转换
             guard let bloodlineId = (row["bloodline_id"] as? Int64).map({ Int($0) }),
-                let corporationId = (row["corporation_id"] as? Int64).map({ Int($0) }),
-                let raceId = (row["race_id"] as? Int64).map({ Int($0) }),
-                let gender = row["gender"] as? String,
-                let name = row["name"] as? String,
-                let birthday = row["birthday"] as? String
+                  let corporationId = (row["corporation_id"] as? Int64).map({ Int($0) }),
+                  let raceId = (row["race_id"] as? Int64).map({ Int($0) }),
+                  let gender = row["gender"] as? String,
+                  let name = row["name"] as? String,
+                  let birthday = row["birthday"] as? String
             else {
                 Logger.error("从数据库加载角色信息失败 - 必需字段类型转换失败")
                 return nil
@@ -165,7 +165,7 @@ final class CharacterAPI: @unchecked Sendable {
         }
 
         let urlString =
-            "https://esi.evetech.net/characters/\(characterId)/?datasource=tranquility"  // 该接口缓存期较长 7 天，仅记录不重要信息
+            "https://esi.evetech.net/characters/\(characterId)/?datasource=tranquility" // 该接口缓存期较长 7 天，仅记录不重要信息
         guard let url = URL(string: urlString) else {
             throw NetworkError.invalidURL
         }
@@ -175,15 +175,16 @@ final class CharacterAPI: @unchecked Sendable {
 
         // 获取最新的联盟和公司信息
         do {
-            let affiliations = try await CharacterAffiliationAPI.shared.fetchAffiliations(  // 该接口缓存期较短，用于获取最新的人物军团和联盟信息
-                characterIds: [characterId])
+            let affiliations = try await CharacterAffiliationAPI.shared.fetchAffiliations( // 该接口缓存期较短，用于获取最新的人物军团和联盟信息
+                characterIds: [characterId]
+            )
             if let affiliation = affiliations.first {
                 // 更新联盟和公司信息
                 info = CharacterPublicInfo(
-                    alliance_id: affiliation.alliance_id,  // 使用缓存期较短的数据
+                    alliance_id: affiliation.alliance_id, // 使用缓存期较短的数据
                     birthday: info.birthday,
                     bloodline_id: info.bloodline_id,
-                    corporation_id: affiliation.corporation_id,  // 使用缓存期较短的数据
+                    corporation_id: affiliation.corporation_id, // 使用缓存期较短的数据
                     faction_id: affiliation.faction_id,
                     gender: info.gender,
                     name: info.name,
@@ -220,7 +221,7 @@ final class CharacterAPI: @unchecked Sendable {
 
         // 1. 首先尝试从 UserDefaults 读取
         if !forceRefresh, let cachedData = UserDefaults.standard.data(forKey: cacheKey),
-            let cachedImage = UIImage(data: cachedData)
+           let cachedImage = UIImage(data: cachedData)
         {
             Logger.info(
                 "从 UserDefaults 加载角色头像成功 - 角色ID: \(characterId), 数据大小: \(cachedData.count) bytes")
@@ -229,8 +230,8 @@ final class CharacterAPI: @unchecked Sendable {
 
         var options: KingfisherOptionsInfo = [
             .cacheOriginalImage,
-            .diskCacheExpiration(.days(30)),  // 磁盘缓存30天
-            .memoryCacheExpiration(.days(7)),  // 内存缓存7天
+            .diskCacheExpiration(.days(30)), // 磁盘缓存30天
+            .memoryCacheExpiration(.days(7)), // 内存缓存7天
         ]
 
         // 如果需要强制刷新，添加相应的选项
@@ -287,7 +288,7 @@ final class CharacterAPI: @unchecked Sendable {
 
             // 设置任务取消处理
             Task {
-                try? await Task.sleep(nanoseconds: 1)  // 给予足够的时间让任务开始
+                try? await Task.sleep(nanoseconds: 1) // 给予足够的时间让任务开始
                 if Task.isCancelled {
                     getAndCancelTask()
                     continuation.resume(throwing: CancellationError())

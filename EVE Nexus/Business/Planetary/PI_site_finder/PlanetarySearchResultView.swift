@@ -130,11 +130,11 @@ class PlanetarySearchResultViewModel: ObservableObject {
 
                 let query = "SELECT iconName, name FROM factions WHERE id = ?"
                 if case let .success(rows) = DatabaseManager.shared.executeQuery(
-                    query, parameters: [factionId]),
+                    query, parameters: [factionId]
+                ),
                     let row = rows.first,
                     let iconName = row["iconName"] as? String
                 {
-
                     let icon = IconManager.shared.loadImage(for: iconName)
                     let factionName = row["name"] as? String
 
@@ -215,8 +215,8 @@ class PlanetarySearchResultViewModel: ObservableObject {
 struct PlanetarySearchResultView: View {
     let results: [SystemSearchResult]
     @StateObject private var viewModel = PlanetarySearchResultViewModel()
-    @State private var systemNames: [Int: String] = [:]  // 存储星系ID到名称的映射
-    @State private var resourceInfo: [Int: (name: String, iconFileName: String)] = [:]  // 存储资源ID到名称和图标的映射
+    @State private var systemNames: [Int: String] = [:] // 存储星系ID到名称的映射
+    @State private var resourceInfo: [Int: (name: String, iconFileName: String)] = [:] // 存储资源ID到名称和图标的映射
 
     var body: some View {
         List {
@@ -243,7 +243,8 @@ struct PlanetarySearchResultView: View {
 
                         Text(
                             NSLocalizedString(
-                                "Planetary_Search_No_Results", comment: "没有找到能够生产所需资源的星系")
+                                "Planetary_Search_No_Results", comment: "没有找到能够生产所需资源的星系"
+                            )
                         )
                         .font(.headline)
                         .multilineTextAlignment(.center)
@@ -251,7 +252,8 @@ struct PlanetarySearchResultView: View {
                         Text(
                             NSLocalizedString(
                                 "Planetary_Search_No_Results_Tips",
-                                comment: "请考虑以下调整方案:\n• 增加星系跳数范围\n• 选择其他星域或主权\n• 选择其他可能更容易生产的产品")
+                                comment: "请考虑以下调整方案:\n• 增加星系跳数范围\n• 选择其他星域或主权\n• 选择其他可能更容易生产的产品"
+                            )
                         )
                         .font(.subheadline)
                         .foregroundColor(.secondary)
@@ -292,7 +294,10 @@ struct PlanetarySearchResultView: View {
                                             Button {
                                                 UIPasteboard.general.string = result.systemName
                                             } label: {
-                                                Label(NSLocalizedString("Misc_Copy", comment: ""), systemImage: "doc.on.doc")
+                                                Label(
+                                                    NSLocalizedString("Misc_Copy", comment: ""),
+                                                    systemImage: "doc.on.doc"
+                                                )
                                             }
                                         }
                                     Text("（\(result.regionName)）")
@@ -301,8 +306,7 @@ struct PlanetarySearchResultView: View {
                                 }
 
                                 // 第二行：联盟/派系名称
-                                if let ownerName = viewModel.getOwnerNameForSystem(result.systemId)
-                                {
+                                if let ownerName = viewModel.getOwnerNameForSystem(result.systemId) {
                                     Text(ownerName)
                                         .font(.caption)
                                         .foregroundColor(.secondary)
@@ -316,8 +320,7 @@ struct PlanetarySearchResultView: View {
                                 Text(NSLocalizedString("Planetary_Local_Resources", comment: ""))
                                     .font(.subheadline)
                                     .foregroundColor(.gray)
-                                ForEach(Array(result.availableResources.keys).sorted(), id: \.self)
-                                { resourceId in
+                                ForEach(Array(result.availableResources.keys).sorted(), id: \.self) { resourceId in
                                     if let count = result.availableResources[resourceId] {
                                         HStack {
                                             // 添加资源图标
@@ -363,7 +366,7 @@ struct PlanetarySearchResultView: View {
                                         ) { systemInfo in
                                             let systemName =
                                                 systemNames[systemInfo.systemId]
-                                                ?? "\(systemInfo.systemId)"
+                                                    ?? "\(systemInfo.systemId)"
                                             Text(
                                                 "  • \(String(format: NSLocalizedString("Planetary_Resource_System_Format", comment: ""), systemName, systemInfo.jumps))"
                                             )
@@ -377,7 +380,8 @@ struct PlanetarySearchResultView: View {
                             Text(
                                 String(
                                     format: NSLocalizedString("Planetary_Coverage", comment: ""),
-                                    result.coverage)
+                                    result.coverage
+                                )
                             )
                             .font(.subheadline)
                             .foregroundColor(.gray)
@@ -416,16 +420,16 @@ struct PlanetarySearchResultView: View {
 
         // 查询星系名称
         let query = """
-                SELECT solarSystemID, solarSystemName 
-                FROM solarsystems 
-                WHERE solarSystemID IN (\(systemIds.map { String($0) }.joined(separator: ",")))
-            """
+            SELECT solarSystemID, solarSystemName 
+            FROM solarsystems 
+            WHERE solarSystemID IN (\(systemIds.map { String($0) }.joined(separator: ",")))
+        """
 
         if case let .success(rows) = DatabaseManager.shared.executeQuery(query) {
             var tempNames: [Int: String] = [:]
             for row in rows {
                 if let systemId = row["solarSystemID"] as? Int,
-                    let name = row["solarSystemName"] as? String
+                   let name = row["solarSystemName"] as? String
                 {
                     tempNames[systemId] = name
                 }
@@ -457,17 +461,17 @@ struct PlanetarySearchResultView: View {
 
         // 一次性查询所有资源信息
         let query = """
-                SELECT type_id, name, icon_filename 
-                FROM types 
-                WHERE type_id IN (\(resourceIds.map { String($0) }.joined(separator: ",")))
-            """
+            SELECT type_id, name, icon_filename 
+            FROM types 
+            WHERE type_id IN (\(resourceIds.map { String($0) }.joined(separator: ",")))
+        """
 
         if case let .success(rows) = DatabaseManager.shared.executeQuery(query) {
             var tempInfo: [Int: (name: String, iconFileName: String)] = [:]
             for row in rows {
                 if let typeId = row["type_id"] as? Int,
-                    let name = row["name"] as? String,
-                    let iconFileName = row["icon_filename"] as? String
+                   let name = row["name"] as? String,
+                   let iconFileName = row["icon_filename"] as? String
                 {
                     tempInfo[typeId] = (
                         name: name, iconFileName: iconFileName.isEmpty ? "not_found" : iconFileName

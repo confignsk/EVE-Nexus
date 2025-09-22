@@ -4,16 +4,16 @@ import Foundation
 enum AttributeDisplayConfig {
     // 转换结果类型
     enum TransformResult {
-        case number(Double, String?)  // 数值和可选单位
-        case text(String)  // 纯文本
-        case resistance([Double])  // 抗性显示（EM, Thermal, Kinetic, Explosive）
+        case number(Double, String?) // 数值和可选单位
+        case text(String) // 纯文本
+        case resistance([Double]) // 抗性显示（EM, Thermal, Kinetic, Explosive）
     }
 
     // 特殊值映射类型
     private enum SpecialValueType {
-        case boolean  // 布尔值 (True/False)
-        case size  // 尺寸 (Small/Medium/Large)
-        case gender  // 性别 (Male/Unisex/Female)
+        case boolean // 布尔值 (True/False)
+        case size // 尺寸 (Small/Medium/Large)
+        case gender // 性别 (Male/Unisex/Female)
 
         func transform(_ value: Double) -> String {
             switch self {
@@ -89,10 +89,10 @@ enum AttributeDisplayConfig {
     // 抗性属性组定义
     struct ResistanceGroup {
         let groupID: Int
-        let emIDs: [Int]  // 改为数组
-        let thermalIDs: [Int]  // 改为数组
-        let kineticIDs: [Int]  // 改为数组
-        let explosiveIDs: [Int]  // 改为数组
+        let emIDs: [Int] // 改为数组
+        let thermalIDs: [Int] // 改为数组
+        let kineticIDs: [Int] // 改为数组
+        let explosiveIDs: [Int] // 改为数组
     }
 
     // 定义抗性属性组
@@ -103,21 +103,21 @@ enum AttributeDisplayConfig {
             thermalIDs: [274, 1425, 2119],
             kineticIDs: [273, 1424, 2120],
             explosiveIDs: [272, 1422, 2121]
-        ),  // 护盾抗性
+        ), // 护盾抗性
         ResistanceGroup(
             groupID: 3,
             emIDs: [267, 1418],
             thermalIDs: [270, 1419],
             kineticIDs: [269, 1420],
             explosiveIDs: [268, 1421]
-        ),  // 装甲抗性
+        ), // 装甲抗性
         ResistanceGroup(
             groupID: 4,
             emIDs: [113, 974, 1426],
             thermalIDs: [110, 977, 1429],
             kineticIDs: [109, 976, 1428],
             explosiveIDs: [111, 975, 1427]
-        ),  // 结构抗性
+        ), // 结构抗性
     ]
 
     // 运算符类型
@@ -139,17 +139,17 @@ enum AttributeDisplayConfig {
 
     // 属性值计算配置
     struct AttributeCalculation {
-        let sourceAttribute1: Int  // 第一个源属性ID
-        let sourceAttribute2: Int  // 第二个源属性ID
-        let operation: Operation  // 算符
+        let sourceAttribute1: Int // 第一个源属性ID
+        let sourceAttribute2: Int // 第二个源属性ID
+        let operation: Operation // 算符
     }
 
     // 默认配置
-    private static let defaultGroupOrder: [Int: Int] = [:]  // [categoryId: order] 自定义展示分组的顺序
-    private static let defaultHiddenGroups: Set<Int> = [9, 52]  // 要隐藏的属性分组id
+    private static let defaultGroupOrder: [Int: Int] = [:] // [categoryId: order] 自定义展示分组的顺序
+    private static let defaultHiddenGroups: Set<Int> = [9, 52] // 要隐藏的属性分组id
     private static let defaultHiddenAttributes: Set<Int> = [
         3, 15, 600, 715, 716, 1137, 1336, 1547,
-    ]  // 要隐藏的属性id
+    ] // 要隐藏的属性id
 
     // 属性组内属性的默认排序配置 [groupId: [attributeId: order]]
     private static let defaultAttributeOrder: [Int: [Int: Int]] = [:]
@@ -179,7 +179,7 @@ enum AttributeDisplayConfig {
         // operation: .add,.subtract,.multiply,.divide (+-*/)
         1281: AttributeCalculation(
             sourceAttribute1: 1281, sourceAttribute2: 600, operation: .multiply
-        )
+        ),
     ]
 
     // 基于 Attribute_id 的值转换规则
@@ -187,9 +187,9 @@ enum AttributeDisplayConfig {
 
     // 基于 unitID 的值转换规则，转换规则参考 https://sde.hoboleaks.space/tq/dogmaunits.json
     private static let unitTransformRules: [Int: (Double) -> Double] = [
-        108: { value in (1 - value) * 100 },  // 百分比转换
-        111: { value in (1 - value) * 100 },  // 百分比转换
-        127: { value in value * 100 },  // 百分比转换
+        108: { value in (1 - value) * 100 }, // 百分比转换
+        111: { value in (1 - value) * 100 }, // 百分比转换
+        127: { value in value * 100 }, // 百分比转换
     ]
 
     // 基于 unitID 的值格式化规则，转换规则参考 https://sde.hoboleaks.space/tq/dogmaunits.json
@@ -203,14 +203,14 @@ enum AttributeDisplayConfig {
             FormatUtil.formatTimeWithPrecision(value)
         },
         101: { value, _ in
-            return FormatUtil.formatTimeWithMillisecondPrecision(value)
+            FormatUtil.formatTimeWithMillisecondPrecision(value)
         },
     ]
 
     // 布尔值转换规则
     private static let booleanTransformRules: Set<Int> = [
-        188,  // immune
-        861,  // true/false
+        188, // immune
+        861, // true/false
     ]
 
     // 自定义配置 - 可以根据需要设置，不设置则使用默认值
@@ -284,7 +284,7 @@ enum AttributeDisplayConfig {
 
     // 获取属性组的排序权重
     static func getGroupOrder(_ groupId: Int) -> Int {
-        activeGroupOrder[groupId] ?? 999  // 未定义顺序的组放到最后
+        activeGroupOrder[groupId] ?? 999 // 未定义顺序的组放到最后
     }
 
     // 计算属性值
@@ -293,8 +293,8 @@ enum AttributeDisplayConfig {
     {
         // 如果有计算规则
         if let calc = attributeCalculations[attributeID],
-            let value1 = allAttributes[calc.sourceAttribute1],
-            let value2 = allAttributes[calc.sourceAttribute2]
+           let value1 = allAttributes[calc.sourceAttribute1],
+           let value2 = allAttributes[calc.sourceAttribute2]
         {
             return calc.operation.calculate(value1, value2)
         }
@@ -403,14 +403,14 @@ enum AttributeDisplayConfig {
 
         // 2. 然后应用基于 unitID 的转换规则
         if let unitID = unitID,
-            let unitTransform = unitTransformRules[unitID]
+           let unitTransform = unitTransformRules[unitID]
         {
             transformedValue = unitTransform(transformedValue)
         }
 
         // 3. 应用基于 unitID 的格式化规则
         if let unitID = unitID,
-            let formatRule = unitFormatRules[unitID]
+           let formatRule = unitFormatRules[unitID]
         {
             let unit = attributeUnits[attributeID]
             return .text(formatRule(transformedValue, unit))
@@ -426,6 +426,6 @@ enum AttributeDisplayConfig {
 
     // 获取属性在组内的排序权重
     static func getAttributeOrder(attributeID: Int, in groupID: Int) -> Int {
-        activeAttributeOrder[groupID]?[attributeID] ?? 999  // 未定义顺序的属性放到最后
+        activeAttributeOrder[groupID]?[attributeID] ?? 999 // 未定义顺序的属性放到最后
     }
 }

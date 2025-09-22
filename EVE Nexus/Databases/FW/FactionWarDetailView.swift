@@ -2,28 +2,28 @@ import SwiftUI
 
 // MARK: - 常量定义
 
-struct FactionColors {
-    static let caldari = Color(red: 0 / 255, green: 172 / 255, blue: 209 / 255)  // 卡达里蓝
-    static let minmatar = Color(red: 254 / 255, green: 55 / 255, blue: 67 / 255)  // 米玛塔尔红
-    static let amarr = Color(red: 205 / 255, green: 146 / 255, blue: 59 / 255)  // 艾玛金
-    static let gallente = Color(red: 55 / 255, green: 186 / 255, blue: 91 / 255)  // 盖伦特绿
+enum FactionColors {
+    static let caldari = Color(red: 0 / 255, green: 172 / 255, blue: 209 / 255) // 卡达里蓝
+    static let minmatar = Color(red: 254 / 255, green: 55 / 255, blue: 67 / 255) // 米玛塔尔红
+    static let amarr = Color(red: 205 / 255, green: 146 / 255, blue: 59 / 255) // 艾玛金
+    static let gallente = Color(red: 55 / 255, green: 186 / 255, blue: 91 / 255) // 盖伦特绿
 
     static func color(for factionId: Int) -> Color {
         switch factionId {
-        case 500001: return caldari
-        case 500002: return minmatar
-        case 500003: return amarr
-        case 500004: return gallente
+        case 500_001: return caldari
+        case 500_002: return minmatar
+        case 500_003: return amarr
+        case 500_004: return gallente
         default: return .gray.opacity(0.5)
         }
     }
 
     static func enemyColor(for factionId: Int) -> Color {
         switch factionId {
-        case 500001: return gallente
-        case 500002: return amarr
-        case 500003: return minmatar
-        case 500004: return caldari
+        case 500_001: return gallente
+        case 500_002: return amarr
+        case 500_003: return minmatar
+        case 500_004: return caldari
         default: return .gray.opacity(0.5)
         }
     }
@@ -68,10 +68,10 @@ final class PreparedFWSystem: ObservableObject, Identifiable {
     }
 
     init(system: FWSystem, info: SolarSystemInfo) {
-        self.id = system.solar_system_id
+        id = system.solar_system_id
         self.system = system
 
-        self.location = LocationInfo(
+        location = LocationInfo(
             systemId: info.systemId,
             systemName: info.systemName,
             security: info.security,
@@ -131,8 +131,8 @@ final class FactionWarDetailViewModel: ObservableObject {
                     }
                     // 检查英文名称和中文名称
                     if let cache = systemNameCache[system.id],
-                        cache.name_en.localizedCaseInsensitiveContains(searchText)
-                            || cache.name_zh.localizedCaseInsensitiveContains(searchText)
+                       cache.name_en.localizedCaseInsensitiveContains(searchText)
+                       || cache.name_zh.localizedCaseInsensitiveContains(searchText)
                     {
                         return true
                     }
@@ -206,14 +206,14 @@ final class FactionWarDetailViewModel: ObservableObject {
                 let query =
                     "SELECT solarSystemID, solarSystemName, solarSystemName_en, solarSystemName_zh FROM solarsystems WHERE solarSystemID IN (\(String(repeating: "?,", count: systemIds.count).dropLast()))"
                 if case let .success(rows) = databaseManager.executeQuery(
-                    query, parameters: systemIds)
-                {
+                    query, parameters: systemIds
+                ) {
                     systemNameCache = Dictionary(
                         uniqueKeysWithValues: rows.compactMap { row in
                             guard let id = row["solarSystemID"] as? Int,
-                                let name = row["solarSystemName"] as? String,
-                                let nameEn = row["solarSystemName_en"] as? String,
-                                let nameZh = row["solarSystemName_zh"] as? String
+                                  let name = row["solarSystemName"] as? String,
+                                  let nameEn = row["solarSystemName_en"] as? String,
+                                  let nameZh = row["solarSystemName_zh"] as? String
                             else {
                                 return nil
                             }
@@ -393,7 +393,10 @@ struct FWSystemCell: View {
                             Button {
                                 UIPasteboard.general.string = system.location.systemName
                             } label: {
-                                Label(NSLocalizedString("Misc_Copy_Location", comment: ""), systemImage: "doc.on.doc")
+                                Label(
+                                    NSLocalizedString("Misc_Copy_Location", comment: ""),
+                                    systemImage: "doc.on.doc"
+                                )
                             }
                         }
                 }
@@ -430,7 +433,7 @@ struct FWSystemCell: View {
                     .font(.caption)
                     .fontWeight(.semibold)
                     .foregroundColor(system.systemType == .frontline ? .red : .secondary)
-                
+
                 // 拥有者和占领者信息
                 if system.system.occupier_faction_id == system.system.owner_faction_id {
                     // 占领者与拥有者相同
@@ -438,7 +441,9 @@ struct FWSystemCell: View {
                         Text(NSLocalizedString("FW_Occupier_And_Owner", comment: "占领者与拥有者") + ":")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        if let faction = allFactions.first(where: { $0.id == system.system.owner_faction_id }) {
+                        if let faction = allFactions.first(where: {
+                            $0.id == system.system.owner_faction_id
+                        }) {
                             IconManager.shared.loadImage(for: faction.iconName)
                                 .resizable()
                                 .scaledToFit()
@@ -453,7 +458,9 @@ struct FWSystemCell: View {
                             Text(NSLocalizedString("FW_Owner", comment: "拥有者") + ":")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
-                            if let ownerFaction = allFactions.first(where: { $0.id == system.system.owner_faction_id }) {
+                            if let ownerFaction = allFactions.first(where: {
+                                $0.id == system.system.owner_faction_id
+                            }) {
                                 IconManager.shared.loadImage(for: ownerFaction.iconName)
                                     .resizable()
                                     .scaledToFit()
@@ -461,12 +468,14 @@ struct FWSystemCell: View {
                                     .cornerRadius(2)
                             }
                         }
-                        
+
                         HStack(spacing: 4) {
                             Text(NSLocalizedString("FW_Occupier", comment: "占领者") + ":")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
-                            if let occupierFaction = allFactions.first(where: { $0.id == system.system.occupier_faction_id }) {
+                            if let occupierFaction = allFactions.first(where: {
+                                $0.id == system.system.occupier_faction_id
+                            }) {
                                 IconManager.shared.loadImage(for: occupierFaction.iconName)
                                     .resizable()
                                     .scaledToFit()
@@ -476,10 +485,7 @@ struct FWSystemCell: View {
                         }
                     }
                 }
-
             }
-
-
         }
         .padding(.vertical, 8)
     }

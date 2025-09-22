@@ -4,7 +4,7 @@ struct LPSearchResultsView: View {
     let searchText: String
     let searchResults: (factions: [Faction], corporations: [Corporation])
     let lpSearchResults: [LPSearchResult]
-    
+
     var body: some View {
         List {
             // 势力搜索结果
@@ -26,7 +26,7 @@ struct LPSearchResultsView: View {
                     .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                 }
             }
-            
+
             // 军团搜索结果
             if !searchResults.corporations.isEmpty {
                 Section(NSLocalizedString("Main_LP_Store_Corps", comment: "")) {
@@ -38,7 +38,10 @@ struct LPSearchResultsView: View {
                             )
                         ) {
                             HStack {
-                                CorporationIconView(corporationId: corporation.id, iconFileName: corporation.iconFileName, size: 36)
+                                CorporationIconView(
+                                    corporationId: corporation.id,
+                                    iconFileName: corporation.iconFileName, size: 36
+                                )
                                 Text(corporation.name)
                                     .padding(.leading, 8)
                             }
@@ -48,7 +51,7 @@ struct LPSearchResultsView: View {
                     .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                 }
             }
-            
+
             // 物品类别搜索结果
             if !lpSearchResults.isEmpty {
                 Section(NSLocalizedString("Main_LP_Available_Items", comment: "可用物品")) {
@@ -67,7 +70,7 @@ struct LPSearchResultsView: View {
                                     .cornerRadius(6)
                                 Text(category.categoryName)
                                     .padding(.leading, 8)
-                                
+
                                 Spacer()
                                 Text("\(category.offerCount)")
                                     .foregroundColor(.secondary)
@@ -78,9 +81,11 @@ struct LPSearchResultsView: View {
                     .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                 }
             }
-            
+
             // 无搜索结果
-            if searchResults.factions.isEmpty && searchResults.corporations.isEmpty && lpSearchResults.isEmpty {
+            if searchResults.factions.isEmpty && searchResults.corporations.isEmpty
+                && lpSearchResults.isEmpty
+            {
                 Section {
                     HStack {
                         Spacer()
@@ -100,4 +105,4 @@ struct LPSearchResultsView: View {
         .navigationTitle(NSLocalizedString("Main_Search_Results", comment: "搜索结果"))
         .navigationBarTitleDisplayMode(.inline)
     }
-} 
+}

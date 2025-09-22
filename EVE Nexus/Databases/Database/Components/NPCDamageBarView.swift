@@ -22,7 +22,7 @@ struct MissileInfo {
     // 计算各个伤害类型的百分比
     func getDamagePercentages() -> (em: Int, therm: Int, kin: Int, exp: Int) {
         if totalDamage <= 0 {
-            return (0, 0, 0, 0)  // 如果总伤害为0，所有百分比都为0
+            return (0, 0, 0, 0) // 如果总伤害为0，所有百分比都为0
         }
         return (
             em: Int(round((damages.em / totalDamage) * 100)),
@@ -121,7 +121,7 @@ struct MissileDamageView: View {
         }
         .padding(.vertical, 4)
         .frame(minHeight: 44)
-        .drawingGroup()  // 使用 Metal 渲染
+        .drawingGroup() // 使用 Metal 渲染
     }
 }
 
@@ -157,8 +157,8 @@ extension AttributeGroupView {
     func getMissileInfo() -> MissileInfo? {
         // 检查是否存在导弹属性和ID
         guard let ammoID = allAttributes[507].map({ Int($0) }),
-            let damages = databaseManager.getItemDamages(for: ammoID),
-            damages.em + damages.therm + damages.kin + damages.exp > 0
+              let damages = databaseManager.getItemDamages(for: ammoID),
+              damages.em + damages.therm + damages.kin + damages.exp > 0
         else {
             return nil
         }
@@ -208,7 +208,7 @@ struct WeaponInfo {
     // 计算各个伤害类型的百分比
     func getDamagePercentages() -> (em: Int, therm: Int, kin: Int, exp: Int) {
         if totalDamage <= 0 {
-            return (0, 0, 0, 0)  // 如果总伤害为0，所有百分比都为0
+            return (0, 0, 0, 0) // 如果总伤害为0，所有百分比都为0
         }
         return (
             em: Int(round((damages.em / totalDamage) * 100)),
@@ -277,7 +277,7 @@ struct WeaponDamageView: View {
         }
         .padding(.vertical, 4)
         .frame(minHeight: 44)
-        .drawingGroup()  // 使用 Metal 渲染
+        .drawingGroup() // 使用 Metal 渲染
     }
 }
 
@@ -320,8 +320,8 @@ extension AttributeGroupView {
 }
 
 // 添加 Double 扩展来处理小数位数
-extension Double {
-    fileprivate func rounded(toDecimalPlaces places: Int) -> Double {
+private extension Double {
+    func rounded(toDecimalPlaces places: Int) -> Double {
         let multiplier = pow(10.0, Double(places))
         return (self * multiplier).rounded() / multiplier
     }

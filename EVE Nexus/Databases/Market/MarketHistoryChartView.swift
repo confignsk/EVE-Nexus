@@ -30,7 +30,7 @@ struct MarketHistoryChartView: View {
         // 只取最新的360个数据点进行显示
         let sortedHistory = history.sorted { $0.date < $1.date }
         let displayHistory = Array(sortedHistory.suffix(360))
-        
+
         self.history = displayHistory
         self.orders = orders
 
@@ -49,7 +49,7 @@ struct MarketHistoryChartView: View {
         let effectiveRange = yMax - yMin
 
         // 初始化图表数据
-        self.chartData = ChartData(
+        chartData = ChartData(
             dates: dates,
             priceValues: priceValues,
             volumeValues: volumeValues,
@@ -129,7 +129,7 @@ struct MarketHistoryChartView: View {
                 .lineStyle(StrokeStyle(lineWidth: 1))
             }
         }
-        .chartYScale(domain: chartData.yMin...chartData.yMax)
+        .chartYScale(domain: chartData.yMin ... chartData.yMax)
         .chartYAxis {
             // 价格轴（左侧）
             AxisMarks(position: .leading, values: .automatic(desiredCount: 5)) { value in
@@ -165,7 +165,7 @@ struct MarketHistoryChartView: View {
         .chartXAxis {
             AxisMarks(values: chartData.dates) { value in
                 if let dateStr = value.as(String.self),
-                    firstDaysOfMonth.contains(dateStr)
+                   firstDaysOfMonth.contains(dateStr)
                 {
                     AxisValueLabel(anchor: .top) {
                         Text(formatMonth(dateStr))
@@ -178,6 +178,6 @@ struct MarketHistoryChartView: View {
         }
         .frame(height: 200)
         .padding(.top, 8)
-        .id("chart_\(history.count)_\(history.first?.date ?? "")")  // 添加一个稳定的ID，只有当数据真正变化时才会改变
+        .id("chart_\(history.count)_\(history.first?.date ?? "")") // 添加一个稳定的ID，只有当数据真正变化时才会改变
     }
 }

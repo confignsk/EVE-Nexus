@@ -9,12 +9,13 @@ struct SkillRequirementRow: View {
     let currentLevel: Int?
 
     // 新：获取当前技能点数（直接查表，不累加）
-    private func getCurrentSkillPointsSimple(for skillID: Int) -> Int {
+    private func getCurrentSkillPointsSimple(for _: Int) -> Int {
         guard let currentLevel = currentLevel, let multiplier = timeMultiplier else { return 0 }
         if currentLevel <= 0 { return 0 }
         if currentLevel > SkillTreeManager.levelBasePoints.count { return 0 }
         return Int(Double(SkillTreeManager.levelBasePoints[currentLevel - 1]) * multiplier)
     }
+
     // 新：获取所需总点数（直接查表）
     private func getRequiredSkillPointsSimple(for level: Int) -> Int {
         guard let multiplier = timeMultiplier else { return 0 }
@@ -24,7 +25,7 @@ struct SkillRequirementRow: View {
 
     private var skillPointsText: String {
         guard let multiplier = timeMultiplier,
-            level > 0 && level <= SkillTreeManager.levelBasePoints.count
+              level > 0 && level <= SkillTreeManager.levelBasePoints.count
         else {
             return ""
         }
@@ -91,7 +92,9 @@ struct SkillRequirementRow: View {
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             }
-                        } else if let currentLevel = currentLevel, currentLevel >= -1, currentLevel < level {
+                        } else if let currentLevel = currentLevel, currentLevel >= -1,
+                                  currentLevel < level
+                        {
                             // 新增：显示缺失技能点数（直接查表方式）
                             let currentSP = getCurrentSkillPointsSimple(for: skillID)
                             let requiredSP = getRequiredSkillPointsSimple(for: level)
@@ -128,7 +131,7 @@ struct SkillRequirementsView: View {
     @ObservedObject var databaseManager: DatabaseManager
     @AppStorage("currentCharacterId") private var currentCharacterId: Int = 0
     @StateObject private var skillsManager = SharedSkillsManager.shared
-    
+
     // 新增：存储角色属性点数
     @State private var characterAttributes: CharacterAttributes?
 
@@ -141,7 +144,7 @@ struct SkillRequirementsView: View {
     private var totalPoints: Int {
         requirements.reduce(0) { total, skill in
             guard let multiplier = skill.timeMultiplier,
-                skill.level > 0 && skill.level <= SkillTreeManager.levelBasePoints.count
+                  skill.level > 0 && skill.level <= SkillTreeManager.levelBasePoints.count
             else {
                 return total
             }
@@ -155,7 +158,7 @@ struct SkillRequirementsView: View {
     private var missingPoints: Int {
         requirements.reduce(0) { total, skill in
             guard let multiplier = skill.timeMultiplier,
-                skill.level > 0 && skill.level <= SkillTreeManager.levelBasePoints.count
+                  skill.level > 0 && skill.level <= SkillTreeManager.levelBasePoints.count
             else {
                 return total
             }
@@ -165,7 +168,7 @@ struct SkillRequirementsView: View {
             guard let currentLevel = currentLevel, currentLevel != -2 else {
                 return total
             }
-            
+
             if currentLevel >= skill.level {
                 return total
             }
@@ -174,7 +177,7 @@ struct SkillRequirementsView: View {
                 Double(SkillTreeManager.levelBasePoints[skill.level - 1]) * multiplier)
             let currentPoints =
                 currentLevel > 0
-                ? Int(Double(SkillTreeManager.levelBasePoints[currentLevel - 1]) * multiplier) : 0
+                    ? Int(Double(SkillTreeManager.levelBasePoints[currentLevel - 1]) * multiplier) : 0
             return total + (requiredPoints - currentPoints)
         }
     }
@@ -183,67 +186,69 @@ struct SkillRequirementsView: View {
     private func getCurrentSkillLevel(for skillID: Int) -> Int? {
         return skillsManager.getSkillLevel(for: skillID)
     }
-    
+
     // 新增：计算缺失技能的预计训练时间
     private var estimatedTrainingTime: TimeInterval {
         guard let attributes = characterAttributes, missingPoints > 0 else {
             return 0
         }
-        
+
         // 获取所有未满足技能的属性（批量查询，优化性能）
         let skillAttributesMap = unmetSkillAttributes
-        
+
         var totalTime: TimeInterval = 0
-        
+
         for requirement in requirements {
             let currentLevel = getCurrentSkillLevel(for: requirement.skillID)
             // 如果正在加载技能数据或没有角色登录，跳过计算
             guard let currentLevel = currentLevel, currentLevel != -2 else {
                 continue
             }
-            
+
             if currentLevel >= requirement.level {
                 continue // 技能已满足要求，跳过
             }
-            
+
             // 从预加载的属性映射中获取技能的主副属性ID
             guard let skillAttrs = skillAttributesMap[requirement.skillID] else {
                 continue
             }
-            
+
             // 使用现有的 SkillTrainingCalculator.calculateTrainingRate 函数
-            guard let pointsPerHour = SkillTrainingCalculator.calculateTrainingRate(
-                primaryAttrId: skillAttrs.primary,
-                secondaryAttrId: skillAttrs.secondary,
-                attributes: attributes
-            ) else {
-                continue
-            }
-            
-            // 计算该技能缺失的技能点数
-            guard let multiplier = requirement.timeMultiplier,
-                requirement.level > 0 && requirement.level <= SkillTreeManager.levelBasePoints.count
+            guard
+                let pointsPerHour = SkillTrainingCalculator.calculateTrainingRate(
+                    primaryAttrId: skillAttrs.primary,
+                    secondaryAttrId: skillAttrs.secondary,
+                    attributes: attributes
+                )
             else {
                 continue
             }
-            
+
+            // 计算该技能缺失的技能点数
+            guard let multiplier = requirement.timeMultiplier,
+                  requirement.level > 0 && requirement.level <= SkillTreeManager.levelBasePoints.count
+            else {
+                continue
+            }
+
             let requiredPoints = Int(
                 Double(SkillTreeManager.levelBasePoints[requirement.level - 1]) * multiplier)
             let currentPoints =
                 currentLevel > 0
-                ? Int(Double(SkillTreeManager.levelBasePoints[currentLevel - 1]) * multiplier) : 0
+                    ? Int(Double(SkillTreeManager.levelBasePoints[currentLevel - 1]) * multiplier) : 0
             let missingSkillPoints = requiredPoints - currentPoints
-            
+
             if missingSkillPoints > 0 && pointsPerHour > 0 {
                 // 计算该技能的训练时间（小时）然后转换为秒
                 let trainingTimeHours = Double(missingSkillPoints) / Double(pointsPerHour)
                 totalTime += trainingTimeHours * 3600 // 转换为秒
             }
         }
-        
+
         return totalTime
     }
-    
+
     // 新增：批量获取未满足技能的主副属性
     private var unmetSkillAttributes: [Int: (primary: Int, secondary: Int)] {
         // 首先找出所有未满足要求的技能ID
@@ -255,11 +260,11 @@ struct SkillRequirementsView: View {
             }
             return currentLevel < requirement.level ? requirement.skillID : nil
         }
-        
+
         guard !unmetSkillIDs.isEmpty else {
             return [:]
         }
-        
+
         // 批量查询这些技能的主副属性
         let query = """
             SELECT type_id, attribute_id, value
@@ -267,28 +272,28 @@ struct SkillRequirementsView: View {
             WHERE type_id IN (\(unmetSkillIDs.map(String.init).joined(separator: ","))) 
             AND attribute_id IN (180, 181)
         """
-        
+
         guard case let .success(rows) = databaseManager.executeQuery(query) else {
             return [:]
         }
-        
+
         // 按技能ID分组处理属性
         var groupedAttributes: [Int: [(attributeId: Int, value: Int)]] = [:]
         for row in rows {
             guard let typeId = row["type_id"] as? Int,
-                let attributeId = row["attribute_id"] as? Int,
-                let value = row["value"] as? Double
+                  let attributeId = row["attribute_id"] as? Int,
+                  let value = row["value"] as? Double
             else { continue }
-            
+
             groupedAttributes[typeId, default: []].append((attributeId, Int(value)))
         }
-        
+
         // 构建最终的属性映射
         var skillAttributes: [Int: (primary: Int, secondary: Int)] = [:]
         for (typeId, attributes) in groupedAttributes {
             var primary: Int?
             var secondary: Int?
-            
+
             for attr in attributes {
                 switch attr.attributeId {
                 case 180: primary = attr.value
@@ -296,15 +301,15 @@ struct SkillRequirementsView: View {
                 default: break
                 }
             }
-            
+
             if let p = primary, let s = secondary {
                 skillAttributes[typeId] = (p, s)
             }
         }
-        
+
         return skillAttributes
     }
-    
+
     // 新增：格式化时间显示（复用现有逻辑）
     private func formatTrainingTime(_ timeInterval: TimeInterval) -> String {
         if timeInterval < 1 {
@@ -322,7 +327,7 @@ struct SkillRequirementsView: View {
             // 对小时进行四舍五入
             if minutes >= 30 {
                 hours += 1
-                if hours == 24 {  // 如果四舍五入后小时数达到24
+                if hours == 24 { // 如果四舍五入后小时数达到24
                     return String(format: NSLocalizedString("Time_Days", comment: ""), days + 1)
                 }
             }
@@ -336,7 +341,7 @@ struct SkillRequirementsView: View {
             // 对分钟进行四舍五入
             if seconds >= 30 {
                 minutes += 1
-                if minutes == 60 {  // 如果四舍五入后分钟数达到60
+                if minutes == 60 { // 如果四舍五入后分钟数达到60
                     return String(format: NSLocalizedString("Time_Hours", comment: ""), hours + 1)
                 }
             }
@@ -363,7 +368,7 @@ struct SkillRequirementsView: View {
             characterAttributes = nil
             return
         }
-        
+
         Task {
             do {
                 // 调用API获取角色属性
@@ -371,7 +376,7 @@ struct SkillRequirementsView: View {
                     characterId: currentCharacterId,
                     forceRefresh: false
                 )
-                
+
                 await MainActor.run {
                     characterAttributes = attributes
                 }
@@ -390,7 +395,7 @@ struct SkillRequirementsView: View {
                 header: HStack {
                     Text(groupName)
                         .font(.headline)
-                    
+
                     // 新增：显示预计训练时间
                     if currentCharacterId != 0 && missingPoints > 0 && estimatedTrainingTime > 0 {
                         Spacer()
@@ -401,8 +406,8 @@ struct SkillRequirementsView: View {
                 },
                 footer: Text(
                     (currentCharacterId == 0 || missingPoints == 0)
-                        ? "\(NSLocalizedString("Misc_InAll",comment: "")): \(FormatUtil.format(Double(totalPoints))) SP"
-                        : "\(NSLocalizedString("Misc_InAll",comment: "")): \(FormatUtil.format(Double(totalPoints))) SP, \(NSLocalizedString("Misc_Need",comment: "")): \(FormatUtil.format(Double(missingPoints))) SP"
+                        ? "\(NSLocalizedString("Misc_InAll", comment: "")): \(FormatUtil.format(Double(totalPoints))) SP"
+                        : "\(NSLocalizedString("Misc_InAll", comment: "")): \(FormatUtil.format(Double(totalPoints))) SP, \(NSLocalizedString("Misc_Need", comment: "")): \(FormatUtil.format(Double(missingPoints))) SP"
                 )
                 .font(.caption)
                 .foregroundColor(.secondary)

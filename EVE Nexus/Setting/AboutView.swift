@@ -1,12 +1,11 @@
 import SwiftUI
 
 struct AboutView: View {
-
     private var appIcon: UIImage? {
         if let icons = Bundle.main.infoDictionary?["CFBundleIcons"] as? [String: Any],
-            let primaryIcon = icons["CFBundlePrimaryIcon"] as? [String: Any],
-            let iconFiles = primaryIcon["CFBundleIconFiles"] as? [String],
-            let lastIcon = iconFiles.last
+           let primaryIcon = icons["CFBundlePrimaryIcon"] as? [String: Any],
+           let iconFiles = primaryIcon["CFBundleIconFiles"] as? [String],
+           let lastIcon = iconFiles.last
         {
             return UIImage(named: lastIcon)
         }
@@ -47,7 +46,7 @@ struct AboutView: View {
             icon: "link",
             url: URL(
                 string:
-                    "https://raw.githubusercontent.com/EstamelGG/EVE-Nexus/refs/heads/main/Copyright.md"
+                "https://raw.githubusercontent.com/EstamelGG/EVE-Nexus/refs/heads/main/Copyright.md"
             )
         ),
     ]
@@ -141,7 +140,10 @@ struct AboutItemRow: View {
                         Button {
                             UIPasteboard.general.string = item.value
                         } label: {
-                            Label(NSLocalizedString("Misc_Copy", comment: ""), systemImage: "doc.on.doc")
+                            Label(
+                                NSLocalizedString("Misc_Copy", comment: ""),
+                                systemImage: "doc.on.doc"
+                            )
                         }
                     }
             }

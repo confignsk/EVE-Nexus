@@ -9,11 +9,11 @@ struct SkillLevelIndicator: View {
     @State private var isBlinking = false
 
     // 常量定义
-    private let frameWidth: CGFloat = 55.5  // 37 * 1.5
-    private let frameHeight: CGFloat = 9  // 6 * 1.5
-    private let blockWidth: CGFloat = 9  // 6 * 1.5
-    private let blockHeight: CGFloat = 6  // 4 * 1.5
-    private let blockSpacing: CGFloat = 1.5  // 1 * 1.5
+    private let frameWidth: CGFloat = 55.5 // 37 * 1.5
+    private let frameHeight: CGFloat = 9 // 6 * 1.5
+    private let blockWidth: CGFloat = 9 // 6 * 1.5
+    private let blockHeight: CGFloat = 6 // 4 * 1.5
+    private let blockSpacing: CGFloat = 1.5 // 1 * 1.5
 
     // 颜色定义
     private let darkGray = Color.primary.opacity(0.8)
@@ -29,7 +29,7 @@ struct SkillLevelIndicator: View {
 
             // 使用固定偏移来放置方块组
             HStack(spacing: blockSpacing) {
-                ForEach(0..<5) { index in
+                ForEach(0 ..< 5) { index in
                     // 方块 - 使用方形
                     Rectangle()
                         .frame(width: blockWidth, height: blockHeight)
@@ -37,7 +37,7 @@ struct SkillLevelIndicator: View {
                         .opacity(blockOpacity(for: index))
                 }
             }
-            .offset(x: blockSpacing + 0.5)  // 0.5是边框宽度，加上1.5像素间距
+            .offset(x: blockSpacing + 0.5) // 0.5是边框宽度，加上1.5像素间距
         }
         .onAppear {
             if isTraining {

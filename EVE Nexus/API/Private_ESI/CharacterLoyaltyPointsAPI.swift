@@ -12,12 +12,15 @@ public class CharacterLoyaltyPointsAPI {
 
     // 获取忠诚点缓存文件路径
     private func getLoyaltyPointsCacheFilePath(characterId: Int) -> URL {
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+            .first!
         let characterSkillsPath = documentsPath.appendingPathComponent("CharacterSkills")
-        
+
         // 创建目录（如果不存在）
-        try? FileManager.default.createDirectory(at: characterSkillsPath, withIntermediateDirectories: true)
-        
+        try? FileManager.default.createDirectory(
+            at: characterSkillsPath, withIntermediateDirectories: true
+        )
+
         return characterSkillsPath.appendingPathComponent("\(characterId)_loyalty_points.json")
     }
 
@@ -26,10 +29,10 @@ public class CharacterLoyaltyPointsAPI {
         do {
             let encoder = JSONEncoder()
             let jsonData = try encoder.encode(points)
-            
+
             let filePath = getLoyaltyPointsCacheFilePath(characterId: characterId)
             try jsonData.write(to: filePath)
-            
+
             Logger.debug("成功缓存忠诚点数据到文件 - 角色ID: \(characterId), 路径: \(filePath.path)")
             return true
         } catch {
@@ -41,12 +44,12 @@ public class CharacterLoyaltyPointsAPI {
     // 从本地文件读取忠诚点数据
     private func loadLoyaltyPointsFromCache(characterId: Int) -> [LoyaltyPoint]? {
         let filePath = getLoyaltyPointsCacheFilePath(characterId: characterId)
-        
+
         // 检查文件是否存在
         guard FileManager.default.fileExists(atPath: filePath.path) else {
             return nil
         }
-        
+
         // 检查文件修改时间，缓存12小时
         do {
             let attributes = try FileManager.default.attributesOfItem(atPath: filePath.path)
@@ -61,12 +64,12 @@ public class CharacterLoyaltyPointsAPI {
             Logger.error("获取文件属性失败: \(error)")
             return nil
         }
-        
+
         do {
             let jsonData = try Data(contentsOf: filePath)
             let decoder = JSONDecoder()
             let points = try decoder.decode([LoyaltyPoint].self, from: jsonData)
-            
+
             Logger.debug("从文件缓存加载忠诚点数据 - 角色ID: \(characterId), 文件路径: \(filePath.path)")
             return points
         } catch {

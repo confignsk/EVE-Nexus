@@ -67,8 +67,8 @@ class ServerStatusAPI {
     private var lastFetchTime: Date?
 
     // 缓存时间常量
-    private let normalCacheInterval: TimeInterval = 30 * 60  // 30分钟
-    private let maintenanceCacheInterval: TimeInterval = 60  // 1分钟
+    private let normalCacheInterval: TimeInterval = 30 * 60 // 30分钟
+    private let maintenanceCacheInterval: TimeInterval = 60 // 1分钟
 
     private init() {}
 
@@ -79,7 +79,7 @@ class ServerStatusAPI {
         let components = calendar.dateComponents(in: utc, from: date)
 
         guard let hour = components.hour else { return false }
-        return hour >= 11 && hour < 24  // 11AM - 12AM UTC
+        return hour >= 11 && hour < 24 // 11AM - 12AM UTC
     }
 
     // 检查是否需要刷新缓存

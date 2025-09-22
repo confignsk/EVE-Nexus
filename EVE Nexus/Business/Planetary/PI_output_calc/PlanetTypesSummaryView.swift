@@ -43,8 +43,10 @@ struct PlanetTypesSummaryView: View {
                             Text(
                                 String(
                                     format: NSLocalizedString(
-                                        "Planetary_Resource_Planet_Count", comment: ""),
-                                    "\(planet.count)")
+                                        "Planetary_Resource_Planet_Count", comment: ""
+                                    ),
+                                    "\(planet.count)"
+                                )
                             )
                             .foregroundColor(.secondary)
                         }
@@ -70,30 +72,29 @@ struct PlanetTypesSummaryView: View {
         DispatchQueue.global(qos: .userInitiated).async {
             // 查询星系内的行星数量
             let query = """
-                    SELECT 
-                        SUM(u.temperate) as temperate,
-                        SUM(u.barren) as barren,
-                        SUM(u.oceanic) as oceanic,
-                        SUM(u.ice) as ice,
-                        SUM(u.gas) as gas,
-                        SUM(u.lava) as lava,
-                        SUM(u.storm) as storm,
-                        SUM(u.plasma) as plasma
-                    FROM universe u
-                    WHERE u.solarsystem_id IN (\(systemIds.map { String($0) }.joined(separator: ",")))
-                """
+                SELECT 
+                    SUM(u.temperate) as temperate,
+                    SUM(u.barren) as barren,
+                    SUM(u.oceanic) as oceanic,
+                    SUM(u.ice) as ice,
+                    SUM(u.gas) as gas,
+                    SUM(u.lava) as lava,
+                    SUM(u.storm) as storm,
+                    SUM(u.plasma) as plasma
+                FROM universe u
+                WHERE u.solarsystem_id IN (\(systemIds.map { String($0) }.joined(separator: ",")))
+            """
 
             if case let .success(rows) = DatabaseManager.shared.executeQuery(query),
-                let row = rows.first
+               let row = rows.first
             {
-
                 // 获取行星类型名称
                 let planetTypeIds = PlanetaryUtils.planetTypeToColumn.keys
                 let planetTypeQuery = """
-                        SELECT type_id, name, icon_filename
-                        FROM types
-                        WHERE type_id IN (\(planetTypeIds.map { String($0) }.joined(separator: ",")))
-                    """
+                    SELECT type_id, name, icon_filename
+                    FROM types
+                    WHERE type_id IN (\(planetTypeIds.map { String($0) }.joined(separator: ",")))
+                """
 
                 var typeIdToName: [Int: (name: String, iconFileName: String)] = [:]
 
@@ -102,8 +103,8 @@ struct PlanetTypesSummaryView: View {
                 {
                     for typeRow in typeRows {
                         if let typeId = typeRow["type_id"] as? Int,
-                            let name = typeRow["name"] as? String,
-                            let iconFileName = typeRow["icon_filename"] as? String
+                           let name = typeRow["name"] as? String,
+                           let iconFileName = typeRow["icon_filename"] as? String
                         {
                             typeIdToName[typeId] = (
                                 name: name,
@@ -118,8 +119,8 @@ struct PlanetTypesSummaryView: View {
 
                 for (typeId, columnName) in PlanetaryUtils.planetTypeToColumn {
                     if let count = row[columnName] as? Int,
-                        count > 0,
-                        let typeInfo = typeIdToName[typeId]
+                       count > 0,
+                       let typeInfo = typeIdToName[typeId]
                     {
                         summary.append(
                             (

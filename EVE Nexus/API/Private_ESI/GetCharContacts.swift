@@ -18,7 +18,7 @@ struct CachedContactsData: Codable {
 
 class GetCharContacts {
     static let shared = GetCharContacts()
-    private let cacheTimeout: TimeInterval = 8 * 3600  // 8小时缓存有效期
+    private let cacheTimeout: TimeInterval = 8 * 3600 // 8小时缓存有效期
 
     private init() {}
 
@@ -78,7 +78,7 @@ class GetCharContacts {
     }
 
     // 获取所有联系人数据
-    public func fetchContacts(characterId: Int, forceRefresh: Bool = false) async throws
+    func fetchContacts(characterId: Int, forceRefresh: Bool = false) async throws
         -> [ContactInfo]
     {
         // 如果不是强制刷新，尝试从缓存加载

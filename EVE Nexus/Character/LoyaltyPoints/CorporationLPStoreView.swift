@@ -20,79 +20,91 @@ struct LPStoreOfferView: View {
     let requiredItemInfos: [Int: LPStoreItemInfo]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            NavigationLink(
-                destination: ItemInfoMap.getItemInfoView(
-                    itemID: offer.typeId,
-                    databaseManager: DatabaseManager.shared
-                )
-            ) {
-                HStack {
-                    IconManager.shared.loadImage(for: itemInfo.iconFileName)
-                        .resizable()
-                        .scaledToFit()
-                        .cornerRadius(6)
-                        .frame(width: 36)
+        NavigationLink(
+            destination: ItemInfoMap.getItemInfoView(
+                itemID: offer.typeId,
+                databaseManager: DatabaseManager.shared
+            )
+        ) {
+            HStack(alignment: .center, spacing: 12) {
+                // 左侧：offer 图标（垂直居中）
+                IconManager.shared.loadImage(for: itemInfo.iconFileName)
+                    .resizable()
+                    .scaledToFit()
+                    .cornerRadius(6)
+                    .frame(width: 36, height: 36)
 
-                    VStack(alignment: .leading) {
-                        Text("\(offer.quantity)x \(itemInfo.name)")
-                            .font(.headline)
-                            .lineLimit(1)
+                // 右侧：所有内容垂直排列
+                VStack(alignment: .leading, spacing: 4) {
+                    // 商品名称和数量
+                    Text("\(offer.quantity)× \(itemInfo.name)")
+                        .font(.headline)
+                        .lineLimit(1)
 
-                        HStack(spacing: 4) {
-                            if offer.lpCost > 0 {
-                                Text("\(offer.lpCost) LP")
-                                    .foregroundColor(.blue)
-                            }
-
-                            if offer.lpCost > 0 && offer.iskCost > 0 {
-                                Text("+")
-                            }
-
-                            if offer.iskCost > 0 {
-                                Text("\(FormatUtil.formatISK(Double(offer.iskCost)))")
-                                    .foregroundColor(.green)
-                            }
+                    // 价格信息
+                    HStack(spacing: 4) {
+                        if offer.lpCost > 0 {
+                            Text("\(offer.lpCost) LP")
+                                .foregroundColor(.blue)
                         }
-                        .font(.subheadline)
+
+                        if offer.lpCost > 0 && offer.iskCost > 0 {
+                            Text("+")
+                        }
+
+                        if offer.iskCost > 0 {
+                            Text("\(FormatUtil.formatISK(Double(offer.iskCost)))")
+                                .foregroundColor(.green)
+                        }
                     }
-                }
-                .contextMenu {
-                    Button {
-                        UIPasteboard.general.string = itemInfo.name
-                    } label: {
-                        Label(NSLocalizedString("Misc_Copy_LP_Offer_Name", comment: ""), systemImage: "doc.on.doc")
-                    }
-                }
-            }
-            .buttonStyle(.plain)
+                    .font(.subheadline)
 
-            if !offer.requiredItems.isEmpty {
-                Text(NSLocalizedString("Main_LP_Required_Items", comment: ""))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-
-                let sortedItems = offer.requiredItems.sorted { $0.typeId < $1.typeId }
-                ForEach(sortedItems, id: \.typeId) { item in
-                    if let info = requiredItemInfos[item.typeId] {
-                        HStack {
-                            IconManager.shared.loadImage(for: info.iconFileName)
-                                .resizable()
-                                .scaledToFit()
-                                .cornerRadius(6)
-                                .frame(width: 24, height: 24)
-
-                            Text("\(item.quantity)x")
+                    // 所需物品（如果有）
+                    if !offer.requiredItems.isEmpty {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(NSLocalizedString("Main_LP_Required_Items", comment: ""))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
-                            Text(info.name)
-                                .font(.caption)
+
+                            let sortedItems = offer.requiredItems.sorted { $0.typeId < $1.typeId }
+                            ForEach(sortedItems, id: \.typeId) { item in
+                                if let info = requiredItemInfos[item.typeId] {
+                                    HStack(spacing: 6) {
+                                        IconManager.shared.loadImage(for: info.iconFileName)
+                                            .resizable()
+                                            .scaledToFit()
+                                            .cornerRadius(6)
+                                            .frame(width: 20, height: 20)
+
+                                        Text("\(item.quantity)×")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                        Text(info.name)
+                                            .font(.caption)
+
+                                        Spacer()
+                                    }
+                                }
+                            }
                         }
                     }
                 }
+
+                Spacer()
+            }
+            .padding(.vertical, 4)
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            Button {
+                UIPasteboard.general.string = itemInfo.name
+            } label: {
+                Label(
+                    NSLocalizedString("Misc_Copy_LP_Offer_Name", comment: ""),
+                    systemImage: "doc.on.doc"
+                )
             }
         }
-        .padding(.vertical, 2)
     }
 }
 
@@ -108,9 +120,9 @@ struct LPStoreGroupView: View {
         } else {
             return offers.filter { offer in
                 if let itemInfo = itemInfos[offer.typeId] {
-                    return itemInfo.name.localizedCaseInsensitiveContains(searchText) ||
-                           itemInfo.enName.localizedCaseInsensitiveContains(searchText) ||
-                           itemInfo.zhName.localizedCaseInsensitiveContains(searchText)
+                    return itemInfo.name.localizedCaseInsensitiveContains(searchText)
+                        || itemInfo.enName.localizedCaseInsensitiveContains(searchText)
+                        || itemInfo.zhName.localizedCaseInsensitiveContains(searchText)
                 }
                 return false
             }
@@ -137,6 +149,7 @@ struct LPStoreGroupView: View {
                             )
                         }
                     }
+                    .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                 }
             }
         }
@@ -170,23 +183,24 @@ struct CorporationLPStoreView: View {
         if searchText.isEmpty {
             return []
         }
-        
+
         var matchedOffers: [LPStoreOffer] = []
         for category in categoryOffers {
             let filteredOffers = category.offers.filter { offer in
                 if let itemInfo = itemInfos[offer.typeId] {
-                    return itemInfo.name.localizedCaseInsensitiveContains(searchText) ||
-                           itemInfo.enName.localizedCaseInsensitiveContains(searchText) ||
-                           itemInfo.zhName.localizedCaseInsensitiveContains(searchText)
+                    return itemInfo.name.localizedCaseInsensitiveContains(searchText)
+                        || itemInfo.enName.localizedCaseInsensitiveContains(searchText)
+                        || itemInfo.zhName.localizedCaseInsensitiveContains(searchText)
                 }
                 return false
             }
             matchedOffers.append(contentsOf: filteredOffers)
         }
-        
+
         return matchedOffers.sorted { offer1, offer2 in
             if let info1 = itemInfos[offer1.typeId],
-               let info2 = itemInfos[offer2.typeId] {
+               let info2 = itemInfos[offer2.typeId]
+            {
                 return info1.name.localizedStandardCompare(info2.name) == .orderedAscending
             }
             return false
@@ -257,11 +271,13 @@ struct CorporationLPStoreView: View {
                                 )
                             ) {
                                 HStack {
-                                    IconManager.shared.loadImage(for: category.category.iconFileName)
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: 36)
-                                        .cornerRadius(6)
+                                    IconManager.shared.loadImage(
+                                        for: category.category.iconFileName
+                                    )
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 36)
+                                    .cornerRadius(6)
                                     Text(category.category.name)
                                         .padding(.leading, 8)
 
@@ -295,7 +311,7 @@ struct CorporationLPStoreView: View {
     }
 
     private func loadOffers(forceRefresh: Bool = false) async {
-        if hasLoadedData && !forceRefresh {
+        if hasLoadedData, !forceRefresh {
             return
         }
 
@@ -318,10 +334,10 @@ struct CorporationLPStoreView: View {
 
             // 3. 一次性查询所有物品信息
             let query = """
-                    SELECT type_id, name, en_name, zh_name, icon_filename, bpc_icon_filename, category_name, categoryID
-                    FROM types
-                    WHERE type_id IN (\(typeIds.sorted().map { String($0) }.joined(separator: ",")))
-                """
+                SELECT type_id, name, en_name, zh_name, icon_filename, bpc_icon_filename, category_name, categoryID
+                FROM types
+                WHERE type_id IN (\(typeIds.sorted().map { String($0) }.joined(separator: ",")))
+            """
 
             if case let .success(rows) = DatabaseManager.shared.executeQuery(query) {
                 var infos: [Int: LPStoreItemInfo] = [:]
@@ -329,12 +345,12 @@ struct CorporationLPStoreView: View {
 
                 for row in rows {
                     if let typeId = row["type_id"] as? Int,
-                        let name = row["name"] as? String,
-                        let enName = row["en_name"] as? String,
-                        let zhName = row["zh_name"] as? String,
-                        let iconFileName = row["icon_filename"] as? String,
-                        let categoryName = row["category_name"] as? String,
-                        let categoryId = row["categoryID"] as? Int
+                       let name = row["name"] as? String,
+                       let enName = row["en_name"] as? String,
+                       let zhName = row["zh_name"] as? String,
+                       let iconFileName = row["icon_filename"] as? String,
+                       let categoryName = row["category_name"] as? String,
+                       let categoryId = row["categoryID"] as? Int
                     {
                         let bpcIconFileName = row["bpc_icon_filename"] as? String
                         let finalIconFileName: String
@@ -361,10 +377,10 @@ struct CorporationLPStoreView: View {
                 // 4. 获取分类信息
                 if !categoryIds.isEmpty {
                     let categoryQuery = """
-                            SELECT category_id, name, icon_filename
-                            FROM categories
-                            WHERE category_id IN (\(categoryIds.sorted().map { String($0) }.joined(separator: ",")))
-                        """
+                        SELECT category_id, name, icon_filename
+                        FROM categories
+                        WHERE category_id IN (\(categoryIds.sorted().map { String($0) }.joined(separator: ",")))
+                    """
 
                     if case let .success(categoryRows) = DatabaseManager.shared.executeQuery(
                         categoryQuery)
@@ -372,8 +388,8 @@ struct CorporationLPStoreView: View {
                         var categories: [Int: CategoryInfo] = [:]
                         for row in categoryRows {
                             if let categoryId = row["category_id"] as? Int,
-                                let name = row["name"] as? String,
-                                let iconFileName = row["icon_filename"] as? String
+                               let name = row["name"] as? String,
+                               let iconFileName = row["icon_filename"] as? String
                             {
                                 categories[categoryId] = CategoryInfo(
                                     name: name,
@@ -400,13 +416,17 @@ struct CorporationLPStoreView: View {
                         category: categoryInfo,
                         offers: offers.sorted { offer1, offer2 in
                             if let info1 = itemInfos[offer1.typeId],
-                               let info2 = itemInfos[offer2.typeId] {
-                                return info1.name.localizedStandardCompare(info2.name) == .orderedAscending
+                               let info2 = itemInfos[offer2.typeId]
+                            {
+                                return info1.name.localizedStandardCompare(info2.name)
+                                    == .orderedAscending
                             }
                             return false
                         }
                     )
-                }.sorted { $0.category.name.localizedStandardCompare($1.category.name) == .orderedAscending }
+                }.sorted {
+                    $0.category.name.localizedStandardCompare($1.category.name) == .orderedAscending
+                }
             }
 
             isLoading = false

@@ -8,6 +8,7 @@ struct CorporationSearchView {
     @Binding var filteredResults: [SearcherView.SearchResult]
     @Binding var searchingStatus: String
     @Binding var error: Error?
+    var strictMatch: Bool = false
 
     func search() async {
         do {
@@ -17,7 +18,8 @@ struct CorporationSearchView {
             let data = try await CharacterSearchAPI.shared.search(
                 characterId: characterId,
                 categories: [.corporation],
-                searchText: searchText
+                searchText: searchText,
+                strict: strictMatch
             )
 
             if Task.isCancelled { return }
@@ -53,13 +55,13 @@ struct CorporationSearchView {
                     let starts2 = name2Lower.hasPrefix(searchTextLower)
 
                     if starts1 != starts2 {
-                        return starts1  // 以搜索文本开头的排在前面
+                        return starts1 // 以搜索文本开头的排在前面
                     }
-                    return result1.name < result2.name  // 其次按字母顺序排序
+                    return result1.name < result2.name // 其次按字母顺序排序
                 }
 
                 searchResults = results
-                filteredResults = searchResults  // 对于军团搜索，不进行二次过滤
+                filteredResults = searchResults // 对于军团搜索，不进行二次过滤
             } else {
                 searchResults = []
                 filteredResults = []

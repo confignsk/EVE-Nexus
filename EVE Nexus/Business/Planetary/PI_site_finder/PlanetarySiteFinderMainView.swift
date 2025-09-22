@@ -6,7 +6,7 @@ struct PlanetaryProduct: Identifiable {
     let icon: String
 
     init(typeId: Int, name: String, icon: String) {
-        self.id = typeId
+        id = typeId
         self.name = name
         self.icon = icon
     }
@@ -120,9 +120,9 @@ struct SovereigntySelectorView: View {
             return sovereignties
         } else {
             return sovereignties.filter { sovereignty in
-                sovereignty.name.localizedCaseInsensitiveContains(searchText) ||
-                sovereignty.en_name.localizedCaseInsensitiveContains(searchText) ||
-                sovereignty.zh_name.localizedCaseInsensitiveContains(searchText)
+                sovereignty.name.localizedCaseInsensitiveContains(searchText)
+                    || sovereignty.en_name.localizedCaseInsensitiveContains(searchText)
+                    || sovereignty.zh_name.localizedCaseInsensitiveContains(searchText)
             }
         }
     }
@@ -138,8 +138,8 @@ struct SovereigntySelectorView: View {
                     forceRefresh: false)
 
                 // 处理主权数据
-                var allianceToSystems: [Int: Int] = [:]  // 联盟ID -> 星系数量
-                var factionToSystems: [Int: Int] = [:]  // 派系ID -> 星系数量
+                var allianceToSystems: [Int: Int] = [:] // 联盟ID -> 星系数量
+                var factionToSystems: [Int: Int] = [:] // 派系ID -> 星系数量
 
                 // 统计每个联盟和派系拥有的星系数量
                 for data in sovereigntyData {
@@ -178,17 +178,17 @@ struct SovereigntySelectorView: View {
 
                 // 加载派系信息
                 let factionQuery = """
-                        SELECT id, iconName, name, en_name, zh_name 
-                        FROM factions 
-                        WHERE id IN (\(factionToSystems.keys.map { String($0) }.joined(separator: ",")))
-                    """
+                    SELECT id, iconName, name, en_name, zh_name 
+                    FROM factions 
+                    WHERE id IN (\(factionToSystems.keys.map { String($0) }.joined(separator: ",")))
+                """
 
                 if case let .success(rows) = databaseManager.executeQuery(factionQuery) {
                     for row in rows {
                         if let factionId = row["id"] as? Int,
-                            let iconName = row["iconName"] as? String,
-                            let name = row["name"] as? String,
-                            let systemCount = factionToSystems[factionId]
+                           let iconName = row["iconName"] as? String,
+                           let name = row["name"] as? String,
+                           let systemCount = factionToSystems[factionId]
                         {
                             let icon = IconManager.shared.loadImage(for: iconName)
                             let en_name = row["en_name"] as? String ?? name
@@ -251,14 +251,14 @@ struct PlanetarySiteFinder: View {
     @State private var selectedRegionName: String? = nil
     @State private var selectedSovereigntyID: Int? = nil
     @State private var selectedSovereigntyName: String? = nil
-    @State private var selectedJumpRange: Int = 0  // 默认0跳
+    @State private var selectedJumpRange: Int = 0 // 默认0跳
     @State private var showProductSelector = false
     @State private var showRegionSelector = false
     @State private var showSovereigntySelector = false
     @State private var isCalculating = false
-    @State private var searchResults: [SystemSearchResult] = []  // 存储搜索结果
-    @State private var showResults = false  // 控制结果显示
-    @State private var showSelected = false  // 选物品时不显示右侧选中标记
+    @State private var searchResults: [SystemSearchResult] = [] // 存储搜索结果
+    @State private var showResults = false // 控制结果显示
+    @State private var showSelected = false // 选物品时不显示右侧选中标记
     @StateObject private var databaseManager = DatabaseManager.shared
     private let resourceCalculator: PlanetaryResourceCalculator
 
@@ -267,7 +267,7 @@ struct PlanetarySiteFinder: View {
 
     init(characterId: Int?) {
         self.characterId = characterId
-        self.resourceCalculator = PlanetaryResourceCalculator(
+        resourceCalculator = PlanetaryResourceCalculator(
             databaseManager: DatabaseManager.shared)
     }
 
@@ -309,7 +309,8 @@ struct PlanetarySiteFinder: View {
                                 .foregroundColor(.primary)
                                 Text(
                                     NSLocalizedString(
-                                        "Planetary_Product_Description", comment: "要生产什么产品")
+                                        "Planetary_Product_Description", comment: "要生产什么产品"
+                                    )
                                 )
                                 .font(.caption)
                                 .foregroundColor(.secondary)
@@ -344,7 +345,8 @@ struct PlanetarySiteFinder: View {
                                     .foregroundColor(.primary)
                                 Text(
                                     NSLocalizedString(
-                                        "Planetary_Region_Description", comment: "要在哪个星域生产")
+                                        "Planetary_Region_Description", comment: "要在哪个星域生产"
+                                    )
                                 )
                                 .font(.caption)
                                 .foregroundColor(.secondary)
@@ -369,12 +371,14 @@ struct PlanetarySiteFinder: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(
                                     NSLocalizedString(
-                                        "Main_Planetary_Select_Sovereignty", comment: "")
+                                        "Main_Planetary_Select_Sovereignty", comment: ""
+                                    )
                                 )
                                 .foregroundColor(.primary)
                                 Text(
                                     NSLocalizedString(
-                                        "Planetary_Sovereignty_Description", comment: "要在哪个主权辖区生产")
+                                        "Planetary_Sovereignty_Description", comment: "要在哪个主权辖区生产"
+                                    )
                                 )
                                 .font(.caption)
                                 .foregroundColor(.secondary)
@@ -406,7 +410,8 @@ struct PlanetarySiteFinder: View {
                                 .foregroundColor(.primary)
                             Text(
                                 NSLocalizedString(
-                                    "Planetary_Jump_Description", comment: "最多允许在几跳范围内收集资源")
+                                    "Planetary_Jump_Description", comment: "最多允许在几跳范围内收集资源"
+                                )
                             )
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -414,19 +419,25 @@ struct PlanetarySiteFinder: View {
                     }
                 }
                 .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
-                
+
                 // 功能描述（当没有结果时显示）
                 if searchResults.isEmpty && !isCalculating {
                     Section {
                         VStack(alignment: .leading, spacing: 16) {
-                            Text(NSLocalizedString("PI_SiteFinder_Description_Title", comment: "行星工业选址工具"))
-                                .font(.headline)
-                                .foregroundColor(.primary)
-                            
-                            Text(NSLocalizedString("PI_SiteFinder_Description_Text", comment: "功能描述"))
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
+                            Text(
+                                NSLocalizedString(
+                                    "PI_SiteFinder_Description_Title", comment: "行星工业选址工具"
+                                )
+                            )
+                            .font(.headline)
+                            .foregroundColor(.primary)
+
+                            Text(
+                                NSLocalizedString("PI_SiteFinder_Description_Text", comment: "功能描述")
+                            )
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                         }
                         .padding(.vertical, 8)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -505,7 +516,7 @@ struct PlanetarySiteFinder: View {
 
     private func calculatePlanetarySites() {
         isCalculating = true
-        searchResults = []  // 清空之前的结果
+        searchResults = [] // 清空之前的结果
         showResults = false
 
         // 首先确保已选择产品
@@ -525,7 +536,7 @@ struct PlanetarySiteFinder: View {
                 for: baseResources.map { $0.typeId })
 
             // 加载星图数据
-            guard let path = Bundle.main.path(forResource: "neighbours_data", ofType: "json") else {
+            guard let path = Bundle.main.path(forResource: "neighbors_data", ofType: "json") else {
                 Logger.error("无法找到星图文件路径")
                 isCalculating = false
                 return
@@ -547,8 +558,8 @@ struct PlanetarySiteFinder: View {
                 if let regionId = selectedRegionID {
                     let query = "SELECT solarsystem_id FROM universe WHERE region_id = ?"
                     if case let .success(rows) = databaseManager.executeQuery(
-                        query, parameters: [regionId])
-                    {
+                        query, parameters: [regionId]
+                    ) {
                         let systemsInRegion = Set(
                             rows.compactMap { row in
                                 row["solarsystem_id"] as? Int
@@ -641,7 +652,7 @@ struct PlanetarySiteFinder: View {
 
                     // 转换结果为SystemSearchResult数组
                     var results: [SystemSearchResult] = []
-                    for (index, system) in scoredSystems.prefix(20).enumerated() {  // 保留 top 20
+                    for (index, system) in scoredSystems.prefix(20).enumerated() { // 保留 top 20
                         // 计算资源覆盖率
                         var coveredResources = Set<Int>()
                         for (resourceId, _) in system.availableResources {

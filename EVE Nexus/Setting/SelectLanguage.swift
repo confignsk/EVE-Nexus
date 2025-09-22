@@ -113,14 +113,14 @@ struct SelectLanguageView: View {
 
         // 3. 应用新的语言设置
         if let languageBundlePath = Bundle.main.path(forResource: languageCode, ofType: "lproj"),
-            Bundle(path: languageBundlePath) != nil
+           Bundle(path: languageBundlePath) != nil
         {
             Bundle.setLanguage(languageCode)
         }
 
         // 4. 清空所有缓存并重新加载数据库
-        DatabaseBrowserView.clearCache()  // 清除导航缓存
-        databaseManager.clearCache()  // 清除 SQL 查询缓存
+        DatabaseBrowserView.clearCache() // 清除导航缓存
+        databaseManager.clearCache() // 清除 SQL 查询缓存
         databaseManager.loadDatabase()
 
         // 5. 延迟发送通知，让视图有时间完成关闭动画
@@ -139,8 +139,8 @@ struct SelectLanguageView: View {
         selectedDatabaseLanguage = languageCode
 
         // 2. 清除数据库相关缓存
-        DatabaseBrowserView.clearCache()  // 清除导航缓存
-        databaseManager.clearCache()  // 清除 SQL 查询缓存
+        DatabaseBrowserView.clearCache() // 清除导航缓存
+        databaseManager.clearCache() // 清除 SQL 查询缓存
 
         // 3. 重新加载数据库，使用新的语言设置
         databaseManager.loadDatabase()

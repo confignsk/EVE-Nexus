@@ -51,7 +51,8 @@ public class CorpMoonExtractionAPI {
 
         // 3. 从API获取
         return try await fetchExtractionsFromServer(
-            corporationId: corporationId, characterId: characterId)
+            corporationId: corporationId, characterId: characterId
+        )
     }
 
     private func fetchExtractionsFromServer(corporationId: Int, characterId: Int) async throws

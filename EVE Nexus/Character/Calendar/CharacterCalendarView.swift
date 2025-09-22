@@ -4,22 +4,24 @@ struct CharacterCalendarView: View {
     @StateObject private var viewModel: CalendarViewModel
     let characterId: Int
     let databaseManager: DatabaseManager
-    
+
     @State private var showScheduledNotifications = false
-    
+
     init(characterId: Int, databaseManager: DatabaseManager = DatabaseManager.shared) {
         self.characterId = characterId
         self.databaseManager = databaseManager
-        self._viewModel = StateObject(wrappedValue: CalendarViewModel(characterId: characterId))
+        _viewModel = StateObject(wrappedValue: CalendarViewModel(characterId: characterId))
     }
-    
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
                 if viewModel.isLoading {
-                    ProgressView(NSLocalizedString("Calendar_Loading", comment: "Loading calendar data"))
-                        .progressViewStyle(CircularProgressViewStyle())
-                        .padding()
+                    ProgressView(
+                        NSLocalizedString("Calendar_Loading", comment: "Loading calendar data")
+                    )
+                    .progressViewStyle(CircularProgressViewStyle())
+                    .padding()
                 } else {
                     CalendarGridView(
                         events: viewModel.events,
@@ -39,7 +41,7 @@ struct CharacterCalendarView: View {
                             .foregroundColor(.blue)
                     }
                 }
-                
+
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
                         viewModel.refreshCalendar()
@@ -49,8 +51,11 @@ struct CharacterCalendarView: View {
                     }
                 }
             }
-            .alert(NSLocalizedString("Calendar_Error", comment: "Error"), isPresented: $viewModel.showError) {
-                Button(NSLocalizedString("Calendar_OK", comment: "OK")) { }
+            .alert(
+                NSLocalizedString("Calendar_Error", comment: "Error"),
+                isPresented: $viewModel.showError
+            ) {
+                Button(NSLocalizedString("Calendar_OK", comment: "OK")) {}
             } message: {
                 Text(viewModel.errorMessage)
             }
@@ -65,15 +70,15 @@ struct CalendarGridView: View {
     let events: [CalendarEvent]
     let viewModel: CalendarViewModel
     let databaseManager: DatabaseManager
-    
+
     @State private var selectedDate = Date()
     @State private var currentMonth = Date()
-    
+
     // 按日期分组事件
     private var eventsByDate: [String: [CalendarEvent]] {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
-        
+
         var grouped: [String: [CalendarEvent]] = [:]
         for event in events {
             if let date = event.date {
@@ -86,37 +91,37 @@ struct CalendarGridView: View {
         }
         return grouped
     }
-    
+
     var body: some View {
-                    VStack(spacing: 16) {
-                // 月份导航
-                MonthNavigationView(
-                    currentMonth: $currentMonth,
-                    onMonthChanged: { newMonth in
-                        Task {
-                            // 当月份变化时，检查是否需要加载更多数据
-                            await viewModel.checkDataForMonth(newMonth)
-                        }
+        VStack(spacing: 16) {
+            // 月份导航
+            MonthNavigationView(
+                currentMonth: $currentMonth,
+                onMonthChanged: { newMonth in
+                    Task {
+                        // 当月份变化时，检查是否需要加载更多数据
+                        await viewModel.checkDataForMonth(newMonth)
                     }
-                )
-                
-                // 星期标题
-                WeekdayHeaderView()
-                
-                // 日历网格
-                CalendarDaysGrid(
-                    currentMonth: currentMonth,
-                    eventsByDate: eventsByDate,
-                    selectedDate: $selectedDate,
-                    onDateSelected: { date in
-                        selectedDate = date
-                    }
-                )
-            
+                }
+            )
+
+            // 星期标题
+            WeekdayHeaderView()
+
+            // 日历网格
+            CalendarDaysGrid(
+                currentMonth: currentMonth,
+                eventsByDate: eventsByDate,
+                selectedDate: $selectedDate,
+                onDateSelected: { date in
+                    selectedDate = date
+                }
+            )
+
             // 选中日期的事件列表
             Divider()
                 .padding(.horizontal)
-            
+
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text(selectedDateString)
@@ -124,19 +129,25 @@ struct CalendarGridView: View {
                         .foregroundColor(.primary)
                     Spacer()
                     if !eventsForSelectedDate.isEmpty {
-                        Text("\(eventsForSelectedDate.count) " + NSLocalizedString("Calendar_Events_Count", comment: "events"))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                        Text(
+                            "\(eventsForSelectedDate.count) "
+                                + NSLocalizedString("Calendar_Events_Count", comment: "events")
+                        )
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                     }
                 }
                 .padding(.horizontal)
-                
+
                 if !eventsForSelectedDate.isEmpty {
                     ScrollView {
                         LazyVStack(spacing: 8) {
                             ForEach(eventsForSelectedDate) { event in
-                                CalendarEventRow(event: event, characterId: viewModel.characterId, databaseManager: databaseManager)
-                                    .padding(.horizontal)
+                                CalendarEventRow(
+                                    event: event, characterId: viewModel.characterId,
+                                    databaseManager: databaseManager
+                                )
+                                .padding(.horizontal)
                             }
                         }
                         .padding(.bottom, 16) // 底部添加一些间距
@@ -145,9 +156,13 @@ struct CalendarGridView: View {
                 } else {
                     VStack {
                         Spacer()
-                        Text(NSLocalizedString("Calendar_No_Events_On_Date", comment: "No events on this date"))
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                        Text(
+                            NSLocalizedString(
+                                "Calendar_No_Events_On_Date", comment: "No events on this date"
+                            )
+                        )
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
                         Spacer()
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -156,16 +171,14 @@ struct CalendarGridView: View {
             }
         }
     }
-    
+
     private var eventsForSelectedDate: [CalendarEvent] {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
         let selectedDateString = dateFormatter.string(from: selectedDate)
         return eventsByDate[selectedDateString] ?? []
     }
-    
 
-    
     private var selectedDateString: String {
         let formatter = DateFormatter()
         formatter.dateStyle = .long
@@ -177,7 +190,7 @@ struct CalendarGridView: View {
 struct MonthNavigationView: View {
     @Binding var currentMonth: Date
     let onMonthChanged: (Date) -> Void
-    
+
     var body: some View {
         HStack {
             Button(action: previousMonth) {
@@ -185,15 +198,15 @@ struct MonthNavigationView: View {
                     .foregroundColor(.blue)
                     .font(.title2)
             }
-            
+
             Spacer()
-            
+
             Text(monthYearString)
                 .font(.title2)
                 .fontWeight(.semibold)
-            
+
             Spacer()
-            
+
             Button(action: nextMonth) {
                 Image(systemName: "chevron.right")
                     .foregroundColor(.blue)
@@ -202,22 +215,24 @@ struct MonthNavigationView: View {
         }
         .padding(.horizontal)
     }
-    
+
     private var monthYearString: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMMM yyyy"
         formatter.locale = Locale.current
         return formatter.string(from: currentMonth)
     }
-    
+
     private func previousMonth() {
-        let newMonth = Calendar.current.date(byAdding: .month, value: -1, to: currentMonth) ?? currentMonth
+        let newMonth =
+            Calendar.current.date(byAdding: .month, value: -1, to: currentMonth) ?? currentMonth
         currentMonth = newMonth
         onMonthChanged(newMonth)
     }
-    
+
     private func nextMonth() {
-        let newMonth = Calendar.current.date(byAdding: .month, value: 1, to: currentMonth) ?? currentMonth
+        let newMonth =
+            Calendar.current.date(byAdding: .month, value: 1, to: currentMonth) ?? currentMonth
         currentMonth = newMonth
         onMonthChanged(newMonth)
     }
@@ -227,15 +242,15 @@ struct WeekdayHeaderView: View {
     private var weekdays: [String] {
         var calendar = Calendar.current
         calendar.firstWeekday = 2 // 1 = Sunday, 2 = Monday
-        
+
         // 重新排列星期标题以匹配 firstWeekday 设置
         let symbols = calendar.shortWeekdaySymbols
         let firstWeekdayIndex = calendar.firstWeekday - 1 // firstWeekday 是 1-based
-        
+
         // 重新排列数组，让周一成为第一天
         return Array(symbols[firstWeekdayIndex...] + symbols[..<firstWeekdayIndex])
     }
-    
+
     var body: some View {
         HStack(spacing: 0) {
             ForEach(weekdays, id: \.self) { weekday in
@@ -255,25 +270,27 @@ struct CalendarDaysGrid: View {
     let eventsByDate: [String: [CalendarEvent]]
     @Binding var selectedDate: Date
     let onDateSelected: (Date) -> Void
-    
+
     private var calendar: Calendar {
         var cal = Calendar.current
         cal.firstWeekday = 2 // 1 = Sunday, 2 = Monday
         return cal
     }
-    
+
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter
     }()
-    
+
     var body: some View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 8) {
             ForEach(daysInMonth, id: \.self) { date in
                 CalendarDayView(
                     date: date,
-                    isCurrentMonth: calendar.isDate(date, equalTo: currentMonth, toGranularity: .month),
+                    isCurrentMonth: calendar.isDate(
+                        date, equalTo: currentMonth, toGranularity: .month
+                    ),
                     isSelected: calendar.isDate(date, inSameDayAs: selectedDate),
                     isToday: calendar.isDateInToday(date),
                     eventCount: eventCount(for: date),
@@ -287,41 +304,45 @@ struct CalendarDaysGrid: View {
         }
         .padding(.horizontal)
     }
-    
+
     private var daysInMonth: [Date] {
         guard let monthInterval = calendar.dateInterval(of: .month, for: currentMonth) else {
             return []
         }
-        
+
         let monthStart = monthInterval.start
-        let _ = monthInterval.end
-        
+        _ = monthInterval.end
+
         // 找到本月第一天是星期几（周一为1）
         let weekdayOfFirstDay = calendar.component(.weekday, from: monthStart)
-        
+
         // 计算需要显示的第一天（可能是上个月的某几天）
         let daysFromPreviousMonth = (weekdayOfFirstDay - calendar.firstWeekday + 7) % 7
-        guard let calendarStart = calendar.date(byAdding: .day, value: -daysFromPreviousMonth, to: monthStart) else {
+        guard
+            let calendarStart = calendar.date(
+                byAdding: .day, value: -daysFromPreviousMonth, to: monthStart
+            )
+        else {
             return []
         }
-        
+
         // 生成日期直到能填满整个日历网格（42天 = 6周 × 7天）
         var dates: [Date] = []
         var currentDate = calendarStart
-        
-        for _ in 0..<42 {
+
+        for _ in 0 ..< 42 {
             dates.append(currentDate)
             currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate)!
         }
-        
+
         return dates
     }
-    
+
     private func eventCount(for date: Date) -> Int {
         let dateString = dateFormatter.string(from: date)
         return eventsByDate[dateString]?.count ?? 0
     }
-    
+
     private func hasImportantEvents(for date: Date) -> Bool {
         let dateString = dateFormatter.string(from: date)
         return eventsByDate[dateString]?.contains { $0.importance > 0 } ?? false
@@ -335,13 +356,13 @@ struct CalendarDayView: View {
     let isToday: Bool
     let eventCount: Int
     let hasImportantEvents: Bool
-    
+
     private var dayNumber: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "d"
         return formatter.string(from: date)
     }
-    
+
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 8)
@@ -350,18 +371,18 @@ struct CalendarDayView: View {
                     RoundedRectangle(cornerRadius: 8)
                         .stroke(borderColor, lineWidth: isSelected ? 2 : (isToday ? 1 : 0))
                 )
-            
+
             VStack(spacing: 2) {
                 Text(dayNumber)
                     .font(.system(size: 16, weight: isToday ? .bold : .medium))
                     .foregroundColor(textColor)
-                
+
                 if eventCount > 0 {
                     ZStack {
                         Circle()
                             .fill(eventCount > 9 ? .orange : .blue)
                             .frame(width: 16, height: 16)
-                        
+
                         Text(eventCount > 9 ? "9+" : "\(eventCount)")
                             .font(.system(size: 10, weight: .bold))
                             .foregroundColor(.white)
@@ -375,7 +396,7 @@ struct CalendarDayView: View {
         .frame(height: 44)
         .opacity(isCurrentMonth ? 1.0 : 0.3)
     }
-    
+
     private var backgroundColor: Color {
         if isSelected {
             return .blue.opacity(0.1)
@@ -387,7 +408,7 @@ struct CalendarDayView: View {
             return .clear
         }
     }
-    
+
     private var borderColor: Color {
         if isSelected {
             return .blue
@@ -397,7 +418,7 @@ struct CalendarDayView: View {
             return .clear
         }
     }
-    
+
     private var textColor: Color {
         if isSelected {
             return .blue
@@ -413,34 +434,34 @@ struct CalendarEventRow: View {
     let event: CalendarEvent
     let characterId: Int
     let databaseManager: DatabaseManager
-    
+
     @State private var showEventDetail = false
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(event.title)
                 .font(.headline)
                 .lineLimit(2)
-            
+
             HStack {
                 Image(systemName: "clock")
                     .foregroundColor(.secondary)
-                
+
                 Text(formatTime(event.date))
                     .font(.caption)
                     .foregroundColor(.secondary)
-                
+
                 Spacer()
-                
+
                 ResponseBadge(response: event.event_response)
             }
-            
+
             if event.importance > 0 {
                 HStack {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundColor(.orange)
                         .font(.caption)
-                    
+
                     Text(NSLocalizedString("Calendar_Importance", comment: "Importance"))
                         .font(.caption)
                         .foregroundColor(.orange)
@@ -455,13 +476,17 @@ struct CalendarEventRow: View {
             showEventDetail = true
         }
         .sheet(isPresented: $showEventDetail) {
-            CalendarEventDetailView(characterId: characterId, eventId: event.event_id, databaseManager: databaseManager)
+            CalendarEventDetailView(
+                characterId: characterId, eventId: event.event_id, databaseManager: databaseManager
+            )
         }
     }
-    
+
     private func formatTime(_ date: Date?) -> String {
-        guard let date = date else { return NSLocalizedString("Calendar_Unknown_Time", comment: "Unknown time") }
-        
+        guard let date = date else {
+            return NSLocalizedString("Calendar_Unknown_Time", comment: "Unknown time")
+        }
+
         let formatter = DateFormatter()
         formatter.timeStyle = .short
         formatter.locale = Locale.current
@@ -471,7 +496,7 @@ struct CalendarEventRow: View {
 
 struct ResponseBadge: View {
     let response: String
-    
+
     private var badgeColor: Color {
         switch response {
         case "accepted":
@@ -484,7 +509,7 @@ struct ResponseBadge: View {
             return .gray
         }
     }
-    
+
     private var badgeText: String {
         switch response {
         case "accepted":
@@ -497,7 +522,7 @@ struct ResponseBadge: View {
             return NSLocalizedString("Calendar_Response_Not_Responded", comment: "Not responded")
         }
     }
-    
+
     var body: some View {
         Text(badgeText)
             .font(.caption2)
@@ -515,148 +540,155 @@ class CalendarViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var showError = false
     @Published var errorMessage = ""
-    
+
     let characterId: Int
     private var loadTask: Task<Void, Never>?
     private var allLoadedEvents: [CalendarEvent] = []
     private var maxEventId: Int = 0
-    
+
     init(characterId: Int) {
         self.characterId = characterId
-        self.isLoading = true
-        
+        isLoading = true
+
         // 在初始化时立即开始加载数据
         loadTask = Task {
             await loadInitialCalendar()
         }
     }
-    
+
     deinit {
         loadTask?.cancel()
     }
-    
+
     func refreshCalendar() {
         // 取消之前的任务
         loadTask?.cancel()
-        
+
         // 开始新的加载任务
         loadTask = Task {
             await loadInitialCalendar()
         }
     }
-    
+
     // 当月份变化时，检查是否需要加载更多数据
     func checkDataForMonth(_ month: Date) async {
         let calendar = Calendar.current
-        let _ = calendar.dateInterval(of: .month, for: month)?.start ?? month
+        _ = calendar.dateInterval(of: .month, for: month)?.start ?? month
         let monthEnd = calendar.dateInterval(of: .month, for: month)?.end ?? month
-        
+
         // 检查是否有事件的日期晚于当前显示月份的最后一天
         let hasEventsBeyondMonth = allLoadedEvents.contains { event in
             guard let eventDate = event.date else { return false }
             return eventDate > monthEnd
         }
-        
+
         // 如果没有超出当前月份的事件，且当前最大eventId > 0，则需要加载更多数据
-        if !hasEventsBeyondMonth && maxEventId > 0 {
+        if !hasEventsBeyondMonth, maxEventId > 0 {
             await loadMoreEventsForMonth(monthEnd: monthEnd)
         }
     }
-    
+
     private func loadInitialCalendar() async {
         isLoading = true
         allLoadedEvents = []
         maxEventId = 0
-        
+
         do {
-            let fetchedEvents = try await CharacterCalendarAPI.shared.fetchCharacterCalendar(characterId: characterId, fromEventId: nil)
-            
+            let fetchedEvents = try await CharacterCalendarAPI.shared.fetchCharacterCalendar(
+                characterId: characterId, fromEventId: nil
+            )
+
             // 检查任务是否被取消
             if Task.isCancelled {
                 return
             }
-            
+
             allLoadedEvents = fetchedEvents
             updateMaxEventId()
             updateDisplayedEvents()
-            
+
         } catch {
             // 如果任务被取消，不显示错误
             if !Task.isCancelled {
-                errorMessage = String(format: NSLocalizedString("Calendar_Load_Failed", comment: "Failed to load calendar"), error.localizedDescription)
+                errorMessage = String(
+                    format: NSLocalizedString(
+                        "Calendar_Load_Failed", comment: "Failed to load calendar"
+                    ),
+                    error.localizedDescription
+                )
                 showError = true
                 Logger.error("加载日历失败: \(error)")
             }
         }
-        
+
         if !Task.isCancelled {
             isLoading = false
         }
     }
-    
+
     private func loadMoreEventsForMonth(monthEnd: Date) async {
         // 防止重复加载
-        guard !isLoading && maxEventId > 0 else { return }
-        
+        guard !isLoading, maxEventId > 0 else { return }
+
         var shouldContinueLoading = true
         var currentMaxEventId = maxEventId
-        
-        while shouldContinueLoading && currentMaxEventId > 0 {
+
+        while shouldContinueLoading, currentMaxEventId > 0 {
             do {
                 let moreEvents = try await CharacterCalendarAPI.shared.fetchCharacterCalendar(
                     characterId: characterId,
                     fromEventId: currentMaxEventId
                 )
-                
+
                 // 检查任务是否被取消
                 if Task.isCancelled {
                     return
                 }
-                
+
                 // 如果没有获取到新事件，停止加载
                 if moreEvents.isEmpty {
                     currentMaxEventId = 0
                     break
                 }
-                
+
                 // 添加新事件到列表
                 allLoadedEvents.append(contentsOf: moreEvents)
-                
+
                 // 更新最大事件ID
                 if let newMaxId = moreEvents.map(\.event_id).max() {
                     currentMaxEventId = newMaxId
                 } else {
                     currentMaxEventId = 0
                 }
-                
+
                 // 检查是否有事件的日期晚于当前显示月份的最后一天
                 let hasEventsBeyondMonth = moreEvents.contains { event in
                     guard let eventDate = event.date else { return false }
                     return eventDate > monthEnd
                 }
-                
+
                 // 如果找到了超出当前月份的事件，或者没有更多事件，则停止加载
                 if hasEventsBeyondMonth || moreEvents.count < 50 {
                     shouldContinueLoading = false
                 }
-                
+
                 Logger.info("加载了更多日历事件: \(moreEvents.count)个, 当前总数: \(allLoadedEvents.count)")
-                
+
             } catch {
                 Logger.error("加载更多日历事件失败: \(error)")
                 shouldContinueLoading = false
             }
         }
-        
+
         // 更新最大事件ID和显示的事件
         maxEventId = currentMaxEventId
         updateDisplayedEvents()
     }
-    
+
     private func updateMaxEventId() {
         maxEventId = allLoadedEvents.map(\.event_id).max() ?? 0
     }
-    
+
     private func updateDisplayedEvents() {
         events = allLoadedEvents.sorted { event1, event2 in
             guard let date1 = event1.date, let date2 = event2.date else {

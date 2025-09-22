@@ -35,7 +35,7 @@ private func checkCapitalShipLimits(
 ///   - launcherSlotsNum: 飞船发射器槽位数量
 /// - Returns: 如果超过限制返回 false，否则返回 true
 private func checkTurretAndLauncherLimits(
-    shipAttributes: [String: Double],
+    shipAttributes _: [String: Double],
     itemEffects: [Int],
     currentModules: [SimModule],
     turretSlotsNum: Int,
@@ -138,7 +138,7 @@ private func duplicateSubSysCheck(
 /// - Returns: 如果飞船可以安装该子系统返回 true，否则返回 false
 private func checkSubsystemCompatibility(
     shipTypeID: Int,
-    itemAttributes: [Int: Double],
+    itemAttributes _: [Int: Double],
     itemAttributesName: [String: Double],
     itemEffects: [Int],
     currentModules: [SimModule]
@@ -190,25 +190,27 @@ private func checkSubsystemCompatibility(
 /// - Parameters:
 ///   - databaseManager: 数据库管理器实例
 /// - Returns: (shipGroupAttributes: [Int], shipTypeAttributes: [Int]) 返回飞船组和飞船类型的属性ID数组
-private func getCanFitAttributes(databaseManager: DatabaseManager) -> (shipGroupAttributes: [Int], shipTypeAttributes: [Int]) {
+private func getCanFitAttributes(databaseManager: DatabaseManager) -> (
+    shipGroupAttributes: [Int], shipTypeAttributes: [Int]
+) {
     var shipGroupAttributes: [Int] = []
     var shipTypeAttributes: [Int] = []
 
     let sql = """
-            SELECT attribute_id, name, unitName 
-            FROM dogmaAttributes 
-            WHERE (name LIKE 'canFitShipType%' OR name LIKE 'canFitShipGroup%') 
-            AND unitName IN ('groupID', 'typeID')
-        """
+        SELECT attribute_id, name, unitID 
+        FROM dogmaAttributes 
+        WHERE (name LIKE 'canFitShipType%' OR name LIKE 'canFitShipGroup%') 
+        AND unitID IN (115, 116)
+    """
 
     if case let .success(rows) = databaseManager.executeQuery(sql) {
         for row in rows {
             if let attrId = row["attribute_id"] as? Int,
-                let unitName = row["unitName"] as? String
+               let unitID = row["unitID"] as? Int
             {
-                if unitName == "groupID" {
+                if unitID == 115 {
                     shipGroupAttributes.append(attrId)
-                } else if unitName == "typeID" {
+                } else if unitID == 116 {
                     shipTypeAttributes.append(attrId)
                 }
             }
@@ -231,10 +233,11 @@ private func checkCanFitTo(
     itemAttributes: [Int: Double],
     databaseManager: DatabaseManager
 ) -> Bool {
-    let (shipGroupAttributes, shipTypeAttributes) = getCanFitAttributes(databaseManager: databaseManager)
+    let (shipGroupAttributes, shipTypeAttributes) = getCanFitAttributes(
+        databaseManager: databaseManager)
     Logger.info("shipTypeID: \(shipTypeID)")
     Logger.info("shipGroupID: \(shipGroupID)")
-    
+
     // 检查飞船组限制
     for groupAttrID in shipGroupAttributes {
         if let groupValue = itemAttributes[groupAttrID] {
@@ -279,10 +282,10 @@ private func checkCanFitTo(
 ///   - groupID: 要安装的装备的 group_id
 /// - Returns: 如果未达到限制返回 true，否则返回 false
 private func maxFit(
-    itemAttributes: [Int: Double],
+    itemAttributes _: [Int: Double],
     itemAttributesName: [String: Double],
     currentModules: [SimModule],
-    typeId: Int,
+    typeId _: Int,
     groupID: Int
 ) -> Bool {
     // 检查装备是否有最大安装数量限制（属性1544）
@@ -340,7 +343,7 @@ func canFit(
     let shipGroupID = simulationInput.ship.groupID
     let shipAttributes = simulationInput.ship.baseAttributesByName
     let currentModules = simulationInput.modules
-    
+
     Logger.info("飞船type_id: \(shipTypeID)")
     Logger.info("飞船group_id: \(shipGroupID)")
     /// 检查装备是否可以装配到指定类型的飞船上
@@ -402,4 +405,4 @@ func canFit(
     /// 无特殊情况，允许安装
     Logger.info("[canFit]装备 \(typeId) 可以安装")
     return true
-} 
+}

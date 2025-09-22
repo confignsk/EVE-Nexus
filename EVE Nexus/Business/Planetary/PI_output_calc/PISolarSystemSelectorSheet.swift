@@ -3,10 +3,10 @@ import SwiftUI
 // 星系选择器Sheet - 复用JumpNavigationView中的SystemSelectorSheet
 struct PISolarSystemSelectorSheet: View {
     let title: String
-    let onSelect: (Int, String) -> Void  // 接收星系ID和名称
+    let onSelect: (Int, String) -> Void // 接收星系ID和名称
     let onCancel: () -> Void
     let currentSelection: Int?
-    
+
     // 使用懒加载的星系数据
     @State private var allSystems: [JumpSystemData] = []
     @State private var isLoadingData = true
@@ -40,7 +40,7 @@ struct PISolarSystemSelectorSheet: View {
             SystemSelectorSheet(
                 title: title,
                 currentSelection: currentSelection,
-                onlyLowSec: false,  // PI可以在所有星系进行
+                onlyLowSec: false, // PI可以在所有星系进行
                 jumpSystems: allSystems,
                 onSelect: { systemId in
                     // 找到对应的星系名称
@@ -54,7 +54,7 @@ struct PISolarSystemSelectorSheet: View {
             )
         }
     }
-    
+
     // 加载所有星系数据
     private func loadAllSystemsData() {
         DispatchQueue.global(qos: .userInitiated).async {
@@ -69,17 +69,17 @@ struct PISolarSystemSelectorSheet: View {
             """
 
             var systems: [JumpSystemData] = []
-            
+
             if case let .success(rows) = databaseManager.executeQuery(query) {
                 for row in rows {
                     if let id = row["solarsystem_id"] as? Int,
-                        let name = row["solarSystemName"] as? String,
-                        let nameEN = row["solarSystemName_en"] as? String,
-                        let security = row["system_security"] as? Double,
-                        let region = row["regionName"] as? String,
-                        let x = row["x"] as? Double,
-                        let y = row["y"] as? Double,
-                        let z = row["z"] as? Double
+                       let name = row["solarSystemName"] as? String,
+                       let nameEN = row["solarSystemName_en"] as? String,
+                       let security = row["system_security"] as? Double,
+                       let region = row["regionName"] as? String,
+                       let x = row["x"] as? Double,
+                       let y = row["y"] as? Double,
+                       let z = row["z"] as? Double
                     {
                         // 获取中文名，如果为nil则使用英文名
                         let nameZH = (row["solarSystemName_zh"] as? String) ?? nameEN

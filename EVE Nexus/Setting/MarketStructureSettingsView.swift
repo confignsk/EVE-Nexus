@@ -8,14 +8,16 @@ struct MarketStructure: Identifiable, Codable {
     let structureName: String
     let characterId: Int
     let characterName: String
-    let systemId: Int  // 改为存储系统ID
-    let regionId: Int  // 改为存储星域ID
+    let systemId: Int // 改为存储系统ID
+    let regionId: Int // 改为存储星域ID
     let security: Double
     let addedDate: Date
     let iconFilename: String?
-    
-    init(structureId: Int, structureName: String, characterId: Int, characterName: String, 
-         systemId: Int, regionId: Int, security: Double, iconFilename: String? = nil) {
+
+    init(
+        structureId: Int, structureName: String, characterId: Int, characterName: String,
+        systemId: Int, regionId: Int, security: Double, iconFilename: String? = nil
+    ) {
         self.structureId = structureId
         self.structureName = structureName
         self.characterId = characterId
@@ -23,10 +25,10 @@ struct MarketStructure: Identifiable, Codable {
         self.systemId = systemId
         self.regionId = regionId
         self.security = security
-        self.addedDate = Date()
+        addedDate = Date()
         self.iconFilename = iconFilename
     }
-    
+
     // 通过数据库查询获取系统名称
     var systemName: String {
         let query = """
@@ -34,16 +36,19 @@ struct MarketStructure: Identifiable, Codable {
             FROM solarsystems
             WHERE solarSystemID = ?
         """
-        
-        if case let .success(rows) = DatabaseManager.shared.executeQuery(query, parameters: [systemId]),
-           let row = rows.first,
-           let name = row["solarSystemName"] as? String {
+
+        if case let .success(rows) = DatabaseManager.shared.executeQuery(
+            query, parameters: [systemId]
+        ),
+            let row = rows.first,
+            let name = row["solarSystemName"] as? String
+        {
             return name
         }
-        
+
         return "Unknown System"
     }
-    
+
     // 通过数据库查询获取星域名称
     var regionName: String {
         let query = """
@@ -51,13 +56,16 @@ struct MarketStructure: Identifiable, Codable {
             FROM regions
             WHERE regionID = ?
         """
-        
-        if case let .success(rows) = DatabaseManager.shared.executeQuery(query, parameters: [regionId]),
-           let row = rows.first,
-           let name = row["regionName"] as? String {
+
+        if case let .success(rows) = DatabaseManager.shared.executeQuery(
+            query, parameters: [regionId]
+        ),
+            let row = rows.first,
+            let name = row["regionName"] as? String
+        {
             return name
         }
-        
+
         return "Unknown Region"
     }
 }
@@ -66,40 +74,42 @@ struct MarketStructure: Identifiable, Codable {
 
 class MarketStructureManager: ObservableObject {
     static let shared = MarketStructureManager()
-    
+
     @Published var structures: [MarketStructure] = []
-    
+
     private let fileManager = FileManager.default
     private let documentsDirectory: URL
     private let structureDirectory: URL
     private let configFilePath: URL
-    
+
     private init() {
         documentsDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
         structureDirectory = documentsDirectory.appendingPathComponent("Structure_Market")
         configFilePath = structureDirectory.appendingPathComponent("selected_structures.json")
-        
+
         createDirectoryIfNeeded()
         loadStructures()
     }
-    
+
     private func createDirectoryIfNeeded() {
         if !fileManager.fileExists(atPath: structureDirectory.path) {
             do {
-                try fileManager.createDirectory(at: structureDirectory, withIntermediateDirectories: true)
+                try fileManager.createDirectory(
+                    at: structureDirectory, withIntermediateDirectories: true
+                )
                 Logger.info("创建市场建筑目录: \(structureDirectory.path)")
             } catch {
                 Logger.error("创建市场建筑目录失败: \(error)")
             }
         }
     }
-    
+
     func loadStructures() {
         guard fileManager.fileExists(atPath: configFilePath.path) else {
             structures = []
             return
         }
-        
+
         do {
             let data = try Data(contentsOf: configFilePath)
             structures = try JSONDecoder().decode([MarketStructure].self, from: data)
@@ -109,7 +119,7 @@ class MarketStructureManager: ObservableObject {
             structures = []
         }
     }
-    
+
     func saveStructures() {
         do {
             let data = try JSONEncoder().encode(structures)
@@ -119,7 +129,7 @@ class MarketStructureManager: ObservableObject {
             Logger.error("保存市场建筑失败: \(error)")
         }
     }
-    
+
     func addStructure(_ structure: MarketStructure) {
         // 检查是否已存在相同的建筑
         if !structures.contains(where: { $0.structureId == structure.structureId }) {
@@ -127,7 +137,7 @@ class MarketStructureManager: ObservableObject {
             saveStructures()
         }
     }
-    
+
     func removeStructure(_ structure: MarketStructure) {
         structures.removeAll { $0.id == structure.id }
         saveStructures()
@@ -139,7 +149,7 @@ class MarketStructureManager: ObservableObject {
 struct MarketStructureSettingsView: View {
     @StateObject private var manager = MarketStructureManager.shared
     @State private var showingAddStructureSheet = false
-    
+
     var body: some View {
         List {
             // 添加建筑 Section
@@ -151,22 +161,30 @@ struct MarketStructureSettingsView: View {
                         Image(systemName: "plus.circle.fill")
                             .foregroundColor(.blue)
                             .font(.title2)
-                        
+
                         Text(NSLocalizedString("Main_Setting_Market_Structure_Add", comment: ""))
                             .foregroundColor(.primary)
-                        
+
                         Spacer()
-                        
+
                         Image(systemName: "chevron.right")
                             .foregroundColor(.secondary)
                             .font(.caption)
                     }
                 }
             }
-            
+
             // 已添加的建筑 Section
             if !manager.structures.isEmpty {
-                Section(header: Text(String(format: NSLocalizedString("Main_Setting_Market_Structure_Added_Count", comment: ""), manager.structures.count))) {
+                Section(
+                    header: Text(
+                        String(
+                            format: NSLocalizedString(
+                                "Main_Setting_Market_Structure_Added_Count", comment: ""
+                            ),
+                            manager.structures.count
+                        ))
+                ) {
                     ForEach(manager.structures) { structure in
                         StructureRowView(structure: structure)
                     }
@@ -175,13 +193,15 @@ struct MarketStructureSettingsView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .navigationTitle(NSLocalizedString("Main_Setting_Market_Structure_Settings_Title", comment: ""))
+        .navigationTitle(
+            NSLocalizedString("Main_Setting_Market_Structure_Settings_Title", comment: "")
+        )
         .navigationBarTitleDisplayMode(.large)
         .sheet(isPresented: $showingAddStructureSheet) {
             AddMarketStructureSheet()
         }
     }
-    
+
     private func deleteStructures(offsets: IndexSet) {
         for index in offsets {
             manager.removeStructure(manager.structures[index])
@@ -193,12 +213,12 @@ struct MarketStructureSettingsView: View {
 
 struct StructureRowView: View {
     let structure: MarketStructure
-    
+
     @State private var isLoadingOrders = false
     @State private var structureOrdersProgress: StructureOrdersProgress? = nil
     @State private var cacheStatus: StructureMarketManager.CacheStatus = .noData
     @State private var showingReloadAlert = false
-    
+
     var body: some View {
         HStack(spacing: 12) {
             // 建筑图标
@@ -217,47 +237,47 @@ struct StructureRowView: View {
                             .foregroundColor(.secondary)
                     )
             }
-            
+
             // 建筑信息
             VStack(alignment: .leading, spacing: 2) {
                 // 建筑名称
                 Text(structure.structureName)
                     .font(.headline)
                     .foregroundColor(.primary)
-                
+
                 // 位置信息
                 HStack(spacing: 4) {
                     Text(formatSystemSecurity(structure.security))
                         .foregroundColor(getSecurityColor(structure.security))
                         .font(.caption)
-                    
+
                     Text("\(structure.systemName) / \(structure.regionName)")
                         .foregroundColor(.secondary)
                         .font(.caption)
                 }
-                
+
                 // 角色信息
                 HStack {
                     Image(systemName: "person.circle")
                         .foregroundColor(.blue)
                         .font(.caption)
-                    
+
                     Text(structure.characterName)
                         .foregroundColor(.secondary)
                         .font(.caption)
-                    
+
                     Spacer()
                 }
             }
-            
+
             Spacer()
-            
+
             // 缓存状态和加载进度指示器
             VStack(spacing: 4) {
                 if isLoadingOrders {
                     if let progress = structureOrdersProgress {
                         switch progress {
-                        case .loading(let currentPage, let totalPages):
+                        case let .loading(currentPage, totalPages):
                             VStack(spacing: 2) {
                                 ProgressView()
                                     .scaleEffect(0.8)
@@ -302,30 +322,44 @@ struct StructureRowView: View {
             Button {
                 UIPasteboard.general.string = structure.structureName
             } label: {
-                Label(NSLocalizedString("Misc_Copy_Structure", comment: ""), systemImage: "doc.on.doc")
+                Label(
+                    NSLocalizedString("Misc_Copy_Structure", comment: ""), systemImage: "doc.on.doc"
+                )
             }
-            
+
             Divider()
-            
+
             Button {
                 Task {
                     await loadStructureOrders()
                 }
             } label: {
                 if isLoadingOrders {
-                    Label(NSLocalizedString("Structure_Orders_Loading", comment: "正在加载订单..."), systemImage: "arrow.clockwise")
+                    Label(
+                        NSLocalizedString("Structure_Orders_Loading", comment: "正在加载订单..."),
+                        systemImage: "arrow.clockwise"
+                    )
                 } else {
-                    Label(NSLocalizedString("Structure_Orders_Load", comment: "获取市场订单"), systemImage: "chart.bar.xaxis")
+                    Label(
+                        NSLocalizedString("Structure_Orders_Load", comment: "获取市场订单"),
+                        systemImage: "chart.bar.xaxis"
+                    )
                 }
             }
             .disabled(isLoadingOrders)
         }
         .padding(.vertical, 4)
         .onAppear {
-            cacheStatus = StructureMarketManager.getCacheStatus(structureId: Int64(structure.structureId))
+            cacheStatus = StructureMarketManager.getCacheStatus(
+                structureId: Int64(structure.structureId))
         }
-        .alert(NSLocalizedString("Structure_Orders_Reload_Title", comment: "重新加载订单"), isPresented: $showingReloadAlert) {
-            Button(NSLocalizedString("Structure_Orders_Reload_Cancel", comment: "取消"), role: .cancel) { }
+        .alert(
+            NSLocalizedString("Structure_Orders_Reload_Title", comment: "重新加载订单"),
+            isPresented: $showingReloadAlert
+        ) {
+            Button(
+                NSLocalizedString("Structure_Orders_Reload_Cancel", comment: "取消"), role: .cancel
+            ) {}
             Button(NSLocalizedString("Structure_Orders_Reload_Confirm", comment: "确认")) {
                 Task {
                     await loadStructureOrders()
@@ -335,12 +369,12 @@ struct StructureRowView: View {
             Text(NSLocalizedString("Structure_Orders_Reload_Message", comment: "是否重新加载该建筑的市场订单数据？"))
         }
     }
-    
+
     // 加载建筑市场订单
     private func loadStructureOrders() async {
         isLoadingOrders = true
         structureOrdersProgress = nil
-        
+
         do {
             let orders = try await StructureMarketManager.shared.getStructureOrders(
                 structureId: Int64(structure.structureId),
@@ -352,21 +386,24 @@ struct StructureRowView: View {
                     }
                 }
             )
-            
+
             let statistics = await StructureMarketManager.shared.getOrdersStatistics(orders: orders)
-            
+
             // 显示成功消息
             await MainActor.run {
-                Logger.info("建筑 \(structure.structureName) 的市场订单已加载: 买单 \(statistics.buyOrders) 个, 卖单 \(statistics.sellOrders) 个, 总交易量 \(statistics.totalVolume)")
+                Logger.info(
+                    "建筑 \(structure.structureName) 的市场订单已加载: 买单 \(statistics.buyOrders) 个, 卖单 \(statistics.sellOrders) 个, 总交易量 \(statistics.totalVolume)"
+                )
             }
-            
+
         } catch {
             Logger.error("加载建筑市场订单失败: \(error)")
         }
-        
+
         // 更新缓存状态
-        cacheStatus = StructureMarketManager.getCacheStatus(structureId: Int64(structure.structureId))
-        
+        cacheStatus = StructureMarketManager.getCacheStatus(
+            structureId: Int64(structure.structureId))
+
         isLoadingOrders = false
         structureOrdersProgress = nil
     }

@@ -18,7 +18,7 @@ struct CorporationDetailView: View {
     @State private var myCorpInfo: (name: String, icon: UIImage?)?
     @State private var myAllianceInfo: (name: String, icon: UIImage?)?
     @State private var standingsLoaded = false
-    @State private var selectedTab = 0  // 添加选项卡状态
+    @State private var selectedTab = 0 // 添加选项卡状态
     @State private var allianceHistory: [CorporationAllianceHistory] = []
 
     var body: some View {
@@ -130,24 +130,33 @@ struct CorporationDetailView: View {
                             Button {
                                 UIPasteboard.general.string = corporationInfo.name
                             } label: {
-                                Label(NSLocalizedString("Misc_Copy_CorpID", comment: ""), systemImage: "doc.on.doc")
+                                Label(
+                                    NSLocalizedString("Misc_Copy_CorpID", comment: ""),
+                                    systemImage: "doc.on.doc"
+                                )
                             }
                             if let ceoInfo = ceoInfo {
                                 Button {
                                     UIPasteboard.general.string = ceoInfo.name
                                 } label: {
-                                    Label(NSLocalizedString("Misc_Copy_CEO_CharID", comment: ""), systemImage: "doc.on.doc")
+                                    Label(
+                                        NSLocalizedString("Misc_Copy_CEO_CharID", comment: ""),
+                                        systemImage: "doc.on.doc"
+                                    )
                                 }
                             }
                             if let allianceInfo = allianceInfo {
                                 Button {
                                     UIPasteboard.general.string = allianceInfo.name
                                 } label: {
-                                    Label(NSLocalizedString("Misc_Copy_Alliance", comment: ""), systemImage: "doc.on.doc")
+                                    Label(
+                                        NSLocalizedString("Misc_Copy_Alliance", comment: ""),
+                                        systemImage: "doc.on.doc"
+                                    )
                                 }
                             }
                         }
-                        .frame(height: 96)  // 与Logo等高
+                        .frame(height: 96) // 与Logo等高
                     }
                     .padding(.vertical, 4)
                 }
@@ -168,7 +177,7 @@ struct CorporationDetailView: View {
                                 .lineLimit(1)
                         }
                     }
-                    
+
                     // 成员数量
                     HStack {
                         Text("\(NSLocalizedString("Member Count", comment: ""))")
@@ -187,7 +196,7 @@ struct CorporationDetailView: View {
 
                     // 成立时间
                     if let dateFoundedStr = corporationInfo.date_founded,
-                        let dateFounded = ISO8601DateFormatter().date(from: dateFoundedStr)
+                       let dateFounded = ISO8601DateFormatter().date(from: dateFoundedStr)
                     {
                         HStack {
                             Text("\(NSLocalizedString("Main_Founded", comment: ""))")
@@ -200,7 +209,8 @@ struct CorporationDetailView: View {
 
                 // 军团描述
                 if !corporationInfo.description.isEmpty {
-                    let description = TextProcessingUtil.processDescription(corporationInfo.description)
+                    let description = TextProcessingUtil.processDescription(
+                        corporationInfo.description)
                     Section(header: Text("\(NSLocalizedString("Description", comment: ""))")) {
                         Text(description)
                             .font(.system(size: 14))
@@ -208,7 +218,10 @@ struct CorporationDetailView: View {
                                 Button {
                                     UIPasteboard.general.string = description
                                 } label: {
-                                    Label(NSLocalizedString("Misc_Copy", comment: ""), systemImage: "doc.on.doc")
+                                    Label(
+                                        NSLocalizedString("Misc_Copy", comment: ""),
+                                        systemImage: "doc.on.doc"
+                                    )
                                 }
                             }
                     }
@@ -237,7 +250,10 @@ struct CorporationDetailView: View {
                             myAllianceInfo: myAllianceInfo
                         )
                     } else if selectedTab == 1 {
-                        AllianceHistoryView(history: allianceHistory, corporationId: corporationId, corporationLogo: logo)
+                        AllianceHistoryView(
+                            history: allianceHistory, corporationId: corporationId,
+                            corporationLogo: logo
+                        )
                     }
                 }
             }
@@ -266,7 +282,9 @@ struct CorporationDetailView: View {
                 corporationId: corporationId)
 
             // 等待所有数据加载完成
-            let (info, logo, history) = try await (corporationInfoTask, logoTask, allianceHistoryTask)
+            let (info, logo, history) = try await (
+                corporationInfoTask, logoTask, allianceHistoryTask
+            )
             Logger.info("成功加载军团基本信息")
 
             // 更新状态
@@ -289,7 +307,7 @@ struct CorporationDetailView: View {
             // 加载联盟信息
             if let allianceId = info.alliance_id {
                 let allianceNames = try? await UniverseAPI.shared.getNamesWithFallback(ids: [
-                    allianceId
+                    allianceId,
                 ])
                 if let allianceName = allianceNames?[allianceId]?.name {
                     Logger.info("成功加载联盟信息: \(allianceName)")
@@ -302,15 +320,18 @@ struct CorporationDetailView: View {
             // 加载势力信息
             if let factionId = info.faction_id {
                 let query = "SELECT name, iconName FROM factions WHERE id = ?"
-                if case let .success(rows) = DatabaseManager.shared.executeQuery(query, parameters: [factionId]),
-                   let row = rows.first,
-                   let name = row["name"] as? String,
-                   let iconName = row["iconName"] as? String {
+                if case let .success(rows) = DatabaseManager.shared.executeQuery(
+                    query, parameters: [factionId]
+                ),
+                    let row = rows.first,
+                    let name = row["name"] as? String,
+                    let iconName = row["iconName"] as? String
+                {
                     Logger.info("成功加载势力信息: \(name)")
                     factionInfo = (name: name, iconName: iconName)
                 }
             }
-            
+
             // 加载声望数据
             if !standingsLoaded {
                 await loadStandings()
@@ -360,9 +381,9 @@ struct CorporationDetailView: View {
 
         // 加载军团声望
         if let corpId = character.corporationId,
-            let contacts = try? await GetCorpContacts.shared.fetchContacts(
-                characterId: character.CharacterID, corporationId: corpId
-            )
+           let contacts = try? await GetCorpContacts.shared.fetchContacts(
+               characterId: character.CharacterID, corporationId: corpId
+           )
         {
             for contact in contacts {
                 corpStandings[contact.contact_id] = contact.standing
@@ -371,9 +392,9 @@ struct CorporationDetailView: View {
 
         // 加载联盟声望
         if let allianceId = character.allianceId,
-            let contacts = try? await GetAllianceContacts.shared.fetchContacts(
-                characterId: character.CharacterID, allianceId: allianceId
-            )
+           let contacts = try? await GetAllianceContacts.shared.fetchContacts(
+               characterId: character.CharacterID, allianceId: allianceId
+           )
         {
             for contact in contacts {
                 allianceStandings[contact.contact_id] = contact.standing
@@ -448,7 +469,7 @@ struct CorporationDetailView: View {
                     .frame(width: geometry.size.width * 0.4, alignment: .leading)
                 }
             }
-            .frame(height: 32)  // 设置固定高度以确保一致性
+            .frame(height: 32) // 设置固定高度以确保一致性
             .task {
                 await loadImages()
             }
@@ -491,19 +512,19 @@ struct CorporationDetailView: View {
         private func getStandingColor(standing: Double) -> Color {
             switch standing {
             case 10.0:
-                return Color.blue  // 深蓝
-            case 5.0..<10.0:
-                return Color.blue  // 深蓝
-            case 0.1..<5.0:
-                return Color(red: 0.3, green: 0.7, blue: 1.0)  // 浅蓝
+                return Color.blue // 深蓝
+            case 5.0 ..< 10.0:
+                return Color.blue // 深蓝
+            case 0.1 ..< 5.0:
+                return Color(red: 0.3, green: 0.7, blue: 1.0) // 浅蓝
             case 0.0:
-                return Color.secondary  // 次要颜色
-            case -5.0..<0.0:
-                return Color(red: 1.0, green: 0.5, blue: 0.0)  // 橙红
+                return Color.secondary // 次要颜色
+            case -5.0 ..< 0.0:
+                return Color(red: 1.0, green: 0.5, blue: 0.0) // 橙红
             case -10.0 ... -5.0:
-                return Color.red  // 红色
+                return Color.red // 红色
             case ..<(-10.0):
-                return Color.red  // 红色
+                return Color.red // 红色
             default:
                 return Color.secondary
             }
@@ -626,17 +647,19 @@ struct AllianceHistoryView: View {
     var body: some View {
         // 过滤掉没有联盟的记录（alliance_id为nil的记录）
         let filteredHistory = history.filter { $0.alliance_id != nil }
-        
+
         if filteredHistory.isEmpty {
             ContentUnavailableView {
                 Label(
                     NSLocalizedString("Misc_No_Data", comment: "无数据"),
-                    systemImage: "exclamationmark.triangle")
+                    systemImage: "exclamationmark.triangle"
+                )
             }
         } else {
             ForEach(Array(filteredHistory.enumerated()), id: \.element.record_id) { index, record in
                 if let startDate = parseDate(record.start_date),
-                   let allianceId = record.alliance_id {
+                   let allianceId = record.alliance_id
+                {
                     let endDate = index > 0 ? parseDate(filteredHistory[index - 1].start_date) : nil
 
                     VStack(spacing: 0) {
@@ -714,7 +737,10 @@ struct AllianceHistoryRowView: View {
                 Button {
                     UIPasteboard.general.string = allianceName
                 } label: {
-                    Label(NSLocalizedString("Misc_Copy_Alliance", comment: ""), systemImage: "doc.on.doc")
+                    Label(
+                        NSLocalizedString("Misc_Copy_Alliance", comment: ""),
+                        systemImage: "doc.on.doc"
+                    )
                 }
             }
         }
@@ -725,18 +751,19 @@ struct AllianceHistoryRowView: View {
 
     private func loadAllianceInfo() async {
         // 获取联盟名称
-        if let allianceNames = try? await UniverseAPI.shared.getNamesWithFallback(ids: [allianceId]),
-           let name = allianceNames[allianceId]?.name {
+        if let allianceNames = try? await UniverseAPI.shared.getNamesWithFallback(ids: [allianceId]
+        ),
+            let name = allianceNames[allianceId]?.name
+        {
             // 并发加载联盟图标
-            let allianceIcon = try? await AllianceAPI.shared.fetchAllianceLogo(allianceID: allianceId)
-            
+            let allianceIcon = try? await AllianceAPI.shared.fetchAllianceLogo(
+                allianceID: allianceId)
+
             await MainActor.run {
                 self.allianceInfo = (name: name, icon: allianceIcon)
             }
         }
     }
-    
-
 
     private func formatDateRange(start: Date, end: Date?) -> String {
         let dateFormatter = DateFormatter()

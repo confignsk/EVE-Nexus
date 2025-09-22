@@ -35,7 +35,8 @@ enum AttributeValueFormatter {
 
         // 使用 AttributeDisplayConfig 进行转换
         let result = AttributeDisplayConfig.transformValue(
-            attributeID, allAttributes: allAttributes, unitID: unitID)
+            attributeID, allAttributes: allAttributes, unitID: unitID
+        )
 
         // 处理不同的转换结果类型
         switch result {

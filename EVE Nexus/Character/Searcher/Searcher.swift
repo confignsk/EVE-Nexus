@@ -1,7 +1,7 @@
 import Combine
 import SwiftUI
 
-let minSearchLength = 3  // 最少要输入3个搜索关键词
+let minSearchLength = 3 // 最少要输入3个搜索关键词
 
 struct SearcherView: View {
     let character: EVECharacterInfo
@@ -20,6 +20,7 @@ struct SearcherView: View {
     // 过滤开关
     @State private var showOnlyMyCorporation = false
     @State private var showOnlyMyAlliance = false
+    @State private var strictMatch = false
 
     enum SearchType: String, CaseIterable {
         case character = "Main_Search_Type_Character"
@@ -41,7 +42,7 @@ struct SearcherView: View {
             case .alliance:
                 return .alliance
             case .structure:
-                return .character  // 建筑物没有对应的类型，暂时使用character
+                return .character // 建筑物没有对应的类型，暂时使用character
             }
         }
     }
@@ -67,7 +68,7 @@ struct SearcherView: View {
         var corporationId: Int?
         var structureType: StructureType?
         var locationInfo: (security: Double, systemName: String, regionName: String)?
-        var typeInfo: String?  // 图标文件名
+        var typeInfo: String? // 图标文件名
         var additionalInfo: String?
 
         init(
@@ -138,7 +139,8 @@ struct SearcherView: View {
                     type: newType,
                     character: character,
                     showOnlyMyCorp: showOnlyMyCorporation,
-                    showOnlyMyAlliance: showOnlyMyAlliance
+                    showOnlyMyAlliance: showOnlyMyAlliance,
+                    strictMatch: strictMatch
                 )
             }
 
@@ -194,7 +196,8 @@ struct SearcherView: View {
                                 } else {
                                     Text(
                                         NSLocalizedString(
-                                            "Main_Search_No_Filtered_Results", comment: "")
+                                            "Main_Search_No_Filtered_Results", comment: ""
+                                        )
                                     )
                                     .foregroundColor(.secondary)
                                 }
@@ -207,7 +210,8 @@ struct SearcherView: View {
                                         } else {
                                             Text(
                                                 NSLocalizedString(
-                                                    "Main_Search_No_Results", comment: ""))
+                                                    "Main_Search_No_Results", comment: ""
+                                                ))
                                         }
 
                                     } else {
@@ -245,7 +249,8 @@ struct SearcherView: View {
                             Text(
                                 String(
                                     format: NSLocalizedString(
-                                        "Main_Search_Min_Length", comment: ""),
+                                        "Main_Search_Min_Length", comment: ""
+                                    ),
                                     minSearchLength
                                 )
                             ).foregroundColor(.secondary)
@@ -272,7 +277,8 @@ struct SearcherView: View {
                             Spacer()
                             Text(
                                 NSLocalizedString(
-                                    "Main_Search_Enter_Keywords", comment: "请输入关键词进行搜索")
+                                    "Main_Search_Enter_Keywords", comment: "请输入关键词进行搜索"
+                                )
                             )
                             .font(.body)
                             .foregroundColor(.secondary)
@@ -320,7 +326,8 @@ struct SearcherView: View {
                 type: selectedSearchType,
                 character: character,
                 showOnlyMyCorp: showOnlyMyCorporation,
-                showOnlyMyAlliance: showOnlyMyAlliance
+                showOnlyMyAlliance: showOnlyMyAlliance,
+                strictMatch: strictMatch
             )
         }
         .onChange(of: searchText) { _, newValue in
@@ -352,7 +359,8 @@ struct SearcherView: View {
                 type: selectedSearchType,
                 character: character,
                 showOnlyMyCorp: showOnlyMyCorporation,
-                showOnlyMyAlliance: showOnlyMyAlliance
+                showOnlyMyAlliance: showOnlyMyAlliance,
+                strictMatch: strictMatch
             )
             applyFilters()
         }
@@ -361,9 +369,23 @@ struct SearcherView: View {
                 type: selectedSearchType,
                 character: character,
                 showOnlyMyCorp: showOnlyMyCorporation,
-                showOnlyMyAlliance: showOnlyMyAlliance
+                showOnlyMyAlliance: showOnlyMyAlliance,
+                strictMatch: strictMatch
             )
             applyFilters()
+        }
+        .onChange(of: strictMatch) { _, _ in
+            // 当精准匹配开关变化时，更新搜索参数并重新搜索
+            viewModel.updateSearchParameters(
+                type: selectedSearchType,
+                character: character,
+                showOnlyMyCorp: showOnlyMyCorporation,
+                showOnlyMyAlliance: showOnlyMyAlliance,
+                strictMatch: strictMatch
+            )
+            if !searchText.isEmpty && !(searchText.count < minSearchLength) {
+                viewModel.processSearchInput(searchText)
+            }
         }
     }
 
@@ -382,14 +404,21 @@ struct SearcherView: View {
             if character.corporationId != nil {
                 Toggle(
                     NSLocalizedString("Main_Search_Filter_Only_My_Corp", comment: ""),
-                    isOn: $showOnlyMyCorporation)
+                    isOn: $showOnlyMyCorporation
+                )
             }
 
             if character.allianceId != nil {
                 Toggle(
                     NSLocalizedString("Main_Search_Filter_Only_My_Alliance", comment: ""),
-                    isOn: $showOnlyMyAlliance)
+                    isOn: $showOnlyMyAlliance
+                )
             }
+
+            Toggle(
+                NSLocalizedString("Main_Search_Strict_Match", comment: ""),
+                isOn: $strictMatch
+            )
 
             Button(action: clearFilters) {
                 Text(NSLocalizedString("Main_Search_Filter_Clear", comment: ""))
@@ -397,8 +426,11 @@ struct SearcherView: View {
             }
 
         case .corporation, .alliance:
-            // 对于军团和联盟搜索，完全留空
-            EmptyView()
+            // 对于军团和联盟搜索，只显示精准匹配开关
+            Toggle(
+                NSLocalizedString("Main_Search_Strict_Match", comment: ""),
+                isOn: $strictMatch
+            )
 
         case .structure:
             Picker(
@@ -409,6 +441,11 @@ struct SearcherView: View {
                     Text(type.localizedName).tag(type)
                 }
             }
+
+            Toggle(
+                NSLocalizedString("Main_Search_Strict_Match", comment: ""),
+                isOn: $strictMatch
+            )
 
             Button(action: clearFilters) {
                 Text(NSLocalizedString("Main_Search_Filter_Clear", comment: ""))
@@ -424,6 +461,7 @@ struct SearcherView: View {
         selectedStructureType = .all
         showOnlyMyCorporation = false
         showOnlyMyAlliance = false
+        strictMatch = false
         applyFilters()
     }
 
@@ -487,7 +525,10 @@ struct SearchResultRow: View {
                             Button {
                                 UIPasteboard.general.string = result.name
                             } label: {
-                                Label(NSLocalizedString("Misc_Copy_Name", comment: ""), systemImage: "doc.on.doc")
+                                Label(
+                                    NSLocalizedString("Misc_Copy_Name", comment: ""),
+                                    systemImage: "doc.on.doc"
+                                )
                             }
                         }
                 } else {
@@ -596,18 +637,18 @@ struct SearchResultRow: View {
     private func scheduleLoad() {
         loadTask?.cancel()
         loadTask = Task {
-            try? await Task.sleep(nanoseconds: 500_000_000)  // 500ms delay
+            try? await Task.sleep(nanoseconds: 500_000_000) // 500ms delay
             if !Task.isCancelled {
                 // 加载军团图标（如果是角色搜索结果且有军团ID）
                 if result.type == .character && result.corporationId != nil {
                     await loadCorporationLogo(corporationId: result.corporationId!)
                 }
-                
+
                 // 加载联盟图标（如果是角色搜索结果且有联盟ID）
                 if result.type == .character && result.allianceId != nil {
                     await loadAllianceLogo(allianceId: result.allianceId!)
                 }
-                
+
                 // 只有当结果类型是军团时才加载军团信息
                 if result.type == .corporation && !hasAttemptedCorpInfoLoad {
                     await loadCorporationInfo()
@@ -620,7 +661,8 @@ struct SearchResultRow: View {
                         if !Task.isCancelled && viewModel.isContactsLoaded {
                             await MainActor.run {
                                 standingIcon = viewModel.determineStandingIcon(
-                                    for: result, character: character)
+                                    for: result, character: character
+                                )
                             }
                         }
                     } else {
@@ -628,7 +670,8 @@ struct SearchResultRow: View {
                         if !Task.isCancelled && viewModel.isContactsLoaded {
                             await MainActor.run {
                                 standingIcon = viewModel.determineStandingIcon(
-                                    for: result, character: character)
+                                    for: result, character: character
+                                )
                             }
                         }
                     }
@@ -643,11 +686,12 @@ struct SearchResultRow: View {
             }
         }
     }
-    
+
     // 加载军团图标
     private func loadCorporationLogo(corporationId: Int) async {
         do {
-            let logo = try await CorporationAPI.shared.fetchCorporationLogo(corporationId: corporationId)
+            let logo = try await CorporationAPI.shared.fetchCorporationLogo(
+                corporationId: corporationId)
             if !Task.isCancelled {
                 await MainActor.run {
                     self.corporationLogo = logo
@@ -657,7 +701,7 @@ struct SearchResultRow: View {
             Logger.error("加载军团图标失败: \(error)")
         }
     }
-    
+
     // 加载联盟图标
     private func loadAllianceLogo(allianceId: Int) async {
         do {
@@ -673,7 +717,7 @@ struct SearchResultRow: View {
     }
 
     private func loadCorporationInfo() async {
-        guard !isLoadingCorpInfo && !hasAttemptedCorpInfoLoad else { return }
+        guard !isLoadingCorpInfo, !hasAttemptedCorpInfoLoad else { return }
 
         isLoadingCorpInfo = true
         hasAttemptedCorpInfoLoad = true
@@ -692,7 +736,7 @@ struct SearchResultRow: View {
     }
 
     private func loadAllianceName() async {
-        guard let allianceId = allianceId, !isLoadingAlliance && !hasAttemptedAllianceLoad else {
+        guard let allianceId = allianceId, !isLoadingAlliance, !hasAttemptedAllianceLoad else {
             return
         }
 
@@ -743,6 +787,7 @@ class SearcherViewModel: ObservableObject {
     private var currentCharacter: EVECharacterInfo?
     private var currentShowOnlyMyCorp = false
     private var currentShowOnlyMyAlliance = false
+    private var currentStrictMatch = false
 
     init() {
         setupSearch()
@@ -753,7 +798,7 @@ class SearcherViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] query in
                 guard let self = self,
-                    let character = self.currentCharacter
+                      let character = self.currentCharacter
                 else { return }
                 Task {
                     await self.search(
@@ -762,7 +807,8 @@ class SearcherViewModel: ObservableObject {
                         type: self.currentSearchType,
                         character: character,
                         showOnlyMyCorp: self.currentShowOnlyMyCorp,
-                        showOnlyMyAlliance: self.currentShowOnlyMyAlliance
+                        showOnlyMyAlliance: self.currentShowOnlyMyAlliance,
+                        strictMatch: self.currentStrictMatch
                     )
                 }
             }
@@ -796,12 +842,14 @@ class SearcherViewModel: ObservableObject {
         type: SearcherView.SearchType,
         character: EVECharacterInfo,
         showOnlyMyCorp: Bool,
-        showOnlyMyAlliance: Bool
+        showOnlyMyAlliance: Bool,
+        strictMatch: Bool = false
     ) {
         currentSearchType = type
         currentCharacter = character
         currentShowOnlyMyCorp = showOnlyMyCorp
         currentShowOnlyMyAlliance = showOnlyMyAlliance
+        currentStrictMatch = strictMatch
     }
 
     // 加载联系人数据的方法
@@ -831,24 +879,24 @@ class SearcherViewModel: ObservableObject {
                 let (charData, corpData, allianceData) = try await (
                     charContacts, corpContacts, allianceContacts
                 )
-                self.characterContacts = charData
-                self.corporationContacts = corpData
+                characterContacts = charData
+                corporationContacts = corpData
                 self.allianceContacts = allianceData
             } else {
                 // 等待请求完成
                 let (charData, corpData) = try await (charContacts, corpContacts)
-                self.characterContacts = charData
-                self.corporationContacts = corpData
-                self.allianceContacts = []
+                characterContacts = charData
+                corporationContacts = corpData
+                allianceContacts = []
             }
 
-            self.isContactsLoaded = true
-            self.contactsLoadError = nil
+            isContactsLoaded = true
+            contactsLoadError = nil
             Logger.debug(
-                "所有联系人数据加载完成 - 个人: \(self.characterContacts.count), 军团: \(self.corporationContacts.count), 联盟: \(self.allianceContacts.count)"
+                "所有联系人数据加载完成 - 个人: \(characterContacts.count), 军团: \(corporationContacts.count), 联盟: \(allianceContacts.count)"
             )
         } catch {
-            self.contactsLoadError = error
+            contactsLoadError = error
             Logger.error("加载联系人数据失败: \(error)")
         }
 
@@ -887,16 +935,16 @@ class SearcherViewModel: ObservableObject {
 
         // 1.2 如果目标是角色或军团，检查对其军团的负面声望
         if let corpId = targetInfo.corpId,
-            let corpContact = characterContacts.first(where: { $0.contact_id == corpId }),
-            corpContact.standing < 0
+           let corpContact = characterContacts.first(where: { $0.contact_id == corpId }),
+           corpContact.standing < 0
         {
             return getStandingIcon(standing: corpContact.standing)
         }
 
         // 1.3 检查对其联盟的负面声望
         if let allianceId = targetInfo.allianceId,
-            let allianceContact = characterContacts.first(where: { $0.contact_id == allianceId }),
-            allianceContact.standing < 0
+           let allianceContact = characterContacts.first(where: { $0.contact_id == allianceId }),
+           allianceContact.standing < 0
         {
             return getStandingIcon(standing: allianceContact.standing)
         }
@@ -915,18 +963,18 @@ class SearcherViewModel: ObservableObject {
 
         // 1.5 如果目标是角色或军团，检查对其军团的正面声望
         if positiveStanding == nil,
-            let corpId = targetInfo.corpId,
-            let corpContact = characterContacts.first(where: { $0.contact_id == corpId }),
-            corpContact.standing > 0
+           let corpId = targetInfo.corpId,
+           let corpContact = characterContacts.first(where: { $0.contact_id == corpId }),
+           corpContact.standing > 0
         {
             positiveStanding = corpContact.standing
         }
 
         // 1.6 检查对其联盟的正面声望
         if positiveStanding == nil,
-            let allianceId = targetInfo.allianceId,
-            let allianceContact = characterContacts.first(where: { $0.contact_id == allianceId }),
-            allianceContact.standing > 0
+           let allianceId = targetInfo.allianceId,
+           let allianceContact = characterContacts.first(where: { $0.contact_id == allianceId }),
+           allianceContact.standing > 0
         {
             positiveStanding = allianceContact.standing
         }
@@ -948,16 +996,16 @@ class SearcherViewModel: ObservableObject {
 
         // 2.2 如果目标是角色或军团，检查对其军团的负面声望
         if let corpId = targetInfo.corpId,
-            let corpContact = corporationContacts.first(where: { $0.contact_id == corpId }),
-            corpContact.standing < 0
+           let corpContact = corporationContacts.first(where: { $0.contact_id == corpId }),
+           corpContact.standing < 0
         {
             return getStandingIcon(standing: corpContact.standing)
         }
 
         // 2.3 检查对其联盟的负面声望
         if let allianceId = targetInfo.allianceId,
-            let allianceContact = corporationContacts.first(where: { $0.contact_id == allianceId }),
-            allianceContact.standing < 0
+           let allianceContact = corporationContacts.first(where: { $0.contact_id == allianceId }),
+           allianceContact.standing < 0
         {
             return getStandingIcon(standing: allianceContact.standing)
         }
@@ -976,18 +1024,18 @@ class SearcherViewModel: ObservableObject {
 
         // 2.5 如果目标是角色或军团，检查对其军团的正面声望
         if positiveStanding == nil,
-            let corpId = targetInfo.corpId,
-            let corpContact = corporationContacts.first(where: { $0.contact_id == corpId }),
-            corpContact.standing > 0
+           let corpId = targetInfo.corpId,
+           let corpContact = corporationContacts.first(where: { $0.contact_id == corpId }),
+           corpContact.standing > 0
         {
             positiveStanding = corpContact.standing
         }
 
         // 2.6 检查对其联盟的正面声望
         if positiveStanding == nil,
-            let allianceId = targetInfo.allianceId,
-            let allianceContact = corporationContacts.first(where: { $0.contact_id == allianceId }),
-            allianceContact.standing > 0
+           let allianceId = targetInfo.allianceId,
+           let allianceContact = corporationContacts.first(where: { $0.contact_id == allianceId }),
+           allianceContact.standing > 0
         {
             positiveStanding = allianceContact.standing
         }
@@ -1009,16 +1057,16 @@ class SearcherViewModel: ObservableObject {
 
         // 3.2 如果目标是角色或军团，检查对其军团的负面声望
         if let corpId = targetInfo.corpId,
-            let corpContact = allianceContacts.first(where: { $0.contact_id == corpId }),
-            corpContact.standing < 0
+           let corpContact = allianceContacts.first(where: { $0.contact_id == corpId }),
+           corpContact.standing < 0
         {
             return getStandingIcon(standing: corpContact.standing)
         }
 
         // 3.3 检查对其联盟的负面声望
         if let allianceId = targetInfo.allianceId,
-            let allianceContact = allianceContacts.first(where: { $0.contact_id == allianceId }),
-            allianceContact.standing < 0
+           let allianceContact = allianceContacts.first(where: { $0.contact_id == allianceId }),
+           allianceContact.standing < 0
         {
             return getStandingIcon(standing: allianceContact.standing)
         }
@@ -1037,18 +1085,18 @@ class SearcherViewModel: ObservableObject {
 
         // 3.5 如果目标是角色或军团，检查对其军团的正面声望
         if positiveStanding == nil,
-            let corpId = targetInfo.corpId,
-            let corpContact = allianceContacts.first(where: { $0.contact_id == corpId }),
-            corpContact.standing > 0
+           let corpId = targetInfo.corpId,
+           let corpContact = allianceContacts.first(where: { $0.contact_id == corpId }),
+           corpContact.standing > 0
         {
             positiveStanding = corpContact.standing
         }
 
         // 3.6 检查对其联盟的正面声望
         if positiveStanding == nil,
-            let allianceId = targetInfo.allianceId,
-            let allianceContact = allianceContacts.first(where: { $0.contact_id == allianceId }),
-            allianceContact.standing > 0
+           let allianceId = targetInfo.allianceId,
+           let allianceContact = allianceContacts.first(where: { $0.contact_id == allianceId }),
+           allianceContact.standing > 0
         {
             positiveStanding = allianceContact.standing
         }
@@ -1112,10 +1160,11 @@ class SearcherViewModel: ObservableObject {
 
     func search(
         characterId: Int, searchText: String, type: SearcherView.SearchType,
-        character: EVECharacterInfo, showOnlyMyCorp: Bool, showOnlyMyAlliance: Bool
+        character: EVECharacterInfo, showOnlyMyCorp: Bool, showOnlyMyAlliance: Bool,
+        strictMatch: Bool = false
     ) async {
         // 先检查搜索文本是否有效（使用URL编码后的长度）
-        guard !searchText.isEmpty && !(getUrlEncodedLength(searchText) < minSearchLength) else {
+        guard !searchText.isEmpty, !(getUrlEncodedLength(searchText) < minSearchLength) else {
             searchResults = []
             filteredResults = []
             searchingStatus = ""
@@ -1151,7 +1200,8 @@ class SearcherViewModel: ObservableObject {
                         set: { self.error = $0 }
                     ),
                     corporationFilter: currentCorpFilter,
-                    allianceFilter: currentAllianceFilter
+                    allianceFilter: currentAllianceFilter,
+                    strictMatch: strictMatch
                 )
                 await characterSearch.search()
                 // 应用角色搜索过滤
@@ -1182,7 +1232,8 @@ class SearcherViewModel: ObservableObject {
                     error: Binding(
                         get: { self.error },
                         set: { self.error = $0 }
-                    )
+                    ),
+                    strictMatch: strictMatch
                 )
                 await corporationSearch.search()
             // 军团搜索不需要额外过滤，CorporationSearchView已经直接设置filteredResults
@@ -1206,7 +1257,8 @@ class SearcherViewModel: ObservableObject {
                     error: Binding(
                         get: { self.error },
                         set: { self.error = $0 }
-                    )
+                    ),
+                    strictMatch: strictMatch
                 )
                 await allianceSearch.search()
             // 联盟搜索不需要额外过滤，AllianceSearchView已经直接设置filteredResults
@@ -1231,7 +1283,8 @@ class SearcherViewModel: ObservableObject {
                         get: { self.error },
                         set: { self.error = $0 }
                     ),
-                    structureType: currentStructureType
+                    structureType: currentStructureType,
+                    strictMatch: strictMatch
                 )
                 try await structureSearch.search()
                 // 搜索完成后应用当前建筑类型过滤条件
@@ -1287,10 +1340,10 @@ class SearcherViewModel: ObservableObject {
             filteredResults = filteredResults.filter { result in
                 let matchCorp =
                     corpFilter.isEmpty
-                    || (result.corporationName?.lowercased().contains(corpFilter) ?? false)
+                        || (result.corporationName?.lowercased().contains(corpFilter) ?? false)
                 let matchAlliance =
                     allianceFilter.isEmpty
-                    || (result.allianceName?.lowercased().contains(allianceFilter) ?? false)
+                        || (result.allianceName?.lowercased().contains(allianceFilter) ?? false)
                 return matchCorp && matchAlliance
             }
         }
@@ -1321,7 +1374,7 @@ class SearcherViewModel: ObservableObject {
                 }
 
                 // 处理"只看我的联盟"
-                if showOnlyMyAlliance && characterInfo.allianceId != nil {
+                if showOnlyMyAlliance, characterInfo.allianceId != nil {
                     switch result.type {
                     case .character:
                         // 如果是角色搜索，检查角色的联盟ID是否与用户的联盟ID相同

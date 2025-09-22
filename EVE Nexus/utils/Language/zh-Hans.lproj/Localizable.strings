@@ -140,6 +140,7 @@
 "Main_Database_unpublished" = "未发布";
 "Main_Database_published" = "已发布";
 "Main_Database_Search" = "搜索";
+"Main_Database_Search_Item" = "搜索商品";
 "Main_Database_Searching" = "正在搜索...";
 "Main_Database_Variations" = "变体";
 "Main_Database_Browse_Variations" = "浏览 %d 个变体";
@@ -1089,6 +1090,7 @@
 "Main_Search_Filter_Clear" = "清除过滤";
 "Main_Search_Filter_Only_My_Corp" = "只看我的军团成员";
 "Main_Search_Filter_Only_My_Alliance" = "只看我的联盟成员";
+"Main_Search_Strict_Match" = "精准匹配";
 
 // 搜索状态
 "Main_Search_Status_Searching" = "正在搜索...";
@@ -1434,6 +1436,13 @@
 "Contract_Item_Singleton" = "唯一物品";
 "Contracts_Personal" = "个人合同";
 "Contracts_Corporation" = "军团合同";
+"Contracts_Alliance" = "联盟合同";
+"Contract_Price_Filter" = "价格筛选";
+"Contract_Price_Min" = "最低价格";
+"Contract_Price_Max" = "最高价格";
+"Contract_Price_Clear" = "清除价格筛选";
+"Contract_No_Title" = "无";
+"Misc_Copy_Title" = "复制标题";
 "Contract_Show_Finished" = "显示已完成合同";
 "Contract_Show_Courier" = "显示运输合同";
 "Contract_Show_ItemExchange" = "显示物品交换合同";
@@ -2220,6 +2229,10 @@
 "Main_Setting_Market_Structure_Add_Title" = "添加市场建筑";
 "Main_Setting_Market_Structure_Settings_Title" = "市场建筑设置";
 "Main_Setting_Market_Structure_Select" = "选择建筑市场";
+"Main_Market_Setup_Structure" = "设置建筑市场";
+
+// Flag 相关
+"Flag_Other" = "其他";
 
 // 添加建筑 Sheet
 "Market_Structure_Select_Character_Section" = "选择人物";

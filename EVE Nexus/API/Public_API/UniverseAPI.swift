@@ -43,12 +43,12 @@ class UniverseAPI {
 
         // 准备批量插入的SQL语句
         let insertSQL = """
-                INSERT OR REPLACE INTO universe_names (
-                    id,
-                    name,
-                    category
-                ) VALUES 
-            """
+            INSERT OR REPLACE INTO universe_names (
+                id,
+                name,
+                category
+            ) VALUES 
+        """
 
         // 构建值部分和参数数组
         let valuePlaceholders = responses.map { _ in "(?, ?, ?)" }.joined(separator: ",")
@@ -89,8 +89,8 @@ class UniverseAPI {
             var namesMap: [Int: (name: String, category: String)] = [:]
             for row in rows {
                 if let id = row["id"] as? Int64,
-                    let name = row["name"] as? String,
-                    let category = row["category"] as? String
+                   let name = row["name"] as? String,
+                   let category = row["category"] as? String
                 {
                     namesMap[Int(id)] = (name: name, category: category)
                 }
@@ -110,7 +110,7 @@ class UniverseAPI {
         // 将ID数组分成每批1000个的子数组
         let batchSize = 1000
         let batches = stride(from: 0, to: ids.count, by: batchSize).map {
-            Array(ids[$0..<min($0 + batchSize, ids.count)])
+            Array(ids[$0 ..< min($0 + batchSize, ids.count)])
         }
 
         var allNamesMap: [Int: (name: String, category: String)] = [:]

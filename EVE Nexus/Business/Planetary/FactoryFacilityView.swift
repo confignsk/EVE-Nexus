@@ -30,7 +30,7 @@ struct FactoryFacilityView: View {
 
                 // 加工进度
                 if schematic != nil,
-                    let simPin = simulatedPin
+                   let simPin = simulatedPin
                 {
                     VStack(alignment: .leading, spacing: 2) {
                         if let schematicObj = simPin.schematic {
@@ -133,7 +133,7 @@ struct FactoryFacilityView: View {
                             if let simPin = simulatedPin {
                                 let currentAmount =
                                     simPin.contents.first(where: { $0.key.id == input.typeId })?
-                                    .value ?? 0
+                                        .value ?? 0
                                 Text(
                                     NSLocalizedString("Factory_Inventory", comment: "")
                                         + " \(currentAmount)/\(input.value)"
@@ -146,7 +146,7 @@ struct FactoryFacilityView: View {
                             } else {
                                 let currentAmount =
                                     pin.contents?.first(where: { $0.typeId == input.typeId })?
-                                    .amount ?? 0
+                                        .amount ?? 0
                                 Text(
                                     NSLocalizedString("Factory_Inventory", comment: "")
                                         + " \(currentAmount)/\(input.value)"
@@ -209,8 +209,8 @@ struct FactoryFacilityView: View {
     private func calculateFactoryProgress(factory: Pin.Factory, currentTime: Date) -> Double {
         // 如果工厂没有配方或不处于活跃状态，进度为0
         guard let schematic = factory.schematic,
-            factory.isActive,
-            let lastCycleStartTime = factory.lastCycleStartTime
+              factory.isActive,
+              let lastCycleStartTime = factory.lastCycleStartTime
         else {
             return 0
         }

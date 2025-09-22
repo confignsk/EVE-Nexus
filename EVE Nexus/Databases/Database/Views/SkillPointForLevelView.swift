@@ -92,7 +92,7 @@ struct SkillPointForLevelView: View {
             header: Text(NSLocalizedString("Main_Database_Skill_Level_Detail", comment: "")).font(
                 .headline)
         ) {
-            ForEach(1...5, id: \.self) { level in
+            ForEach(1 ... 5, id: \.self) { level in
                 let requiredSP = getSkillPointsForLevel(level)
 
                 HStack {
@@ -111,7 +111,8 @@ struct SkillPointForLevelView: View {
                             + " → "
                             + String(
                                 format: NSLocalizedString("Misc_Level_Short", comment: "lv%d"),
-                                level)
+                                level
+                            )
                     )
                     .font(.body)
                     .foregroundColor(.secondary)
@@ -131,8 +132,8 @@ struct SkillPointForLevelView: View {
             )
 
             if case let .success(rows) = result,
-                let row = rows.first,
-                let value = row["value"] as? Double
+               let row = rows.first,
+               let value = row["value"] as? Double
             {
                 timeMultiplier = Int(value)
             }

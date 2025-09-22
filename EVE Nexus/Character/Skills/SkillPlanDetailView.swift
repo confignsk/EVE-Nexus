@@ -15,12 +15,13 @@ struct SkillPlanDetailView: View {
     @State private var shouldDismissSheet = false
     @State private var characterAttributes: CharacterAttributes?
     @State private var implantBonuses: ImplantAttributes?
-    @State private var trainingRates: [Int: Int] = [:]  // [skillId: pointsPerHour]
-    @State private var skillTimeMultipliers: [Int: Int] = [:]  // [skillId: timeMultiplier]
+    @State private var trainingRates: [Int: Int] = [:] // [skillId: pointsPerHour]
+    @State private var skillTimeMultipliers: [Int: Int] = [:] // [skillId: timeMultiplier]
     @State private var injectorCalculation: InjectorCalculation?
-    @State private var injectorPrices: InjectorPriceManager.InjectorPrices = InjectorPriceManager.InjectorPrices(large: nil, small: nil)
+    @State private var injectorPrices: InjectorPriceManager.InjectorPrices =
+        .init(large: nil, small: nil)
     @State private var isLoadingInjectors = true
-    @State private var learnedSkills: [Int: CharacterSkill] = [:]  // 添加缓存
+    @State private var learnedSkills: [Int: CharacterSkill] = [:] // 添加缓存
     @AppStorage(kShowCompletedSkillsKey) private var showCompletedSkills = true
 
     init(
@@ -44,14 +45,14 @@ struct SkillPlanDetailView: View {
                     Text("\(FormatUtil.format(Double(plan.totalSkillPoints))) SP")
                         .foregroundColor(.secondary)
                 }
-                
+
                 HStack {
                     Text(NSLocalizedString("Main_Skills_Required_Time", comment: "需要时间"))
                     Spacer()
                     Text(formatTimeInterval(plan.totalTrainingTime))
                         .foregroundColor(.secondary)
                 }
-                
+
                 HStack {
                     Text(NSLocalizedString("Main_Skills_All_Points", comment: "全部点数"))
                     Spacer()
@@ -62,14 +63,17 @@ struct SkillPlanDetailView: View {
 
             // 添加注入器需求部分
             if !plan.skills.isEmpty && !isLoadingInjectors && filteredSkills.count > 0 {
-                if let calculation = injectorCalculation, calculation.largeInjectorCount + calculation.smallInjectorCount > 0 {
+                if let calculation = injectorCalculation,
+                   calculation.largeInjectorCount + calculation.smallInjectorCount > 0
+                {
                     Section(
                         header: Text(
                             NSLocalizedString("Main_Skills_Required_Injectors", comment: ""))
                     ) {
                         // 大型注入器
                         if let largeInfo = getInjectorInfo(
-                            typeId: SkillInjectorCalculator.largeInjectorTypeId), calculation.largeInjectorCount > 0
+                            typeId: SkillInjectorCalculator.largeInjectorTypeId),
+                            calculation.largeInjectorCount > 0
                         {
                             injectorItemView(
                                 info: largeInfo, count: calculation.largeInjectorCount,
@@ -79,7 +83,8 @@ struct SkillPlanDetailView: View {
 
                         // 小型注入器
                         if let smallInfo = getInjectorInfo(
-                            typeId: SkillInjectorCalculator.smallInjectorTypeId), calculation.smallInjectorCount > 0
+                            typeId: SkillInjectorCalculator.smallInjectorTypeId),
+                            calculation.smallInjectorCount > 0
                         {
                             injectorItemView(
                                 info: smallInfo, count: calculation.smallInjectorCount,
@@ -192,8 +197,8 @@ struct SkillPlanDetailView: View {
                 .font(.caption)
                 .padding(.trailing, 2)
                 SkillLevelIndicator(
-                    currentLevel: skill.targetLevel - 1,  // 计划中的当前等级
-                    trainingLevel: skill.targetLevel,  // 计划中的目标等级
+                    currentLevel: skill.targetLevel - 1, // 计划中的当前等级
+                    trainingLevel: skill.targetLevel, // 计划中的目标等级
                     isTraining: false
                 )
                 .padding(.trailing, 2)
@@ -248,7 +253,7 @@ struct SkillPlanDetailView: View {
             // 对小时进行四舍五入
             if minutes >= 30 {
                 hours += 1
-                if hours == 24 {  // 如果四舍五入后小时数达到24
+                if hours == 24 { // 如果四舍五入后小时数达到24
                     return String(format: NSLocalizedString("Time_Days", comment: ""), days + 1)
                 }
             }
@@ -262,7 +267,7 @@ struct SkillPlanDetailView: View {
             // 对分钟进行四舍五入
             if seconds >= 30 {
                 minutes += 1
-                if minutes == 60 {  // 如果四舍五入后分钟数达到60
+                if minutes == 60 { // 如果四舍五入后分钟数达到60
                     return String(format: NSLocalizedString("Time_Hours", comment: ""), hours + 1)
                 }
             }
@@ -317,8 +322,8 @@ struct SkillPlanDetailView: View {
                 let validSkills = result.skills.compactMap { skillString -> PlannedSkill? in
                     let components = skillString.split(separator: ":")
                     guard components.count == 2,
-                        let typeId = Int(components[0]),
-                        let targetLevel = Int(components[1])
+                          let typeId = Int(components[0]),
+                          let targetLevel = Int(components[1])
                     else {
                         return nil
                     }
@@ -338,7 +343,7 @@ struct SkillPlanDetailView: View {
                     switch queryResult {
                     case let .success(rows):
                         if let row = rows.first,
-                            let name = row["name"] as? String
+                           let name = row["name"] as? String
                         {
                             skillName = name
                         }
@@ -452,14 +457,14 @@ struct SkillPlanDetailView: View {
         do {
             // 调用API获取技能数据
             let skillsResponse = try await CharacterSkillsAPI.shared.fetchCharacterSkills(
-                characterId: characterId, 
+                characterId: characterId,
                 forceRefresh: false
             )
-            
+
             // 创建技能ID到技能信息的映射
             let skillsDict = Dictionary(
                 uniqueKeysWithValues: skillsResponse.skills.map { ($0.skill_id, $0) })
-            
+
             // 只返回请求的技能ID对应的技能信息
             return skillsDict.filter { skillIds.contains($0.key) }
         } catch {
@@ -478,16 +483,16 @@ struct SkillPlanDetailView: View {
         var updatedSkills = plan.skills
         let skillIds = plan.skills.map { $0.skillID }
         let query = """
-                SELECT type_id, name
-                FROM types
-                WHERE type_id IN (\(skillIds.sorted().map(String.init).joined(separator: ",")))
-            """
+            SELECT type_id, name
+            FROM types
+            WHERE type_id IN (\(skillIds.sorted().map(String.init).joined(separator: ",")))
+        """
 
         if case let .success(rows) = databaseManager.executeQuery(query) {
             let nameDict = Dictionary(
                 uniqueKeysWithValues: rows.compactMap { row -> (Int, String)? in
                     guard let typeId = row["type_id"] as? Int,
-                        let name = row["name"] as? String
+                          let name = row["name"] as? String
                     else {
                         return nil
                     }
@@ -526,11 +531,11 @@ struct SkillPlanDetailView: View {
 
         // 批量获取所有技能的主副属性
         let attributesQuery = """
-                SELECT type_id, attribute_id, value
-                FROM typeAttributes
-                WHERE type_id IN (\(skillIds.sorted().map(String.init).joined(separator: ",")))
-                AND attribute_id IN (180, 181)
-            """
+            SELECT type_id, attribute_id, value
+            FROM typeAttributes
+            WHERE type_id IN (\(skillIds.sorted().map(String.init).joined(separator: ",")))
+            AND attribute_id IN (180, 181)
+        """
 
         var skillAttributes: [Int: (primary: Int, secondary: Int)] = [:]
         if case let .success(rows) = databaseManager.executeQuery(attributesQuery) {
@@ -538,8 +543,8 @@ struct SkillPlanDetailView: View {
             var groupedAttributes: [Int: [(attributeId: Int, value: Int)]] = [:]
             for row in rows {
                 guard let typeId = row["type_id"] as? Int,
-                    let attributeId = row["attribute_id"] as? Int,
-                    let value = row["value"] as? Double
+                      let attributeId = row["attribute_id"] as? Int,
+                      let value = row["value"] as? Double
                 else {
                     continue
                 }
@@ -567,11 +572,11 @@ struct SkillPlanDetailView: View {
         if let attrs = characterAttributes {
             for skill in updatedSkills {
                 if let (primary, secondary) = skillAttributes[skill.skillID],
-                    let rate = SkillTrainingCalculator.calculateTrainingRate(
-                        primaryAttrId: primary,
-                        secondaryAttrId: secondary,
-                        attributes: attrs
-                    )
+                   let rate = SkillTrainingCalculator.calculateTrainingRate(
+                       primaryAttrId: primary,
+                       secondaryAttrId: secondary,
+                       attributes: attrs
+                   )
                 {
                     trainingRates[skill.skillID] = rate
                 }
@@ -616,16 +621,16 @@ struct SkillPlanDetailView: View {
         guard !skillIds.isEmpty else { return }
 
         let query = """
-                SELECT type_id, value
-                FROM typeAttributes
-                WHERE type_id IN (\(skillIds.sorted().map(String.init).joined(separator: ",")))
-                AND attribute_id = 275
-            """
+            SELECT type_id, value
+            FROM typeAttributes
+            WHERE type_id IN (\(skillIds.sorted().map(String.init).joined(separator: ",")))
+            AND attribute_id = 275
+        """
 
         if case let .success(rows) = databaseManager.executeQuery(query) {
             for row in rows {
                 if let typeId = row["type_id"] as? Int,
-                    let value = row["value"] as? Double
+                   let value = row["value"] as? Double
                 {
                     skillTimeMultipliers[typeId] = Int(value)
                 }
@@ -667,7 +672,7 @@ struct SkillPlanDetailView: View {
 
         // 计算训练时间（如果有训练速度）
         let trainingTime: TimeInterval =
-            trainingRate > 0 ? Double(requiredSP) / Double(trainingRate) * 3600 : 0  // 转换为秒
+            trainingRate > 0 ? Double(requiredSP) / Double(trainingRate) * 3600 : 0 // 转换为秒
 
         return (startSP, endSP, requiredSP, trainingTime)
     }
@@ -692,7 +697,7 @@ struct SkillPlanDetailView: View {
         // 如果实际等级等于计划的起始等级，使用实际技能点数作为起始点
         let startSP =
             (actualLevel == startLevel)
-            ? actualSkillPoints : (getBaseSkillPointsForLevel(startLevel) ?? 0) * timeMultiplier
+                ? actualSkillPoints : (getBaseSkillPointsForLevel(startLevel) ?? 0) * timeMultiplier
         let endSP = (getBaseSkillPointsForLevel(endLevel) ?? 0) * timeMultiplier
         return (startSP, endSP)
     }
@@ -769,14 +774,14 @@ struct SkillPlanDetailView: View {
 
     private func getInjectorInfo(typeId: Int) -> InjectorInfo? {
         let query = """
-                SELECT name, icon_filename
-                FROM types
-                WHERE type_id = ?
-            """
+            SELECT name, icon_filename
+            FROM types
+            WHERE type_id = ?
+        """
         if case let .success(rows) = databaseManager.executeQuery(query, parameters: [typeId]),
-            let row = rows.first,
-            let name = row["name"] as? String,
-            let iconFilename = row["icon_filename"] as? String
+           let row = rows.first,
+           let name = row["name"] as? String,
+           let iconFilename = row["icon_filename"] as? String
         {
             return InjectorInfo(name: name, iconFilename: iconFilename)
         }
@@ -788,7 +793,7 @@ struct SkillPlanDetailView: View {
             Logger.debug("计算总价失败 - 没有注入器计算结果")
             return nil
         }
-        
+
         return InjectorPriceManager.shared.calculateTotalCost(
             calculation: calculation,
             prices: injectorPrices
@@ -819,10 +824,10 @@ struct SkillPlanDetailView: View {
         // 获取注入器价格
         await loadInjectorPrices()
     }
-    
+
     private func loadInjectorPrices() async {
         let prices = await InjectorPriceManager.shared.loadInjectorPrices()
-        
+
         await MainActor.run {
             injectorPrices = prices
         }
@@ -835,7 +840,9 @@ struct SkillPlanDetailView: View {
                 characterId: characterId, forceRefresh: false
             )
             let characterTotalSP = skillsInfo.total_sp + skillsInfo.unallocated_sp
-            Logger.debug("从API获取角色总技能点: \(characterTotalSP) (已分配: \(skillsInfo.total_sp), 未分配: \(skillsInfo.unallocated_sp))")
+            Logger.debug(
+                "从API获取角色总技能点: \(characterTotalSP) (已分配: \(skillsInfo.total_sp), 未分配: \(skillsInfo.unallocated_sp))"
+            )
             return characterTotalSP
         } catch {
             Logger.error("获取技能点数据失败: \(error)")
@@ -844,8 +851,7 @@ struct SkillPlanDetailView: View {
     }
 
     // 添加新的通用函数
-    private func updatePlanWithSkills(_ currentPlan: SkillPlan, skills: [PlannedSkill]) -> SkillPlan
-    {
+    private func updatePlanWithSkills(_ currentPlan: SkillPlan, skills: [PlannedSkill]) -> SkillPlan {
         var updatedPlan = currentPlan
         updatedPlan.skills = skills
 
@@ -874,12 +880,12 @@ struct SkillPlanDetailView: View {
             id: UUID(),
             skillID: typeId,
             skillName: skillName,
-            currentLevel: targetLevel - 1,  // 计划中的当前等级始终是目标等级-1
+            currentLevel: targetLevel - 1, // 计划中的当前等级始终是目标等级-1
             targetLevel: targetLevel,
             trainingTime: 0,
             requiredSP: 0,
             prerequisites: [],
-            currentSkillPoints: getBaseSkillPointsForLevel(targetLevel - 1) ?? 0,  // 使用计划等级的基础点数
+            currentSkillPoints: getBaseSkillPointsForLevel(targetLevel - 1) ?? 0, // 使用计划等级的基础点数
             isCompleted: isCompleted
         )
 

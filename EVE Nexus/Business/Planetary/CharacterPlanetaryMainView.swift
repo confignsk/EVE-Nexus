@@ -43,11 +43,12 @@ final class CharacterPlanetaryViewModel: ObservableObject {
         if case let .success(rows) = DatabaseManager.shared.executeQuery(typeQuery) {
             for row in rows {
                 if let typeId = row["type_id"] as? Int,
-                    let name = row["name"] as? String,
-                    let iconFilename = row["icon_filename"] as? String
+                   let name = row["name"] as? String,
+                   let iconFilename = row["icon_filename"] as? String
                 {
                     tempPlanetTypeInfo[typeId] = PlanetTypeInfo(
-                        name: name, icon: iconFilename)
+                        name: name, icon: iconFilename
+                    )
                 }
             }
         }
@@ -57,7 +58,7 @@ final class CharacterPlanetaryViewModel: ObservableObject {
 
     func loadPlanets(forceRefresh: Bool = false) async {
         // 如果已经加载过且不是强制刷新，则跳过
-        if initialLoadDone && !forceRefresh {
+        if initialLoadDone, !forceRefresh {
             return
         }
 
@@ -92,11 +93,11 @@ final class CharacterPlanetaryViewModel: ObservableObject {
 
                     // 获取行星名称
                     let nameQuery =
-                        "SELECT itemID, itemName FROM invNames WHERE itemID IN (\(planetIdsString))"
+                        "SELECT itemID, itemName FROM celestialNames WHERE itemID IN (\(planetIdsString))"
                     if case let .success(rows) = DatabaseManager.shared.executeQuery(nameQuery) {
                         for row in rows {
                             if let itemId = row["itemID"] as? Int,
-                                let itemName = row["itemName"] as? String
+                               let itemName = row["itemName"] as? String
                             {
                                 tempPlanetNames[itemId] = itemName
                             }
@@ -140,7 +141,7 @@ final class CharacterPlanetaryViewModel: ObservableObject {
     func getPlanetTypeInfo(for planetType: String) -> PlanetTypeInfo? {
         // 通过columnToPlanetType找到对应的行星类型ID
         if let typeId = PlanetaryUtils.columnToPlanetType[planetType],
-            let info = planetTypeInfo[typeId]
+           let info = planetTypeInfo[typeId]
         {
             return info
         }
@@ -185,7 +186,10 @@ struct CharacterPlanetaryView: View {
                 NavigationLink {
                     PIAllInOneSystemFinderMainView(characterId: characterId)
                 } label: {
-                    Text(NSLocalizedString("AllInOne_SystemFinder_Title", comment: "查找 All-in-One 星系"))
+                    Text(
+                        NSLocalizedString(
+                            "AllInOne_SystemFinder_Title", comment: "查找 All-in-One 星系"
+                        ))
                 }
                 NavigationLink {
                     PIProductionChainView(characterId: characterId)
@@ -216,8 +220,10 @@ struct CharacterPlanetaryView: View {
                             footer: Text(
                                 String(
                                     format: NSLocalizedString(
-                                        "Main_Planetary_Total_Count", comment: ""),
-                                    viewModel.planets.count))
+                                        "Main_Planetary_Total_Count", comment: ""
+                                    ),
+                                    viewModel.planets.count
+                                ))
                         ) {
                             ForEach(viewModel.planets, id: \.planetId) { planet in
                                 NavigationLink(
@@ -253,7 +259,8 @@ struct CharacterPlanetaryView: View {
                                             } else {
                                                 Text(
                                                     NSLocalizedString(
-                                                        "Main_Planetary_Unknown_Type", comment: "")
+                                                        "Main_Planetary_Unknown_Type", comment: ""
+                                                    )
                                                 )
                                                 .font(.subheadline)
                                                 .foregroundColor(.gray)

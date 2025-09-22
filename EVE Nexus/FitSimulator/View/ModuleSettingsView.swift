@@ -1,13 +1,13 @@
-import SwiftUI
 import Combine
 import Foundation
+import SwiftUI
 
 /// 模块状态枚举
 enum ModuleStatus: Int, CaseIterable, Identifiable {
-    case offline = 0  // 离线
-    case online = 1  // 上线
-    case active = 2  // 启动
-    case overload = 3  // 超载
+    case offline = 0 // 离线
+    case online = 1 // 上线
+    case active = 2 // 启动
+    case overload = 3 // 超载
 
     var id: Int { rawValue }
 
@@ -117,44 +117,46 @@ struct ModuleSettingsView: View {
     let databaseManager: DatabaseManager
     let viewModel: FittingEditorViewModel
     let slotFlag: FittingFlag
-    let relatedModules: [SimModule]  // 新增：相关模块列表（用于批量操作）
-    
+    let relatedModules: [SimModule] // 新增：相关模块列表（用于批量操作）
+
     // 回调函数
     var onDelete: () -> Void
     var onReplaceModule: (Int) -> Void
-    
+
     // 环境变量
     @Environment(\.dismiss) var dismiss
-    
+
     // 状态变量
     @State private var moduleDetails: DatabaseListItem? = nil
     @State private var isLoading = true
     @State private var variationsCount: Int = 0
     @State private var selectedModuleState: Int
     @State private var availableModuleStates: [Int] = []
-    @State private var chargeGroupIDs: [Int] = []  // 可装载的弹药组ID
-    @State private var currentModuleID: Int  // 添加当前模块ID状态变量
-    
+    @State private var chargeGroupIDs: [Int] = [] // 可装载的弹药组ID
+    @State private var currentModuleID: Int // 添加当前模块ID状态变量
+
     // 计算属性：是否为批量操作模式
     private var isBatchMode: Bool {
         return relatedModules.count > 1
     }
-    
+
     // 计算属性：获取当前模块的弹药信息（从viewModel中直接获取，避免SQL查询）
     private var currentModuleCharge: SimCharge? {
-        if let currentModule = viewModel.simulationInput.modules.first(where: { $0.flag == slotFlag }) {
+        if let currentModule = viewModel.simulationInput.modules.first(where: {
+            $0.flag == slotFlag
+        }) {
             return currentModule.charge
         }
         return nil
     }
-    
+
     // 初始化方法
     init(
         module: SimModule,
         slotFlag: FittingFlag,
         databaseManager: DatabaseManager,
         viewModel: FittingEditorViewModel,
-        relatedModules: [SimModule] = [],  // 新增参数，默认为空数组
+        relatedModules: [SimModule] = [], // 新增参数，默认为空数组
         onDelete: @escaping () -> Void = {},
         onReplaceModule: @escaping (Int) -> Void = { _ in }
     ) {
@@ -162,15 +164,15 @@ struct ModuleSettingsView: View {
         self.slotFlag = slotFlag
         self.databaseManager = databaseManager
         self.viewModel = viewModel
-        self.relatedModules = relatedModules.isEmpty ? [module] : relatedModules  // 如果为空，使用当前模块
+        self.relatedModules = relatedModules.isEmpty ? [module] : relatedModules // 如果为空，使用当前模块
         self.onDelete = onDelete
         self.onReplaceModule = onReplaceModule
-        
+
         // 使用模块当前状态初始化
-        self._selectedModuleState = State(initialValue: module.status)
-        self._currentModuleID = State(initialValue: module.typeId)
+        _selectedModuleState = State(initialValue: module.status)
+        _currentModuleID = State(initialValue: module.typeId)
     }
-    
+
     var body: some View {
         NavigationView {
             List {
@@ -183,23 +185,37 @@ struct ModuleSettingsView: View {
                             VStack(alignment: .leading) {
                                 Text(NSLocalizedString("Fitting_Batch_Mode", comment: ""))
                                     .font(.headline)
-                                Text(String(format: NSLocalizedString("Fitting_Batch_Mode_Description", comment: ""), relatedModules.count))
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+                                Text(
+                                    String(
+                                        format: NSLocalizedString(
+                                            "Fitting_Batch_Mode_Description", comment: ""
+                                        ),
+                                        relatedModules.count
+                                    )
+                                )
+                                .font(.caption)
+                                .foregroundColor(.secondary)
                             }
                             Spacer()
                         }
                         .padding(.vertical, 4)
                     }
                 }
-                
-                Section(header: 
+
+                Section(
+                    header:
                     HStack {
                         Text(NSLocalizedString("Fitting_Setting_Module", comment: ""))
                         Spacer()
-                        if !isLoading, let _ = moduleDetails {
-                            let currentModule = viewModel.simulationOutput?.modules.first(where: { $0.flag == slotFlag })
-                            NavigationLink(destination: ShowItemInfo(databaseManager: databaseManager, itemID: currentModuleID, modifiedAttributes: currentModule?.attributes)) {
+                        if !isLoading, moduleDetails != nil {
+                            let currentModule = viewModel.simulationOutput?.modules.first(
+                                where: { $0.flag == slotFlag })
+                            NavigationLink(
+                                destination: ShowItemInfo(
+                                    databaseManager: databaseManager, itemID: currentModuleID,
+                                    modifiedAttributes: currentModule?.attributes
+                                )
+                            ) {
                                 Text(NSLocalizedString("View_Details", comment: ""))
                                     .font(.caption)
                                     .foregroundColor(.blue)
@@ -222,39 +238,49 @@ struct ModuleSettingsView: View {
                                     onModuleSelected: { modeID in
                                         // 保存当前状态
                                         let previousState = selectedModuleState
-                                        
+
                                         // 直接替换T3D模式
-                                        let success = viewModel.replaceModule(typeId: modeID, flag: slotFlag)
-                                        
+                                        let success = viewModel.replaceModule(
+                                            typeId: modeID, flag: slotFlag
+                                        )
+
                                         if success {
                                             // 更新当前模块ID
                                             currentModuleID = modeID
-                                            
+
                                             // 重新加载模块信息
                                             loadModuleDetails()
                                             checkVariations()
                                             updateAvailableStates()
                                             loadChargeGroups()
-                                            
+
                                             // 检查之前的状态是否可用
                                             if availableModuleStates.contains(previousState) {
                                                 // 保持之前的状态（如果状态没有改变，不需要重新计算）
                                                 selectedModuleState = previousState
-                                                if let currentModule = viewModel.simulationInput.modules.first(where: { $0.flag == slotFlag }),
-                                                   currentModule.status != previousState {
-                                                    viewModel.updateModuleStatus(flag: slotFlag, newStatus: previousState)
+                                                if let currentModule = viewModel.simulationInput
+                                                    .modules.first(where: { $0.flag == slotFlag }),
+                                                    currentModule.status != previousState
+                                                {
+                                                    viewModel.updateModuleStatus(
+                                                        flag: slotFlag, newStatus: previousState
+                                                    )
                                                 }
                                             } else if !availableModuleStates.isEmpty {
                                                 // 如果之前的状态不可用，设置为新模式支持的最高状态
                                                 let newState = availableModuleStates.max() ?? 0
                                                 selectedModuleState = newState
-                                                if let currentModule = viewModel.simulationInput.modules.first(where: { $0.flag == slotFlag }),
-                                                   currentModule.status != newState {
-                                                    viewModel.updateModuleStatus(flag: slotFlag, newStatus: newState)
+                                                if let currentModule = viewModel.simulationInput
+                                                    .modules.first(where: { $0.flag == slotFlag }),
+                                                    currentModule.status != newState
+                                                {
+                                                    viewModel.updateModuleStatus(
+                                                        flag: slotFlag, newStatus: newState
+                                                    )
                                                 }
                                             }
                                         }
-                                        
+
                                         // 不需要关闭整个设置页
                                     },
                                     shipTypeID: viewModel.simulationInput.ship.typeId
@@ -275,23 +301,25 @@ struct ModuleSettingsView: View {
                                     onSelectVariation: { variationID in
                                         // 保存当前状态
                                         let previousState = selectedModuleState
-                                        
+
                                         // 替换模块 - 如果是批量模式，会在外部处理
                                         if isBatchMode {
                                             // 批量模式下，调用外部回调
                                             onReplaceModule(variationID)
-                                            
+
                                             // 批量替换完成后，从viewModel同步获取最新的模块ID
-                                            if let updatedModule = viewModel.simulationInput.modules.first(where: { $0.flag == slotFlag }) {
+                                            if let updatedModule = viewModel.simulationInput.modules
+                                                .first(where: { $0.flag == slotFlag })
+                                            {
                                                 // 更新内部状态以反映新装备
                                                 currentModuleID = updatedModule.typeId
-                                                
+
                                                 // 重新加载模块信息
                                                 loadModuleDetails()
                                                 checkVariations()
                                                 updateAvailableStates()
                                                 loadChargeGroups()
-                                                
+
                                                 // 检查之前的状态是否可用
                                                 if availableModuleStates.contains(previousState) {
                                                     selectedModuleState = previousState
@@ -304,38 +332,52 @@ struct ModuleSettingsView: View {
                                             }
                                         } else {
                                             // 单个模式下，直接替换
-                                            let success = viewModel.replaceModule(typeId: variationID, flag: slotFlag)
-                                            
+                                            let success = viewModel.replaceModule(
+                                                typeId: variationID, flag: slotFlag
+                                            )
+
                                             if success {
                                                 // 更新当前模块ID
                                                 currentModuleID = variationID
-                                                
+
                                                 // 重新加载模块信息
                                                 loadModuleDetails()
                                                 checkVariations()
                                                 updateAvailableStates()
                                                 loadChargeGroups()
-                                                
+
                                                 // 检查之前的状态是否可用
                                                 if availableModuleStates.contains(previousState) {
                                                     // 保持之前的状态（如果状态没有改变，不需要重新计算）
                                                     selectedModuleState = previousState
-                                                    if let currentModule = viewModel.simulationInput.modules.first(where: { $0.flag == slotFlag }),
-                                                       currentModule.status != previousState {
-                                                        viewModel.updateModuleStatus(flag: slotFlag, newStatus: previousState)
+                                                    if let currentModule = viewModel.simulationInput
+                                                        .modules.first(where: {
+                                                            $0.flag == slotFlag
+                                                        }),
+                                                        currentModule.status != previousState
+                                                    {
+                                                        viewModel.updateModuleStatus(
+                                                            flag: slotFlag, newStatus: previousState
+                                                        )
                                                     }
                                                 } else if !availableModuleStates.isEmpty {
                                                     // 如果之前的状态不可用，设置为新装备支持的最高状态
                                                     let newState = availableModuleStates.max() ?? 0
                                                     selectedModuleState = newState
-                                                    if let currentModule = viewModel.simulationInput.modules.first(where: { $0.flag == slotFlag }),
-                                                       currentModule.status != newState {
-                                                        viewModel.updateModuleStatus(flag: slotFlag, newStatus: newState)
+                                                    if let currentModule = viewModel.simulationInput
+                                                        .modules.first(where: {
+                                                            $0.flag == slotFlag
+                                                        }),
+                                                        currentModule.status != newState
+                                                    {
+                                                        viewModel.updateModuleStatus(
+                                                            flag: slotFlag, newStatus: newState
+                                                        )
                                                     }
                                                 }
                                             }
                                         }
-                                        
+
                                         // 不需要关闭整个设置页
                                     }
                                 )
@@ -353,7 +395,7 @@ struct ModuleSettingsView: View {
                             )
                         }
                     }
-                    
+
                     // 模块状态选择器
                     ModuleStatusSelector(
                         selectedState: $selectedModuleState,
@@ -364,7 +406,8 @@ struct ModuleSettingsView: View {
                                 // 批量更新所有相关模块的状态
                                 let flags = relatedModules.compactMap { $0.flag }
                                 viewModel.batchUpdateModuleStatus(flags: flags, newStatus: newState)
-                                Logger.info("批量更新模块状态: \(relatedModules.count) 个模块状态设置为 \(newState)")
+                                Logger.info(
+                                    "批量更新模块状态: \(relatedModules.count) 个模块状态设置为 \(newState)")
                             } else {
                                 // 单个模块更新
                                 viewModel.updateModuleStatus(flag: slotFlag, newStatus: newState)
@@ -372,17 +415,25 @@ struct ModuleSettingsView: View {
                         }
                     )
                 }
-                
+
                 // 如果模块可以装载弹药，显示弹药设置
                 if canLoadCharge() {
-                    Section(header: 
+                    Section(
+                        header:
                         HStack {
                             Text(NSLocalizedString("Fitting_Setting_Ammo", comment: ""))
                             Spacer()
                             if let charge = currentModuleCharge {
                                 // 获取计算后的弹药属性
-                                let currentOutputModule = viewModel.simulationOutput?.modules.first(where: { $0.flag == slotFlag })
-                                NavigationLink(destination: ShowItemInfo(databaseManager: databaseManager, itemID: charge.typeId, modifiedAttributes: currentOutputModule?.charge?.attributes)) {
+                                let currentOutputModule = viewModel.simulationOutput?.modules
+                                    .first(where: { $0.flag == slotFlag })
+                                NavigationLink(
+                                    destination: ShowItemInfo(
+                                        databaseManager: databaseManager, itemID: charge.typeId,
+                                        modifiedAttributes: currentOutputModule?.charge?
+                                            .attributes
+                                    )
+                                ) {
                                     Text(NSLocalizedString("View_Details", comment: ""))
                                         .font(.caption)
                                         .foregroundColor(.blue)
@@ -398,7 +449,7 @@ struct ModuleSettingsView: View {
                                 slotFlag: slotFlag,
                                 viewModel: viewModel,
                                 module: module,
-                                relatedModules: relatedModules  // 传递相关模块列表
+                                relatedModules: relatedModules // 传递相关模块列表
                             )
                         ) {
                             HStack {
@@ -413,7 +464,7 @@ struct ModuleSettingsView: View {
                                 }
                             }
                         }
-                        
+
                         // 如果当前有弹药，显示清除弹药按钮
                         if currentModuleCharge != nil {
                             Button(action: {
@@ -437,7 +488,7 @@ struct ModuleSettingsView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button {
-                        onDelete()  // 调用删除回调
+                        onDelete() // 调用删除回调
                         dismiss()
                     } label: {
                         Image(systemName: "trash")
@@ -447,7 +498,7 @@ struct ModuleSettingsView: View {
                             .clipShape(Circle())
                     }
                 }
-                
+
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         dismiss()
@@ -462,7 +513,9 @@ struct ModuleSettingsView: View {
             }
             .onAppear {
                 Logger.info("[ModuleSettingsView] selectedSlotFlag: \(slotFlag)")
-                Logger.info("[ModuleSettingsView] 模块名称: \(module.name), 模块ID: \(module.typeId), 槽位: \(slotFlag.rawValue)")
+                Logger.info(
+                    "[ModuleSettingsView] 模块名称: \(module.name), 模块ID: \(module.typeId), 槽位: \(slotFlag.rawValue)"
+                )
                 if isBatchMode {
                     Logger.info("[ModuleSettingsView] 批量模式: \(relatedModules.count) 个相关模块")
                 }
@@ -472,9 +525,11 @@ struct ModuleSettingsView: View {
                 checkVariations()
                 updateAvailableStates()
                 loadChargeGroups()
-                
+
                 // 检查当前状态是否在可用状态列表中
-                if !availableModuleStates.contains(selectedModuleState) && !availableModuleStates.isEmpty {
+                if !availableModuleStates.contains(selectedModuleState)
+                    && !availableModuleStates.isEmpty
+                {
                     // 如果不在，设置为可用的最高状态
                     let newState = availableModuleStates.max() ?? 0
                     selectedModuleState = newState
@@ -482,70 +537,72 @@ struct ModuleSettingsView: View {
                 }
             }
         }
-        .presentationDetents([.fraction(0.81)])  // 设置为屏幕高度的81%
-        .presentationDragIndicator(.visible)  // 显示拖动指示器
+        .presentationDetents([.fraction(0.81)]) // 设置为屏幕高度的81%
+        .presentationDragIndicator(.visible) // 显示拖动指示器
     }
-    
+
     // 判断模块是否可以装载弹药
     private func canLoadCharge() -> Bool {
         // 检查是否有已加载的弹药组
         return !chargeGroupIDs.isEmpty
     }
-    
+
     // 加载模块详细信息
     private func loadModuleDetails() {
         Logger.info("加载物品:\(currentModuleID)的详细信息")
         isLoading = true
-        
+
         // 使用loadMarketItems方法获取模块数据
         let items = databaseManager.loadMarketItems(
             whereClause: "t.type_id = ?",
             parameters: [currentModuleID]
         )
-        
+
         if let item = items.first {
             moduleDetails = item
         }
-        
+
         isLoading = false
     }
-    
+
     // 检查是否有变体
     private func checkVariations() {
         variationsCount = databaseManager.getVariationsCount(for: currentModuleID)
     }
-    
+
     // 更新可用的模块状态
     private func updateAvailableStates() {
         // 获取当前槽位的实际模块数据
-        if let actualModule = viewModel.simulationInput.modules.first(where: { $0.flag == slotFlag }) {
+        if let actualModule = viewModel.simulationInput.modules.first(where: { $0.flag == slotFlag }
+        ) {
             // 使用实际模块的效果和属性
             availableModuleStates = getAvailableStatuses(
-                itemEffects: actualModule.effects, 
-                itemAttributes: actualModule.attributes, 
+                itemEffects: actualModule.effects,
+                itemAttributes: actualModule.attributes,
                 databaseManager: databaseManager
             )
         } else {
             // 如果找不到实际模块，使用传入的模块数据作为后备
             availableModuleStates = getAvailableStatuses(
-                itemEffects: module.effects, 
-                itemAttributes: module.attributes, 
+                itemEffects: module.effects,
+                itemAttributes: module.attributes,
                 databaseManager: databaseManager
             )
         }
-        
+
         // 不自动重置状态，让调用者决定如何处理
     }
-    
+
     // 加载模块可装载的弹药组
     private func loadChargeGroups() {
         chargeGroupIDs = []
-        
+
         // 优先从当前槽位的实际模块获取弹药组信息
-        if let actualModule = viewModel.simulationInput.modules.first(where: { $0.flag == slotFlag }) {
+        if let actualModule = viewModel.simulationInput.modules.first(where: { $0.flag == slotFlag }
+        ) {
             // 直接从模块的attributesByName中获取弹药组
             for (name, value) in actualModule.attributesByName {
-                if name.hasPrefix("chargeGroup") && value > 0 {
+                if name.hasPrefix("chargeGroup"), value > 0 {
                     chargeGroupIDs.append(Int(value))
                 }
             }
@@ -558,13 +615,16 @@ struct ModuleSettingsView: View {
                 JOIN dogmaAttributes da ON ta.attribute_id = da.attribute_id 
                 WHERE ta.type_id = ?
             """
-            
+
             // 执行查询
-            if case let .success(rows) = databaseManager.executeQuery(attrQuery, parameters: [currentModuleID]) {
+            if case let .success(rows) = databaseManager.executeQuery(
+                attrQuery, parameters: [currentModuleID]
+            ) {
                 for row in rows {
                     if let name = row["name"] as? String,
                        let value = row["value"] as? Double,
-                       name.hasPrefix("chargeGroup") && value > 0 {
+                       name.hasPrefix("chargeGroup"), value > 0
+                    {
                         chargeGroupIDs.append(Int(value))
                     }
                 }
@@ -598,17 +658,17 @@ struct ChargeSelectionView: View {
     let slotFlag: FittingFlag
     let viewModel: FittingEditorViewModel
     let module: SimModule
-    let relatedModules: [SimModule]  // 新增：相关模块列表（用于批量操作）
-    
+    let relatedModules: [SimModule] // 新增：相关模块列表（用于批量操作）
+
     // 自定义回调函数
     var onChargeSelected: (Int, String, String?) -> Void
     var onClearCharge: () -> Void
-    
+
     @State private var items: [DatabaseListItem] = []
     @State private var metaGroupNames: [Int: String] = [:]
     @State private var isLoading = true
     @Environment(\.dismiss) var dismiss
-    
+
     // 使用原始viewModel初始化，但提供符合参考代码的回调方式
     init(
         databaseManager: DatabaseManager,
@@ -626,9 +686,9 @@ struct ChargeSelectionView: View {
         self.viewModel = viewModel
         self.module = module
         self.relatedModules = relatedModules
-        
+
         // 初始化回调函数 - 支持批量操作
-        self.onChargeSelected = { chargeID, chargeName, iconFileName in
+        onChargeSelected = { chargeID, chargeName, iconFileName in
             if relatedModules.count > 1 {
                 // 批量模式：为所有相关模块安装弹药
                 let flags = relatedModules.compactMap { $0.flag }
@@ -649,8 +709,8 @@ struct ChargeSelectionView: View {
                 )
             }
         }
-        
-        self.onClearCharge = {
+
+        onClearCharge = {
             if relatedModules.count > 1 {
                 // 批量模式：清除所有相关模块的弹药
                 let flags = relatedModules.compactMap { $0.flag }
@@ -662,7 +722,7 @@ struct ChargeSelectionView: View {
             }
         }
     }
-    
+
     var body: some View {
         List {
             // 如果是批量模式，显示批量操作信息
@@ -674,20 +734,27 @@ struct ChargeSelectionView: View {
                         VStack(alignment: .leading) {
                             Text(NSLocalizedString("Fitting_Batch_Ammo_Setting", comment: ""))
                                 .font(.headline)
-                            Text(String(format: NSLocalizedString("Fitting_Batch_Ammo_Description", comment: ""), relatedModules.count))
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                            Text(
+                                String(
+                                    format: NSLocalizedString(
+                                        "Fitting_Batch_Ammo_Description", comment: ""
+                                    ),
+                                    relatedModules.count
+                                )
+                            )
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                         }
                         Spacer()
                     }
                     .padding(.vertical, 4)
                 }
             }
-            
+
             // 清除弹药选项
             Button(action: {
                 onClearCharge()
-                dismiss()  // 选择后关闭当前视图
+                dismiss() // 选择后关闭当前视图
             }) {
                 HStack {
                     Text(NSLocalizedString("Fitting_Setting_No_Ammo", comment: ""))
@@ -695,7 +762,7 @@ struct ChargeSelectionView: View {
                     Spacer()
                 }
             }
-            
+
             if isLoading {
                 HStack {
                     ProgressView()
@@ -703,7 +770,11 @@ struct ChargeSelectionView: View {
                 }
             } else {
                 ForEach(groupedItems.keys.sorted(), id: \.self) { metaGroupID in
-                    Section(header: Text(metaGroupNames[metaGroupID] ?? NSLocalizedString("Unknown", comment: ""))) {
+                    Section(
+                        header: Text(
+                            metaGroupNames[metaGroupID] ?? NSLocalizedString("Unknown", comment: "")
+                        )
+                    ) {
                         ForEach(groupedItems[metaGroupID] ?? [], id: \.id) { item in
                             HStack {
                                 DatabaseListItemView(item: item, showDetails: true)
@@ -712,7 +783,7 @@ struct ChargeSelectionView: View {
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 onChargeSelected(item.id, item.name, item.iconFileName)
-                                dismiss()  // 选择后关闭当前视图
+                                dismiss() // 选择后关闭当前视图
                             }
                         }
                     }
@@ -724,10 +795,10 @@ struct ChargeSelectionView: View {
             loadCharges()
         }
     }
-    
+
     private var groupedItems: [Int: [DatabaseListItem]] {
         let grouped = Dictionary(grouping: items) { $0.metaGroupID ?? 0 }
-        
+
         // 对每个分组内的项目进行排序
         return grouped.mapValues { items in
             items.sorted { item1, item2 in
@@ -741,39 +812,39 @@ struct ChargeSelectionView: View {
             }
         }
     }
-    
+
     private func loadCharges() {
         isLoading = true
-        
+
         // 如果没有弹药组，直接返回
         if chargeGroupIDs.isEmpty {
             isLoading = false
             return
         }
-        
+
         // 构建弹药组ID的字符串
         let groupIDsStr = chargeGroupIDs.map { String($0) }.joined(separator: ",")
-        
+
         // 获取模块的chargeSize属性
         var chargeSize: Double? = nil
-        
+
         // 直接从module的attributesByName中获取chargeSize
         if let size = module.attributesByName["chargeSize"] {
             Logger.info("模块的chargeSize属性值: \(size)")
             chargeSize = size
         }
-        
+
         // 获取模块的容量
         var moduleCapacity: Double? = nil
         if let capacity = module.attributesByName["capacity"] {
             Logger.info("模块的capacity属性值: \(capacity)")
             moduleCapacity = capacity
         }
-        
+
         // 构建SQL查询
         var whereClause = "t.groupID IN (\(groupIDsStr)) AND t.published = 1"
         var parameters: [Any] = []
-        
+
         // 如果既有chargeSize又有容量限制，使用一个查询同时筛选
         if let size = chargeSize, size > 0, let capacity = moduleCapacity, capacity > 0 {
             // 构建筛选chargeSize和体积的SQL
@@ -786,17 +857,19 @@ struct ChargeSelectionView: View {
                 AND ty.volume <= ?
                 AND ty.groupID IN (\(groupIDsStr)) AND ty.published = 1
             """
-            
-            if case let .success(rows) = databaseManager.executeQuery(chargeQuery, parameters: [size, capacity]) {
+
+            if case let .success(rows) = databaseManager.executeQuery(
+                chargeQuery, parameters: [size, capacity]
+            ) {
                 var typeIDs: [Int] = []
                 for row in rows {
                     if let typeID = row["type_id"] as? Int {
                         typeIDs.append(typeID)
                     }
                 }
-                
+
                 Logger.info("找到符合chargeSize和容量要求的弹药数量: \(typeIDs.count)")
-                
+
                 if !typeIDs.isEmpty {
                     // 使用IN查询直接获取符合条件的弹药
                     let typeIDsStr = typeIDs.map { String($0) }.joined(separator: ",")
@@ -809,7 +882,7 @@ struct ChargeSelectionView: View {
                     return
                 }
             }
-        } 
+        }
         // 只有chargeSize限制
         else if let size = chargeSize, size > 0 {
             whereClause += """
@@ -835,21 +908,22 @@ struct ChargeSelectionView: View {
             parameters.append(capacity)
             Logger.info("添加容量筛选条件: \(capacity)")
         }
-        
+
         // 获取所有符合条件的弹药
         items = databaseManager.loadMarketItems(whereClause: whereClause, parameters: parameters)
         Logger.info("找到 \(items.count) 种可用弹药")
-        
+
         // 获取Meta组名称
         let query = """
             SELECT metagroup_id, name
             FROM metaGroups
         """
-        
+
         if case let .success(rows) = databaseManager.executeQuery(query, parameters: []) {
             for row in rows {
                 if let metaGroupID = row["metagroup_id"] as? Int,
-                   let metaGroupName = row["name"] as? String {
+                   let metaGroupName = row["name"] as? String
+                {
                     metaGroupNames[metaGroupID] = metaGroupName
                 }
             }
@@ -863,12 +937,12 @@ struct ModuleVariationsView: View {
     let databaseManager: DatabaseManager
     let typeID: Int
     let onSelectVariation: (Int) -> Void
-    
+
     @State private var items: [DatabaseListItem] = []
     @State private var metaGroupNames: [Int: String] = [:]
     @State private var isLoading = true
     @Environment(\.dismiss) var dismiss
-    
+
     var body: some View {
         List {
             if isLoading {
@@ -878,7 +952,11 @@ struct ModuleVariationsView: View {
                 }
             } else {
                 ForEach(groupedItems.keys.sorted(), id: \.self) { metaGroupID in
-                    Section(header: Text(metaGroupNames[metaGroupID] ?? NSLocalizedString("Unknown", comment: ""))) {
+                    Section(
+                        header: Text(
+                            metaGroupNames[metaGroupID] ?? NSLocalizedString("Unknown", comment: "")
+                        )
+                    ) {
                         ForEach(groupedItems[metaGroupID] ?? [], id: \.id) { item in
                             HStack {
                                 DatabaseListItemView(item: item, showDetails: true)
@@ -899,16 +977,16 @@ struct ModuleVariationsView: View {
             loadData()
         }
     }
-    
+
     private var groupedItems: [Int: [DatabaseListItem]] {
         Dictionary(grouping: items) { $0.metaGroupID ?? 0 }
     }
-    
+
     private func loadData() {
         isLoading = true
         let result = databaseManager.loadVariations(for: typeID)
-        self.items = result.0
-        self.metaGroupNames = result.1
+        items = result.0
+        metaGroupNames = result.1
         isLoading = false
     }
 }

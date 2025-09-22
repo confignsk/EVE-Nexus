@@ -65,7 +65,8 @@ public class CorpStructureAPI {
 
         // 3. 从API获取
         return try await fetchStructuresFromServer(
-            corporationId: corporationId, characterId: characterId)
+            corporationId: corporationId, characterId: characterId
+        )
     }
 
     private func fetchStructuresFromServer(corporationId: Int, characterId: Int) async throws

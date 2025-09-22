@@ -4,11 +4,11 @@ import SwiftUI
 struct DroneSelectorView: View {
     @ObservedObject var databaseManager: DatabaseManager
     @State private var allowedTypeIDs: [Int] = []
-    @State private var droneInfos: [DroneInfo] = []  // 无人机信息数组
+    @State private var droneInfos: [DroneInfo] = [] // 无人机信息数组
     @State private var marketGroupTree: [MarketGroupNode] = []
-    @State private var lastVisitedGroupID: Int? = nil  // 上次访问的组ID状态
-    @State private var lastSearchKeyword: String? = nil  // 上次搜索关键词状态
-    @State private var hasSelectedItem: Bool = false  // 标记是否已选择物品
+    @State private var lastVisitedGroupID: Int? = nil // 上次访问的组ID状态
+    @State private var lastSearchKeyword: String? = nil // 上次搜索关键词状态
+    @State private var hasSelectedItem: Bool = false // 标记是否已选择物品
     @Environment(\.dismiss) private var dismiss
 
     let onSelect: (DatabaseListItem) -> Void
@@ -17,36 +17,36 @@ struct DroneSelectorView: View {
         self.databaseManager = databaseManager
         self.onSelect = onSelect
         let droneData = loadDroneData(databaseManager: databaseManager)
-        self._allowedTypeIDs = State(initialValue: droneData.map { $0.typeId })
-        self._droneInfos = State(initialValue: droneData)
+        _allowedTypeIDs = State(initialValue: droneData.map { $0.typeId })
+        _droneInfos = State(initialValue: droneData)
 
         // 初始化市场组目录树
         let builder = MarketItemGroupTreeBuilder(
             databaseManager: databaseManager,
             allowedTypeIDs: Set(droneData.map { $0.typeId }),
-            parentGroupId: 157  // 使用无人机(ID: 157)作为父节点
+            parentGroupId: 157 // 使用无人机(ID: 157)作为父节点
         )
         let tree = builder.buildGroupTree()
-        self._marketGroupTree = State(initialValue: tree)
+        _marketGroupTree = State(initialValue: tree)
 
         // 尝试从 UserDefaults 加载上次访问的组ID
         if let savedGroupID = UserDefaults.standard.object(forKey: "LastVisitedDroneGroupID")
             as? Int
         {
             Logger.info("从 UserDefaults 加载到之前保存的无人机目录ID: \(savedGroupID)")
-            self._lastVisitedGroupID = State(initialValue: savedGroupID)
+            _lastVisitedGroupID = State(initialValue: savedGroupID)
         } else {
             Logger.info("未找到保存的无人机目录ID")
-            self._lastVisitedGroupID = State(initialValue: nil)
+            _lastVisitedGroupID = State(initialValue: nil)
         }
 
         // 尝试从 UserDefaults 加载上次搜索关键词
         if let savedKeyword = UserDefaults.standard.string(forKey: "LastDroneSearchKeyword") {
             Logger.info("从 UserDefaults 加载到上次搜索关键词: \(savedKeyword)")
-            self._lastSearchKeyword = State(initialValue: savedKeyword)
+            _lastSearchKeyword = State(initialValue: savedKeyword)
         } else {
             Logger.info("未找到保存的搜索关键词")
-            self._lastSearchKeyword = State(initialValue: nil)
+            _lastSearchKeyword = State(initialValue: nil)
         }
     }
 
@@ -56,7 +56,8 @@ struct DroneSelectorView: View {
                 ContentUnavailableView {
                     Label(
                         NSLocalizedString("Misc_No_Data", comment: "无数据"),
-                        systemImage: "exclamationmark.triangle")
+                        systemImage: "exclamationmark.triangle"
+                    )
                 }
             } else {
                 MarketItemTreeSelectorView(
@@ -92,7 +93,8 @@ struct DroneSelectorView: View {
                         if let searchText = searchText, !searchText.isEmpty {
                             Logger.info("保存无人机搜索关键词到UserDefaults: \"\(searchText)\"")
                             UserDefaults.standard.set(
-                                searchText, forKey: "LastDroneSearchKeyword")
+                                searchText, forKey: "LastDroneSearchKeyword"
+                            )
                             lastSearchKeyword = searchText
                             // 确保立即写入
                             UserDefaults.standard.synchronize()
@@ -148,25 +150,23 @@ struct DroneSelectorView: View {
         }
     }
 
-
-
     // 加载无人机的type_id及名称信息
     private func loadDroneData(databaseManager: DatabaseManager) -> [DroneInfo] {
         // 获取无人机(categoryID=18)的信息，并确保是已发布的(published=1)
         let query = """
-                SELECT type_id, name, en_name, marketGroupID
-                FROM types
-                WHERE categoryID = 18
-                AND published = 1
-            """
+            SELECT type_id, name, en_name, marketGroupID
+            FROM types
+            WHERE categoryID = 18
+            AND published = 1
+        """
 
         var droneInfos: [DroneInfo] = []
 
         if case let .success(rows) = databaseManager.executeQuery(query) {
             for row in rows {
                 if let typeId = row["type_id"] as? Int,
-                    let name = row["name"] as? String,
-                    let enName = row["en_name"] as? String
+                   let name = row["name"] as? String,
+                   let enName = row["en_name"] as? String
                 {
                     let marketGroupId = row["marketGroupID"] as? Int
 
@@ -197,10 +197,10 @@ private struct DroneInfo: Identifiable {
     let marketGroupId: Int?
 
     init(typeId: Int, name: String, enName: String, marketGroupId: Int?) {
-        self.id = typeId
+        id = typeId
         self.typeId = typeId
         self.name = name
         self.enName = enName
         self.marketGroupId = marketGroupId
     }
-} 
+}

@@ -9,7 +9,7 @@ struct MiningMonthGroup: Identifiable {
 
 // 每种矿石的汇总信息
 struct MiningItemSummary: Identifiable {
-    let id: Int  // type_id
+    let id: Int // type_id
     let name: String
     let iconFileName: String
     var totalQuantity: Int
@@ -31,7 +31,7 @@ final class MiningLedgerViewModel: ObservableObject {
 
     private let calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone.current  // 使用本地时区
+        calendar.timeZone = TimeZone.current // 使用本地时区
         return calendar
     }()
 
@@ -71,8 +71,8 @@ final class MiningLedgerViewModel: ObservableObject {
         if case let .success(rows) = result {
             for row in rows {
                 guard let typeId = row["type_id"] as? Int,
-                    let name = row["name"] as? String,
-                    let iconFileName = row["icon_filename"] as? String
+                      let name = row["name"] as? String,
+                      let iconFileName = row["icon_filename"] as? String
                 else {
                     continue
                 }
@@ -100,7 +100,7 @@ final class MiningLedgerViewModel: ObservableObject {
 
     func loadMiningData(forceRefresh: Bool = false) async {
         // 如果已经加载过且不是强制刷新，则跳过
-        if initialLoadDone && !forceRefresh {
+        if initialLoadDone, !forceRefresh {
             return
         }
 
@@ -129,7 +129,7 @@ final class MiningLedgerViewModel: ObservableObject {
                 preloadItemInfo(for: uniqueTypeIds)
 
                 // 按月份和矿石类型分组
-                var groupedByMonth: [Date: [Int: Int]] = [:]  // [月份: [type_id: 总数量]]
+                var groupedByMonth: [Date: [Int: Int]] = [:] // [月份: [type_id: 总数量]]
 
                 for entry in entries {
                     guard let date = FormatUtil.parseUTCDate(entry.date) else {

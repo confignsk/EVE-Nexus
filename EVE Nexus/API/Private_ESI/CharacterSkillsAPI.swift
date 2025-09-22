@@ -29,7 +29,7 @@ public struct SkillQueueItem: Codable, Identifiable {
 
     public var isCurrentlyTraining: Bool {
         guard let startDate = start_date,
-            let finishDate = finish_date
+              let finishDate = finish_date
         else {
             return false
         }
@@ -53,10 +53,10 @@ public struct SkillQueueItem: Codable, Identifiable {
     // 计算训练进度
     public var progress: Double {
         guard let startDate = start_date,
-            let finishDate = finish_date,
-            let trainingStartSp = training_start_sp,
-            let levelEndSp = level_end_sp,
-            let levelStartSp = level_start_sp
+              let finishDate = finish_date,
+              let trainingStartSp = training_start_sp,
+              let levelEndSp = level_end_sp,
+              let levelStartSp = level_start_sp
         else {
             return 0
         }
@@ -86,8 +86,8 @@ public struct SkillQueueItem: Codable, Identifiable {
         let currentSP = Double(trainingStartSp) + trainedSP
 
         // 计算当前等级的进度
-        let levelCurrentSP = currentSP - Double(levelStartSp)  // 在该等级已获得的技能点
-        let levelTotalSP = Double(levelEndSp - levelStartSp)  // 该等级需要的总技能点
+        let levelCurrentSP = currentSP - Double(levelStartSp) // 在该等级已获得的技能点
+        let levelTotalSP = Double(levelEndSp - levelStartSp) // 该等级需要的总技能点
 
         return levelCurrentSP / levelTotalSP
     }
@@ -110,24 +110,27 @@ public class CharacterSkillsAPI {
 
     // 获取技能缓存文件路径
     private func getSkillsCacheFilePath(characterId: Int) -> URL {
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+            .first!
         let characterSkillsPath = documentsPath.appendingPathComponent("CharacterSkills")
-        
+
         // 创建目录（如果不存在）
-        try? FileManager.default.createDirectory(at: characterSkillsPath, withIntermediateDirectories: true)
-        
+        try? FileManager.default.createDirectory(
+            at: characterSkillsPath, withIntermediateDirectories: true
+        )
+
         return characterSkillsPath.appendingPathComponent("\(characterId)_all_skills.json")
     }
-    
+
     // 保存技能数据到本地文件
     private func saveSkillsToCache(characterId: Int, skills: CharacterSkillsResponse) -> Bool {
         do {
             let encoder = JSONEncoder()
             let jsonData = try encoder.encode(skills)
-            
+
             let filePath = getSkillsCacheFilePath(characterId: characterId)
             try jsonData.write(to: filePath)
-            
+
             Logger.debug("成功缓存技能数据到文件 - 角色ID: \(characterId), 路径: \(filePath.path)")
             return true
         } catch {
@@ -139,12 +142,12 @@ public class CharacterSkillsAPI {
     // 从本地文件读取技能数据
     private func loadSkillsFromCache(characterId: Int) -> CharacterSkillsResponse? {
         let filePath = getSkillsCacheFilePath(characterId: characterId)
-        
+
         // 检查文件是否存在
         guard FileManager.default.fileExists(atPath: filePath.path) else {
             return nil
         }
-        
+
         // 检查文件修改时间，缓存2小时
         do {
             let attributes = try FileManager.default.attributesOfItem(atPath: filePath.path)
@@ -159,12 +162,12 @@ public class CharacterSkillsAPI {
             Logger.error("获取文件属性失败: \(error)")
             return nil
         }
-        
+
         do {
             let jsonData = try Data(contentsOf: filePath)
             let decoder = JSONDecoder()
             let skills = try decoder.decode(CharacterSkillsResponse.self, from: jsonData)
-            
+
             Logger.debug("从文件缓存加载技能数据 - 角色ID: \(characterId), 文件路径: \(filePath.path)")
             return skills
         } catch {
@@ -212,12 +215,15 @@ public class CharacterSkillsAPI {
 
     // 获取技能队列缓存文件路径
     private func getSkillQueueCacheFilePath(characterId: Int) -> URL {
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+            .first!
         let characterSkillsPath = documentsPath.appendingPathComponent("CharacterSkills")
-        
+
         // 创建目录（如果不存在）
-        try? FileManager.default.createDirectory(at: characterSkillsPath, withIntermediateDirectories: true)
-        
+        try? FileManager.default.createDirectory(
+            at: characterSkillsPath, withIntermediateDirectories: true
+        )
+
         return characterSkillsPath.appendingPathComponent("\(characterId)_skill_queue.json")
     }
 
@@ -227,11 +233,12 @@ public class CharacterSkillsAPI {
             let encoder = JSONEncoder()
             encoder.dateEncodingStrategy = .secondsSince1970
             let jsonData = try encoder.encode(queue)
-            
+
             let filePath = getSkillQueueCacheFilePath(characterId: characterId)
             try jsonData.write(to: filePath)
-            
-            Logger.debug("成功缓存技能队列到文件 - 角色ID: \(characterId), 路径: \(filePath.path), 队列长度: \(queue.count)")
+
+            Logger.debug(
+                "成功缓存技能队列到文件 - 角色ID: \(characterId), 路径: \(filePath.path), 队列长度: \(queue.count)")
             return true
         } catch {
             Logger.error("保存技能队列到文件失败: \(error)")
@@ -242,12 +249,12 @@ public class CharacterSkillsAPI {
     // 从本地文件读取技能队列
     private func loadSkillQueue(characterId: Int) -> [SkillQueueItem]? {
         let filePath = getSkillQueueCacheFilePath(characterId: characterId)
-        
+
         // 检查文件是否存在
         guard FileManager.default.fileExists(atPath: filePath.path) else {
             return nil
         }
-        
+
         // 检查文件修改时间，缓存1小时
         do {
             let attributes = try FileManager.default.attributesOfItem(atPath: filePath.path)
@@ -262,14 +269,15 @@ public class CharacterSkillsAPI {
             Logger.error("获取文件属性失败: \(error)")
             return nil
         }
-        
+
         do {
             let jsonData = try Data(contentsOf: filePath)
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .secondsSince1970
             let queue = try decoder.decode([SkillQueueItem].self, from: jsonData)
-            
-            Logger.debug("从文件缓存加载技能队列 - 角色ID: \(characterId), 文件路径: \(filePath.path), 队列长度: \(queue.count)")
+
+            Logger.debug(
+                "从文件缓存加载技能队列 - 角色ID: \(characterId), 文件路径: \(filePath.path), 队列长度: \(queue.count)")
             return queue
         } catch {
             Logger.error("从文件读取技能队列失败: \(error)")
@@ -281,7 +289,7 @@ public class CharacterSkillsAPI {
     private func fetchSkillQueueFromServer(characterId: Int) async throws -> [SkillQueueItem] {
         let url = URL(
             string:
-                "https://esi.evetech.net/characters/\(characterId)/skillqueue/?datasource=tranquility"
+            "https://esi.evetech.net/characters/\(characterId)/skillqueue/?datasource=tranquility"
         )!
 
         let data = try await NetworkManager.shared.fetchDataWithToken(
@@ -319,12 +327,15 @@ public class CharacterSkillsAPI {
 
     // 获取角色属性缓存文件路径
     private func getAttributesCacheFilePath(characterId: Int) -> URL {
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+            .first!
         let characterSkillsPath = documentsPath.appendingPathComponent("CharacterSkills")
-        
+
         // 创建目录（如果不存在）
-        try? FileManager.default.createDirectory(at: characterSkillsPath, withIntermediateDirectories: true)
-        
+        try? FileManager.default.createDirectory(
+            at: characterSkillsPath, withIntermediateDirectories: true
+        )
+
         return characterSkillsPath.appendingPathComponent("\(characterId)_attributes.json")
     }
 
@@ -333,10 +344,10 @@ public class CharacterSkillsAPI {
         do {
             let encoder = JSONEncoder()
             let jsonData = try encoder.encode(attributes)
-            
+
             let filePath = getAttributesCacheFilePath(characterId: characterId)
             try jsonData.write(to: filePath)
-            
+
             Logger.debug("成功缓存角色属性到文件 - 角色ID: \(characterId), 路径: \(filePath.path)")
             return true
         } catch {
@@ -348,12 +359,12 @@ public class CharacterSkillsAPI {
     // 从本地文件读取角色属性
     private func loadAttributesFromCache(characterId: Int) -> CharacterAttributes? {
         let filePath = getAttributesCacheFilePath(characterId: characterId)
-        
+
         // 检查文件是否存在
         guard FileManager.default.fileExists(atPath: filePath.path) else {
             return nil
         }
-        
+
         // 检查文件修改时间，缓存1小时
         do {
             let attributes = try FileManager.default.attributesOfItem(atPath: filePath.path)
@@ -368,12 +379,12 @@ public class CharacterSkillsAPI {
             Logger.error("获取文件属性失败: \(error)")
             return nil
         }
-        
+
         do {
             let jsonData = try Data(contentsOf: filePath)
             let decoder = JSONDecoder()
             let attributes = try decoder.decode(CharacterAttributes.self, from: jsonData)
-            
+
             Logger.debug("从文件缓存加载角色属性 - 角色ID: \(characterId), 文件路径: \(filePath.path)")
             return attributes
         } catch {
@@ -401,7 +412,7 @@ public class CharacterSkillsAPI {
         Logger.debug("从服务器获取角色属性 - 角色ID: \(characterId)")
         let url = URL(
             string:
-                "https://esi.evetech.net/characters/\(characterId)/attributes/?datasource=tranquility"
+            "https://esi.evetech.net/characters/\(characterId)/attributes/?datasource=tranquility"
         )!
 
         let data = try await NetworkManager.shared.fetchDataWithToken(

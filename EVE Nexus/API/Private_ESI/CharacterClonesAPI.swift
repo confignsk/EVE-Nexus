@@ -27,12 +27,15 @@ class CharacterClonesAPI {
 
     // 获取克隆体缓存文件路径
     private func getClonesCacheFilePath(characterId: Int) -> URL {
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+            .first!
         let characterSkillsPath = documentsPath.appendingPathComponent("CharacterSkills")
-        
+
         // 创建目录（如果不存在）
-        try? FileManager.default.createDirectory(at: characterSkillsPath, withIntermediateDirectories: true)
-        
+        try? FileManager.default.createDirectory(
+            at: characterSkillsPath, withIntermediateDirectories: true
+        )
+
         return characterSkillsPath.appendingPathComponent("\(characterId)_clones.json")
     }
 
@@ -41,10 +44,10 @@ class CharacterClonesAPI {
         do {
             let encoder = JSONEncoder()
             let jsonData = try encoder.encode(clones)
-            
+
             let filePath = getClonesCacheFilePath(characterId: characterId)
             try jsonData.write(to: filePath)
-            
+
             Logger.debug("成功缓存克隆体数据到文件 - 角色ID: \(characterId), 路径: \(filePath.path)")
             return true
         } catch {
@@ -56,12 +59,12 @@ class CharacterClonesAPI {
     // 从本地文件读取克隆体数据
     private func loadClonesFromCache(characterId: Int) -> CharacterCloneInfo? {
         let filePath = getClonesCacheFilePath(characterId: characterId)
-        
+
         // 检查文件是否存在
         guard FileManager.default.fileExists(atPath: filePath.path) else {
             return nil
         }
-        
+
         // 检查文件修改时间，缓存1小时
         do {
             let attributes = try FileManager.default.attributesOfItem(atPath: filePath.path)
@@ -76,12 +79,12 @@ class CharacterClonesAPI {
             Logger.error("获取文件属性失败: \(error)")
             return nil
         }
-        
+
         do {
             let jsonData = try Data(contentsOf: filePath)
             let decoder = JSONDecoder()
             let clones = try decoder.decode(CharacterCloneInfo.self, from: jsonData)
-            
+
             Logger.debug("从文件缓存加载克隆体数据 - 角色ID: \(characterId), 文件路径: \(filePath.path)")
             return clones
         } catch {

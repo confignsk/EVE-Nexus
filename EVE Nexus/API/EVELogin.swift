@@ -27,7 +27,7 @@ struct EVECharacterInfo: Codable {
     var currentSkill: CurrentSkillInfo?
     var locationStatus: CharacterLocation.LocationStatus?
     var location: SolarSystemInfo?
-    var queueFinishTime: TimeInterval?  // 添加队列总剩余时间属性
+    var queueFinishTime: TimeInterval? // 添加队列总剩余时间属性
 
     // 为JWT令牌解析添加的初始化方法
     init(
@@ -40,7 +40,7 @@ struct EVECharacterInfo: Codable {
         self.Scopes = Scopes
         self.TokenType = TokenType
         self.CharacterOwnerHash = CharacterOwnerHash
-        self.refreshTokenExpired = false
+        refreshTokenExpired = false
     }
 
     // 内部类型定义
@@ -176,7 +176,7 @@ class EVELoginViewModel: ObservableObject {
     @Published var characters: [EVECharacterInfo] = []
     @Published var characterPortraits: [Int: UIImage] = [:]
     let databaseManager: DatabaseManager
-    
+
     // 添加私有队列来保证角色数组操作的线程安全
     private let characterQueue = DispatchQueue(label: "character.queue", qos: .userInitiated)
 
@@ -211,7 +211,7 @@ class EVELoginViewModel: ObservableObject {
 
     func loadCharacterPortrait(characterId: Int, forceRefresh: Bool = false) async {
         do {
-            if !forceRefresh && characterPortraits[characterId] != nil {
+            if !forceRefresh, characterPortraits[characterId] != nil {
                 return
             }
 
@@ -232,20 +232,24 @@ class EVELoginViewModel: ObservableObject {
         Task { @MainActor in
             let allCharacters = EVELogin.shared.loadCharacters()
             let newCharacters = allCharacters.map { $0.character }
-            
+
             // 原子性更新角色列表
             characters = newCharacters
-            
+
             Logger.info("[EVELoginViewModel]已加载 \(characters.count) 个角色")
-            
+
             // 异步加载头像
             Task {
                 for character in newCharacters {
                     // 检查视图是否仍然存在
-                    guard await MainActor.run(body: { self.characters.contains { $0.CharacterID == character.CharacterID } }) else {
+                    guard
+                        await MainActor.run(body: {
+                            self.characters.contains { $0.CharacterID == character.CharacterID }
+                        })
+                    else {
                         continue
                     }
-                    
+
                     await self.loadCharacterPortrait(characterId: character.CharacterID)
                 }
             }
@@ -257,7 +261,7 @@ class EVELoginViewModel: ObservableObject {
         Task { @MainActor in
             do {
                 guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                    let viewController = scene.windows.first?.rootViewController
+                      let viewController = scene.windows.first?.rootViewController
                 else {
                     return
                 }
@@ -291,29 +295,29 @@ class EVELoginViewModel: ObservableObject {
     func removeCharacter(_ character: EVECharacterInfo) {
         let characterId = character.CharacterID
         Logger.info("[EVELoginViewModel]开始移除角色: \(character.CharacterName) (\(characterId))")
-        
+
         // 1. 先从本地数组中移除，避免UI闪烁
         characters.removeAll { $0.CharacterID == characterId }
-        
+
         // 2. 移除头像缓存
         characterPortraits.removeValue(forKey: characterId)
-        
+
         // 3. 如果移除的是当前选中的角色，清除选中状态
         if characterInfo?.CharacterID == characterId {
             characterInfo = nil
         }
-        
+
         // 4. 异步清理持久化数据，避免阻塞UI
         Task.detached {
             // 清理持久化存储
             EVELogin.shared.removeCharacter(characterId: characterId)
-            
+
             // 重新验证本地状态与持久化状态的一致性
             await MainActor.run {
                 let persistedCharacters = EVELogin.shared.loadCharacters()
                 let persistedIds = Set(persistedCharacters.map { $0.character.CharacterID })
                 let localIds = Set(self.characters.map { $0.CharacterID })
-                
+
                 // 如果发现不一致，重新加载
                 if persistedIds != localIds {
                     Logger.warning("[EVELoginViewModel]检测到本地与持久化状态不一致，重新加载角色列表")
@@ -321,18 +325,18 @@ class EVELoginViewModel: ObservableObject {
                 }
             }
         }
-        
+
         Logger.info("[EVELoginViewModel]角色移除完成: \(character.CharacterName) (\(characterId))")
     }
 
     // 更新角色顺序
     func moveCharacter(from source: IndexSet, to destination: Int) {
         // 边界检查
-        guard destination >= 0 && destination <= characters.count else {
+        guard destination >= 0, destination <= characters.count else {
             Logger.warning("移动目标位置 \(destination) 超出有效范围 [0, \(characters.count)]")
             return
         }
-        
+
         // 检查源索引是否有效
         for index in source {
             guard index < characters.count else {
@@ -340,47 +344,40 @@ class EVELoginViewModel: ObservableObject {
                 return
             }
         }
-        
+
         characters.move(fromOffsets: source, toOffset: destination)
         let characterIds = characters.map { $0.CharacterID }
         EVELogin.shared.saveCharacterOrder(characterIds)
     }
-    
+
     // MARK: - 基于角色ID的安全更新方法
-    
+
     /// 通过角色ID查找角色在数组中的索引
     private func findCharacterIndex(by characterId: Int) -> Int? {
         return characters.firstIndex { $0.CharacterID == characterId }
     }
-    
+
     /// 安全地更新角色信息
     func updateCharacter(characterId: Int, updateBlock: (inout EVECharacterInfo) -> Void) {
         guard let index = findCharacterIndex(by: characterId) else {
             Logger.warning("未找到角色ID \(characterId) 对应的角色")
             return
         }
-        
+
         // 确保索引仍然有效（防止在查找和使用之间数组被修改）
         guard index < characters.count else {
             Logger.warning("角色索引 \(index) 超出数组范围 \(characters.count)")
             return
         }
-        
+
         updateBlock(&characters[index])
-        
+
         // 如果是当前选中的角色，也更新 characterInfo
         if characterInfo?.CharacterID == characterId {
             characterInfo = characters[index]
         }
     }
-    
-    /// 批量更新角色信息
-    func updateCharacters(updates: [Int: (inout EVECharacterInfo) -> Void]) {
-        for (characterId, updateBlock) in updates {
-            updateCharacter(characterId: characterId, updateBlock: updateBlock)
-        }
-    }
-    
+
     /// 获取角色信息的只读副本
     func getCharacter(by characterId: Int) -> EVECharacterInfo? {
         return characters.first { $0.CharacterID == characterId }
@@ -404,7 +401,7 @@ class EVELogin {
             //            token: EVEConfig.OAuth.tokenEndpoint.absoluteString,
             jwksMetadata: EVEConfig.OAuth.jwksMetadataEndpoint.absoluteString
         ),
-        scopes: []  // 将在 loadConfig 中填充
+        scopes: [] // 将在 loadConfig 中填充
     )
 
     private init() {
@@ -470,7 +467,8 @@ class EVELogin {
 
         // 保存到 UserDefaults
         if let encodedData = try? JSONEncoder().encode(characters) {
-            Logger.info("[EVELogin]正在缓存个人信息数据, key: \(charactersKey), 数据大小: \(encodedData.count) bytes")
+            Logger.info(
+                "[EVELogin]正在缓存个人信息数据, key: \(charactersKey), 数据大小: \(encodedData.count) bytes")
             UserDefaults.standard.set(encodedData, forKey: charactersKey)
         }
 
@@ -483,7 +481,8 @@ class EVELogin {
             characterOrder.append(character.CharacterID)
             // 保存更新后的顺序
             Logger.info(
-                "[EVELogin]正在缓存角色顺序数据, key: \(characterOrderKey), 数据大小: \(characterOrder.count) bytes")
+                "[EVELogin]正在缓存角色顺序数据, key: \(characterOrderKey), 数据大小: \(characterOrder.count) bytes"
+            )
             UserDefaults.standard.set(characterOrder, forKey: characterOrderKey)
         }
     }
@@ -511,7 +510,7 @@ class EVELogin {
 
         // 更新技能队列信息
         if let trainingSkill = skillQueue.first(where: { $0.isCurrentlyTraining }),
-            let skillName = SkillTreeManager.shared.getSkillName(for: trainingSkill.skill_id)
+           let skillName = SkillTreeManager.shared.getSkillName(for: trainingSkill.skill_id)
         {
             updatedCharacter.currentSkill = EVECharacterInfo.CurrentSkillInfo(
                 skillId: trainingSkill.skill_id,
@@ -522,7 +521,7 @@ class EVELogin {
             )
 
             if let lastSkill = skillQueue.last,
-                let finishTime = lastSkill.remainingTime
+               let finishTime = lastSkill.remainingTime
             {
                 updatedCharacter.queueFinishTime = finishTime
             }
@@ -650,7 +649,8 @@ class EVELogin {
         }
 
         Logger.info(
-            "[EVELogin]正在缓存角色顺序数据, key: \(characterOrderKey), 数据大小: \(uniqueCharacterIds.count) bytes")
+            "[EVELogin]正在缓存角色顺序数据, key: \(characterOrderKey), 数据大小: \(uniqueCharacterIds.count) bytes"
+        )
         UserDefaults.standard.set(uniqueCharacterIds, forKey: characterOrderKey)
         UserDefaults.standard.synchronize()
     }
@@ -728,7 +728,8 @@ class EVELogin {
                 updatedCharacter.refreshTokenExpired = expired
                 characters[index] = CharacterAuth(
                     character: updatedCharacter, addedDate: characters[index].addedDate,
-                    lastTokenUpdateTime: Date())
+                    lastTokenUpdateTime: Date()
+                )
 
                 // 保存更新后的角色信息
                 if let encodedData = try? JSONEncoder().encode(characters) {
@@ -804,14 +805,14 @@ class ScopeManager {
     private let hardcodedScopesFileName = "scopes.json"
 
     private init() {}
-    
+
     // 定义 scopes 获取来源枚举
     enum ScopeSource {
         case network
         case localCache
         case hardcoded
     }
-    
+
     // 定义返回结果结构
     struct ScopeResult {
         let scopes: [String]
@@ -857,9 +858,13 @@ class ScopeManager {
 
     // 读取打包内的 scopes 配置
     private func readBundledScopesConfig() -> (registered: Set<String>, notRequired: Set<String>)? {
-        guard let scopesURL = Bundle.main.url(forResource: hardcodedScopesFileName, withExtension: nil),
-              let data = try? Data(contentsOf: scopesURL),
-              let scopesDict = try? JSONDecoder().decode([String: [String]].self, from: data) else {
+        guard
+            let scopesURL = Bundle.main.url(
+                forResource: hardcodedScopesFileName, withExtension: nil
+            ),
+            let data = try? Data(contentsOf: scopesURL),
+            let scopesDict = try? JSONDecoder().decode([String: [String]].self, from: data)
+        else {
             return nil
         }
 
@@ -886,10 +891,14 @@ class ScopeManager {
         let openapi = try JSONDecoder().decode(OpenAPIResponse.self, from: data)
 
         // 从 components.securitySchemes.OAuth2.flows.authorizationCode.scopes 中提取所有的 scope keys
-        let allScopes = Set(openapi.components.securitySchemes.oauth2.flows.authorizationCode.scopes.keys.map { String($0) })
+        let allScopes = Set(
+            openapi.components.securitySchemes.oauth2.flows.authorizationCode.scopes.keys.map {
+                String($0)
+            })
 
         // 从本地打包文件读取配置
-        let config = readBundledScopesConfig() ?? (registered: Set<String>(), notRequired: Set<String>())
+        let config =
+            readBundledScopesConfig() ?? (registered: Set<String>(), notRequired: Set<String>())
 
         // 计算：最新(全量) ∩ registeredScopes，再剔除 notRequiredScopes
         let intersected = allScopes.intersection(config.registered)
@@ -898,14 +907,11 @@ class ScopeManager {
         // 保存过滤后的 scopes 到本地文件
         saveScopesToFile(Array(finalScopes))
 
-        Logger.info("[EVELogin]成功从网络获取最新scopes，原始: \(allScopes.count)，交集后: \(intersected.count)，剔除不需要后: \(finalScopes.count)")
+        Logger.info(
+            "[EVELogin]成功从网络获取最新scopes，原始: \(allScopes.count)，交集后: \(intersected.count)，剔除不需要后: \(finalScopes.count)"
+        )
 
         return Array(finalScopes)
-    }
-    
-    // 获取不需要的 scopes 集合
-    private func getNotRequiredScopes() -> Set<String> {
-        return readBundledScopesConfig()?.notRequired ?? Set()
     }
 
     // 获取 scopes 并返回来源信息
@@ -960,12 +966,16 @@ class ScopeManager {
         if let scopes = loadScopesFromFile(latestScopesPath) {
             Logger.info("[EVELogin]从本地文件加载 scopes 成功")
             // 再次应用规则：与 registered 取交集，并剔除 notRequired
-            let config = readBundledScopesConfig() ?? (registered: Set<String>(), notRequired: Set<String>())
+            let config =
+                readBundledScopesConfig() ?? (registered: Set<String>(), notRequired: Set<String>())
             let currentSet = Set(scopes)
-            let intersected = config.registered.isEmpty ? currentSet : currentSet.intersection(config.registered)
+            let intersected =
+                config.registered.isEmpty ? currentSet : currentSet.intersection(config.registered)
             let finalSet = intersected.subtracting(config.notRequired)
             if scopes.count != finalSet.count {
-                Logger.info("[EVELogin]对本地 scopes 应用交集与剔除过滤，原始: \(scopes.count)，交集后: \(intersected.count)，剔除后: \(finalSet.count)")
+                Logger.info(
+                    "[EVELogin]对本地 scopes 应用交集与剔除过滤，原始: \(scopes.count)，交集后: \(intersected.count)，剔除后: \(finalSet.count)"
+                )
             }
             return ScopeResult(scopes: Array(finalSet), source: .localCache)
         }
@@ -988,7 +998,8 @@ class ScopeManager {
 
         // 兜底：registeredScopes − notRequiredScopes
         let finalScopes = config.registered.subtracting(config.notRequired)
-        Logger.info("[EVELogin]从硬编码文件加载 scopes 成功（registered − notRequired），共 \(finalScopes.count) 个权限")
+        Logger.info(
+            "[EVELogin]从硬编码文件加载 scopes 成功（registered − notRequired），共 \(finalScopes.count) 个权限")
         return Array(finalScopes)
     }
 }

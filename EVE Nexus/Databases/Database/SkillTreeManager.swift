@@ -2,11 +2,11 @@ import Foundation
 
 /// 技能要求结构
 struct SkillRequirement: Hashable {
-    let skillID: Int  // 技能ID
-    let name: String  // 技能名称
-    let level: Int  // 需要的等级
-    let parentSkillID: Int?  // 哪个技能需要这个技能
-    let timeMultiplier: Double?  // 训练时间倍增系数
+    let skillID: Int // 技能ID
+    let name: String // 技能名称
+    let level: Int // 需要的等级
+    let parentSkillID: Int? // 哪个技能需要这个技能
+    let timeMultiplier: Double? // 训练时间倍增系数
 
     // Hashable 实现
     func hash(into hasher: inout Hasher) {
@@ -36,27 +36,27 @@ class SkillTreeManager {
 
     // 技能要求的属性ID对应关系
     let skillRequirementAttributes: [(skillID: Int, levelID: Int)] = [
-        (skillID: 182, levelID: 277),  // 主技能
-        (skillID: 183, levelID: 278),  // 副技能
-        (skillID: 184, levelID: 279),  // 三级技能
-        (skillID: 1285, levelID: 1286),  // 四级技能
-        (skillID: 1289, levelID: 1287),  // 五级技能
-        (skillID: 1290, levelID: 1288),  // 六级技能
+        (skillID: 182, levelID: 277), // 主技能
+        (skillID: 183, levelID: 278), // 副技能
+        (skillID: 184, levelID: 279), // 三级技能
+        (skillID: 1285, levelID: 1286), // 四级技能
+        (skillID: 1289, levelID: 1287), // 五级技能
+        (skillID: 1290, levelID: 1288), // 六级技能
     ]
 
     /// 初始化并加载所有技能数据
     func initialize(databaseManager: DatabaseManager) {
         // 1. 加载所有技能
         let skillQuery = """
-                SELECT type_id, name 
-                FROM types 
-                WHERE categoryID = 16
-            """
+            SELECT type_id, name 
+            FROM types 
+            WHERE categoryID = 16
+        """
 
         if case let .success(rows) = databaseManager.executeQuery(skillQuery) {
             for row in rows {
                 if let typeID = row["type_id"] as? Int,
-                    let name = row["name"] as? String
+                   let name = row["name"] as? String
                 {
                     allSkills[typeID] = name
                 }
@@ -69,22 +69,22 @@ class SkillTreeManager {
         }.joined(separator: " OR ")
 
         let requirementQuery = """
-                SELECT ta1.type_id, 
-                       ta1.attribute_id as skill_attr_id,
-                       ta1.value as required_skill_id,
-                       ta2.value as required_level
-                FROM typeAttributes ta1
-                JOIN typeAttributes ta2 
-                ON ta1.type_id = ta2.type_id
-                WHERE ta1.type_id IN (SELECT type_id FROM types WHERE categoryID = 16)
-                AND (\(requirementPairs))
-            """
+            SELECT ta1.type_id, 
+                   ta1.attribute_id as skill_attr_id,
+                   ta1.value as required_skill_id,
+                   ta2.value as required_level
+            FROM typeAttributes ta1
+            JOIN typeAttributes ta2 
+            ON ta1.type_id = ta2.type_id
+            WHERE ta1.type_id IN (SELECT type_id FROM types WHERE categoryID = 16)
+            AND (\(requirementPairs))
+        """
 
         if case let .success(rows) = databaseManager.executeQuery(requirementQuery) {
             for row in rows {
                 guard let typeID = row["type_id"] as? Int,
-                    let requiredSkillID = row["required_skill_id"] as? Double,
-                    let requiredLevel = row["required_level"] as? Double
+                      let requiredSkillID = row["required_skill_id"] as? Double,
+                      let requiredLevel = row["required_level"] as? Double
                 else {
                     continue
                 }
@@ -172,7 +172,7 @@ class SkillTreeManager {
         }
 
         // 合并所有技能要求并去重，保留最高等级
-        var skillMap: [Int: Int] = [:]  // [skillID: maxLevel]
+        var skillMap: [Int: Int] = [:] // [skillID: maxLevel]
 
         // 处理所有技能要求
         for requirement in directRequirements + indirectRequirements {
@@ -196,9 +196,9 @@ class SkillTreeManager {
         }
         .sorted { first, second in
             if first.level == second.level {
-                return first.skillID > second.skillID  // type_id从大到小
+                return first.skillID > second.skillID // type_id从大到小
             }
-            return first.level > second.level  // 等级从高到低
+            return first.level > second.level // 等级从高到低
         }
     }
 
@@ -210,18 +210,18 @@ class SkillTreeManager {
 
         let placeholders = String(repeating: "?,", count: skillIDs.count).dropLast()
         let query = """
-                SELECT type_id, value
-                FROM typeAttributes
-                WHERE type_id IN (\(placeholders))
-                AND attribute_id = 275
-            """
+            SELECT type_id, value
+            FROM typeAttributes
+            WHERE type_id IN (\(placeholders))
+            AND attribute_id = 275
+        """
 
         var multipliers: [Int: Double] = [:]
 
         if case let .success(rows) = databaseManager.executeQuery(query, parameters: skillIDs) {
             for row in rows {
                 if let typeID = row["type_id"] as? Int,
-                    let value = row["value"] as? Double
+                   let value = row["value"] as? Double
                 {
                     multipliers[typeID] = value
                 }

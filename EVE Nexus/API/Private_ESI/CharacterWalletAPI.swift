@@ -5,7 +5,7 @@ class CharacterWalletAPI {
 
     // 缓存结构
     private struct CacheEntry: Codable {
-        let value: String  // 改用字符串存储以保持精度
+        let value: String // 改用字符串存储以保持精度
         let timestamp: Date
     }
 
@@ -16,27 +16,31 @@ class CharacterWalletAPI {
 
     // 内存缓存
     private var memoryCache: [Int: CacheEntry] = [:]
-    private let cacheTimeout: TimeInterval = 20 * 60  // 20分钟缓存，钱包余额使用
+    private let cacheTimeout: TimeInterval = 20 * 60 // 20分钟缓存，钱包余额使用
 
     // UserDefaults键前缀
     private let walletCachePrefix = "wallet_cache_"
 
     // 钱包交易记录缓存前缀
     private let lastTransactionQueryKey = "LastWalletTransactionQuery_"
-    private let queryInterval: TimeInterval = 3600  // 1小时的查询间隔
-    private let journalCacheTimeout: TimeInterval = 3600  // 1小时的流水缓存超时时间
+    private let queryInterval: TimeInterval = 3600 // 1小时的查询间隔
+    private let journalCacheTimeout: TimeInterval = 3600 // 1小时的流水缓存超时时间
 
     // 获取钱包流水缓存目录
     private func getWalletJournalCacheDirectory() -> URL {
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[
+            0
+        ]
         let cacheDirectory = documentsPath.appendingPathComponent("CharWallet")
-        
+
         // 如果目录不存在，创建它
         if !FileManager.default.fileExists(atPath: cacheDirectory.path) {
             Logger.info("创建钱包流水缓存目录: \(cacheDirectory.path)")
-            try? FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
+            try? FileManager.default.createDirectory(
+                at: cacheDirectory, withIntermediateDirectories: true
+            )
         }
-        
+
         return cacheDirectory
     }
 
@@ -49,12 +53,12 @@ class CharacterWalletAPI {
     // 检查钱包流水缓存是否过期
     private func isJournalCacheExpired(characterId: Int) -> Bool {
         let filePath = getJournalCacheFilePath(characterId: characterId)
-        
+
         guard FileManager.default.fileExists(atPath: filePath.path) else {
             Logger.info("钱包流水缓存文件不存在，需要刷新 - 文件路径: \(filePath.path)")
             return true
         }
-        
+
         do {
             let attributes = try FileManager.default.attributesOfItem(atPath: filePath.path)
             if let modificationDate = attributes[.modificationDate] as? Date {
@@ -63,14 +67,16 @@ class CharacterWalletAPI {
                 let remainingMinutes = Int(remainingTime / 60)
                 let remainingSeconds = Int(remainingTime.truncatingRemainder(dividingBy: 60))
                 let isExpired = timeInterval > journalCacheTimeout
-                
-                Logger.info("钱包流水缓存状态检查 - 角色ID: \(characterId), 文件修改时间: \(modificationDate), 当前时间: \(Date()), 时间间隔: \(timeInterval)秒, 剩余时间: \(remainingMinutes)分\(remainingSeconds)秒, 是否过期: \(isExpired)")
+
+                Logger.info(
+                    "钱包流水缓存状态检查 - 角色ID: \(characterId), 文件修改时间: \(modificationDate), 当前时间: \(Date()), 时间间隔: \(timeInterval)秒, 剩余时间: \(remainingMinutes)分\(remainingSeconds)秒, 是否过期: \(isExpired)"
+                )
                 return isExpired
             }
         } catch {
             Logger.error("获取钱包流水缓存文件属性失败: \(error) - 文件路径: \(filePath.path)")
         }
-        
+
         return true
     }
 
@@ -108,9 +114,9 @@ class CharacterWalletAPI {
         Logger.debug("正在从 UserDefaults 读取所有钱包缓存键")
         for key in defaults.dictionaryRepresentation().keys {
             if key.hasPrefix(walletCachePrefix),
-                let data = defaults.data(forKey: key),
-                let entry = try? JSONDecoder().decode(CacheEntry.self, from: data),
-                let characterId = Int(key.replacingOccurrences(of: walletCachePrefix, with: ""))
+               let data = defaults.data(forKey: key),
+               let entry = try? JSONDecoder().decode(CacheEntry.self, from: data),
+               let characterId = Int(key.replacingOccurrences(of: walletCachePrefix, with: ""))
             {
                 memoryCache[characterId] = entry
             }
@@ -201,14 +207,14 @@ class CharacterWalletAPI {
             // 检查缓存
             let cachedResult: Double? = {
                 if let memoryCached = getWalletMemoryCache(characterId: characterId),
-                    isCacheValid(memoryCached)
+                   isCacheValid(memoryCached)
                 {
                     Logger.info("使用内存缓存的钱包余额数据 - 角色ID: \(characterId)")
                     return Double(memoryCached.value)
                 }
 
                 if let diskCached = getDiskCache(characterId: characterId),
-                    isCacheValid(diskCached)
+                   isCacheValid(diskCached)
                 {
                     Logger.info("使用磁盘缓存的钱包余额数据 - 角色ID: \(characterId)")
                     setWalletMemoryCache(characterId: characterId, cache: diskCached)
@@ -260,27 +266,30 @@ class CharacterWalletAPI {
     // 从缓存文件获取钱包流水
     private func getWalletJournalFromCache(characterId: Int) -> [[String: Any]]? {
         let filePath = getJournalCacheFilePath(characterId: characterId)
-        
+
         guard FileManager.default.fileExists(atPath: filePath.path) else {
             Logger.info("钱包流水缓存文件不存在 - 角色ID: \(characterId), 文件路径: \(filePath.path)")
             return nil
         }
-        
+
         Logger.info("开始读取钱包流水缓存文件 - 角色ID: \(characterId), 文件路径: \(filePath.path)")
-        
+
         do {
             let data = try Data(contentsOf: filePath)
             let jsonObject = try JSONSerialization.jsonObject(with: data, options: [])
-            
+
             if let journalEntries = jsonObject as? [[String: Any]] {
-                Logger.info("成功从缓存文件读取钱包流水 - 角色ID: \(characterId), 记录数量: \(journalEntries.count), 文件大小: \(data.count) bytes")
+                Logger.info(
+                    "成功从缓存文件读取钱包流水 - 角色ID: \(characterId), 记录数量: \(journalEntries.count), 文件大小: \(data.count) bytes"
+                )
                 return journalEntries
             } else {
                 Logger.error("钱包流水缓存文件格式不正确 - 角色ID: \(characterId), 文件路径: \(filePath.path)")
                 return nil
             }
         } catch {
-            Logger.error("读取钱包流水缓存文件失败 - 角色ID: \(characterId), 错误: \(error), 文件路径: \(filePath.path)")
+            Logger.error(
+                "读取钱包流水缓存文件失败 - 角色ID: \(characterId), 错误: \(error), 文件路径: \(filePath.path)")
             return nil
         }
     }
@@ -288,16 +297,22 @@ class CharacterWalletAPI {
     // 保存钱包流水到缓存文件
     private func saveWalletJournalToCache(characterId: Int, entries: [[String: Any]]) -> Bool {
         let filePath = getJournalCacheFilePath(characterId: characterId)
-        
-        Logger.info("开始保存钱包流水到缓存文件 - 角色ID: \(characterId), 记录数量: \(entries.count), 文件路径: \(filePath.path)")
-        
+
+        Logger.info(
+            "开始保存钱包流水到缓存文件 - 角色ID: \(characterId), 记录数量: \(entries.count), 文件路径: \(filePath.path)")
+
         do {
-            let jsonData = try JSONSerialization.data(withJSONObject: entries, options: [.prettyPrinted, .sortedKeys])
+            let jsonData = try JSONSerialization.data(
+                withJSONObject: entries, options: [.prettyPrinted, .sortedKeys]
+            )
             try jsonData.write(to: filePath)
-            Logger.info("成功保存钱包流水到缓存文件 - 角色ID: \(characterId), 记录数量: \(entries.count), 文件大小: \(jsonData.count) bytes, 文件路径: \(filePath.path)")
+            Logger.info(
+                "成功保存钱包流水到缓存文件 - 角色ID: \(characterId), 记录数量: \(entries.count), 文件大小: \(jsonData.count) bytes, 文件路径: \(filePath.path)"
+            )
             return true
         } catch {
-            Logger.error("保存钱包流水到缓存文件失败 - 角色ID: \(characterId), 错误: \(error), 文件路径: \(filePath.path)")
+            Logger.error(
+                "保存钱包流水到缓存文件失败 - 角色ID: \(characterId), 错误: \(error), 文件路径: \(filePath.path)")
             return false
         }
     }
@@ -307,7 +322,7 @@ class CharacterWalletAPI {
         -> String?
     {
         Logger.info("开始获取钱包流水 - 角色ID: \(characterId), 强制刷新: \(forceRefresh)")
-        
+
         // 如果强制刷新或缓存过期，则从网络获取
         if forceRefresh || isJournalCacheExpired(characterId: characterId) {
             Logger.info("钱包流水缓存过期或需要强制刷新，从网络获取数据 - 角色ID: \(characterId)")
@@ -327,7 +342,7 @@ class CharacterWalletAPI {
             Logger.info("钱包流水数据处理完成 - 角色ID: \(characterId), JSON大小: \(jsonData.count) bytes")
             return String(data: jsonData, encoding: .utf8)
         }
-        
+
         Logger.error("无法获取钱包流水数据 - 角色ID: \(characterId)")
         return nil
     }
@@ -364,14 +379,14 @@ class CharacterWalletAPI {
     // 从数据库获取钱包交易记录
     private func getWalletTransactionsFromDB(characterId: Int) -> [[String: Any]]? {
         let query = """
-                SELECT transaction_id, client_id, date, is_buy, is_personal,
-                       journal_ref_id, location_id, quantity, type_id,
-                       unit_price, last_updated
-                FROM wallet_transactions 
-                WHERE character_id = ? 
-                ORDER BY date DESC 
-                LIMIT 1000
-            """
+            SELECT transaction_id, client_id, date, is_buy, is_personal,
+                   journal_ref_id, location_id, quantity, type_id,
+                   unit_price, last_updated
+            FROM wallet_transactions 
+            WHERE character_id = ? 
+            ORDER BY date DESC 
+            LIMIT 1000
+        """
 
         if case let .success(results) = CharacterDatabaseManager.shared.executeQuery(
             query, parameters: [characterId]
@@ -430,25 +445,25 @@ class CharacterWalletAPI {
         _ = CharacterDatabaseManager.shared.executeQuery("BEGIN TRANSACTION")
 
         // 计算每批次的大小（每条记录11个参数）
-        let batchSize = 100  // 每批次处理100条记录
+        let batchSize = 100 // 每批次处理100条记录
         var success = true
 
         // 分批处理数据
         for batchStart in stride(from: 0, to: newEntries.count, by: batchSize) {
             let batchEnd = min(batchStart + batchSize, newEntries.count)
-            let currentBatch = Array(newEntries[batchStart..<batchEnd])
+            let currentBatch = Array(newEntries[batchStart ..< batchEnd])
 
             // 构建批量插入语句
             let placeholders = Array(
                 repeating: "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", count: currentBatch.count
             ).joined(separator: ",")
             let insertSQL = """
-                    INSERT OR REPLACE INTO wallet_transactions (
-                        transaction_id, character_id, client_id, date, is_buy,
-                        is_personal, journal_ref_id, location_id, quantity,
-                        type_id, unit_price
-                    ) VALUES \(placeholders)
-                """
+                INSERT OR REPLACE INTO wallet_transactions (
+                    transaction_id, character_id, client_id, date, is_buy,
+                    is_personal, journal_ref_id, location_id, quantity,
+                    type_id, unit_price
+                ) VALUES \(placeholders)
+            """
 
             // 准备参数数组
             var parameters: [Any] = []
@@ -510,17 +525,15 @@ class CharacterWalletAPI {
         )
         let isEmpty =
             if case let .success(rows) = result,
-                let row = rows.first,
-                let count = row["count"] as? Int64
-            {
+            let row = rows.first,
+            let count = row["count"] as? Int64 {
                 count == 0
             } else {
                 true
             }
 
         // 如果数据为空、强制刷新或达到查询间隔，则从网络获取
-        if isEmpty || forceRefresh || shouldRefreshTransactionData(characterId: characterId)
-        {
+        if isEmpty || forceRefresh || shouldRefreshTransactionData(characterId: characterId) {
             Logger.debug("钱包交易记录为空或需要刷新，从网络获取数据")
             let transactionData = try await fetchTransactionsFromServer(characterId: characterId)
             if !saveWalletTransactionsToDB(characterId: characterId, entries: transactionData) {

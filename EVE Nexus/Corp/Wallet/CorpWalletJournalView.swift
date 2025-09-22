@@ -24,8 +24,8 @@ struct CorpWalletJournalGroup: Identifiable {
 
 // 加载进度枚举
 public enum WalletLoadingProgress {
-    case loading(page: Int)  // 正在加载特定页面
-    case completed  // 加载完成
+    case loading(page: Int) // 正在加载特定页面
+    case completed // 加载完成
 }
 
 @MainActor
@@ -90,9 +90,9 @@ final class CorpWalletJournalViewModel: ObservableObject {
     }
 
     enum TimeRange: String, CaseIterable {
-        case last30Days = "last30Days"
-        case last7Days = "last7Days"
-        case last1Day = "last1Day"
+        case last30Days
+        case last7Days
+        case last1Day
 
         var localizedString: String {
             switch self {
@@ -120,7 +120,7 @@ final class CorpWalletJournalViewModel: ObservableObject {
 
     private let calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone.current  // 使用本地时区
+        calendar.timeZone = TimeZone.current // 使用本地时区
         return calendar
     }()
 
@@ -158,7 +158,7 @@ final class CorpWalletJournalViewModel: ObservableObject {
 
         for entry in entries {
             guard let entryDate = FormatUtil.parseUTCDate(entry.date),
-                entryDate >= startDate
+                  entryDate >= startDate
             else {
                 continue
             }
@@ -182,7 +182,7 @@ final class CorpWalletJournalViewModel: ObservableObject {
 
     func loadJournalData(forceRefresh: Bool = false) async {
         // 如果已经加载过且不是强制刷新，则跳过
-        if initialLoadDone && !forceRefresh {
+        if initialLoadDone, !forceRefresh {
             return
         }
 
@@ -213,9 +213,9 @@ final class CorpWalletJournalViewModel: ObservableObject {
                 if Task.isCancelled { return }
 
                 guard let jsonData = jsonString.data(using: .utf8),
-                    let entries = try? JSONDecoder().decode(
-                        [CorpWalletJournalEntry].self, from: jsonData
-                    )
+                      let entries = try? JSONDecoder().decode(
+                          [CorpWalletJournalEntry].self, from: jsonData
+                      )
                 else {
                     throw NetworkError.invalidResponse
                 }
@@ -229,7 +229,7 @@ final class CorpWalletJournalViewModel: ObservableObject {
                 if totalEntries >= 9500 {
                     // 获取最久远的记录日期
                     if let oldestEntry = entries.min(by: { $0.date < $1.date }),
-                        let oldestDate = dateFormatter.date(from: oldestEntry.date)
+                       let oldestDate = dateFormatter.date(from: oldestEntry.date)
                     {
                         let calendar = Calendar.current
                         let now = Date()
@@ -400,8 +400,7 @@ struct CorpWalletJournalView: View {
                     }
                 }
 
-                Section(header: Text(NSLocalizedString("Wallet_Transaction_Category", comment: "")))
-                {
+                Section(header: Text(NSLocalizedString("Wallet_Transaction_Category", comment: ""))) {
                     Button(action: {
                         viewModel.selectedRefType = nil
                     }) {
@@ -611,8 +610,7 @@ struct CorpWalletJournalView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 16) {
-                    if viewModel.selectedRefType != nil || viewModel.selectedTransactionType != nil
-                    {
+                    if viewModel.selectedRefType != nil || viewModel.selectedTransactionType != nil {
                         Button(action: {
                             viewModel.selectedRefType = nil
                             viewModel.selectedTransactionType = nil
@@ -649,7 +647,8 @@ struct CorpWalletJournalEntryRow: View {
 
         // 使用新的处理方法获取本地化名称
         return LocalizationManager.shared.processEntryTypeName(
-            for: lowercaseRefType, esiText: refType, language: language)
+            for: lowercaseRefType, esiText: refType, language: language
+        )
     }
 
     var body: some View {

@@ -9,19 +9,19 @@ struct PlanetDetailView: View {
     @State private var error: Error?
     @State private var typeNames: [Int: String] = [:]
     @State private var typeIcons: [Int: String] = [:]
-    @State private var typeGroupIds: [Int: Int] = [:]  // 存储type_id到group_id的映射
-    @State private var typeVolumes: [Int: Double] = [:]  // 存储type_id到体积的映射
+    @State private var typeGroupIds: [Int: Int] = [:] // 存储type_id到group_id的映射
+    @State private var typeVolumes: [Int: Double] = [:] // 存储type_id到体积的映射
     @State private var schematicDetails: [Int: SchematicInfo] = [:]
-    @State private var simulatedColony: Colony?  // 添加模拟结果状态
+    @State private var simulatedColony: Colony? // 添加模拟结果状态
     @State private var currentTime = Date()
     @State private var lastCycleCheck: Int = -1
     @State private var hasInitialized = false
     let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     private let storageCapacities: [Int: Double] = [
-        1027: 500.0,  // 500m3
-        1030: 10000.0,  // 10000m3
-        1029: 12000.0,  // 12000m3
+        1027: 500.0, // 500m3
+        1030: 10000.0, // 10000m3
+        1029: 12000.0, // 12000m3
     ]
 
     var body: some View {
@@ -45,10 +45,10 @@ struct PlanetDetailView: View {
                         // 定义组的优先级
                         func getPriority(_ groupId: Int) -> Int {
                             switch groupId {
-                            case 1027: return 0  // 指挥中心优先级最高
-                            case 1029, 1030: return 1  // 仓库类（存储设施、发射台）优先级最高
-                            case 1063: return 2  // 采集器次之
-                            case 1028: return 3  // 工厂优先级最低
+                            case 1027: return 0 // 指挥中心优先级最高
+                            case 1029, 1030: return 1 // 仓库类（存储设施、发射台）优先级最高
+                            case 1063: return 2 // 采集器次之
+                            case 1028: return 3 // 工厂优先级最低
                             default: return 999
                             }
                         }
@@ -79,7 +79,7 @@ struct PlanetDetailView: View {
                                     )
                                 } footer: {
                                     if groupId == 1027,
-                                        let lastUpdateTime = simulatedColony?.checkpointSimTime
+                                       let lastUpdateTime = simulatedColony?.checkpointSimTime
                                     {
                                         Text(
                                             "\(NSLocalizedString("Planet_Detail_Last_Update", comment: "")): \(formatDate(lastUpdateTime))"
@@ -159,7 +159,7 @@ struct PlanetDetailView: View {
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-        formatter.locale = Locale(identifier: "en_US_POSIX")  // 使用POSIX locale确保24小时制
+        formatter.locale = Locale(identifier: "en_US_POSIX") // 使用POSIX locale确保24小时制
         return formatter.string(from: date)
     }
 
@@ -169,9 +169,9 @@ struct PlanetDetailView: View {
         // 检查是否有任何提取器需要更新
         for pin in detail.pins {
             if let extractor = pin.extractorDetails,
-                let installTime = pin.installTime,
-                let cycleTime = extractor.cycleTime,
-                let expiryTime = pin.expiryTime
+               let installTime = pin.installTime,
+               let cycleTime = extractor.cycleTime,
+               let expiryTime = pin.expiryTime
             {
                 let currentCycle = ExtractorYieldCalculator.getCurrentCycle(
                     installTime: installTime,
@@ -229,7 +229,7 @@ struct PlanetDetailView: View {
                     simulatedColony = ColonySimulationManager.shared.simulateColony(
                         colony: colony,
                         targetTime: Date()
-                            // targetTime: Date().addingTimeInterval(2.2 * 60 * 60)
+                        // targetTime: Date().addingTimeInterval(2.2 * 60 * 60)
                     )
                 }
 
@@ -254,15 +254,15 @@ struct PlanetDetailView: View {
                 if !typeIds.isEmpty {
                     let typeIdsString = typeIds.sorted().map { String($0) }.joined(separator: ",")
                     let query = """
-                            SELECT type_id, name, icon_filename, groupID, volume
-                            FROM types 
-                            WHERE type_id IN (\(typeIdsString))
-                        """
+                        SELECT type_id, name, icon_filename, groupID, volume
+                        FROM types 
+                        WHERE type_id IN (\(typeIdsString))
+                    """
 
                     if case let .success(rows) = DatabaseManager.shared.executeQuery(query) {
                         for row in rows {
                             if let typeId = row["type_id"] as? Int,
-                                let name = row["name"] as? String
+                               let name = row["name"] as? String
                             {
                                 typeNames[typeId] = name
                                 if let iconFilename = row["icon_filename"] as? String {
@@ -283,26 +283,25 @@ struct PlanetDetailView: View {
                     let schematicIdsString = schematicIds.sorted().map { String($0) }.joined(
                         separator: ",")
                     let schematicQuery = """
-                            SELECT schematic_id, output_typeid, cycle_time, output_value, input_typeid, input_value
-                            FROM planetSchematics
-                            WHERE schematic_id IN (\(schematicIdsString))
-                        """
+                        SELECT schematic_id, output_typeid, cycle_time, output_value, input_typeid, input_value
+                        FROM planetSchematics
+                        WHERE schematic_id IN (\(schematicIdsString))
+                    """
 
-                    if case let .success(rows) = DatabaseManager.shared.executeQuery(schematicQuery)
-                    {
+                    if case let .success(rows) = DatabaseManager.shared.executeQuery(schematicQuery) {
                         for row in rows {
                             if let schematicId = row["schematic_id"] as? Int,
-                                let outputTypeId = row["output_typeid"] as? Int,
-                                let cycleTime = row["cycle_time"] as? Int,
-                                let outputValue = row["output_value"] as? Int,
-                                let inputTypeIds = row["input_typeid"] as? String,
-                                let inputValues = row["input_value"] as? String
+                               let outputTypeId = row["output_typeid"] as? Int,
+                               let cycleTime = row["cycle_time"] as? Int,
+                               let outputValue = row["output_value"] as? Int,
+                               let inputTypeIds = row["input_typeid"] as? String,
+                               let inputValues = row["input_value"] as? String
                             {
                                 // 将配方的输出类型ID添加到typeIds集合中
                                 typeIds.insert(outputTypeId)
 
                                 let inputTypeIdArray = inputTypeIds.split(separator: ",").compactMap
-                                { Int($0) }
+                                    { Int($0) }
                                 let inputValueArray = inputValues.split(separator: ",").compactMap {
                                     Int($0)
                                 }
@@ -329,15 +328,15 @@ struct PlanetDetailView: View {
                         let typeIdsString = typeIds.sorted().map { String($0) }.joined(
                             separator: ",")
                         let query = """
-                                SELECT type_id, name, icon_filename, groupID, volume
-                                FROM types 
-                                WHERE type_id IN (\(typeIdsString))
-                            """
+                            SELECT type_id, name, icon_filename, groupID, volume
+                            FROM types 
+                            WHERE type_id IN (\(typeIdsString))
+                        """
 
                         if case let .success(rows) = DatabaseManager.shared.executeQuery(query) {
                             for row in rows {
                                 if let typeId = row["type_id"] as? Int,
-                                    let name = row["name"] as? String
+                                   let name = row["name"] as? String
                                 {
                                     typeNames[typeId] = name
                                     if let iconFilename = row["icon_filename"] as? String {

@@ -23,10 +23,10 @@ enum SkillFilter: String, CaseIterable {
 
 // 技能组模型
 struct SkillGroup: Identifiable {
-    let id: Int  // groupID
-    let name: String  // group_name
+    let id: Int // groupID
+    let name: String // group_name
     var skills: [CharacterSkill]
-    let totalSkillsInGroup: Int  // 该组中的总技能数
+    let totalSkillsInGroup: Int // 该组中的总技能数
 
     var totalSkillPoints: Int {
         skills.reduce(0) { $0 + $1.skillpoints_in_skill }
@@ -41,7 +41,7 @@ struct SkillInfo {
     let en_name: String
     let groupID: Int
     let skillpoints_in_skill: Int
-    let trained_skill_level: Int  // -1 表示未吸收，0-5 表示已吸收的等级
+    let trained_skill_level: Int // -1 表示未吸收，0-5 表示已吸收的等级
 }
 
 // 技能目录视图模型
@@ -93,8 +93,8 @@ class SkillCategoryViewModel: ObservableObject {
         } else {
             isLoading = true
         }
-        
-        defer { 
+
+        defer {
             isLoading = false
             isRefreshing = false
         }
@@ -102,7 +102,7 @@ class SkillCategoryViewModel: ObservableObject {
         do {
             // 1. 直接调用API获取最新的技能数据
             let skillsResponse = try await CharacterSkillsAPI.shared.fetchCharacterSkills(
-                characterId: characterId, 
+                characterId: characterId,
                 forceRefresh: forceRefresh
             )
 
@@ -112,16 +112,16 @@ class SkillCategoryViewModel: ObservableObject {
 
             // 2. 获取所有技能组和技能信息
             let skillsQuery = """
-                    SELECT 
-                        t.type_id,
-                        t.name,
-                        t.zh_name,
-                        t.en_name,
-                        t.groupID,
-                        t.group_name
-                    FROM types t
-                    WHERE t.published = 1 and t.categoryID = 16
-                """
+                SELECT 
+                    t.type_id,
+                    t.name,
+                    t.zh_name,
+                    t.en_name,
+                    t.groupID,
+                    t.group_name
+                FROM types t
+                WHERE t.published = 1 and t.categoryID = 16
+            """
 
             guard case let .success(skillRows) = databaseManager.executeQuery(skillsQuery) else {
                 return
@@ -130,17 +130,17 @@ class SkillCategoryViewModel: ObservableObject {
             // 3. 获取所有技能的训练时间倍数
             let skillIds = skillRows.compactMap { $0["type_id"] as? Int }
             let timeMultiplierQuery = """
-                    SELECT type_id, value
-                    FROM typeAttributes
-                    WHERE type_id IN (\(skillIds.map { String($0) }.joined(separator: ",")))
-                    AND attribute_id = 275
-                """
+                SELECT type_id, value
+                FROM typeAttributes
+                WHERE type_id IN (\(skillIds.map { String($0) }.joined(separator: ",")))
+                AND attribute_id = 275
+            """
 
             var timeMultipliers: [Int: Double] = [:]
             if case let .success(attrRows) = databaseManager.executeQuery(timeMultiplierQuery) {
                 for row in attrRows {
                     if let typeId = row["type_id"] as? Int,
-                        let value = row["value"] as? Double
+                       let value = row["value"] as? Double
                     {
                         timeMultipliers[typeId] = value
                     }
@@ -151,11 +151,11 @@ class SkillCategoryViewModel: ObservableObject {
             var groupDict: [Int: (name: String, skills: [Int])] = [:]
             for row in skillRows {
                 guard let typeId = row["type_id"] as? Int,
-                    let name = row["name"] as? String,
-                    let zh_name = row["zh_name"] as? String,
-                    let en_name = row["en_name"] as? String,
-                    let groupId = row["groupID"] as? Int,
-                    let groupName = row["group_name"] as? String
+                      let name = row["name"] as? String,
+                      let zh_name = row["zh_name"] as? String,
+                      let en_name = row["en_name"] as? String,
+                      let groupId = row["groupID"] as? Int,
+                      let groupName = row["group_name"] as? String
                 else {
                     continue
                 }
@@ -249,7 +249,7 @@ class SkillCategoryViewModel: ObservableObject {
                 let filteredSkills = group.skills.filter { skill in
                     switch selectedFilter {
                     case .all:
-                        return true  // 显示所有技能
+                        return true // 显示所有技能
                     case .completed:
                         return skill.trained_skill_level == 5
                     case .notInjected:
@@ -266,7 +266,7 @@ class SkillCategoryViewModel: ObservableObject {
                     skills: filteredSkills,
                     totalSkillsInGroup: group.totalSkillsInGroup
                 )
-            }.filter { !$0.skills.isEmpty }  // 移除空组
+            }.filter { !$0.skills.isEmpty } // 移除空组
         } else {
             // 搜索逻辑保持不变
             skillGroups = []
@@ -284,7 +284,7 @@ class SkillCategoryViewModel: ObservableObject {
             return []
         } else {
             // 根据当前筛选条件过滤技能
-            let filteredByLevel = allSkillsDict.filter { typeId, info in
+            let filteredByLevel = allSkillsDict.filter { _, info in
                 switch selectedFilter {
                 case .all:
                     return true
@@ -300,21 +300,21 @@ class SkillCategoryViewModel: ObservableObject {
             // 在过滤后的技能中搜索
             return
                 filteredByLevel
-                .filter { typeId, info in
-                    info.zh_name.localizedCaseInsensitiveContains(searchText)
-                        || info.en_name.localizedCaseInsensitiveContains(searchText)
-                }
-                .map { typeId, info in
-                    (
-                        typeId: typeId,
-                        name: info.name,  // 显示时使用 name
-                        timeMultiplier: info.timeMultiplier,
-                        currentSkillPoints: info.currentSkillPoints,
-                        currentLevel: info.currentLevel,
-                        trainingRate: info.trainingRate
-                    )
-                }
-                .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+                    .filter { _, info in
+                        info.zh_name.localizedCaseInsensitiveContains(searchText)
+                            || info.en_name.localizedCaseInsensitiveContains(searchText)
+                    }
+                    .map { typeId, info in
+                        (
+                            typeId: typeId,
+                            name: info.name, // 显示时使用 name
+                            timeMultiplier: info.timeMultiplier,
+                            currentSkillPoints: info.currentSkillPoints,
+                            currentLevel: info.currentLevel,
+                            trainingRate: info.trainingRate
+                        )
+                    }
+                    .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         }
     }
 }
@@ -383,8 +383,8 @@ struct SkillCellView: View {
 
                     // 添加下一级训练时间显示
                     if let currentLevel = skill.currentLevel,
-                        currentLevel >= -1 && currentLevel < 5,  // 只有当前等级在-1 ~ 4之间时才显示
-                        let rate = skill.trainingRate
+                       currentLevel >= -1 && currentLevel < 5, // 只有当前等级在-1 ~ 4之间时才显示
+                       let rate = skill.trainingRate
                     {
                         let level = currentLevel == -1 ? 0 : currentLevel
                         let nextLevelPoints = Int(
@@ -392,7 +392,7 @@ struct SkillCellView: View {
                                 * skill.timeMultiplier)
                         let remainingSP = nextLevelPoints - (skill.currentSkillPoints ?? 0)
                         let trainingTimeHours = Double(remainingSP) / Double(rate)
-                        let trainingTime = trainingTimeHours * 3600  // 转换为秒
+                        let trainingTime = trainingTimeHours * 3600 // 转换为秒
                         Text(
                             String(
                                 format: NSLocalizedString("Main_Skills_Time_Required", comment: ""),
@@ -457,34 +457,34 @@ struct SkillCategoryView: View {
     let characterId: Int
     let databaseManager: DatabaseManager
     @StateObject private var viewModel: SkillCategoryViewModel
-    @State private var isFirstAppear = true  // 添加一个状态来跟踪是否是首次出现
+    @State private var isFirstAppear = true // 添加一个状态来跟踪是否是首次出现
 
     // 技能组图标映射
     private let skillGroupIcons: [Int: String] = [
-        255: "1_42",  // 射击学
-        256: "1_48",  // 导弹
-        257: "1_26",  // 飞船操控学
-        258: "1_36",  // 舰队支援
-        266: "1_12",  // 军团管理
-        268: "1_25",  // 生产
-        269: "1_37",  // 改装件
-        270: "1_49",  // 科学
-        272: "1_24",  // 电子系统
-        273: "1_18",  // 无人机
-        274: "1_50",  // 贸易学
-        275: "1_05",  // 导航学
-        278: "1_20",  // 社会学
-        1209: "1_14",  // 护盾
-        1210: "1_03",  // 装甲
-        1213: "1_44",  // 锁定系统
-        1216: "1_30",  // 工程学
-        1217: "1_43",  // 扫描
-        1218: "1_31",  // 资源处理
-        1220: "1_13",  // 神经增强
-        1240: "1_38",  // 子系统
-        1241: "1_19",  // 行星管理
-        1545: "1_32",  // 建筑管理
-        4734: "1_07",  // 排序
+        255: "1_42", // 射击学
+        256: "1_48", // 导弹
+        257: "1_26", // 飞船操控学
+        258: "1_36", // 舰队支援
+        266: "1_12", // 军团管理
+        268: "1_25", // 生产
+        269: "1_37", // 改装件
+        270: "1_49", // 科学
+        272: "1_24", // 电子系统
+        273: "1_18", // 无人机
+        274: "1_50", // 贸易学
+        275: "1_05", // 导航学
+        278: "1_20", // 社会学
+        1209: "1_14", // 护盾
+        1210: "1_03", // 装甲
+        1213: "1_44", // 锁定系统
+        1216: "1_30", // 工程学
+        1217: "1_43", // 扫描
+        1218: "1_31", // 资源处理
+        1220: "1_13", // 神经增强
+        1240: "1_38", // 子系统
+        1241: "1_19", // 行星管理
+        1545: "1_32", // 建筑管理
+        4734: "1_07", // 排序
     ]
 
     init(characterId: Int, databaseManager: DatabaseManager) {
@@ -516,13 +516,17 @@ struct SkillCategoryView: View {
                         }
                     }
                     .pickerStyle(.segmented)
-                    //.padding(.horizontal)
+                    // .padding(.horizontal)
                     .onChange(of: viewModel.selectedFilter) { _, _ in
                         viewModel.updateFilteredGroups()
                     }
 
                     // 显示技能组列表
-                    ForEach(viewModel.skillGroups.sorted(by: { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending })) { group in
+                    ForEach(
+                        viewModel.skillGroups.sorted(by: {
+                            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+                        })
+                    ) { group in
                         NavigationLink {
                             SkillGroupDetailView(
                                 group: group, databaseManager: databaseManager,
@@ -622,12 +626,14 @@ struct SkillGroupDetailView: View {
                     .frame(maxWidth: .infinity, alignment: .center)
             } else {
                 // 使用传入的 group 数据，并按技能名称排序
-                ForEach(group.skills.sorted { skill1, skill2 in
-                    // 获取技能名称进行排序
-                    let name1 = viewModel.allSkillsDict[skill1.skill_id]?.name ?? ""
-                    let name2 = viewModel.allSkillsDict[skill2.skill_id]?.name ?? ""
-                    return name1.localizedCaseInsensitiveCompare(name2) == .orderedAscending
-                }, id: \.skill_id) { skill in
+                ForEach(
+                    group.skills.sorted { skill1, skill2 in
+                        // 获取技能名称进行排序
+                        let name1 = viewModel.allSkillsDict[skill1.skill_id]?.name ?? ""
+                        let name2 = viewModel.allSkillsDict[skill2.skill_id]?.name ?? ""
+                        return name1.localizedCaseInsensitiveCompare(name2) == .orderedAscending
+                    }, id: \.skill_id
+                ) { skill in
                     if let skillInfo = viewModel.allSkillsDict[skill.skill_id] {
                         NavigationLink {
                             ShowItemInfo(

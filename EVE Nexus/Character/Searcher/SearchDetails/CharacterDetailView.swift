@@ -1,8 +1,8 @@
 import SwiftUI
 
 // 移除HTML标签的扩展
-extension String {
-    fileprivate func removeHTMLTags() -> String {
+private extension String {
+    func removeHTMLTags() -> String {
         // 移除所有HTML标签
         let text = replacingOccurrences(
             of: "<[^>]+>",
@@ -31,7 +31,7 @@ struct CharacterDetailView: View {
     @State private var allianceInfo: (name: String, icon: UIImage?)?
     @State private var isLoading = true
     @State private var error: Error?
-    @State private var selectedTab = 0  // 添加选项卡状态
+    @State private var selectedTab = 0 // 添加选项卡状态
     // 添加声望相关的状态
     @State private var personalStandings: [Int: Double] = [:]
     @State private var corpStandings: [Int: Double] = [:]
@@ -155,31 +155,43 @@ struct CharacterDetailView: View {
                             Button {
                                 UIPasteboard.general.string = characterInfo.name
                             } label: {
-                                Label(NSLocalizedString("Misc_Copy_CharID", comment: ""), systemImage: "doc.on.doc")
+                                Label(
+                                    NSLocalizedString("Misc_Copy_CharID", comment: ""),
+                                    systemImage: "doc.on.doc"
+                                )
                             }
                             if let title = characterInfo.title, !title.isEmpty {
                                 Button {
                                     UIPasteboard.general.string = title.removeHTMLTags()
                                 } label: {
-                                    Label(NSLocalizedString("Misc_Copy_Title", comment: ""), systemImage: "doc.on.doc")
+                                    Label(
+                                        NSLocalizedString("Misc_Copy_Title", comment: ""),
+                                        systemImage: "doc.on.doc"
+                                    )
                                 }
                             }
                             if let corpInfo = corporationInfo {
                                 Button {
                                     UIPasteboard.general.string = corpInfo.name
                                 } label: {
-                                    Label(NSLocalizedString("Misc_Copy_CorpID", comment: ""), systemImage: "doc.on.doc")
+                                    Label(
+                                        NSLocalizedString("Misc_Copy_CorpID", comment: ""),
+                                        systemImage: "doc.on.doc"
+                                    )
                                 }
                             }
                             if let allianceInfo = allianceInfo {
                                 Button {
                                     UIPasteboard.general.string = allianceInfo.name
                                 } label: {
-                                    Label(NSLocalizedString("Misc_Copy_Alliance", comment: ""), systemImage: "doc.on.doc")
+                                    Label(
+                                        NSLocalizedString("Misc_Copy_Alliance", comment: ""),
+                                        systemImage: "doc.on.doc"
+                                    )
                                 }
                             }
                         }
-                        .frame(height: 96)  // 与头像等高
+                        .frame(height: 96) // 与头像等高
                     }
                     .padding(.vertical, 4)
                 }
@@ -200,7 +212,7 @@ struct CharacterDetailView: View {
                                 .lineLimit(1)
                         }
                     }
-                    
+
                     Button(action: {
                         if let url = URL(string: "https://evewho.com/character/\(characterId)") {
                             UIApplication.shared.open(url)
@@ -216,8 +228,7 @@ struct CharacterDetailView: View {
                     }
 
                     Button(action: {
-                        if let url = URL(string: "https://zkillboard.com/character/\(characterId)/")
-                        {
+                        if let url = URL(string: "https://zkillboard.com/character/\(characterId)/") {
                             UIApplication.shared.open(url)
                         }
                     }) {
@@ -308,7 +319,7 @@ struct CharacterDetailView: View {
             // 加载联盟信息
             if let allianceId = info.alliance_id {
                 let allianceNames = try? await UniverseAPI.shared.getNamesWithFallback(ids: [
-                    allianceId
+                    allianceId,
                 ])
                 if let allianceName = allianceNames?[allianceId]?.name {
                     Logger.info("成功加载联盟信息: \(allianceName)")
@@ -321,10 +332,13 @@ struct CharacterDetailView: View {
             // 加载势力信息
             if let factionId = info.faction_id {
                 let query = "SELECT name, iconName FROM factions WHERE id = ?"
-                if case let .success(rows) = DatabaseManager.shared.executeQuery(query, parameters: [factionId]),
-                   let row = rows.first,
-                   let name = row["name"] as? String,
-                   let iconName = row["iconName"] as? String {
+                if case let .success(rows) = DatabaseManager.shared.executeQuery(
+                    query, parameters: [factionId]
+                ),
+                    let row = rows.first,
+                    let name = row["name"] as? String,
+                    let iconName = row["iconName"] as? String
+                {
                     Logger.info("成功加载势力信息: \(name)")
                     factionInfo = (name: name, iconName: iconName)
                 }
@@ -379,9 +393,9 @@ struct CharacterDetailView: View {
 
         // 加载军团声望
         if let corpId = character.corporationId,
-            let contacts = try? await GetCorpContacts.shared.fetchContacts(
-                characterId: character.CharacterID, corporationId: corpId
-            )
+           let contacts = try? await GetCorpContacts.shared.fetchContacts(
+               characterId: character.CharacterID, corporationId: corpId
+           )
         {
             for contact in contacts {
                 corpStandings[contact.contact_id] = contact.standing
@@ -390,9 +404,9 @@ struct CharacterDetailView: View {
 
         // 加载联盟声望
         if let allianceId = character.allianceId,
-            let contacts = try? await GetAllianceContacts.shared.fetchContacts(
-                characterId: character.CharacterID, allianceId: allianceId
-            )
+           let contacts = try? await GetAllianceContacts.shared.fetchContacts(
+               characterId: character.CharacterID, allianceId: allianceId
+           )
         {
             for contact in contacts {
                 allianceStandings[contact.contact_id] = contact.standing
@@ -467,7 +481,7 @@ struct CharacterDetailView: View {
                     .frame(width: geometry.size.width * 0.4, alignment: .leading)
                 }
             }
-            .frame(height: 32)  // 设置固定高度以确保一致性
+            .frame(height: 32) // 设置固定高度以确保一致性
             .task {
                 await loadImages()
             }
@@ -509,19 +523,19 @@ struct CharacterDetailView: View {
         private func getStandingColor(standing: Double) -> Color {
             switch standing {
             case 10.0:
-                return Color.blue  // 深蓝
-            case 5.0..<10.0:
-                return Color.blue  // 深蓝
-            case 0.1..<5.0:
-                return Color(red: 0.3, green: 0.7, blue: 1.0)  // 浅蓝
+                return Color.blue // 深蓝
+            case 5.0 ..< 10.0:
+                return Color.blue // 深蓝
+            case 0.1 ..< 5.0:
+                return Color(red: 0.3, green: 0.7, blue: 1.0) // 浅蓝
             case 0.0:
-                return Color.secondary  // 次要颜色
-            case -5.0..<0.0:
-                return Color(red: 1.0, green: 0.5, blue: 0.0)  // 橙红
+                return Color.secondary // 次要颜色
+            case -5.0 ..< 0.0:
+                return Color(red: 1.0, green: 0.5, blue: 0.0) // 橙红
             case -10.0 ... -5.0:
-                return Color.red  // 红色
+                return Color.red // 红色
             case ..<(-10.0):
-                return Color.red  // 红色
+                return Color.red // 红色
             default:
                 return Color.secondary
             }
@@ -697,7 +711,8 @@ struct CharacterDetailView: View {
                 ContentUnavailableView {
                     Label(
                         NSLocalizedString("Misc_No_Data", comment: "无数据"),
-                        systemImage: "exclamationmark.triangle")
+                        systemImage: "exclamationmark.triangle"
+                    )
                 }
             } else {
                 ForEach(Array(history.enumerated()), id: \.element.record_id) { index, record in
@@ -792,15 +807,21 @@ struct CharacterDetailView: View {
                     Button {
                         UIPasteboard.general.string = corpName
                     } label: {
-                        Label(NSLocalizedString("Misc_Copy_CorpID", comment: ""), systemImage: "doc.on.doc")
+                        Label(
+                            NSLocalizedString("Misc_Copy_CorpID", comment: ""),
+                            systemImage: "doc.on.doc"
+                        )
                     }
                 }
-                
+
                 if let allianceName = corporationInfo?.allianceName {
                     Button {
                         UIPasteboard.general.string = allianceName
                     } label: {
-                        Label(NSLocalizedString("Misc_Copy_Alliance", comment: ""), systemImage: "doc.on.doc")
+                        Label(
+                            NSLocalizedString("Misc_Copy_Alliance", comment: ""),
+                            systemImage: "doc.on.doc"
+                        )
                     }
                 }
             }
@@ -823,7 +844,7 @@ struct CharacterDetailView: View {
                 // 如果军团有联盟，加载联盟信息
                 if let allianceId = corpInfo.alliance_id {
                     if let allianceNames = try? await UniverseAPI.shared.getNamesWithFallback(ids: [
-                        allianceId
+                        allianceId,
                     ]),
                         let name = allianceNames[allianceId]?.name
                     {
@@ -867,7 +888,8 @@ struct CharacterDetailView: View {
             let hours = components.hour ?? 0
 
             if days == 0 {
-                return "(\(String(format: NSLocalizedString("Time_Hours_Long", comment: ""), hours)))"
+                return
+                    "(\(String(format: NSLocalizedString("Time_Hours_Long", comment: ""), hours)))"
             } else {
                 return "(\(String(format: NSLocalizedString("Time_Days_Long", comment: ""), days)))"
             }

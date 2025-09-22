@@ -51,7 +51,8 @@ struct PIOutputCalculatorView: View {
                                 .foregroundColor(.primary)
                             Text(
                                 NSLocalizedString(
-                                    "Planetary_System_Description", comment: "选择作为生产中心的星系")
+                                    "Planetary_System_Description", comment: "选择作为生产中心的星系"
+                                )
                             )
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -79,13 +80,14 @@ struct PIOutputCalculatorView: View {
                             .foregroundColor(.primary)
                         Text(
                             NSLocalizedString(
-                                "Planetary_Jump_Description", comment: "最多允许在几跳范围内收集资源")
+                                "Planetary_Jump_Description", comment: "最多允许在几跳范围内收集资源"
+                            )
                         )
                         .font(.caption)
                         .foregroundColor(.secondary)
                     }
                 }
-                .onChange(of: maxJumps) { oldValue, newValue in
+                .onChange(of: maxJumps) { _, _ in
                     if selectedSolarSystemId != nil {
                         calculateSystemsInRange()
                     }
@@ -100,12 +102,14 @@ struct PIOutputCalculatorView: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(
                                     NSLocalizedString(
-                                        "Main_Planetary_Select_Sovereignty", comment: "选择主权")
+                                        "Main_Planetary_Select_Sovereignty", comment: "选择主权"
+                                    )
                                 )
                                 .foregroundColor(.primary)
                                 Text(
                                     NSLocalizedString(
-                                        "Planetary_Sovereignty_Description", comment: "要在哪个主权辖区生产")
+                                        "Planetary_Sovereignty_Description", comment: "要在哪个主权辖区生产"
+                                    )
                                 )
                                 .font(.caption)
                                 .foregroundColor(.secondary)
@@ -134,7 +138,7 @@ struct PIOutputCalculatorView: View {
                         Text(NSLocalizedString("PI_Output_Description_Title", comment: "行星工业产出计算器"))
                             .font(.headline)
                             .foregroundColor(.primary)
-                        
+
                         Text(NSLocalizedString("PI_Output_Description_Text", comment: "功能描述"))
                             .font(.subheadline)
                             .foregroundColor(.secondary)
@@ -194,7 +198,8 @@ struct PIOutputCalculatorView: View {
                             ProgressView()
                             Text(
                                 NSLocalizedString(
-                                    "PI_Output_Loading_Resources", comment: "加载资源中...")
+                                    "PI_Output_Loading_Resources", comment: "加载资源中..."
+                                )
                             )
                             .foregroundColor(.gray)
                             .padding(.leading, 8)
@@ -393,7 +398,7 @@ struct PIOutputCalculatorView: View {
         // 在后台线程执行
         DispatchQueue.global(qos: .userInitiated).async {
             // 加载星图数据
-            guard let path = Bundle.main.path(forResource: "neighbours_data", ofType: "json") else {
+            guard let path = Bundle.main.path(forResource: "neighbors_data", ofType: "json") else {
                 Logger.error("无法找到星图文件路径")
                 DispatchQueue.main.async {
                     isCalculating = false
@@ -414,7 +419,7 @@ struct PIOutputCalculatorView: View {
 
                 // 使用BFS算法查找范围内的所有星系
                 var result = Set<Int>()
-                result.insert(startSystemId)  // 包含起始星系
+                result.insert(startSystemId) // 包含起始星系
 
                 // 如果最大跳数为0，那么只包含起始星系
                 if maxJumps > 0 {
@@ -636,19 +641,18 @@ struct PIOutputCalculatorView: View {
             if level == .p4 {
                 // 首先检查是否有温和(temperate)或贫瘠(barren)行星
                 let planetQuery = """
-                        SELECT COUNT(*) as count
-                        FROM universe
-                        WHERE solarsystem_id IN (\(systemIds.map { String($0) }.joined(separator: ",")))
-                        AND (temperate > 0 OR barren > 0)
-                    """
+                    SELECT COUNT(*) as count
+                    FROM universe
+                    WHERE solarsystem_id IN (\(systemIds.map { String($0) }.joined(separator: ",")))
+                    AND (temperate > 0 OR barren > 0)
+                """
 
                 var hasRequiredPlanets = false
 
-                if case let .success(planetRows) = DatabaseManager.shared.executeQuery(planetQuery)
-                {
+                if case let .success(planetRows) = DatabaseManager.shared.executeQuery(planetQuery) {
                     if let row = planetRows.first,
-                        let count = row["count"] as? Int,
-                        count > 0
+                       let count = row["count"] as? Int,
+                       count > 0
                     {
                         hasRequiredPlanets = true
                     }
@@ -678,7 +682,7 @@ struct PIOutputCalculatorView: View {
             // 遍历所有资源，找出属于当前等级的
             for (typeId, info) in PIResourceCache.shared.getAllResourceInfo() {
                 if let resourceLevel = PIResourceCache.shared.getResourceLevel(for: typeId),
-                    resourceLevel == level
+                   resourceLevel == level
                 {
                     resourceIds.append(typeId)
                     resourceInfo[typeId] = (
@@ -700,7 +704,7 @@ struct PIOutputCalculatorView: View {
                 }
 
                 // 创建资源信息列表和可用ID集合
-                var resourceInfos: [Any] = []  // 使用Any类型暂存，然后在switch中转换
+                var resourceInfos: [Any] = [] // 使用Any类型暂存，然后在switch中转换
                 var availableIds = Set<Int>()
 
                 for (resourceId, info) in resourceInfo {
@@ -708,7 +712,7 @@ struct PIOutputCalculatorView: View {
                         // 检查是否所有需要的输入资源都可用
                         let canProduce =
                             !requiredInputIds.isEmpty
-                            && requiredInputIds.isSubset(of: availablePIIds)
+                                && requiredInputIds.isSubset(of: availablePIIds)
 
                         // 只添加可以生产的资源
                         if canProduce {
@@ -823,24 +827,23 @@ struct PIOutputCalculatorView: View {
     }
 
     // P0资源特殊处理实现（因为P0资源需要单独查询行星类型）
-    private func loadP0ResourcesImpl(for systemIds: [Int], completion: @escaping (Set<Int>) -> Void)
-    {
+    private func loadP0ResourcesImpl(for systemIds: [Int], completion: @escaping (Set<Int>) -> Void) {
         DispatchQueue.global(qos: .userInitiated).async {
             // 查询星系内的行星数量
             let query = """
-                    SELECT 
-                        solarsystem_id,
-                        temperate,
-                        barren,
-                        oceanic,
-                        ice,
-                        gas,
-                        lava,
-                        storm,
-                        plasma
-                    FROM universe
-                    WHERE solarsystem_id IN (\(systemIds.map { String($0) }.joined(separator: ",")))
-                """
+                SELECT 
+                    solarsystem_id,
+                    temperate,
+                    barren,
+                    oceanic,
+                    ice,
+                    gas,
+                    lava,
+                    storm,
+                    plasma
+                FROM universe
+                WHERE solarsystem_id IN (\(systemIds.map { String($0) }.joined(separator: ",")))
+            """
 
             guard case let .success(rows) = DatabaseManager.shared.executeQuery(query) else {
                 DispatchQueue.main.async {
@@ -852,10 +855,10 @@ struct PIOutputCalculatorView: View {
 
             // 获取所有P0资源ID
             let p0ResourceQuery = """
-                    SELECT DISTINCT ph.typeid, t.name, t.icon_filename 
-                    FROM planetResourceHarvest ph
-                    JOIN types t ON t.type_id = ph.typeid
-                """
+                SELECT DISTINCT ph.typeid, t.name, t.icon_filename 
+                FROM planetResourceHarvest ph
+                JOIN types t ON t.type_id = ph.typeid
+            """
 
             var resourceIds: [Int] = []
             var resourceIconMap: [Int: String] = [:]
@@ -865,7 +868,7 @@ struct PIOutputCalculatorView: View {
             {
                 for row in resourceRows {
                     if let typeId = row["typeid"] as? Int,
-                        let iconFileName = row["icon_filename"] as? String
+                       let iconFileName = row["icon_filename"] as? String
                     {
                         resourceIds.append(typeId)
                         resourceIconMap[typeId] = iconFileName.isEmpty ? "not_found" : iconFileName
@@ -906,7 +909,7 @@ struct PIOutputCalculatorView: View {
                             // 检查每种行星类型的数量
                             for planetType in planetTypes {
                                 if let columnName = PlanetaryUtils.planetTypeToColumn[planetType],
-                                    let count = row[columnName] as? Int
+                                   let count = row[columnName] as? Int
                                 {
                                     planetCount += count
                                 }

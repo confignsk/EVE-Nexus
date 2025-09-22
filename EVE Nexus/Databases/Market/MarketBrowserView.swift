@@ -9,12 +9,12 @@ private struct RootPresentationModeKey: EnvironmentKey {
 struct MarketBaseView<Content: View>: View {
     @ObservedObject var databaseManager: DatabaseManager
     let title: String
-    let content: () -> Content  // 常规内容视图
-    let searchQuery: (String) -> String  // SQL查询语句生成器
-    let searchParameters: (String) -> [Any]  // SQL参数生成器
+    let content: () -> Content // 常规内容视图
+    let searchQuery: (String) -> String // SQL查询语句生成器
+    let searchParameters: (String) -> [Any] // SQL参数生成器
 
     @State private var items: [DatabaseListItem] = []
-    @State private var metaGroupNames: [Int: String] = [:]  // 添加科技等级名称字典
+    @State private var metaGroupNames: [Int: String] = [:] // 添加科技等级名称字典
     @State private var searchText = ""
     @State private var isSearchActive = false
     @State private var isLoading = false
@@ -58,9 +58,9 @@ struct MarketBaseView<Content: View>: View {
             let index1 = categoryPriority.firstIndex(of: cat1) ?? Int.max
             let index2 = categoryPriority.firstIndex(of: cat2) ?? Int.max
             if index1 == index2 {
-                return cat1 < cat2  // 如果都不在优先级列表中，按ID升序
+                return cat1 < cat2 // 如果都不在优先级列表中，按ID升序
             }
-            return index1 < index2  // 按优先级排序
+            return index1 < index2 // 按优先级排序
         }
 
         // 构建最终结果
@@ -115,12 +115,12 @@ struct MarketBaseView<Content: View>: View {
                                     showDetails: true
                                 )
                             }
-                            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                         }
                     }
                 }
+                .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
             } else {
-                content()  // 显示常规内容
+                content() // 显示常规内容
             }
         }
         .searchable(
@@ -158,7 +158,8 @@ struct MarketBaseView<Content: View>: View {
                 ContentUnavailableView {
                     Label(
                         NSLocalizedString("Misc_Not_Found", comment: ""),
-                        systemImage: "magnifyingglass")
+                        systemImage: "magnifyingglass"
+                    )
                 }
             } else if searchText.isEmpty && isSearchActive {
                 Color.black.opacity(0.2)
@@ -194,7 +195,8 @@ struct MarketBaseView<Content: View>: View {
         let parameters = searchParameters(text)
 
         items = databaseManager.loadMarketItems(
-            whereClause: whereClause, parameters: parameters, limit: 100)
+            whereClause: whereClause, parameters: parameters, limit: 100
+        )
         isShowingSearchResults = true
 
         isLoading = false
@@ -219,6 +221,7 @@ struct MarketBrowserView: View {
                             path: $path
                         )
                     }
+                    .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                 },
                 searchQuery: { _ in
                     "t.marketGroupID IS NOT NULL AND (t.name LIKE ? OR t.en_name LIKE ? OR t.type_id = ?)"
@@ -274,7 +277,7 @@ struct MarketGroupView: View {
                         group: subGroup, allGroups: allGroups, databaseManager: databaseManager,
                         path: $path
                     )
-                }
+                }.listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
             },
             searchQuery: { _ in
                 let groupIDs = MarketManager.shared.getAllSubGroupIDsFromID(
@@ -331,7 +334,7 @@ struct MarketItemListView: View {
             if let techLevel = techLevel {
                 let name =
                     metaGroupNames[techLevel]
-                    ?? NSLocalizedString("Main_Database_base", comment: "基础物品")
+                        ?? NSLocalizedString("Main_Database_base", comment: "基础物品")
                 // 对每个科技等级组内的物品按名称排序
                 let sortedItems = items.sorted { item1, item2 in
                     item1.name.localizedCaseInsensitiveCompare(item2.name) == .orderedAscending
@@ -394,10 +397,9 @@ struct MarketItemListView: View {
                                     showDetails: true
                                 )
                             }
-                            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                         }
                     }
-                }
+                }.listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
             },
             searchQuery: { _ in
                 "t.marketGroupID = ? AND (t.name LIKE ? OR t.en_name LIKE ?)"
@@ -471,10 +473,12 @@ struct MarketGroupLabel: View {
                     Button {
                         UIPasteboard.general.string = group.name
                     } label: {
-                        Label(NSLocalizedString("Misc_Copy", comment: ""), systemImage: "doc.on.doc")
+                        Label(
+                            NSLocalizedString("Misc_Copy", comment: ""), systemImage: "doc.on.doc"
+                        )
                     }
                 }
-            
+
             Spacer()
         }
     }

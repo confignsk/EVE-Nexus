@@ -103,7 +103,7 @@ class InfestedSystemsViewModel: ObservableObject {
 
             // 设置主权信息并建立映射关系
             if let sovereigntyData = sovereigntyData,
-                let systemData = sovereigntyData.first(where: { $0.systemId == systemId })
+               let systemData = sovereigntyData.first(where: { $0.systemId == systemId })
             {
                 systemInfo.allianceId = systemData.allianceId
                 systemInfo.factionId = systemData.factionId
@@ -286,7 +286,10 @@ struct SystemRow: View {
                             Button {
                                 UIPasteboard.general.string = system.systemName
                             } label: {
-                                Label(NSLocalizedString("Misc_Copy_Solar", comment: ""), systemImage: "doc.on.doc")
+                                Label(
+                                    NSLocalizedString("Misc_Copy_Solar", comment: ""),
+                                    systemImage: "doc.on.doc"
+                                )
                             }
                         }
                 }

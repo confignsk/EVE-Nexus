@@ -1,12 +1,14 @@
 import Foundation
 
 // MARK: - 共享数据模型
+
 struct Center: Codable {
     let x: Double
     let y: Double
 }
 
 // MARK: - 全星域地图数据结构 (regions_data.json)
+
 struct RegionData: Codable {
     let region_id: Int
     let faction_id: Int
@@ -15,6 +17,7 @@ struct RegionData: Codable {
 }
 
 // MARK: - 星域地图数据结构 (systems_data.json 中的单个星域数据)
+
 struct SystemMapData: Codable {
     let region_id: Int
     let faction_id: Int
@@ -51,9 +54,11 @@ struct PlanetCounts {
     let storm: Int
     let plasma: Int
     let jove: Int
-    
-    init(gas: Int = 0, temperate: Int = 0, barren: Int = 0, oceanic: Int = 0, 
-         ice: Int = 0, lava: Int = 0, storm: Int = 0, plasma: Int = 0, jove: Int = 0) {
+
+    init(
+        gas: Int = 0, temperate: Int = 0, barren: Int = 0, oceanic: Int = 0,
+        ice: Int = 0, lava: Int = 0, storm: Int = 0, plasma: Int = 0, jove: Int = 0
+    ) {
         self.gas = gas
         self.temperate = temperate
         self.barren = barren
@@ -64,7 +69,7 @@ struct PlanetCounts {
         self.plasma = plasma
         self.jove = jove
     }
-    
+
     func getCount(for filter: RegionSystemMapView.PlanetFilter) -> Int {
         switch filter {
         case .all:
@@ -99,6 +104,7 @@ struct StarMapRegion: Identifiable {
 }
 
 // MARK: - 导航枚举
+
 enum RegionNavigation: Hashable {
     case regionMap(Int, String) // regionId, regionName
-} 
+}

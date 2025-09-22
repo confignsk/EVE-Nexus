@@ -105,13 +105,13 @@ class PlanetaryConverter {
         // 解析安装时间和过期时间
         let installTime =
             planetaryPin.installTime != nil
-            ? dateFormatter.date(from: planetaryPin.installTime!) : nil
+                ? dateFormatter.date(from: planetaryPin.installTime!) : nil
         let expiryTime =
             planetaryPin.expiryTime != nil
-            ? dateFormatter.date(from: planetaryPin.expiryTime!) : nil
+                ? dateFormatter.date(from: planetaryPin.expiryTime!) : nil
         let lastCycleStart =
             planetaryPin.lastCycleStart != nil
-            ? dateFormatter.date(from: planetaryPin.lastCycleStart!) : nil
+                ? dateFormatter.date(from: planetaryPin.lastCycleStart!) : nil
 
         // 获取设施类型信息
         let typeInfo = getTypeInfo(planetaryPin.typeId)
@@ -144,21 +144,21 @@ class PlanetaryConverter {
         let groupId = getGroupId(for: planetaryPin.typeId)
 
         switch groupId {
-        case 1063:  // 采集控制器/提取器组
+        case 1063: // 采集控制器/提取器组
             // 提取器
             if let extractorDetails = planetaryPin.extractorDetails {
                 let productTypeInfo =
                     extractorDetails.productTypeId != nil
-                    ? getTypeInfo(extractorDetails.productTypeId!) : (name: "", volume: 0.0)
+                        ? getTypeInfo(extractorDetails.productTypeId!) : (name: "", volume: 0.0)
                 let productType =
                     extractorDetails.productTypeId != nil
-                    ? Type(
-                        id: extractorDetails.productTypeId!, name: productTypeInfo.name,
-                        volume: productTypeInfo.volume
-                    ) : nil
+                        ? Type(
+                            id: extractorDetails.productTypeId!, name: productTypeInfo.name,
+                            volume: productTypeInfo.volume
+                        ) : nil
                 let cycleTime =
                     extractorDetails.cycleTime != nil
-                    ? TimeInterval(extractorDetails.cycleTime!) : nil
+                        ? TimeInterval(extractorDetails.cycleTime!) : nil
 
                 // 转换采集头
                 var heads: [PlanetaryExtractorHead] = []
@@ -217,7 +217,7 @@ class PlanetaryConverter {
                 status: .notSetup
             )
 
-        case 1028:  // 处理设施/工厂组
+        case 1028: // 处理设施/工厂组
             // 工厂
             // 添加调试日志，打印所有属性
             Logger.info(
@@ -281,7 +281,7 @@ class PlanetaryConverter {
                 lastCycleStartTime: lastCycleStart
             )
 
-        case 1029:  // 存储设施组
+        case 1029: // 存储设施组
             // 存储设施
             Logger.info("存储设施 ID: \(planetaryPin.pinId), 名称: \(pinName), 初始容量使用: \(capacityUsed)")
             // 记录初始库存
@@ -309,7 +309,7 @@ class PlanetaryConverter {
                 status: .static
             )
 
-        case 1030:  // 太空港/发射台组
+        case 1030: // 太空港/发射台组
             // 发射台
             Logger.info("发射台 ID: \(planetaryPin.pinId), 名称: \(pinName), 初始容量使用: \(capacityUsed)")
             // 记录初始库存
@@ -337,7 +337,7 @@ class PlanetaryConverter {
                 status: .static
             )
 
-        case 1027:  // 指挥中心组
+        case 1027: // 指挥中心组
             // 指挥中心
             Logger.info(
                 "指挥中心 ID: \(planetaryPin.pinId), 名称: \(pinName), 等级: \(upgradeLevel), 初始容量使用: \(capacityUsed)"
@@ -445,10 +445,10 @@ class PlanetaryConverter {
 
         // 从数据库获取配方信息
         let query = """
-                SELECT schematic_id, output_typeid, name, cycle_time, output_value, input_typeid, input_value
-                FROM planetSchematics
-                WHERE schematic_id = ?
-            """
+            SELECT schematic_id, output_typeid, name, cycle_time, output_value, input_typeid, input_value
+            FROM planetSchematics
+            WHERE schematic_id = ?
+        """
 
         // 记录查询结果
         let result = DatabaseManager.shared.executeQuery(query, parameters: [schematicId])
@@ -473,11 +473,11 @@ class PlanetaryConverter {
         }
 
         guard case let .success(rows) = result,
-            let row = rows.first,
-            let id = row["schematic_id"] as? Int,
-            let outputTypeId = row["output_typeid"] as? Int,
-            let cycleTime = row["cycle_time"] as? Int,
-            let outputValue = row["output_value"] as? Int
+              let row = rows.first,
+              let id = row["schematic_id"] as? Int,
+              let outputTypeId = row["output_typeid"] as? Int,
+              let cycleTime = row["cycle_time"] as? Int,
+              let outputValue = row["output_value"] as? Int
         else {
             Logger.error("配方数据格式不正确，配方ID: \(schematicId)")
             // 记录实际数据内容
@@ -504,7 +504,7 @@ class PlanetaryConverter {
         // 解析输入类型ID和数量
         var inputs: [Type: Int64] = [:]
         if let inputTypeIdString = row["input_typeid"] as? String,
-            let inputValueString = row["input_value"] as? String
+           let inputValueString = row["input_value"] as? String
         {
             let inputTypeIds = inputTypeIdString.components(separatedBy: ",").compactMap {
                 Int($0.trimmingCharacters(in: .whitespacesAndNewlines))
@@ -514,7 +514,7 @@ class PlanetaryConverter {
             }
 
             if inputTypeIds.count == inputValues.count {
-                for i in 0..<inputTypeIds.count {
+                for i in 0 ..< inputTypeIds.count {
                     let typeId = inputTypeIds[i]
                     let quantity = inputValues[i]
 

@@ -77,7 +77,8 @@ struct ContractAppraisalView: View {
                             showFullAmount = $0
                             // 当值改变时保存到UserDefaults
                             UserDefaults.standard.set(
-                                showFullAmount, forKey: "contractAppraisalShowFullAmount")
+                                showFullAmount, forKey: "contractAppraisalShowFullAmount"
+                            )
                         }
                     )
                 ) {
@@ -134,9 +135,15 @@ struct ContractAppraisalView: View {
 
             // Janice估价结果部分
             if let result = janiceResult {
-                let buy_price = formatPrice(result.immediatePrices.totalBuyPrice * min(safeDiscountPercentage, discountPercentage) / 100)
-                let split_price = formatPrice(result.immediatePrices.totalSplitPrice * min(safeDiscountPercentage, discountPercentage) / 100)
-                let sell_price = formatPrice(result.immediatePrices.totalSellPrice * min(safeDiscountPercentage, discountPercentage) / 100)
+                let buy_price = formatPrice(
+                    result.immediatePrices.totalBuyPrice
+                        * min(safeDiscountPercentage, discountPercentage) / 100)
+                let split_price = formatPrice(
+                    result.immediatePrices.totalSplitPrice
+                        * min(safeDiscountPercentage, discountPercentage) / 100)
+                let sell_price = formatPrice(
+                    result.immediatePrices.totalSellPrice
+                        * min(safeDiscountPercentage, discountPercentage) / 100)
                 Section {
                     // 买入价格行
                     HStack {
@@ -148,7 +155,10 @@ struct ContractAppraisalView: View {
                                 Button {
                                     UIPasteboard.general.string = buy_price
                                 } label: {
-                                    Label(NSLocalizedString("Misc_Copy", comment: ""), systemImage: "doc.on.doc")
+                                    Label(
+                                        NSLocalizedString("Misc_Copy", comment: ""),
+                                        systemImage: "doc.on.doc"
+                                    )
                                 }
                             }
                             .font(.system(.body, design: .monospaced))
@@ -159,15 +169,18 @@ struct ContractAppraisalView: View {
                         Text(NSLocalizedString("Contract_Appraisal_Middle_Price", comment: ""))
                         Spacer()
                         Text(split_price)
-                        .foregroundColor(.orange)
-                        .contextMenu {
-                            Button {
-                                UIPasteboard.general.string = split_price
-                            } label: {
-                                Label(NSLocalizedString("Misc_Copy", comment: ""), systemImage: "doc.on.doc")
+                            .foregroundColor(.orange)
+                            .contextMenu {
+                                Button {
+                                    UIPasteboard.general.string = split_price
+                                } label: {
+                                    Label(
+                                        NSLocalizedString("Misc_Copy", comment: ""),
+                                        systemImage: "doc.on.doc"
+                                    )
+                                }
                             }
-                        }
-                        .font(.system(.body, design: .monospaced))
+                            .font(.system(.body, design: .monospaced))
                     }
 
                     // 卖出价格行
@@ -175,15 +188,18 @@ struct ContractAppraisalView: View {
                         Text(NSLocalizedString("Contract_Appraisal_Sell_Price", comment: ""))
                         Spacer()
                         Text(sell_price)
-                        .foregroundColor(.green)
-                        .contextMenu {
-                            Button {
-                                UIPasteboard.general.string = sell_price
-                            } label: {
-                                Label(NSLocalizedString("Misc_Copy", comment: ""), systemImage: "doc.on.doc")
+                            .foregroundColor(.green)
+                            .contextMenu {
+                                Button {
+                                    UIPasteboard.general.string = sell_price
+                                } label: {
+                                    Label(
+                                        NSLocalizedString("Misc_Copy", comment: ""),
+                                        systemImage: "doc.on.doc"
+                                    )
+                                }
                             }
-                        }
-                        .font(.system(.body, design: .monospaced))
+                            .font(.system(.body, design: .monospaced))
                     }
 
                     // 查看详情按钮
@@ -215,9 +231,12 @@ struct ContractAppraisalView: View {
 
             // ESI估价结果部分
             if let result = esiResult {
-                let buy_price_esi = formatPrice(result.totalBuyPrice * min(safeDiscountPercentage, discountPercentage) / 100)
-                let middle_price_esi = formatPrice(result.totalMiddlePrice * min(safeDiscountPercentage, discountPercentage) / 100)
-                let sell_price_esi = formatPrice(result.totalSellPrice * min(safeDiscountPercentage, discountPercentage) / 100)
+                let buy_price_esi = formatPrice(
+                    result.totalBuyPrice * min(safeDiscountPercentage, discountPercentage) / 100)
+                let middle_price_esi = formatPrice(
+                    result.totalMiddlePrice * min(safeDiscountPercentage, discountPercentage) / 100)
+                let sell_price_esi = formatPrice(
+                    result.totalSellPrice * min(safeDiscountPercentage, discountPercentage) / 100)
                 Section {
                     // 买入价格行
                     HStack {
@@ -229,7 +248,10 @@ struct ContractAppraisalView: View {
                                 Button {
                                     UIPasteboard.general.string = buy_price_esi
                                 } label: {
-                                    Label(NSLocalizedString("Misc_Copy", comment: ""), systemImage: "doc.on.doc")
+                                    Label(
+                                        NSLocalizedString("Misc_Copy", comment: ""),
+                                        systemImage: "doc.on.doc"
+                                    )
                                 }
                             }
                             .font(.system(.body, design: .monospaced))
@@ -245,7 +267,10 @@ struct ContractAppraisalView: View {
                                 Button {
                                     UIPasteboard.general.string = middle_price_esi
                                 } label: {
-                                    Label(NSLocalizedString("Misc_Copy", comment: ""), systemImage: "doc.on.doc")
+                                    Label(
+                                        NSLocalizedString("Misc_Copy", comment: ""),
+                                        systemImage: "doc.on.doc"
+                                    )
                                 }
                             }
                             .font(.system(.body, design: .monospaced))
@@ -261,7 +286,10 @@ struct ContractAppraisalView: View {
                                 Button {
                                     UIPasteboard.general.string = sell_price_esi
                                 } label: {
-                                    Label(NSLocalizedString("Misc_Copy", comment: ""), systemImage: "doc.on.doc")
+                                    Label(
+                                        NSLocalizedString("Misc_Copy", comment: ""),
+                                        systemImage: "doc.on.doc"
+                                    )
                                 }
                             }
                             .font(.system(.body, design: .monospaced))
@@ -273,14 +301,16 @@ struct ContractAppraisalView: View {
                         if hasBlueprint {
                             Text(
                                 NSLocalizedString(
-                                    "Contract_Appraisal_Blueprint_Warning", comment: "")
+                                    "Contract_Appraisal_Blueprint_Warning", comment: ""
+                                )
                             )
                             .foregroundColor(.red)
                         }
                         if hasInsufficientOrders {
                             Text(
                                 NSLocalizedString(
-                                    "Contract_Appraisal_Insufficient_Orders_Warning", comment: "")
+                                    "Contract_Appraisal_Insufficient_Orders_Warning", comment: ""
+                                )
                             )
                             .foregroundColor(.red)
                         }
@@ -289,8 +319,7 @@ struct ContractAppraisalView: View {
             }
         }
         .navigationTitle(NSLocalizedString("Contract_Appraisal_Title", comment: ""))
-        .alert(NSLocalizedString("Contract_Appraisal_Error", comment: ""), isPresented: $showError)
-        {
+        .alert(NSLocalizedString("Contract_Appraisal_Error", comment: ""), isPresented: $showError) {
             Button(NSLocalizedString("Contract_Appraisal_OK", comment: ""), role: .cancel) {}
         } message: {
             Text(errorMessage ?? NSLocalizedString("Contract_Appraisal_Unknown_Error", comment: ""))
@@ -309,15 +338,15 @@ struct ContractAppraisalView: View {
     private func checkForBlueprints() -> Bool {
         let typeIds = items.map { String($0.type_id) }.joined(separator: ",")
         let query = """
-                SELECT COUNT(*) as count
-                FROM types
-                WHERE type_id IN (\(typeIds))
-                AND categoryID = 9
-            """
+            SELECT COUNT(*) as count
+            FROM types
+            WHERE type_id IN (\(typeIds))
+            AND categoryID = 9
+        """
 
         if case let .success(rows) = DatabaseManager.shared.executeQuery(query),
-            let row = rows.first,
-            let count = row["count"] as? Int
+           let row = rows.first,
+           let count = row["count"] as? Int
         {
             if count > 0 {
                 Logger.warning("Contract Appraisal: 合同包含蓝图，估价可能不准确")
@@ -355,7 +384,7 @@ struct ContractAppraisalView: View {
                             format: NSLocalizedString(
                                 "Contract_Appraisal_Parse_Failed", comment: ""
                             ), "\(result)"
-                        )
+                        ),
                     ]
                 )
             }
@@ -373,8 +402,8 @@ struct ContractAppraisalView: View {
         hasBlueprint = checkForBlueprints()
 
         // 默认使用吉他(Jita)市场
-        let regionID = 10_000_002  // The Forge (Jita所在星域)
-        let systemID = 30_000_142  // Jita星系ID
+        let regionID = 10_000_002 // The Forge (Jita所在星域)
+        let systemID = 30_000_142 // Jita星系ID
 
         // 合并相同type_id的物品数量
         var itemsDict: [Int: Int64] = [:]
@@ -391,7 +420,7 @@ struct ContractAppraisalView: View {
                 var pendingItems = Array(itemsDict.keys)
 
                 // 初始添加并发数量的任务
-                for _ in 0..<min(concurrency, pendingItems.count) {
+                for _ in 0 ..< min(concurrency, pendingItems.count) {
                     if let typeID = pendingItems.popLast() {
                         group.addTask {
                             do {
@@ -447,10 +476,10 @@ struct ContractAppraisalView: View {
 
                 // 过滤买单和卖单
                 let buyOrders = orders.filter { $0.isBuyOrder && $0.systemId == systemID }
-                    .sorted(by: { $0.price > $1.price })  // 买单从高到低排序
+                    .sorted(by: { $0.price > $1.price }) // 买单从高到低排序
 
                 let sellOrders = orders.filter { !$0.isBuyOrder && $0.systemId == systemID }
-                    .sorted(by: { $0.price < $1.price })  // 卖单从低到高排序
+                    .sorted(by: { $0.price < $1.price }) // 卖单从低到高排序
 
                 // 计算买价
                 var remainingBuyQuantity = quantity

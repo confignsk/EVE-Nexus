@@ -67,7 +67,7 @@ struct StandingRowView: View {
                 .frame(width: geometry.size.width * 0.4, alignment: .leading)
             }
         }
-        .frame(height: 32)  // 设置固定高度以确保一致性
+        .frame(height: 32) // 设置固定高度以确保一致性
         .task {
             // 加载左侧头像
             switch leftPortrait.type {
@@ -104,16 +104,16 @@ struct StandingRowView: View {
 
     private func getStandingColor(standing: Double) -> Color {
         switch standing {
-        case 5.0...10.0:
-            return Color.blue  // 蓝色
-        case 0.01...4.99:
-            return Color(red: 0.0, green: 0.5, blue: 1.0)  // 浅蓝
+        case 5.0 ... 10.0:
+            return Color.blue // 蓝色
+        case 0.01 ... 4.99:
+            return Color(red: 0.0, green: 0.5, blue: 1.0) // 浅蓝
         case -4.99 ... -0.01:
-            return Color(red: 1.0, green: 0.5, blue: 0.0)  // 橙红
+            return Color(red: 1.0, green: 0.5, blue: 0.0) // 橙红
         case -10.0 ... -5.0:
-            return Color.red  // 红色
+            return Color.red // 红色
         case ..<(-10.0):
-            return Color.red  // 红色
+            return Color.red // 红色
         default:
             return Color.secondary
         }
@@ -183,7 +183,7 @@ struct AllianceDetailView: View {
     @State private var executorCorpInfo: (name: String, icon: UIImage?)?
     @State private var creatorInfo: (name: String, icon: UIImage?)?
     @State private var factionInfo: (name: String, iconName: String)?
-    
+
     @State private var personalStandings: [Int: Double] = [:]
     @State private var corpStandings: [Int: Double] = [:]
     @State private var allianceStandings: [Int: Double] = [:]
@@ -253,7 +253,6 @@ struct AllianceDetailView: View {
                                     .foregroundColor(.secondary)
                                     .lineLimit(1)
                             }
-                            
 
                             // 执行军团
                             if let executorInfo = executorCorpInfo {
@@ -310,27 +309,39 @@ struct AllianceDetailView: View {
                         Button {
                             UIPasteboard.general.string = allianceInfo.name
                         } label: {
-                            Label(NSLocalizedString("Misc_Copy_Alliance", comment: ""), systemImage: "doc.on.doc")
+                            Label(
+                                NSLocalizedString("Misc_Copy_Alliance", comment: ""),
+                                systemImage: "doc.on.doc"
+                            )
                         }
                         if let executorInfo = executorCorpInfo {
                             Button {
                                 UIPasteboard.general.string = executorInfo.name
                             } label: {
-                                Label("\(NSLocalizedString("Misc_Copy", comment: "")) \(NSLocalizedString("Executor Corp", comment: ""))", systemImage: "doc.on.doc")
+                                Label(
+                                    "\(NSLocalizedString("Misc_Copy", comment: "")) \(NSLocalizedString("Executor Corp", comment: ""))",
+                                    systemImage: "doc.on.doc"
+                                )
                             }
                         }
                         if let creatorCorpInfo = creatorCorpInfo {
                             Button {
                                 UIPasteboard.general.string = creatorCorpInfo.name
                             } label: {
-                                Label("\(NSLocalizedString("Misc_Copy", comment: "")) \(NSLocalizedString("Creator Corp", comment: ""))", systemImage: "doc.on.doc")
+                                Label(
+                                    "\(NSLocalizedString("Misc_Copy", comment: "")) \(NSLocalizedString("Creator Corp", comment: ""))",
+                                    systemImage: "doc.on.doc"
+                                )
                             }
                         }
                         if let creatorInfo = creatorInfo {
                             Button {
                                 UIPasteboard.general.string = creatorInfo.name
                             } label: {
-                                Label("\(NSLocalizedString("Misc_Copy", comment: "")) \(NSLocalizedString("Creator", comment: ""))", systemImage: "doc.on.doc")
+                                Label(
+                                    "\(NSLocalizedString("Misc_Copy", comment: "")) \(NSLocalizedString("Creator", comment: ""))",
+                                    systemImage: "doc.on.doc"
+                                )
                             }
                         }
                     }
@@ -419,7 +430,7 @@ struct AllianceDetailView: View {
 
             // 加载创建者信息
             let creatorNames = try await UniverseAPI.shared.getNamesWithFallback(ids: [
-                info.creator_id
+                info.creator_id,
             ])
             let creatorName =
                 creatorNames[info.creator_id]?.name ?? NSLocalizedString("Unknown", comment: "")
@@ -438,15 +449,18 @@ struct AllianceDetailView: View {
             // 加载势力信息
             if let factionId = info.faction_id {
                 let query = "SELECT name, iconName FROM factions WHERE id = ?"
-                if case let .success(rows) = DatabaseManager.shared.executeQuery(query, parameters: [factionId]),
-                   let row = rows.first,
-                   let name = row["name"] as? String,
-                   let iconName = row["iconName"] as? String {
+                if case let .success(rows) = DatabaseManager.shared.executeQuery(
+                    query, parameters: [factionId]
+                ),
+                    let row = rows.first,
+                    let name = row["name"] as? String,
+                    let iconName = row["iconName"] as? String
+                {
                     Logger.info("成功加载势力信息: \(name)")
                     factionInfo = (name: name, iconName: iconName)
                 }
             }
-            
+
             // 更新UI
             await MainActor.run {
                 self.allianceInfo = info
@@ -499,9 +513,9 @@ struct AllianceDetailView: View {
 
         // 加载军团声望
         if let corpId = character.corporationId,
-            let contacts = try? await GetCorpContacts.shared.fetchContacts(
-                characterId: character.CharacterID, corporationId: corpId
-            )
+           let contacts = try? await GetCorpContacts.shared.fetchContacts(
+               characterId: character.CharacterID, corporationId: corpId
+           )
         {
             for contact in contacts {
                 corpStandings[contact.contact_id] = contact.standing
@@ -510,9 +524,9 @@ struct AllianceDetailView: View {
 
         // 加载联盟声望
         if let allianceId = character.allianceId,
-            let contacts = try? await GetAllianceContacts.shared.fetchContacts(
-                characterId: character.CharacterID, allianceId: allianceId
-            )
+           let contacts = try? await GetAllianceContacts.shared.fetchContacts(
+               characterId: character.CharacterID, allianceId: allianceId
+           )
         {
             for contact in contacts {
                 allianceStandings[contact.contact_id] = contact.standing

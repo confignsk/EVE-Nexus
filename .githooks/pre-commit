@@ -1,0 +1,10 @@
+#!/bin/sh
+echo "[*] Running code formatter..."
+
+# Swift 项目
+if command -v swiftformat >/dev/null 2>&1; then
+  swiftformat "./EVE Nexus"
+  git add -u
+fi
+
+echo "[+] Code formatted."

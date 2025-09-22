@@ -22,12 +22,16 @@ struct ShowMutationInfo: View {
         List {
             // 基础信息部分
             if let itemDetails = itemDetails {
-                ItemBasicInfoView(itemDetails: itemDetails, databaseManager: databaseManager, modifiedAttributes: nil)
+                ItemBasicInfoView(
+                    itemDetails: itemDetails, databaseManager: databaseManager,
+                    modifiedAttributes: nil
+                )
             }
 
             // 工业相关部分
             IndustrySection(
-                itemID: itemID, databaseManager: databaseManager, itemDetails: itemDetails)
+                itemID: itemID, databaseManager: databaseManager, itemDetails: itemDetails
+            )
 
             // 突变属性部分
             if !mutationAttributes.isEmpty {
@@ -107,7 +111,8 @@ struct ShowMutationInfo: View {
                     ) {
                         NavigationLink {
                             ShowItemInfo(
-                                databaseManager: databaseManager, itemID: resultingItem.typeID)
+                                databaseManager: databaseManager, itemID: resultingItem.typeID
+                            )
                         } label: {
                             HStack {
                                 IconManager.shared.loadImage(for: resultingItem.iconFileName)
@@ -139,23 +144,23 @@ struct ShowMutationInfo: View {
     private func loadMutationData() {
         // 加载突变属性
         let attributesQuery = """
-                SELECT a.attribute_id, d.display_name, COALESCE(d.icon_filename, '') as icon_filename, 
-                       a.min_value, a.max_value, d.highIsGood
-                FROM dynamic_item_attributes a
-                LEFT JOIN dogmaAttributes d ON a.attribute_id = d.attribute_id
-                WHERE a.type_id = ?
-                ORDER BY d.display_name
-            """
+            SELECT a.attribute_id, d.display_name, COALESCE(d.icon_filename, '') as icon_filename, 
+                   a.min_value, a.max_value, d.highIsGood
+            FROM dynamic_item_attributes a
+            LEFT JOIN dogmaAttributes d ON a.attribute_id = d.attribute_id
+            WHERE a.type_id = ?
+            ORDER BY d.display_name
+        """
 
         if case let .success(rows) = databaseManager.executeQuery(
-            attributesQuery, parameters: [itemID])
-        {
+            attributesQuery, parameters: [itemID]
+        ) {
             mutationAttributes = rows.compactMap { row in
                 guard let attributeID = row["attribute_id"] as? Int,
-                    let name = row["display_name"] as? String,
-                    let minValue = row["min_value"] as? Double,
-                    let maxValue = row["max_value"] as? Double,
-                    let highIsGood = row["highIsGood"] as? Int
+                      let name = row["display_name"] as? String,
+                      let minValue = row["min_value"] as? Double,
+                      let maxValue = row["max_value"] as? Double,
+                      let highIsGood = row["highIsGood"] as? Int
                 else { return nil }
                 let iconFileName = row["icon_filename"] as? String
                 return (
@@ -171,26 +176,26 @@ struct ShowMutationInfo: View {
 
         // 加载可应用物品和结果
         let mappingsQuery = """
-                SELECT m.applicable_type, m.resulting_type,
-                       t1.name as applicable_name, t1.icon_filename as applicable_icon, t1.metaGroupID as applicable_meta,
-                       t2.name as resulting_name, t2.icon_filename as resulting_icon
-                FROM dynamic_item_mappings m
-                LEFT JOIN types t1 ON m.applicable_type = t1.type_id
-                LEFT JOIN types t2 ON m.resulting_type = t2.type_id
-                WHERE m.type_id = ?
-                ORDER BY t1.metaGroupID ASC, t1.type_id ASC
-            """
+            SELECT m.applicable_type, m.resulting_type,
+                   t1.name as applicable_name, t1.icon_filename as applicable_icon, t1.metaGroupID as applicable_meta,
+                   t2.name as resulting_name, t2.icon_filename as resulting_icon
+            FROM dynamic_item_mappings m
+            LEFT JOIN types t1 ON m.applicable_type = t1.type_id
+            LEFT JOIN types t2 ON m.resulting_type = t2.type_id
+            WHERE m.type_id = ?
+            ORDER BY t1.metaGroupID ASC, t1.type_id ASC
+        """
 
         if case let .success(rows) = databaseManager.executeQuery(
-            mappingsQuery, parameters: [itemID])
-        {
+            mappingsQuery, parameters: [itemID]
+        ) {
             // 处理可应用物品
             var seenTypeIDs = Set<Int>()
             applicableItems = rows.compactMap { row in
                 guard let typeID = row["applicable_type"] as? Int,
-                    let name = row["applicable_name"] as? String,
-                    let iconFileName = row["applicable_icon"] as? String,
-                    !seenTypeIDs.contains(typeID)
+                      let name = row["applicable_name"] as? String,
+                      let iconFileName = row["applicable_icon"] as? String,
+                      !seenTypeIDs.contains(typeID)
                 else { return nil }
                 seenTypeIDs.insert(typeID)
                 return (typeID: typeID, name: name, iconFileName: iconFileName)
@@ -198,9 +203,9 @@ struct ShowMutationInfo: View {
 
             // 处理突变结果（取第一行即可，因为对于同一个突变质体，结果都是一样的）
             if let row = rows.first,
-                let typeID = row["resulting_type"] as? Int,
-                let name = row["resulting_name"] as? String,
-                let iconFileName = row["resulting_icon"] as? String
+               let typeID = row["resulting_type"] as? Int,
+               let name = row["resulting_name"] as? String,
+               let iconFileName = row["resulting_icon"] as? String
             {
                 resultingItem = (typeID: typeID, name: name, iconFileName: iconFileName)
             }

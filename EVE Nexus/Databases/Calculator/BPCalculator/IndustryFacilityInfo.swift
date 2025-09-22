@@ -10,20 +10,26 @@ struct IndustryFacilityInfo: Identifiable, Hashable {
     let isDefault: Bool
     let rigs: [Int]
     let rigInfos: [(id: Int, name: String, iconFileName: String)]
-    let systemId: Int?  // 新增：星系ID
-    
+    let systemId: Int? // 新增：星系ID
+
     // 显示名称逻辑
     var displayName: String {
         if let customName = customName, !customName.isEmpty {
             return "\(customName) - \(name)"
         } else if isDefault {
-            return "\(NSLocalizedString("Structure_Selector_Default_Structure", comment: "默认建筑")) - \(name)"
+            return
+                "\(NSLocalizedString("Structure_Selector_Default_Structure", comment: "默认建筑")) - \(name)"
         } else {
-            return "\(NSLocalizedString("Structure_Selector_Unnamed_Structure", comment: "未命名建筑")) - \(name)"
+            return
+                "\(NSLocalizedString("Structure_Selector_Unnamed_Structure", comment: "未命名建筑")) - \(name)"
         }
     }
-    
-    init(id: Int, typeId: Int, name: String, iconFileName: String, customName: String? = nil, isDefault: Bool = false, rigs: [Int] = [], rigInfos: [(id: Int, name: String, iconFileName: String)] = [], systemId: Int? = nil) {
+
+    init(
+        id: Int, typeId: Int, name: String, iconFileName: String, customName: String? = nil,
+        isDefault: Bool = false, rigs: [Int] = [],
+        rigInfos: [(id: Int, name: String, iconFileName: String)] = [], systemId: Int? = nil
+    ) {
         self.id = id
         self.typeId = typeId
         self.name = name
@@ -34,12 +40,12 @@ struct IndustryFacilityInfo: Identifiable, Hashable {
         self.rigInfos = rigInfos
         self.systemId = systemId
     }
-    
+
     // Hashable 实现
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
-    
+
     static func == (lhs: IndustryFacilityInfo, rhs: IndustryFacilityInfo) -> Bool {
         return lhs.id == rhs.id
     }
@@ -52,5 +58,5 @@ struct DefaultStructureConfig: Codable {
     let structure_typeid: Int
     let rigs: [Int]
     let name: String
-    let system_id: Int?  // 新增：星系ID
-} 
+    let system_id: Int? // 新增：星系ID
+}

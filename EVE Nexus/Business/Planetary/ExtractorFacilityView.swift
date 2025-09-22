@@ -11,7 +11,7 @@ struct ExtractorFacilityView: View {
     // 计算属性：判断采集器是否过期
     private var isExpired: Bool {
         guard let expiryTime = pin.expiryTime,
-            let expiryDate = ISO8601DateFormatter().date(from: expiryTime)
+              let expiryDate = ISO8601DateFormatter().date(from: expiryTime)
         else {
             return false
         }
@@ -39,10 +39,10 @@ struct ExtractorFacilityView: View {
                 if let cycleTime = extractor.cycleTime, let installTime = pin.installTime {
                     let progress =
                         isExpired
-                        ? 0
-                        : calculateExtractorProgress(
-                            installTime: installTime, cycleTime: cycleTime
-                        )
+                            ? 0
+                            : calculateExtractorProgress(
+                                installTime: installTime, cycleTime: cycleTime
+                            )
 
                     VStack(alignment: .leading, spacing: 2) {
                         ProgressView(value: progress)
@@ -53,10 +53,10 @@ struct ExtractorFacilityView: View {
                         // 显示当前周期时间
                         let elapsedTime =
                             isExpired
-                            ? 0
-                            : calculateElapsedTimeInCurrentCycle(
-                                installTime: installTime, cycleTime: cycleTime
-                            )
+                                ? 0
+                                : calculateElapsedTimeInCurrentCycle(
+                                    installTime: installTime, cycleTime: cycleTime
+                                )
                         Text(
                             "\(formatTimeInterval(elapsedTime)) / \(formatTimeInterval(TimeInterval(cycleTime)))"
                         )
@@ -79,7 +79,7 @@ struct ExtractorFacilityView: View {
 
         // 产出资源信息
         if let productTypeId = extractor.productTypeId, let qtyPerCycle = extractor.qtyPerCycle,
-            let installTime = pin.installTime, let cycleTime = extractor.cycleTime
+           let installTime = pin.installTime, let cycleTime = extractor.cycleTime
         {
             // 从ExtractorYieldCalculator获取当前周期的产出
             let currentCycle = ExtractorYieldCalculator.getCurrentCycle(
@@ -90,7 +90,7 @@ struct ExtractorFacilityView: View {
             )
             let currentYield =
                 isExpired
-                ? 0 : (currentCycle >= 0 ? calculator.calculateYield(cycleIndex: currentCycle) : 0)
+                    ? 0 : (currentCycle >= 0 ? calculator.calculateYield(cycleIndex: currentCycle) : 0)
 
             NavigationLink(
                 destination: ShowPlanetaryInfo(

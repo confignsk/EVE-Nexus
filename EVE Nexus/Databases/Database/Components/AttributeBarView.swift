@@ -16,22 +16,22 @@ struct ResistanceBarView: View {
         ResistanceType(
             id: 0,
             iconName: "anti_em",
-            color: Color(red: 74 / 255, green: 128 / 255, blue: 192 / 255)  // EM - 蓝色
+            color: Color(red: 74 / 255, green: 128 / 255, blue: 192 / 255) // EM - 蓝色
         ),
         ResistanceType(
             id: 1,
             iconName: "anti_th",
-            color: Color(red: 176 / 255, green: 53 / 255, blue: 50 / 255)  // Thermal - 红色
+            color: Color(red: 176 / 255, green: 53 / 255, blue: 50 / 255) // Thermal - 红色
         ),
         ResistanceType(
             id: 2,
             iconName: "anti_ki",
-            color: Color(red: 155 / 255, green: 155 / 255, blue: 155 / 255)  // Kinetic - 灰色
+            color: Color(red: 155 / 255, green: 155 / 255, blue: 155 / 255) // Kinetic - 灰色
         ),
         ResistanceType(
             id: 3,
             iconName: "anti_ex",
-            color: Color(red: 185 / 255, green: 138 / 255, blue: 62 / 255)  // Explosive - 橙色
+            color: Color(red: 185 / 255, green: 138 / 255, blue: 62 / 255) // Explosive - 橙色
         ),
     ]
 
@@ -81,8 +81,8 @@ struct ResistanceBarView: View {
                             // 进度条 - 增加亮度和饱和度
                             Rectangle()
                                 .fill(type.color)
-                                .saturation(1.2)  // 增加饱和度
-                                .brightness(0.1)  // 增加亮度
+                                .saturation(1.2) // 增加饱和度
+                                .brightness(0.1) // 增加亮度
                                 .frame(
                                     width: geometry.size.width * CGFloat(resistances[type.id]) / 100
                                 )
@@ -94,7 +94,7 @@ struct ResistanceBarView: View {
                         RoundedRectangle(cornerRadius: 2)
                             // .stroke(type.color, lineWidth: 1.5)
                             .stroke(type.color, lineWidth: 0)
-                            .saturation(1.2)  // 增加饱和度
+                            .saturation(1.2) // 增加饱和度
                     )
                 }
             }
@@ -111,7 +111,7 @@ struct AttributeItemView: View {
 
     // 检查是否是可跳转的属性
     private var isNavigable: Bool {
-        attribute.unitID == 115 || attribute.unitID == 116  // 只有 groupID 和 typeID 可以跳转
+        attribute.unitID == 115 || attribute.unitID == 116 // 只有 groupID 和 typeID 可以跳转
     }
 
     // 获取目标视图
@@ -119,17 +119,17 @@ struct AttributeItemView: View {
         guard let value = allAttributes[attribute.id] else { return nil }
         let id = Int(value)
 
-        if attribute.unitID == 115 {  // groupID
+        if attribute.unitID == 115 { // groupID
             let groupName =
                 databaseManager.getGroupName(for: id)
-                ?? NSLocalizedString("Main_Database_Unknown", comment: "未知")
+                    ?? NSLocalizedString("Main_Database_Unknown", comment: "未知")
             return AnyView(
                 DatabaseBrowserView(
                     databaseManager: databaseManager,
                     level: .items(groupID: id, groupName: groupName)
                 )
             )
-        } else if attribute.unitID == 116 {  // typeID
+        } else if attribute.unitID == 116 { // typeID
             return AnyView(
                 ShowItemInfo(
                     databaseManager: databaseManager,
@@ -145,13 +145,13 @@ struct AttributeItemView: View {
         guard let value = allAttributes[attribute.id] else { return "" }
         let id = Int(value)
 
-        if attribute.unitID == 115 {  // groupID
+        if attribute.unitID == 115 { // groupID
             return databaseManager.getGroupName(for: id)
                 ?? NSLocalizedString("Main_Database_Unknown", comment: "未知")
-        } else if attribute.unitID == 116 {  // typeID
+        } else if attribute.unitID == 116 { // typeID
             return databaseManager.getTypeName(for: id)
                 ?? NSLocalizedString("Main_Database_Unknown", comment: "未知")
-        } else if attribute.unitID == 119 {  // attributeID
+        } else if attribute.unitID == 119 { // attributeID
             return databaseManager.getAttributeName(for: id)
                 ?? NSLocalizedString("Main_Database_Unknown", comment: "未知")
         }
@@ -175,15 +175,15 @@ struct AttributeItemView: View {
             return ""
         }
     }
-    
+
     // 获取修改后的格式化显示值
     private var formattedModifiedValue: String? {
         guard let modifiedValue = attribute.modifiedValue else { return nil }
-        
+
         // 创建临时字典用于格式化修改后的值
         var tempAttributes = allAttributes
         tempAttributes[attribute.id] = modifiedValue
-        
+
         let result = AttributeDisplayConfig.transformValue(
             attribute.id, allAttributes: tempAttributes, unitID: attribute.unitID
         )
@@ -199,12 +199,12 @@ struct AttributeItemView: View {
             return nil
         }
     }
-    
+
     // 判断修改后的值是否更好
     private var isModifiedValueBetter: Bool? {
         guard let modifiedValue = attribute.modifiedValue else { return nil }
         let originalValue = attribute.value
-        if originalValue == modifiedValue{
+        if originalValue == modifiedValue {
             return nil
         }
         if attribute.highIsGood {
@@ -213,7 +213,7 @@ struct AttributeItemView: View {
             return modifiedValue < originalValue
         }
     }
-    
+
     // 获取修改后值的颜色
     private var modifiedValueColor: Color {
         guard let isBetter = isModifiedValueBetter else { return .secondary }
@@ -235,7 +235,7 @@ struct AttributeItemView: View {
         }
     }
 
-    private var defaultAttributeView: some View {  // 最普通的属性展示
+    private var defaultAttributeView: some View { // 最普通的属性展示
         HStack {
             if attribute.iconID != 0 {
                 IconManager.shared.loadImage(for: attribute.iconFileName)
@@ -301,7 +301,8 @@ struct AttributeGroupView: View {
                 }
 
                 return AttributeDisplayConfig.shouldShowAttribute(
-                    attribute.id, attribute: attribute)
+                    attribute.id, attribute: attribute
+                )
             }
             .sorted { attr1, attr2 in
                 let order1 = AttributeDisplayConfig.getAttributeOrder(
@@ -351,22 +352,174 @@ struct AttributeGroupView: View {
                         allAttributes: allAttributes,
                         databaseManager: databaseManager
                     )
-                }
+                }.listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
 
                 // 只在包含507属性的组中显示导弹伤害信息
                 if hasMissileAttribute {
                     missileInfoView()
+
+                    // 导弹DPH显示
+                    if let dph = getMissileDPH() {
+                        missileDPHView(dph: dph)
+                    }
+
+                    // 导弹DPS显示
+                    if let dps = getMissileDPS() {
+                        missileDPSView(dps: dps)
+                    }
                 }
 
                 // 显示武器伤害信息
                 if hasWeaponDamageAttributes {
                     weaponDamageView()
+
+                    // 武器DPH显示
+                    if let dph = getWeaponDPH() {
+                        weaponDPHView(dph: dph)
+                    }
+
+                    // 武器DPS显示
+                    if let dps = getWeaponDPS() {
+                        weaponDPSView(dps: dps)
+                    }
                 }
 
             } header: {
                 Text(group.name)
                     .font(.headline)
             }
+        }
+    }
+
+    // 计算导弹DPH（每次命中伤害）
+    private func getMissileDPH() -> Double? {
+        // 获取导弹伤害信息
+        guard let missileInfo = getMissileInfo() else { return nil }
+        let totalDamage =
+            missileInfo.actualDamages.em + missileInfo.actualDamages.therm
+                + missileInfo.actualDamages.kin + missileInfo.actualDamages.exp
+
+        return totalDamage > 0 ? totalDamage : nil
+    }
+
+    // 计算武器DPH（每次命中伤害）
+    private func getWeaponDPH() -> Double? {
+        // 获取武器伤害信息
+        guard let weaponInfo = getWeaponInfo() else { return nil }
+        let totalDamage =
+            weaponInfo.actualDamages.em + weaponInfo.actualDamages.therm
+                + weaponInfo.actualDamages.kin + weaponInfo.actualDamages.exp
+
+        return totalDamage > 0 ? totalDamage : nil
+    }
+
+    // 计算导弹DPS
+    private func getMissileDPS() -> Double? {
+        guard let rateOfFire = allAttributes[506] else { return nil }
+        if rateOfFire <= 0 { return nil }
+
+        // 获取导弹伤害信息
+        guard let missileInfo = getMissileInfo() else { return nil }
+        let totalDamage =
+            missileInfo.actualDamages.em + missileInfo.actualDamages.therm
+                + missileInfo.actualDamages.kin + missileInfo.actualDamages.exp
+        // actualDamages已经包含了属性64的倍增，不需要再乘一次
+
+        return totalDamage / (rateOfFire / 1000.0) // 转换为秒
+    }
+
+    // 计算武器DPS
+    private func getWeaponDPS() -> Double? {
+        guard let rateOfFire = allAttributes[51] else { return nil }
+        if rateOfFire <= 0 { return nil }
+
+        // 获取武器伤害信息
+        guard let weaponInfo = getWeaponInfo() else { return nil }
+        let totalDamage =
+            weaponInfo.actualDamages.em + weaponInfo.actualDamages.therm
+                + weaponInfo.actualDamages.kin + weaponInfo.actualDamages.exp
+        // actualDamages已经包含了属性64的倍增，不需要再乘一次
+
+        return totalDamage / (rateOfFire / 1000.0) // 转换为秒
+    }
+
+    // 导弹DPH显示视图
+    @ViewBuilder
+    private func missileDPHView(dph: Double) -> some View {
+        HStack {
+            Image("dps")
+                .resizable()
+                .frame(width: 32, height: 32)
+
+            Text("DPH")
+                .font(.body)
+
+            Spacer()
+
+            Text("\(FormatUtil.format(dph)) HP")
+                .font(.body)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.trailing)
+        }.listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+    }
+
+    // 武器DPH显示视图
+    @ViewBuilder
+    private func weaponDPHView(dph: Double) -> some View {
+        HStack {
+            Image("dps")
+                .resizable()
+                .frame(width: 32, height: 32)
+
+            Text("DPH")
+                .font(.body)
+
+            Spacer()
+
+            Text("\(FormatUtil.format(dph)) HP")
+                .font(.body)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.trailing)
+        }.listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+    }
+
+    // 导弹DPS显示视图
+    @ViewBuilder
+    private func missileDPSView(dps: Double) -> some View {
+        HStack {
+            Image("dps")
+                .resizable()
+                .frame(width: 32, height: 32)
+
+            Text("DPS")
+                .font(.body)
+
+            Spacer()
+
+            Text("\(FormatUtil.format(dps)) HP/s")
+                .font(.body)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.trailing)
+        }
+    }
+
+    // 武器DPS显示视图
+    @ViewBuilder
+    private func weaponDPSView(dps: Double) -> some View {
+        HStack {
+            Image("dps")
+                .resizable()
+                .frame(width: 32, height: 32)
+
+            Text("DPS")
+                .font(.body)
+
+            Spacer()
+
+            Text("\(FormatUtil.format(dps)) HP/s")
+                .font(.body)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.trailing)
         }
     }
 }
@@ -423,7 +576,8 @@ struct AttributesView: View {
         ForEach(sortedGroups) { group in
             if group.id == 8 {
                 SkillRequirementsView(
-                    typeID: typeID, groupName: group.name, databaseManager: databaseManager)
+                    typeID: typeID, groupName: group.name, databaseManager: databaseManager
+                )
             } else {
                 AttributeGroupView(
                     group: group,

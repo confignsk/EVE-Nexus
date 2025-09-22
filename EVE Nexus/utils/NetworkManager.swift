@@ -26,11 +26,11 @@ class NetworkManager: NSObject, @unchecked Sendable {
 
     // 通用缓存（用于JSON数据）
     private let dataCache = NSCache<NSString, CachedData<Any>>()
-    private var dataCacheKeys = Set<String>()  // 跟踪数据缓存的键
+    private var dataCacheKeys = Set<String>() // 跟踪数据缓存的键
 
     // 图片缓存
     private let imageCache = NSCache<NSString, CachedData<UIImage>>()
-    private var imageCacheKeys = Set<String>()  // 跟踪图片缓存的键
+    private var imageCacheKeys = Set<String>() // 跟踪图片缓存的键
 
     // 添加并发控制信号量
     private let concurrentSemaphore = DispatchSemaphore(value: 8)
@@ -91,7 +91,8 @@ class NetworkManager: NSObject, @unchecked Sendable {
         request.setValue("gzip", forHTTPHeaderField: "Accept-Encoding")
         request.setValue(
             "Tritanium_v\(AppConfiguration.Version.fullVersion)",
-            forHTTPHeaderField: "User-Agent")
+            forHTTPHeaderField: "User-Agent"
+        )
 
         // 如果是 POST 请求且有请求体，设置 Content-Type
         if method == "POST" && body != nil {
@@ -182,7 +183,7 @@ class NetworkManager: NSObject, @unchecked Sendable {
 
             for url in contents {
                 if let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
-                    let fileSize = attributes[.size] as? Int64
+                   let fileSize = attributes[.size] as? Int64
                 {
                     Logger.info(
                         "Deleting file: \(url.lastPathComponent) (Size: \(FormatUtil.formatFileSize(fileSize)))"
@@ -413,7 +414,7 @@ class NetworkManager: NSObject, @unchecked Sendable {
                     var currentPage = 2
                     var inProgressPages = 0
                     var completedPages = Set<Int>()
-                    completedPages.insert(1)  // 第一页已完成
+                    completedPages.insert(1) // 第一页已完成
 
                     // 添加初始任务
                     while currentPage <= totalPages, inProgressPages < maxConcurrentPages {
@@ -421,8 +422,8 @@ class NetworkManager: NSObject, @unchecked Sendable {
                         group.addTask(priority: .userInitiated) {
                             let pageUrlString =
                                 baseUrl.absoluteString
-                                + (baseUrl.absoluteString.contains("?") ? "&" : "?")
-                                + "page=\(page)"
+                                    + (baseUrl.absoluteString.contains("?") ? "&" : "?")
+                                    + "page=\(page)"
                             guard let pageUrl = URL(string: pageUrlString) else {
                                 throw NetworkError.invalidURL
                             }
@@ -439,7 +440,7 @@ class NetworkManager: NSObject, @unchecked Sendable {
                             Logger.info("成功获取第\(page)页数据，本页包含\(pageItems.count)个项目")
 
                             // 添加短暂延迟以避免请求过于频繁
-                            try await Task.sleep(nanoseconds: UInt64(0.5 * 1_000_000_000))  // 500ms延迟
+                            try await Task.sleep(nanoseconds: UInt64(0.5 * 1_000_000_000)) // 500ms延迟
 
                             return (page: page, items: pageItems)
                         }
@@ -452,7 +453,7 @@ class NetworkManager: NSObject, @unchecked Sendable {
                         allItems.append(contentsOf: result.items)
                         completedPages.insert(result.page)
                         inProgressPages -= 1
-                        
+
                         // 更新进度回调
                         progressCallback?(completedPages.count, totalPages)
 
@@ -462,8 +463,8 @@ class NetworkManager: NSObject, @unchecked Sendable {
                             group.addTask(priority: .userInitiated) {
                                 let pageUrlString =
                                     baseUrl.absoluteString
-                                    + (baseUrl.absoluteString.contains("?") ? "&" : "?")
-                                    + "page=\(page)"
+                                        + (baseUrl.absoluteString.contains("?") ? "&" : "?")
+                                        + "page=\(page)"
                                 guard let pageUrl = URL(string: pageUrlString) else {
                                     throw NetworkError.invalidURL
                                 }
@@ -480,7 +481,7 @@ class NetworkManager: NSObject, @unchecked Sendable {
                                 Logger.info("成功获取第\(page)页数据，本页包含\(pageItems.count)个项目")
 
                                 // 添加短暂延迟以避免请求过于频繁
-                                try await Task.sleep(nanoseconds: UInt64(0.5 * 1_000_000_000))  // 500ms延迟
+                                try await Task.sleep(nanoseconds: UInt64(0.5 * 1_000_000_000)) // 500ms延迟
 
                                 return (page: page, items: pageItems)
                             }
@@ -491,7 +492,7 @@ class NetworkManager: NSObject, @unchecked Sendable {
 
                     // 检查是否所有页面都已获取
                     if completedPages.count != totalPages {
-                        let missingPages = Set(1...totalPages).subtracting(completedPages)
+                        let missingPages = Set(1 ... totalPages).subtracting(completedPages)
                         Logger.warning("部分页面未能获取: \(missingPages)")
                     }
                 }
@@ -663,9 +664,9 @@ class RequestRetrier {
             do {
                 let result =
                     try await group.next()
-                    ?? {
-                        throw NetworkError.httpError(statusCode: 408, message: "请求超时")
-                    }()
+                        ?? {
+                            throw NetworkError.httpError(statusCode: 408, message: "请求超时")
+                        }()
                 return result
             } catch {
                 // 取消所有任务并抛出错误
@@ -680,7 +681,7 @@ class RequestRetrier {
         if case let NetworkError.httpError(statusCode, message) = error {
             // 如果响应中包含不重试的关键词，则不重试
             if let errorMessage = message,
-                keywords.contains(where: { errorMessage.contains($0) })
+               keywords.contains(where: { errorMessage.contains($0) })
             {
                 Logger.info("检测到不重试关键词，停止重试")
                 return false
@@ -698,7 +699,7 @@ actor RateLimiter {
     private var tokens: Int
     private let maxTokens: Int
     private var lastRefill: Date
-    private let refillRate: Double  // tokens per second
+    private let refillRate: Double // tokens per second
 
     init(maxTokens: Int = 150, refillRate: Double = 50) {
         self.maxTokens = maxTokens
@@ -719,7 +720,7 @@ actor RateLimiter {
     func waitForPermission() async throws {
         while tokens <= 0 {
             refillTokens()
-            try await Task.sleep(nanoseconds: 100_000_000)  // 100ms
+            try await Task.sleep(nanoseconds: 100_000_000) // 100ms
         }
         tokens -= 1
     }

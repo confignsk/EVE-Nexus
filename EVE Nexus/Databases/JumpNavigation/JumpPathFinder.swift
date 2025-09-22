@@ -10,10 +10,10 @@ import Foundation
 // 节点结构，用于A*算法
 struct PathNode: Hashable {
     let systemId: Int
-    var parent: Int?  // 父节点星系ID
-    var g: Double = 0  // 起点到当前点的实际代价
-    var h: Double = 0  // 当前点到终点的估计代价
-    var distance: Double = 0  // 从父节点到当前节点的距离
+    var parent: Int? // 父节点星系ID
+    var g: Double = 0 // 起点到当前点的实际代价
+    var h: Double = 0 // 当前点到终点的估计代价
+    var distance: Double = 0 // 从父节点到当前节点的距离
 
     // Hashable 实现
     func hash(into hasher: inout Hasher) {
@@ -30,21 +30,21 @@ struct PathNode: Hashable {
 struct JumpConnection {
     let sourceId: Int
     let destId: Int
-    let distance: Double  // 光年距离
+    let distance: Double // 光年距离
 }
 
 // 路径段结构，包含起点、终点和距离
 struct PathSegment {
-    let src: Int  // 起点ID
-    let dst: Int  // 终点ID
-    let range: Double  // 距离
+    let src: Int // 起点ID
+    let dst: Int // 终点ID
+    let range: Double // 距离
 }
 
 // 路径结果结构，包含完整路径和详细信息
 struct PathResult {
-    let path: [Int]  // 路径上的星系ID序列
-    let segments: [PathSegment]  // 路径段信息
-    let totalDistance: Double  // 总距离
+    let path: [Int] // 路径上的星系ID序列
+    let segments: [PathSegment] // 路径段信息
+    let totalDistance: Double // 总距离
 }
 
 class JumpPathFinder {
@@ -56,7 +56,7 @@ class JumpPathFinder {
     private var systemIdToSecurity: [Int: Double] = [:]
 
     // 添加一个新的初始化方法，接收预加载的星系数据
-    init(databaseManager: DatabaseManager, preloadedSystems: [JumpSystemData]) {
+    init(databaseManager _: DatabaseManager, preloadedSystems: [JumpSystemData]) {
         loadJumpMap()
         // 使用预加载的星系数据
         systemIdToName = JumpSystemData.getSystemIdToNameMap(from: preloadedSystems)
@@ -74,8 +74,7 @@ class JumpPathFinder {
         if fileManager.fileExists(atPath: jumpMapFile.path) {
             do {
                 let data = try Data(contentsOf: jumpMapFile)
-                if let jsonArray = try JSONSerialization.jsonObject(with: data) as? [[String: Any]]
-                {
+                if let jsonArray = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
                     processJumpConnections(jsonArray)
                 }
             } catch {
@@ -90,8 +89,8 @@ class JumpPathFinder {
     private func processJumpConnections(_ jsonArray: [[String: Any]]) {
         for connection in jsonArray {
             guard let sourceId = connection["s_id"] as? Int,
-                let destId = connection["d_id"] as? Int,
-                let distance = connection["ly"] as? Double
+                  let destId = connection["d_id"] as? Int,
+                  let distance = connection["ly"] as? Double
             else {
                 continue
             }
@@ -152,7 +151,7 @@ class JumpPathFinder {
 
         // 如果需要避开入侵星系，将入侵星系添加到避开列表中
         // 但是不包括起点和目标点
-        if avoidIncursions && !incursionSystems.isEmpty {
+        if avoidIncursions, !incursionSystems.isEmpty {
             // 创建一个用户路径点集合，包括起点和所有目标点
             let userPathPoints = Set([startSystemId] + destinationSystemIds)
 
@@ -198,7 +197,7 @@ class JumpPathFinder {
             if !path.isEmpty {
                 allPaths.append(
                     PathResult(path: path, segments: segments, totalDistance: totalDistance))
-                currentSystemId = destinationId  // 下次从当前终点继续寻路
+                currentSystemId = destinationId // 下次从当前终点继续寻路
 
                 // 记录找到的路径
                 let pathNames = path.compactMap { systemIdToName[$0] }.joined(separator: " -> ")
@@ -218,13 +217,13 @@ class JumpPathFinder {
     // 根据飞船类型和技能等级计算最大跳跃范围
     private func calculateMaxJumpRange(shipTypeId: Int, skillLevel: Int) -> Double {
         // 从数据库查询飞船基础跳跃范围 (attribute_id 867 表示跳跃范围)
-        var baseRange: Double = 5.0  // 默认值为5光年
+        var baseRange = 5.0 // 默认值为5光年
 
         // 尝试从数据库获取实际跳跃范围
         let query = """
-                SELECT value FROM typeAttributes 
-                WHERE type_id = \(shipTypeId) AND attribute_id = 867
-            """
+            SELECT value FROM typeAttributes 
+            WHERE type_id = \(shipTypeId) AND attribute_id = 867
+        """
 
         let databaseManager = DatabaseManager.shared
         if case let .success(rows) = databaseManager.executeQuery(query) {
@@ -258,7 +257,7 @@ class JumpPathFinder {
 
         // 检查起点和终点是否在连接图中
         guard jumpConnections.keys.contains(startSystemId),
-            jumpConnections.keys.contains(destinationSystemId)
+              jumpConnections.keys.contains(destinationSystemId)
         else {
             return ([], [], 0.0)
         }
@@ -323,24 +322,24 @@ class JumpPathFinder {
 
                 // 检查安全等级要求（除了起点）
                 if !isSystemSecurityValid(
-                    systemId: neighborId, isStartPoint: neighborId == startSystemId)
-                {
+                    systemId: neighborId, isStartPoint: neighborId == startSystemId
+                ) {
                     continue
                 }
 
                 // 计算从起点经过当前节点到邻居节点的跳跃次数和距离
                 let currentJumps = gScore[currentId]!.jumps
                 let currentDistance = gScore[currentId]!.distance
-                let tentativeJumps = currentJumps + 1  // 每次跳跃加1
+                let tentativeJumps = currentJumps + 1 // 每次跳跃加1
                 let tentativeDistance = currentDistance + connection.distance
 
                 // 如果邻居节点尚未被评估或找到了更好的路径
                 let isNewPath = !gScore.keys.contains(neighborId)
                 let isBetterPath =
                     !isNewPath
-                    && (tentativeJumps < gScore[neighborId]!.jumps
-                        || (tentativeJumps == gScore[neighborId]!.jumps
-                            && tentativeDistance < gScore[neighborId]!.distance))
+                        && (tentativeJumps < gScore[neighborId]!.jumps
+                            || (tentativeJumps == gScore[neighborId]!.jumps
+                                && tentativeDistance < gScore[neighborId]!.distance))
 
                 if isNewPath || isBetterPath {
                     // 更新来源节点
@@ -380,24 +379,24 @@ class JumpPathFinder {
     private func estimateJumps(from sourceId: Int, to destId: Int) -> Double {
         // 如果有直接连接，返回1
         if let connections = jumpConnections[sourceId],
-            connections.contains(where: { $0.destId == destId })
+           connections.contains(where: { $0.destId == destId })
         {
             return 1
         }
         // 否则返回一个合理的估计值，对A*来说必须是乐观的
-        return 2  // 假设至少需要2跳
+        return 2 // 假设至少需要2跳
     }
 
     // 估计从当前节点到目标节点的距离
     private func estimateDistance(from sourceId: Int, to destId: Int) -> Double {
         // 如果有直接连接，返回实际距离
         if let connections = jumpConnections[sourceId],
-            let connection = connections.first(where: { $0.destId == destId })
+           let connection = connections.first(where: { $0.destId == destId })
         {
             return connection.distance
         }
         // 否则返回一个非常乐观的估计值
-        return 1.0  // 假设距离很短
+        return 1.0 // 假设距离很短
     }
 
     // 使用距离信息重建路径

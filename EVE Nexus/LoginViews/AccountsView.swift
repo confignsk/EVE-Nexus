@@ -11,10 +11,10 @@ struct CharacterAvatarWithBadges: View {
     @State private var factionIcon: UIImage?
     @State private var corporationIcon: UIImage?
     @State private var allianceIcon: UIImage?
-    
+
     private let avatarSize: CGFloat = 64
     private let badgeSize: CGFloat = 20
-    
+
     var body: some View {
         ZStack {
             // 主要头像
@@ -31,13 +31,13 @@ struct CharacterAvatarWithBadges: View {
                     .frame(width: avatarSize, height: avatarSize)
                     .clipShape(Circle())
             }
-            
+
             // 刷新或过期状态覆盖层
             if isRefreshing {
                 Circle()
                     .fill(Color.black.opacity(0.6))
                     .frame(width: avatarSize, height: avatarSize)
-                
+
                 ProgressView()
                     .scaleEffect(0.8)
             } else if refreshTokenhasExpired {
@@ -65,9 +65,11 @@ struct CharacterAvatarWithBadges: View {
                         .clipShape(Circle())
                         .overlay(Circle().stroke(Color.primary.opacity(0.8), lineWidth: 1))
                         .background(Circle().fill(Color(UIColor.systemBackground)))
-                        .offset(x: -avatarSize/2 + badgeSize/2, y: -avatarSize/2 + badgeSize/2)
+                        .offset(
+                            x: -avatarSize / 2 + badgeSize / 2, y: -avatarSize / 2 + badgeSize / 2
+                        )
                 }
-                
+
                 // 军团图标 (左下角)
                 if let corporationIcon = corporationIcon {
                     Image(uiImage: corporationIcon)
@@ -76,9 +78,11 @@ struct CharacterAvatarWithBadges: View {
                         .clipShape(Circle())
                         .overlay(Circle().stroke(Color.primary.opacity(0.8), lineWidth: 1))
                         .background(Circle().fill(Color(UIColor.systemBackground)))
-                        .offset(x: -avatarSize/2 + badgeSize/2, y: avatarSize/2 - badgeSize/2)
+                        .offset(
+                            x: -avatarSize / 2 + badgeSize / 2, y: avatarSize / 2 - badgeSize / 2
+                        )
                 }
-                
+
                 // 联盟图标 (右下角)
                 if let allianceIcon = allianceIcon {
                     Image(uiImage: allianceIcon)
@@ -87,7 +91,9 @@ struct CharacterAvatarWithBadges: View {
                         .clipShape(Circle())
                         .overlay(Circle().stroke(Color.primary.opacity(0.8), lineWidth: 1))
                         .background(Circle().fill(Color(UIColor.systemBackground)))
-                        .offset(x: avatarSize/2 - badgeSize/2, y: avatarSize/2 - badgeSize/2)
+                        .offset(
+                            x: avatarSize / 2 - badgeSize / 2, y: avatarSize / 2 - badgeSize / 2
+                        )
                 }
             }
         )
@@ -98,15 +104,18 @@ struct CharacterAvatarWithBadges: View {
             loadOrganizationIcons()
         }
     }
-    
+
     private func loadOrganizationIcons() {
         // 加载势力图标
         if let factionId = character.factionId {
             Task {
                 let query = "SELECT iconName FROM factions WHERE id = ?"
-                if case let .success(rows) = DatabaseManager.shared.executeQuery(query, parameters: [factionId]),
-                   let row = rows.first,
-                   let iconName = row["iconName"] as? String {
+                if case let .success(rows) = DatabaseManager.shared.executeQuery(
+                    query, parameters: [factionId]
+                ),
+                    let row = rows.first,
+                    let iconName = row["iconName"] as? String
+                {
                     let icon = IconManager.shared.loadUIImage(for: iconName)
                     await MainActor.run {
                         self.factionIcon = icon
@@ -114,12 +123,14 @@ struct CharacterAvatarWithBadges: View {
                 }
             }
         }
-        
+
         // 加载军团图标
         if let corporationId = character.corporationId {
             Task {
                 do {
-                    let icon = try await CorporationAPI.shared.fetchCorporationLogo(corporationId: corporationId, size: 64)
+                    let icon = try await CorporationAPI.shared.fetchCorporationLogo(
+                        corporationId: corporationId, size: 64
+                    )
                     await MainActor.run {
                         self.corporationIcon = icon
                     }
@@ -128,12 +139,14 @@ struct CharacterAvatarWithBadges: View {
                 }
             }
         }
-        
+
         // 加载联盟图标
         if let allianceId = character.allianceId {
             Task {
                 do {
-                    let icon = try await AllianceAPI.shared.fetchAllianceLogo(allianceID: allianceId, size: 64)
+                    let icon = try await AllianceAPI.shared.fetchAllianceLogo(
+                        allianceID: allianceId, size: 64
+                    )
                     await MainActor.run {
                         self.allianceIcon = icon
                     }
@@ -190,10 +203,10 @@ struct AccountsView: View {
 
                         guard
                             let scene = UIApplication.shared.connectedScenes.first
-                                as? UIWindowScene,
+                            as? UIWindowScene,
                             let viewController = scene.windows.first?.rootViewController
                         else {
-                            isLoggingIn = false  // 确保在失败时重置状态
+                            isLoggingIn = false // 确保在失败时重置状态
                             return
                         }
 
@@ -238,7 +251,7 @@ struct AccountsView: View {
                                     // 创建 EVEAuthToken 对象
                                     let token = try EVEAuthToken(
                                         access_token: accessToken,
-                                        expires_in: 1200,  // 20分钟过期
+                                        expires_in: 1200, // 20分钟过期
                                         token_type: "Bearer",
                                         refresh_token: SecureStorage.shared.loadToken(
                                             for: updatedCharacter.CharacterID) ?? ""
@@ -309,7 +322,7 @@ struct AccountsView: View {
                                             // 创建 EVEAuthToken 对象
                                             let token = try EVEAuthToken(
                                                 access_token: accessToken,
-                                                expires_in: 1200,  // 20分钟过期
+                                                expires_in: 1200, // 20分钟过期
                                                 token_type: "Bearer",
                                                 refresh_token: SecureStorage.shared.loadToken(
                                                     for: updatedCharacter.CharacterID) ?? ""
@@ -383,22 +396,27 @@ struct AccountsView: View {
                         Task {
                             // 强制刷新 scopes
                             Logger.info("手动强制刷新 scopes")
-                            let scopeResult = await ScopeManager.shared.getLatestScopesWithSource(forceRefresh: true)
+                            let scopeResult = await ScopeManager.shared.getLatestScopesWithSource(
+                                forceRefresh: true)
 
                             // 更新 EVELogin 中的 scopes 配置
                             await MainActor.run {
                                 EVELogin.shared.config?.scopes = scopeResult.scopes
                             }
-                            Logger.info("成功刷新 scopes，获取到 \(scopeResult.scopes.count) 个权限，来源: \(scopeResult.source)")
+                            Logger.info(
+                                "成功刷新 scopes，获取到 \(scopeResult.scopes.count) 个权限，来源: \(scopeResult.source)"
+                            )
 
                             // 显示成功提示
                             await MainActor.run {
-                                isRefreshingScopes = false  // 重置刷新状态
-                                
+                                isRefreshingScopes = false // 重置刷新状态
+
                                 // 根据数据来源选择不同的消息
-                                let messageKey = scopeResult.source == .network ? "Scopes_Refresh_Success" : "Scopes_Local_Refresh_Success"
+                                let messageKey =
+                                    scopeResult.source == .network
+                                        ? "Scopes_Refresh_Success" : "Scopes_Local_Refresh_Success"
                                 successMessage = String(
-                                    format: NSLocalizedString(messageKey, comment: ""), 
+                                    format: NSLocalizedString(messageKey, comment: ""),
                                     scopeResult.scopes.count
                                 )
                                 showingSuccess = true
@@ -467,7 +485,7 @@ struct AccountsView: View {
                                         // 创建 EVEAuthToken 对象
                                         let token = try EVEAuthToken(
                                             access_token: accessToken,
-                                            expires_in: 1200,  // 20分钟过期
+                                            expires_in: 1200, // 20分钟过期
                                             token_type: "Bearer",
                                             refresh_token: SecureStorage.shared.loadToken(
                                                 for: character.CharacterID) ?? ""
@@ -592,7 +610,7 @@ struct AccountsView: View {
 
                     // 使用基于角色ID的安全更新方法
                     let characterId = auth.character.CharacterID
-                    
+
                     // 尝试从缓存获取钱包余额
                     let cachedBalance = await CharacterWalletAPI.shared.getCachedWalletBalance(
                         characterId: characterId)
@@ -622,7 +640,7 @@ struct AccountsView: View {
                     ) {
                         viewModel.updateCharacter(characterId: characterId) { character in
                             character.skillQueueLength = queue.count
-                            
+
                             if let currentSkill = queue.first(where: { $0.isCurrentlyTraining }) {
                                 if let skillName = SkillTreeManager.shared.getSkillName(
                                     for: currentSkill.skill_id)
@@ -636,10 +654,10 @@ struct AccountsView: View {
                                     )
                                 }
                             } else if let firstSkill = queue.first,
-                                let skillName = SkillTreeManager.shared.getSkillName(
-                                    for: firstSkill.skill_id),
-                                let trainingStartSp = firstSkill.training_start_sp,
-                                let levelEndSp = firstSkill.level_end_sp
+                                      let skillName = SkillTreeManager.shared.getSkillName(
+                                          for: firstSkill.skill_id),
+                                      let trainingStartSp = firstSkill.training_start_sp,
+                                      let levelEndSp = firstSkill.level_end_sp
                             {
                                 // 计算暂停技能的实际进度
                                 let calculatedProgress = SkillProgressCalculator.calculateProgress(
@@ -652,7 +670,7 @@ struct AccountsView: View {
                                     name: skillName,
                                     level: firstSkill.skillLevel,
                                     progress: calculatedProgress,
-                                    remainingTime: nil  // 暂停状态
+                                    remainingTime: nil // 暂停状态
                                 )
                             }
                         }
@@ -668,7 +686,7 @@ struct AccountsView: View {
                         viewModel.updateCharacter(characterId: characterId) { character in
                             character.locationStatus = location.locationStatus
                         }
-                        
+
                         let locationInfo = await getSolarSystemInfo(
                             solarSystemId: location.solar_system_id,
                             databaseManager: viewModel.databaseManager
@@ -687,7 +705,7 @@ struct AccountsView: View {
                     ) {
                         viewModel.characterPortraits[characterId] = portrait
                     }
-                    
+
                     // 尝试从缓存获取角色公共信息（组织信息）
                     if let publicInfo = try? await CharacterAPI.shared.fetchCharacterPublicInfo(
                         characterId: characterId,
@@ -745,7 +763,7 @@ struct AccountsView: View {
     @MainActor
     private func refreshAllCharacters() async {
         // 先让刷新指示器完成动画
-        try? await Task.sleep(nanoseconds: 500_000_000)  // 0.5秒
+        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5秒
 
         isRefreshing = true
         expiredTokenCharacters.removeAll()
@@ -765,7 +783,7 @@ struct AccountsView: View {
         let batchSize = 10
         for batch in stride(from: 0, to: characterAuths.count, by: batchSize) {
             let end = min(batch + batchSize, characterAuths.count)
-            let currentBatch = characterAuths[batch..<end]
+            let currentBatch = characterAuths[batch ..< end]
 
             // 使用 TaskGroup 并行处理当前批次的角色数据刷新
             await withTaskGroup(of: Void.self) { group in
@@ -802,38 +820,44 @@ struct AccountsView: View {
                             )
 
                             // 等待所有数据获取完成
-                            let ((skillsResponse, queue), balance, portrait, location, publicInfo) = try await (
-                                skillInfoTask, walletTask, portraitTask, locationTask, publicInfoTask
-                            )
+                            let ((skillsResponse, queue), balance, portrait, location, publicInfo) =
+                                try await (
+                                    skillInfoTask, walletTask, portraitTask, locationTask,
+                                    publicInfoTask
+                                )
 
                             // 更新UI
                             await updateUI {
                                 let characterId = characterAuth.character.CharacterID
-                                
+
                                 // 使用基于角色ID的安全更新方法
-                                self.viewModel.updateCharacter(characterId: characterId) { character in
+                                self.viewModel.updateCharacter(characterId: characterId) {
+                                    character in
                                     // 更新组织信息
                                     character.corporationId = publicInfo.corporation_id
                                     character.allianceId = publicInfo.alliance_id
                                     character.factionId = publicInfo.faction_id
-                                    
+
                                     // 更新技能信息
                                     character.totalSkillPoints = skillsResponse.total_sp
                                     character.unallocatedSkillPoints = skillsResponse.unallocated_sp
 
                                     // 更新技能队列
                                     character.skillQueueLength = queue.count
-                                    if let currentSkill = queue.first(where: { $0.isCurrentlyTraining }) {
+                                    if let currentSkill = queue.first(where: {
+                                        $0.isCurrentlyTraining
+                                    }) {
                                         if let skillName = SkillTreeManager.shared.getSkillName(
                                             for: currentSkill.skill_id)
                                         {
-                                            character.currentSkill = EVECharacterInfo.CurrentSkillInfo(
-                                                skillId: currentSkill.skill_id,
-                                                name: skillName,
-                                                level: currentSkill.skillLevel,
-                                                progress: currentSkill.progress,
-                                                remainingTime: currentSkill.remainingTime
-                                            )
+                                            character.currentSkill =
+                                                EVECharacterInfo.CurrentSkillInfo(
+                                                    skillId: currentSkill.skill_id,
+                                                    name: skillName,
+                                                    level: currentSkill.skillLevel,
+                                                    progress: currentSkill.progress,
+                                                    remainingTime: currentSkill.remainingTime
+                                                )
                                         }
                                     }
 
@@ -846,18 +870,19 @@ struct AccountsView: View {
 
                                 // 更新头像
                                 self.viewModel.characterPortraits[characterId] = portrait
-                                
+
                                 // 异步更新位置详细信息
                                 Task {
                                     let databaseManager = self.viewModel.databaseManager
                                     let viewModel = self.viewModel
-                                    
+
                                     if let locationInfo = await getSolarSystemInfo(
                                         solarSystemId: location.solar_system_id,
                                         databaseManager: databaseManager
                                     ) {
                                         await MainActor.run {
-                                            viewModel.updateCharacter(characterId: characterId) { character in
+                                            viewModel.updateCharacter(characterId: characterId) {
+                                                character in
                                                 character.location = locationInfo
                                             }
                                         }
@@ -946,7 +971,8 @@ struct AccountsView: View {
                             )
 
                             await updateUI {
-                                self.viewModel.updateCharacter(characterId: character.CharacterID) { char in
+                                self.viewModel.updateCharacter(characterId: character.CharacterID) {
+                                    char in
                                     char.currentSkill = EVECharacterInfo.CurrentSkillInfo(
                                         skillId: currentSkill.skill_id,
                                         name: skillName,
@@ -970,7 +996,7 @@ struct AccountsView: View {
                             // 计算暂停技能的实际进度
                             let calculatedProgress: Double
                             if let trainingStartSp = firstSkill.training_start_sp,
-                                let levelEndSp = firstSkill.level_end_sp
+                               let levelEndSp = firstSkill.level_end_sp
                             {
                                 calculatedProgress = SkillProgressCalculator.calculateProgress(
                                     trainingStartSp: trainingStartSp,
@@ -982,13 +1008,14 @@ struct AccountsView: View {
                             }
 
                             await updateUI {
-                                self.viewModel.updateCharacter(characterId: character.CharacterID) { char in
+                                self.viewModel.updateCharacter(characterId: character.CharacterID) {
+                                    char in
                                     char.currentSkill = EVECharacterInfo.CurrentSkillInfo(
                                         skillId: firstSkill.skill_id,
                                         name: skillName,
                                         level: firstSkill.skillLevel,
                                         progress: calculatedProgress,
-                                        remainingTime: nil  // 暂停状态
+                                        remainingTime: nil // 暂停状态
                                     )
                                     char.skillQueueLength = queue.count
                                 }
@@ -999,7 +1026,8 @@ struct AccountsView: View {
                         Logger.info("技能队列为空 - 角色: \(character.CharacterName)")
 
                         await updateUI {
-                            self.viewModel.updateCharacter(characterId: character.CharacterID) { char in
+                            self.viewModel.updateCharacter(characterId: character.CharacterID) {
+                                char in
                                 char.currentSkill = nil
                                 char.skillQueueLength = 0
                             }
@@ -1018,7 +1046,7 @@ struct AccountsView: View {
 
                     if retryCount < maxRetries {
                         // 等待一段时间后重试
-                        try await Task.sleep(nanoseconds: UInt64(1_000_000_000 * retryCount))  // 递增等待时间
+                        try await Task.sleep(nanoseconds: UInt64(1_000_000_000 * retryCount)) // 递增等待时间
                     }
                 }
             }
@@ -1064,14 +1092,14 @@ struct AccountsView: View {
             // 更新UI
             await updateUI {
                 let characterId = character.CharacterID
-                
+
                 // 使用基于角色ID的安全更新方法
                 self.viewModel.updateCharacter(characterId: characterId) { character in
                     // 更新组织信息
                     character.corporationId = publicInfo.corporation_id
                     character.allianceId = publicInfo.alliance_id
                     character.factionId = publicInfo.faction_id
-                    
+
                     // 更新技能信息
                     character.totalSkillPoints = skillsResponse.total_sp
                     character.unallocatedSkillPoints = skillsResponse.unallocated_sp
@@ -1101,12 +1129,12 @@ struct AccountsView: View {
 
                 // 更新头像
                 self.viewModel.characterPortraits[characterId] = portrait
-                
+
                 // 异步更新位置详细信息
                 Task {
                     let databaseManager = self.viewModel.databaseManager
                     let viewModel = self.viewModel
-                    
+
                     if let locationInfo = await getSolarSystemInfo(
                         solarSystemId: location.solar_system_id,
                         databaseManager: databaseManager
@@ -1150,7 +1178,7 @@ struct CharacterRowView: View {
     let formatISK: (Double) -> String
     let formatSkillPoints: (Int) -> String
     let formatRemainingTime: (TimeInterval) -> String
-    
+
     // 新增状态变量用于存储势力信息
     @State private var factionInfo: (name: String, faction_id: Int, iconName: String, rank: Int?)?
 
@@ -1176,8 +1204,8 @@ struct CharacterRowView: View {
                 //         .frame(height: 20)
                 // }
                 Text(character.CharacterName)
-                        .font(.headline)
-                        .frame(height: 20)
+                    .font(.headline)
+                    .frame(height: 20)
                 VStack(alignment: .leading, spacing: 2) {
                     if isRefreshing {
                         // 位置信息占位
@@ -1244,8 +1272,7 @@ struct CharacterRowView: View {
                         if let totalSP = character.totalSkillPoints {
                             let spText =
                                 if let unallocatedSP = character.unallocatedSkillPoints,
-                                    unallocatedSP > 0
-                                {
+                                unallocatedSP > 0 {
                                     "\(NSLocalizedString("Account_Total_SP", comment: "")): \(formatSkillPoints(totalSP)) SP (\(NSLocalizedString("Main_Skill_Queue_Free_SP", comment: "")) \(formatSkillPoints(unallocatedSP)))"
                                 } else {
                                     "\(NSLocalizedString("Account_Total_SP", comment: "")): \(formatSkillPoints(totalSP)) SP"
@@ -1365,7 +1392,7 @@ struct CharacterRowView: View {
             loadFactionInfo()
         }
     }
-    
+
     // 加载势力信息的方法
     private func loadFactionInfo() {
         Task {
@@ -1374,27 +1401,29 @@ struct CharacterRowView: View {
                 let publicInfo = try await CharacterAPI.shared.fetchCharacterPublicInfo(
                     characterId: character.CharacterID
                 )
-                
+
                 // 如果角色有势力信息
                 if let factionId = publicInfo.faction_id {
                     // 从数据库获取势力信息
                     let query = "SELECT name, iconName FROM factions WHERE id = ?"
-                    if case let .success(rows) = DatabaseManager.shared.executeQuery(query, parameters: [factionId]),
-                       let row = rows.first,
-                       let name = row["name"] as? String,
-                       let iconName = row["iconName"] as? String {
-                        
+                    if case let .success(rows) = DatabaseManager.shared.executeQuery(
+                        query, parameters: [factionId]
+                    ),
+                        let row = rows.first,
+                        let name = row["name"] as? String,
+                        let iconName = row["iconName"] as? String
+                    {
                         // 获取势力战争统计数据
                         let fwStats = try? await CharacterFWStatsAPI.shared.getFWStats(
-                            characterId: character.CharacterID, 
+                            characterId: character.CharacterID,
                             forceRefresh: false
                         )
-                        
+
                         await MainActor.run {
                             self.factionInfo = (
-                                name: name, 
-                                faction_id: factionId, 
-                                iconName: iconName, 
+                                name: name,
+                                faction_id: factionId,
+                                iconName: iconName,
                                 rank: fwStats?.current_rank
                             )
                         }
@@ -1437,6 +1466,6 @@ enum SkillProgressCalculator {
 
         let progress =
             Double(trainingStartSp - previousLevelSp) / Double(levelEndSp - previousLevelSp)
-        return min(max(progress, 0.0), 1.0)  // 确保进度在0.0到1.0之间
+        return min(max(progress, 0.0), 1.0) // 确保进度在0.0到1.0之间
     }
 }

@@ -14,25 +14,25 @@ enum SkillTrainingCalculator {
     /// 植入体属性ID常量
     private enum ImplantAttributeID {
         // 植入体属性加成的属性ID
-        static let charisma = 175  // 魅力加成
-        static let intelligence = 176  // 智力加成
-        static let memory = 177  // 记忆加成
-        static let perception = 178  // 感知加成
-        static let willpower = 179  // 意志加成
+        static let charisma = 175 // 魅力加成
+        static let intelligence = 176 // 智力加成
+        static let memory = 177 // 记忆加成
+        static let perception = 178 // 感知加成
+        static let willpower = 179 // 意志加成
 
         // 验证属性ID是否存在
         static func validateAttributeIds() {
             let query = """
-                    SELECT attribute_id, name
-                    FROM dogmaAttributes
-                    WHERE attribute_id IN (175, 176, 177, 178, 179)
-                """
+                SELECT attribute_id, name
+                FROM dogmaAttributes
+                WHERE attribute_id IN (175, 176, 177, 178, 179)
+            """
 
             if case let .success(rows) = DatabaseManager().executeQuery(query) {
                 Logger.debug("植入体属性ID验证结果:")
                 for row in rows {
                     if let attrId = row["attribute_id"] as? Int,
-                        let attrName = row["name"] as? String
+                       let attrName = row["name"] as? String
                     {
                         Logger.debug("属性ID: \(attrId), 名称: \(attrName)")
                     }
@@ -44,14 +44,14 @@ enum SkillTrainingCalculator {
     }
 
     /// 最优属性分配结果
-    public struct OptimalAttributes {
-        public let charisma: Int
-        public let intelligence: Int
-        public let memory: Int
-        public let perception: Int
-        public let willpower: Int
-        public let totalTrainingTime: TimeInterval
-        public let currentTrainingTime: TimeInterval
+    struct OptimalAttributes {
+        let charisma: Int
+        let intelligence: Int
+        let memory: Int
+        let perception: Int
+        let willpower: Int
+        let totalTrainingTime: TimeInterval
+        let currentTrainingTime: TimeInterval
     }
 
     /// 技能训练信息
@@ -66,20 +66,20 @@ enum SkillTrainingCalculator {
     private static var skillAttributesCache: [Int: (primary: Int, secondary: Int)] = [:]
 
     /// 批量加载技能属性到缓存
-    public static func preloadSkillAttributes(skillIds: [Int], databaseManager: DatabaseManager) {
+    static func preloadSkillAttributes(skillIds: [Int], databaseManager: DatabaseManager) {
         let attributesQuery = """
-                SELECT type_id, attribute_id, value
-                FROM typeAttributes
-                WHERE type_id IN (\(skillIds.sorted().map { String($0) }.joined(separator: ",")))
-                AND attribute_id IN (180, 181)
-            """
+            SELECT type_id, attribute_id, value
+            FROM typeAttributes
+            WHERE type_id IN (\(skillIds.sorted().map { String($0) }.joined(separator: ",")))
+            AND attribute_id IN (180, 181)
+        """
 
         if case let .success(rows) = databaseManager.executeQuery(attributesQuery) {
             var groupedAttributes: [Int: [(attributeId: Int, value: Int)]] = [:]
             for row in rows {
                 guard let typeId = row["type_id"] as? Int,
-                    let attributeId = row["attribute_id"] as? Int,
-                    let value = row["value"] as? Double
+                      let attributeId = row["attribute_id"] as? Int,
+                      let value = row["value"] as? Double
                 else {
                     continue
                 }
@@ -114,10 +114,10 @@ enum SkillTrainingCalculator {
 
         // 如果缓存中没有，则从数据库查询
         let query = """
-                SELECT attribute_id, value
-                FROM typeAttributes
-                WHERE type_id = ? AND attribute_id IN (180, 181)
-            """
+            SELECT attribute_id, value
+            FROM typeAttributes
+            WHERE type_id = ? AND attribute_id IN (180, 181)
+        """
 
         if case let .success(rows) = databaseManager.executeQuery(query, parameters: [skillId]) {
             var primaryAttrId: Int?
@@ -125,7 +125,7 @@ enum SkillTrainingCalculator {
 
             for row in rows {
                 guard let attrId = row["attribute_id"] as? Int,
-                    let value = row["value"] as? Double
+                      let value = row["value"] as? Double
                 else { continue }
 
                 switch attrId {
@@ -147,7 +147,7 @@ enum SkillTrainingCalculator {
     }
 
     /// 获取植入体属性加成
-    public static func getImplantBonuses(characterId: Int, forceRefresh: Bool = false) async
+    static func getImplantBonuses(characterId: Int, forceRefresh: Bool = false) async
         -> ImplantAttributes
     {
         // 验证植入体属性ID
@@ -167,13 +167,13 @@ enum SkillTrainingCalculator {
             // 如果有植入体，查询它们的属性加成
             if !implants.isEmpty {
                 let query = """
-                        SELECT type_id, attribute_id, value
-                        FROM typeAttributes
-                        WHERE type_id IN (\(implants.map { String($0) }.joined(separator: ",")))
-                        AND attribute_id IN (\(ImplantAttributeID.charisma), \(ImplantAttributeID.intelligence), 
-                                          \(ImplantAttributeID.memory), \(ImplantAttributeID.perception), 
-                                          \(ImplantAttributeID.willpower))
-                    """
+                    SELECT type_id, attribute_id, value
+                    FROM typeAttributes
+                    WHERE type_id IN (\(implants.map { String($0) }.joined(separator: ",")))
+                    AND attribute_id IN (\(ImplantAttributeID.charisma), \(ImplantAttributeID.intelligence), 
+                                      \(ImplantAttributeID.memory), \(ImplantAttributeID.perception), 
+                                      \(ImplantAttributeID.willpower))
+                """
 
                 Logger.debug("执行植入体属性查询: \(query)")
 
@@ -185,7 +185,7 @@ enum SkillTrainingCalculator {
 
                     for row in rows {
                         guard let attributeId = row["attribute_id"] as? Int,
-                            let value = row["value"] as? Double
+                              let value = row["value"] as? Double
                         else {
                             Logger.debug("无法解析行数据: \(row)")
                             continue
@@ -243,13 +243,13 @@ enum SkillTrainingCalculator {
         // 计算当前所有属性总和
         let totalAttributes =
             currentAttributes.charisma + currentAttributes.intelligence + currentAttributes.memory
-            + currentAttributes.perception + currentAttributes.willpower
+                + currentAttributes.perception + currentAttributes.willpower
 
         // 计算植入体加成总和
         let totalImplantBonuses =
             implantBonuses.charismaBonus + implantBonuses.intelligenceBonus
-            + implantBonuses.memoryBonus + implantBonuses.perceptionBonus
-            + implantBonuses.willpowerBonus
+                + implantBonuses.memoryBonus + implantBonuses.perceptionBonus
+                + implantBonuses.willpowerBonus
 
         // 基础值总和 (17 × 5 = 85)
         let baseTotal = 85
@@ -269,7 +269,7 @@ enum SkillTrainingCalculator {
         Logger.debug("可分配点数: \(allocatablePoints)")
         Logger.debug("计算得到的加速器加成值: \(boosterBonus)")
 
-        return max(0, boosterBonus)  // 确保不返回负值
+        return max(0, boosterBonus) // 确保不返回负值
     }
 
     /// 计算最优属性分配
@@ -303,11 +303,11 @@ enum SkillTrainingCalculator {
         // 批量获取所有技能的属性
         let skillIds = skillQueue.map { $0.skillId }
         let attributesQuery = """
-                SELECT type_id, attribute_id, value
-                FROM typeAttributes
-                WHERE type_id IN (\(skillIds.sorted().map { String($0) }.joined(separator: ",")))
-                AND attribute_id IN (180, 181)
-            """
+            SELECT type_id, attribute_id, value
+            FROM typeAttributes
+            WHERE type_id IN (\(skillIds.sorted().map { String($0) }.joined(separator: ",")))
+            AND attribute_id IN (180, 181)
+        """
 
         var skillAttributes: [Int: (primary: Int, secondary: Int)] = [:]
         if case let .success(rows) = databaseManager.executeQuery(attributesQuery) {
@@ -315,8 +315,8 @@ enum SkillTrainingCalculator {
             var groupedAttributes: [Int: [(attributeId: Int, value: Int)]] = [:]
             for row in rows {
                 guard let typeId = row["type_id"] as? Int,
-                    let attributeId = row["attribute_id"] as? Int,
-                    let value = row["value"] as? Double
+                      let attributeId = row["attribute_id"] as? Int,
+                      let value = row["value"] as? Double
                 else {
                     continue
                 }
@@ -350,7 +350,7 @@ enum SkillTrainingCalculator {
 
             // 如果技能正在训练，计算实际剩余SP
             if let startDate = skill.startDate,
-                let finishDate = skill.finishDate
+               let finishDate = skill.finishDate
             {
                 let now = Date()
                 if now > startDate, now < finishDate {
@@ -392,7 +392,7 @@ enum SkillTrainingCalculator {
             if let pointsPerHour = calculateTrainingRate(
                 primaryAttrId: info.primaryAttr,
                 secondaryAttrId: info.secondaryAttr,
-                attributes: currentAttributesWithoutBooster  // 使用去掉加速器影响的属性
+                attributes: currentAttributesWithoutBooster // 使用去掉加速器影响的属性
             ) {
                 let trainingTimeHours = Double(info.remainingSP) / Double(pointsPerHour)
                 currentTime += trainingTimeHours * 3600
@@ -448,7 +448,7 @@ enum SkillTrainingCalculator {
                             attributes: attributes
                         ) {
                             let trainingTimeHours = Double(info.remainingSP) / Double(pointsPerHour)
-                            totalTime += trainingTimeHours * 3600  // 转换为秒
+                            totalTime += trainingTimeHours * 3600 // 转换为秒
                         }
                     }
 
@@ -472,9 +472,9 @@ enum SkillTrainingCalculator {
             // 递归尝试不同的属性分配
             var nextValue: Int
             switch currentAttr {
-            case 0:  // 感知
+            case 0: // 感知
                 // 最多只能加到27,也就是最多加10点
-                for i in 0...min(remainingPoints, 10) {
+                for i in 0 ... min(remainingPoints, 10) {
                     nextValue = minAttr + i
                     tryAllocatePoints(
                         perception: nextValue,
@@ -486,8 +486,8 @@ enum SkillTrainingCalculator {
                         currentAttr: currentAttr + 1
                     )
                 }
-            case 1:  // 记忆
-                for i in 0...min(remainingPoints, 10) {
+            case 1: // 记忆
+                for i in 0 ... min(remainingPoints, 10) {
                     nextValue = minAttr + i
                     tryAllocatePoints(
                         perception: perception,
@@ -499,8 +499,8 @@ enum SkillTrainingCalculator {
                         currentAttr: currentAttr + 1
                     )
                 }
-            case 2:  // 意志
-                for i in 0...min(remainingPoints, 10) {
+            case 2: // 意志
+                for i in 0 ... min(remainingPoints, 10) {
                     nextValue = minAttr + i
                     tryAllocatePoints(
                         perception: perception,
@@ -512,8 +512,8 @@ enum SkillTrainingCalculator {
                         currentAttr: currentAttr + 1
                     )
                 }
-            case 3:  // 智力
-                for i in 0...min(remainingPoints, 10) {
+            case 3: // 智力
+                for i in 0 ... min(remainingPoints, 10) {
                     nextValue = minAttr + i
                     tryAllocatePoints(
                         perception: perception,
@@ -525,7 +525,7 @@ enum SkillTrainingCalculator {
                         currentAttr: currentAttr + 1
                     )
                 }
-            case 4:  // 魅力
+            case 4: // 魅力
                 // 最后一个属性,直接分配剩余点数,但不能超过10点
                 let points = min(remainingPoints, 10)
                 nextValue = minAttr + points

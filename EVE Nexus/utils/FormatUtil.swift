@@ -6,8 +6,8 @@ enum FormatUtil {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         formatter.minimumFractionDigits = 0
-        formatter.maximumFractionDigits = 3  // 默认最大3位小数
-        formatter.groupingSeparator = ","  // 千位分隔符
+        formatter.maximumFractionDigits = 3 // 默认最大3位小数
+        formatter.groupingSeparator = "," // 千位分隔符
         formatter.groupingSize = 3
         formatter.decimalSeparator = "."
         return formatter
@@ -18,8 +18,8 @@ enum FormatUtil {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         formatter.minimumSignificantDigits = 1
-        formatter.maximumSignificantDigits = 6  // 允许最多6位有效数字
-        formatter.usesSignificantDigits = true  // 启用有效数字模式
+        formatter.maximumSignificantDigits = 6 // 允许最多6位有效数字
+        formatter.usesSignificantDigits = true // 启用有效数字模式
         formatter.groupingSeparator = ","
         formatter.groupingSize = 3
         formatter.decimalSeparator = "."
@@ -31,8 +31,8 @@ enum FormatUtil {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         formatter.minimumFractionDigits = 0
-        formatter.maximumFractionDigits = 1  // UI显示最多1位小数
-        formatter.groupingSeparator = ""     // 不使用千位分隔符
+        formatter.maximumFractionDigits = 1 // UI显示最多1位小数
+        formatter.groupingSeparator = "" // 不使用千位分隔符
         formatter.decimalSeparator = "."
         return formatter
     }()
@@ -143,13 +143,13 @@ enum FormatUtil {
         // 根据大小使用不同的小数位数
         let formattedSize: String
         if unitIndex == 0 {
-            formattedSize = String(format: "%.0f", size)  // 字节不显示小数
+            formattedSize = String(format: "%.0f", size) // 字节不显示小数
         } else if size >= 100 {
-            formattedSize = String(format: "%.0f", size)  // 大于100时不显示小数
+            formattedSize = String(format: "%.0f", size) // 大于100时不显示小数
         } else if size >= 10 {
-            formattedSize = String(format: "%.1f", size)  // 大于10时显示1位小数
+            formattedSize = String(format: "%.1f", size) // 大于10时显示1位小数
         } else {
-            formattedSize = String(format: "%.2f", size)  // 其他情况显示2位小数
+            formattedSize = String(format: "%.2f", size) // 其他情况显示2位小数
         }
 
         return "\(formattedSize) \(units[unitIndex])"
@@ -171,24 +171,32 @@ enum FormatUtil {
         let billion = 1_000_000_000.0
         let million = 1_000_000.0
         let thousand = 1000.0
-        
+
         // 处理负数：转为正数格式化，然后添加负号
         let isNegative = value < 0
         let absoluteValue = abs(value)
 
         let formattedValue: String
         if absoluteValue >= trillion {
-            formattedValue = formatWithUnit(absoluteValue, unit: "T ISK", threshold: trillion, maxFractionDigits: 2)
+            formattedValue = formatWithUnit(
+                absoluteValue, unit: "T ISK", threshold: trillion, maxFractionDigits: 2
+            )
         } else if absoluteValue >= billion {
-            formattedValue = formatWithUnit(absoluteValue, unit: "B ISK", threshold: billion, maxFractionDigits: 2)
+            formattedValue = formatWithUnit(
+                absoluteValue, unit: "B ISK", threshold: billion, maxFractionDigits: 2
+            )
         } else if absoluteValue >= million {
-            formattedValue = formatWithUnit(absoluteValue, unit: "M ISK", threshold: million, maxFractionDigits: 2)
+            formattedValue = formatWithUnit(
+                absoluteValue, unit: "M ISK", threshold: million, maxFractionDigits: 2
+            )
         } else if absoluteValue >= thousand {
-            formattedValue = formatWithUnit(absoluteValue, unit: "K ISK", threshold: thousand, maxFractionDigits: 2)
+            formattedValue = formatWithUnit(
+                absoluteValue, unit: "K ISK", threshold: thousand, maxFractionDigits: 2
+            )
         } else {
             formattedValue = formatNumber(absoluteValue, maxFractionDigits: 1) + " ISK"
         }
-        
+
         return isNegative ? "-\(formattedValue)" : formattedValue
     }
 
@@ -309,6 +317,7 @@ enum FormatUtil {
     ///   ```
     ///   formatForUI(1234.5)                    // "1234.5"
     ///   formatForUI(1000.0)                    // "1000"
+    ///   formatForUI(1500000000000)             // "1.5T"
     ///   formatForUI(1500000000)                // "1.5B"
     ///   formatForUI(1500000)                   // "1.5M"
     ///   formatForUI(12500)                     // "12.5k"
@@ -318,33 +327,46 @@ enum FormatUtil {
         // 临时设置formatter的小数位数
         let originalMaxFractionDigits = uiFormatter.maximumFractionDigits
         uiFormatter.maximumFractionDigits = maxFractionDigits
-        
+
         defer {
             // 恢复原始设置
             uiFormatter.maximumFractionDigits = originalMaxFractionDigits
         }
-        
+
         if value == 0 {
             return "0"
+        } else if value >= 1_000_000_000_000 {
+            let formattedValue = value / 1_000_000_000_000
+            let numberString =
+                uiFormatter.string(from: NSNumber(value: formattedValue))
+                    ?? String(format: "%.\(maxFractionDigits)f", formattedValue)
+            return numberString + "T"
         } else if value >= 1_000_000_000 {
             let formattedValue = value / 1_000_000_000
-            let numberString = uiFormatter.string(from: NSNumber(value: formattedValue)) ?? String(format: "%.\(maxFractionDigits)f", formattedValue)
+            let numberString =
+                uiFormatter.string(from: NSNumber(value: formattedValue))
+                    ?? String(format: "%.\(maxFractionDigits)f", formattedValue)
             return numberString + "B"
         } else if value >= 1_000_000 {
             let formattedValue = value / 1_000_000
-            let numberString = uiFormatter.string(from: NSNumber(value: formattedValue)) ?? String(format: "%.\(maxFractionDigits)f", formattedValue)
+            let numberString =
+                uiFormatter.string(from: NSNumber(value: formattedValue))
+                    ?? String(format: "%.\(maxFractionDigits)f", formattedValue)
             return numberString + "M"
-        } else if value >= 10_000 {
+        } else if value >= 10000 {
             let formattedValue = value / 1000
-            let numberString = uiFormatter.string(from: NSNumber(value: formattedValue)) ?? String(format: "%.\(maxFractionDigits)f", formattedValue)
+            let numberString =
+                uiFormatter.string(from: NSNumber(value: formattedValue))
+                    ?? String(format: "%.\(maxFractionDigits)f", formattedValue)
             return numberString + "k"
         } else {
-            return uiFormatter.string(from: NSNumber(value: value)) ?? String(format: "%.\(maxFractionDigits)f", value)
+            return uiFormatter.string(from: NSNumber(value: value))
+                ?? String(format: "%.\(maxFractionDigits)f", value)
         }
     }
-    
+
     // MARK: - 日期格式化功能
-    
+
     /// 通用的UTC日期解析器
     private static let utcDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -353,7 +375,7 @@ enum FormatUtil {
         formatter.locale = Locale(identifier: "en_US_POSIX")
         return formatter
     }()
-    
+
     /// 备用UTC日期解析器（支持带时区的格式）
     private static let utcDateFormatterWithZ: DateFormatter = {
         let formatter = DateFormatter()
@@ -362,14 +384,14 @@ enum FormatUtil {
         formatter.locale = Locale(identifier: "en_US_POSIX")
         return formatter
     }()
-    
+
     /// ISO8601日期解析器
     private static let iso8601Formatter: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return formatter
     }()
-    
+
     /// 本地时间显示格式器（短格式）
     private static let localDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -378,7 +400,7 @@ enum FormatUtil {
         formatter.locale = Locale(identifier: "en_US_POSIX")
         return formatter
     }()
-    
+
     /// 本地时间显示格式器（带星期）
     private static let localDateFormatterWithWeekday: DateFormatter = {
         let formatter = DateFormatter()
@@ -386,7 +408,7 @@ enum FormatUtil {
         formatter.timeZone = TimeZone.current
         return formatter
     }()
-    
+
     /// 本地日期显示格式器（仅日期）
     private static let localDateOnlyFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -395,7 +417,7 @@ enum FormatUtil {
         formatter.locale = Locale(identifier: "en_US_POSIX")
         return formatter
     }()
-    
+
     /// 本地时间显示格式器（仅时间）
     private static let localTimeOnlyFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -404,7 +426,7 @@ enum FormatUtil {
         formatter.locale = Locale(identifier: "en_US_POSIX")
         return formatter
     }()
-    
+
     /// 将UTC日期字符串转换为Date对象
     /// - Parameter utcDateString: UTC格式的日期字符串
     /// - Returns: Date对象，如果解析失败返回nil
@@ -418,20 +440,20 @@ enum FormatUtil {
         if let date = utcDateFormatter.date(from: utcDateString) {
             return date
         }
-        
+
         // 尝试带时区的格式
         if let date = utcDateFormatterWithZ.date(from: utcDateString) {
             return date
         }
-        
+
         // 尝试ISO8601格式
         if let date = iso8601Formatter.date(from: utcDateString) {
             return date
         }
-        
+
         return nil
     }
-    
+
     /// 将UTC日期字符串转换为本地时间字符串（短格式）
     /// - Parameter utcDateString: UTC格式的日期字符串
     /// - Returns: 本地时间字符串，格式：yyyy-MM-dd HH:mm
@@ -445,7 +467,7 @@ enum FormatUtil {
         }
         return localDateFormatter.string(from: date)
     }
-    
+
     /// 将UTC日期字符串转换为本地时间字符串（带星期）
     /// - Parameter utcDateString: UTC格式的日期字符串
     /// - Returns: 本地时间字符串，格式：yyyy-MM-dd EEEE HH:mm
@@ -457,29 +479,15 @@ enum FormatUtil {
         guard let date = parseUTCDate(utcDateString) else {
             return utcDateString
         }
-        
+
         // 根据当前语言设置区域
         localDateFormatterWithWeekday.locale = Locale(
             identifier: NSLocalizedString("Language_Identifier", comment: "语言标识符")
         )
-        
+
         return localDateFormatterWithWeekday.string(from: date)
     }
-    
-    /// 将UTC日期字符串转换为本地日期字符串（仅日期）
-    /// - Parameter utcDateString: UTC格式的日期字符串
-    /// - Returns: 本地日期字符串，格式：yyyy-MM-dd
-    /// - Example:
-    ///   ```
-    ///   formatUTCToLocalDate("2024-01-15T10:30:00Z") // "2024-01-15"
-    ///   ```
-    static func formatUTCToLocalDate(_ utcDateString: String) -> String {
-        guard let date = parseUTCDate(utcDateString) else {
-            return utcDateString
-        }
-        return localDateOnlyFormatter.string(from: date)
-    }
-    
+
     /// 将UTC日期字符串转换为本地时间字符串（仅时间）
     /// - Parameter utcDateString: UTC格式的日期字符串
     /// - Returns: 本地时间字符串，格式：HH:mm:ss
@@ -493,26 +501,18 @@ enum FormatUtil {
         }
         return localTimeOnlyFormatter.string(from: date)
     }
-    
+
     /// 将Date对象格式化为本地时间字符串（短格式）
     /// - Parameter date: Date对象
     /// - Returns: 本地时间字符串，格式：yyyy-MM-dd HH:mm
     static func formatDateToLocalTime(_ date: Date) -> String {
         return localDateFormatter.string(from: date)
     }
-    
+
     /// 将Date对象格式化为本地日期字符串（仅日期）
     /// - Parameter date: Date对象
     /// - Returns: 本地日期字符串，格式：yyyy-MM-dd
     static func formatDateToLocalDate(_ date: Date) -> String {
         return localDateOnlyFormatter.string(from: date)
     }
-    
-    /// 将Date对象格式化为本地时间字符串（仅时间）
-    /// - Parameter date: Date对象
-    /// - Returns: 本地时间字符串，格式：HH:mm:ss
-    static func formatDateToLocalTimeOnly(_ date: Date) -> String {
-        return localTimeOnlyFormatter.string(from: date)
-    }
-
 }

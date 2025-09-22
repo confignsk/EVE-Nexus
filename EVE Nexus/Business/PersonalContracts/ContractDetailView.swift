@@ -15,12 +15,12 @@ final class ContractDetailViewModel: ObservableObject {
     @Published private(set) var startLocationInfo: LocationInfo?
     @Published private(set) var endLocationInfo: LocationInfo?
     @Published var isLoadingNames = true
-    
+
     // 添加类型信息存储
     @Published private(set) var issuerCategory: String = ""
     @Published private(set) var assigneeCategory: String = ""
     @Published private(set) var acceptorCategory: String = ""
-    
+
     // 添加头像存储
     @Published private(set) var issuerPortrait: UIImage?
     @Published private(set) var assigneePortrait: UIImage?
@@ -28,10 +28,11 @@ final class ContractDetailViewModel: ObservableObject {
 
     let characterId: Int
     private let contract: ContractInfo
-    private let isCorpContract: Bool
+    private let contractType: PersonalContractsViewModel.ContractType
     let databaseManager: DatabaseManager
     private lazy var locationLoader: LocationInfoLoader = .init(
-        databaseManager: databaseManager, characterId: Int64(characterId))
+        databaseManager: databaseManager, characterId: Int64(characterId)
+    )
 
     // 添加物品信息缓存
     private var itemDetailsCache: [Int: (name: String, description: String, iconFileName: String)] =
@@ -44,7 +45,10 @@ final class ContractDetailViewModel: ObservableObject {
         let typeId: Int?
         let iconFileName: String?
 
-        init(stationName: String, solarSystemName: String, security: Double, typeId: Int? = nil, iconFileName: String? = nil) {
+        init(
+            stationName: String, solarSystemName: String, security: Double, typeId: Int? = nil,
+            iconFileName: String? = nil
+        ) {
             self.stationName = stationName
             self.solarSystemName = solarSystemName
             self.security = security
@@ -57,39 +61,39 @@ final class ContractDetailViewModel: ObservableObject {
     var sortedIncludedItems: [ContractItemInfo] {
         return
             items
-            .filter { $0.is_included }
-            .sorted { item1, item2 in
-                item1.record_id < item2.record_id
-            }
+                .filter { $0.is_included }
+                .sorted { item1, item2 in
+                    item1.record_id < item2.record_id
+                }
     }
 
     var sortedRequiredItems: [ContractItemInfo] {
         return
             items
-            .filter { !$0.is_included }
-            .sorted { item1, item2 in
-                item1.record_id < item2.record_id
-            }
+                .filter { !$0.is_included }
+                .sorted { item1, item2 in
+                    item1.record_id < item2.record_id
+                }
     }
 
     init(
         characterId: Int, contract: ContractInfo, databaseManager: DatabaseManager,
-        isCorpContract: Bool
+        contractType: PersonalContractsViewModel.ContractType
     ) {
         self.characterId = characterId
         self.contract = contract
         self.databaseManager = databaseManager
-        self.isCorpContract = isCorpContract
+        self.contractType = contractType
     }
 
     // 批量加载物品详细信息
     private func loadItemDetails(for items: [ContractItemInfo]) {
         let typeIds = Set(items.map { $0.type_id })
         let query = """
-                SELECT type_id, name, description, icon_filename
-                FROM types
-                WHERE type_id IN (\(typeIds.sorted().map { String($0) }.joined(separator: ",")))
-            """
+            SELECT type_id, name, description, icon_filename
+            FROM types
+            WHERE type_id IN (\(typeIds.sorted().map { String($0) }.joined(separator: ",")))
+        """
 
         let result = databaseManager.executeQuery(query)
         if case let .success(rows) = result {
@@ -130,7 +134,7 @@ final class ContractDetailViewModel: ObservableObject {
 
     func loadContractItems(forceRefresh: Bool = false) async {
         Logger.debug(
-            "开始加载合同物品 - 角色ID: \(characterId), 合同ID: \(contract.contract_id), 强制刷新: \(forceRefresh), 是否军团合同: \(isCorpContract)"
+            "开始加载合同物品 - 角色ID: \(characterId), 合同ID: \(contract.contract_id), 强制刷新: \(forceRefresh), 合同类型: \(contractType.localizedName)"
         )
         isLoading = true
         errorMessage = nil
@@ -138,12 +142,18 @@ final class ContractDetailViewModel: ObservableObject {
         await withTaskCancellationHandler(
             operation: {
                 do {
-                    if isCorpContract {
+                    switch contractType {
+                    case .corporation:
                         items = try await CorporationContractsAPI.shared.fetchContractItems(
                             characterId: characterId,
                             contractId: contract.contract_id
                         )
-                    } else {
+                    case .alliance:
+                        items = try await AllianceContractsAPI.shared.fetchContractItems(
+                            characterId: characterId,
+                            contractId: contract.contract_id
+                        )
+                    case .personal:
                         items = try await CharacterContractsAPI.shared.fetchContractItems(
                             characterId: characterId,
                             contractId: contract.contract_id,
@@ -198,7 +208,8 @@ final class ContractDetailViewModel: ObservableObject {
 
         // 更新位置信息并获取建筑图标
         if let startInfo = locationInfos[contract.start_location_id] {
-            let (typeId, iconFileName) = await getLocationTypeAndIcon(locationId: contract.start_location_id)
+            let (typeId, iconFileName) = await getLocationTypeAndIcon(
+                locationId: contract.start_location_id)
             startLocationInfo = LocationInfo(
                 stationName: startInfo.stationName,
                 solarSystemName: startInfo.solarSystemName,
@@ -210,7 +221,8 @@ final class ContractDetailViewModel: ObservableObject {
         }
 
         if let endInfo = locationInfos[contract.end_location_id] {
-            let (typeId, iconFileName) = await getLocationTypeAndIcon(locationId: contract.end_location_id)
+            let (typeId, iconFileName) = await getLocationTypeAndIcon(
+                locationId: contract.end_location_id)
             endLocationInfo = LocationInfo(
                 stationName: endInfo.stationName,
                 solarSystemName: endInfo.solarSystemName,
@@ -223,7 +235,8 @@ final class ContractDetailViewModel: ObservableObject {
 
         do {
             Logger.debug("开始获取名称信息，IDs: \(ids)")
-            let namesWithCategories = try await UniverseAPI.shared.getNamesWithFallback(ids: Array(ids))
+            let namesWithCategories = try await UniverseAPI.shared.getNamesWithFallback(
+                ids: Array(ids))
 
             // 更新名称和类型
             if let issuerInfo = namesWithCategories[contract.issuer_id] {
@@ -242,37 +255,39 @@ final class ContractDetailViewModel: ObservableObject {
             }
 
             if let assigneeId = contract.assignee_id,
-                let assigneeInfo = namesWithCategories[assigneeId]
+               let assigneeInfo = namesWithCategories[assigneeId]
             {
                 Logger.debug("获取到指定人名称: \(assigneeInfo.name), 类型: \(assigneeInfo.category)")
-                self.assigneeName = assigneeInfo.name
-                self.assigneeCategory = assigneeInfo.category
+                assigneeName = assigneeInfo.name
+                assigneeCategory = assigneeInfo.category
             }
 
             if let acceptorId = contract.acceptor_id, acceptorId > 0,
-                let acceptorInfo = namesWithCategories[acceptorId]
+               let acceptorInfo = namesWithCategories[acceptorId]
             {
                 Logger.debug("获取到接受人名称: \(acceptorInfo.name), 类型: \(acceptorInfo.category)")
-                self.acceptorName = acceptorInfo.name
-                self.acceptorCategory = acceptorInfo.category
+                acceptorName = acceptorInfo.name
+                acceptorCategory = acceptorInfo.category
             }
 
             // 异步加载头像（不阻塞UI）
             Task {
                 await loadPortraits()
             }
-            
+
             isLoadingNames = false
         } catch {
             Logger.error("加载合同相关方名称失败: \(error)")
             isLoadingNames = false
         }
     }
-    
+
     // 获取位置类型ID和图标文件名
-    private func getLocationTypeAndIcon(locationId: Int64) async -> (typeId: Int?, iconFileName: String?) {
+    private func getLocationTypeAndIcon(locationId: Int64) async -> (
+        typeId: Int?, iconFileName: String?
+    ) {
         let locationType = LocationType.from(id: locationId)
-        
+
         switch locationType {
         case .station:
             // 从数据库获取空间站类型ID和图标
@@ -282,10 +297,12 @@ final class ContractDetailViewModel: ObservableObject {
                 LEFT JOIN types t ON s.stationTypeID = t.type_id
                 WHERE s.stationID = ?
             """
-            if case let .success(rows) = databaseManager.executeQuery(query, parameters: [Int(locationId)]),
-               let row = rows.first,
-               let typeId = row["stationTypeID"] as? Int {
-                
+            if case let .success(rows) = databaseManager.executeQuery(
+                query, parameters: [Int(locationId)]
+            ),
+                let row = rows.first,
+                let typeId = row["stationTypeID"] as? Int
+            {
                 // 获取图标文件名
                 let iconFileName: String?
                 if let iconFile = row["icon_filename"] as? String, !iconFile.isEmpty {
@@ -294,13 +311,14 @@ final class ContractDetailViewModel: ObservableObject {
                     // 如果空间站没有图标，使用通用空间站图标
                     iconFileName = DatabaseConfig.defaultItemIcon
                 }
-                
-                Logger.debug("空间站信息 - ID: \(locationId), TypeID: \(typeId), Icon: \(iconFileName ?? "none")")
+
+                Logger.debug(
+                    "空间站信息 - ID: \(locationId), TypeID: \(typeId), Icon: \(iconFileName ?? "none")")
                 return (typeId: typeId, iconFileName: iconFileName)
             } else {
                 Logger.warning("未找到空间站信息 - ID: \(locationId)")
             }
-            
+
         case .structure:
             // 尝试从UniverseStructureAPI获取建筑物类型信息（不强制刷新，可能有缓存）
             if let structureInfo = try? await UniverseStructureAPI.shared.fetchStructureInfo(
@@ -310,58 +328,67 @@ final class ContractDetailViewModel: ObservableObject {
                 cacheTimeOut: 168 // 7天缓存
             ) {
                 let iconFileName = getTypeIcon(typeId: structureInfo.type_id)
-                Logger.debug("建筑物信息 - ID: \(locationId), TypeID: \(structureInfo.type_id), Icon: \(iconFileName ?? "none")")
+                Logger.debug(
+                    "建筑物信息 - ID: \(locationId), TypeID: \(structureInfo.type_id), Icon: \(iconFileName ?? "none")"
+                )
                 return (typeId: structureInfo.type_id, iconFileName: iconFileName)
             } else {
                 Logger.warning("未找到建筑物信息 - ID: \(locationId)")
             }
-            
+
         case .solarSystem:
             // 星系没有特定图标，返回nil
             Logger.debug("星系位置 - ID: \(locationId), 不显示图标")
             return (typeId: nil, iconFileName: nil)
-            
+
         case .unknown:
             // 未知类型，返回nil
             Logger.warning("未知位置类型 - ID: \(locationId)")
             return (typeId: nil, iconFileName: nil)
         }
-        
+
         return (typeId: nil, iconFileName: nil)
     }
-    
+
     // 从数据库获取类型图标
     private func getTypeIcon(typeId: Int) -> String? {
         let query = "SELECT icon_filename FROM types WHERE type_id = ?"
         if case let .success(rows) = databaseManager.executeQuery(query, parameters: [typeId]),
            let row = rows.first,
            let iconFilename = row["icon_filename"] as? String,
-           !iconFilename.isEmpty {
+           !iconFilename.isEmpty
+        {
             return iconFilename
         }
         return DatabaseConfig.defaultItemIcon
     }
-    
+
     // 异步加载头像
     private func loadPortraits() async {
         // 并发加载所有头像
-        async let issuerPortraitTask = loadPortrait(id: contract.issuer_id, category: issuerCategory)
-        
+        async let issuerPortraitTask = loadPortrait(
+            id: contract.issuer_id, category: issuerCategory
+        )
+
         var assigneePortraitTask: Task<UIImage?, Never>?
         if let assigneeId = contract.assignee_id, !assigneeCategory.isEmpty {
-            assigneePortraitTask = Task { await loadPortrait(id: assigneeId, category: assigneeCategory) }
+            assigneePortraitTask = Task {
+                await loadPortrait(id: assigneeId, category: assigneeCategory)
+            }
         }
-        
+
         var acceptorPortraitTask: Task<UIImage?, Never>?
         if let acceptorId = contract.acceptor_id, acceptorId > 0, !acceptorCategory.isEmpty {
-            acceptorPortraitTask = Task { await loadPortrait(id: acceptorId, category: acceptorCategory) }
+            acceptorPortraitTask = Task {
+                await loadPortrait(id: acceptorId, category: acceptorCategory)
+            }
         }
-        
+
         // 等待所有任务完成
         let issuerPortrait = await issuerPortraitTask
         let assigneePortrait = await assigneePortraitTask?.value
         let acceptorPortrait = await acceptorPortraitTask?.value
-        
+
         // 更新UI
         await MainActor.run {
             self.issuerPortrait = issuerPortrait
@@ -369,12 +396,14 @@ final class ContractDetailViewModel: ObservableObject {
             self.acceptorPortrait = acceptorPortrait
         }
     }
-    
+
     // 根据类型加载头像
     private func loadPortrait(id: Int, category: String) async -> UIImage? {
         switch category {
         case "character":
-            return try? await CharacterAPI.shared.fetchCharacterPortrait(characterId: id, catchImage: false)
+            return try? await CharacterAPI.shared.fetchCharacterPortrait(
+                characterId: id, catchImage: false
+            )
         case "corporation":
             return try? await CorporationAPI.shared.fetchCorporationLogo(corporationId: id)
         case "alliance":
@@ -391,7 +420,7 @@ struct ContractDetailView: View {
     @State private var isRefreshing = false
     @State private var hasLoadedInitialData = false
     @State private var currentCharacter: EVECharacterInfo?
-    
+
     // 添加日期格式化器作为实例属性
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -403,7 +432,7 @@ struct ContractDetailView: View {
 
     init(
         characterId: Int, contract: ContractInfo, databaseManager: DatabaseManager,
-        isCorpContract: Bool
+        contractType: PersonalContractsViewModel.ContractType
     ) {
         self.contract = contract
         _viewModel = StateObject(
@@ -411,7 +440,7 @@ struct ContractDetailView: View {
                 characterId: characterId,
                 contract: contract,
                 databaseManager: databaseManager,
-                isCorpContract: isCorpContract
+                contractType: contractType
             ))
     }
 
@@ -423,14 +452,14 @@ struct ContractDetailView: View {
         case "rejected", "failed", "reversed":
             return .red
         case "outstanding", "in_progress":
-            return .blue  // 进行中和待处理状态显示为蓝色
+            return .blue // 进行中和待处理状态显示为蓝色
         case "finished", "finished_issuer", "finished_contractor":
-            return .green  // 完成状态显示为绿色
+            return .green // 完成状态显示为绿色
         default:
-            return .primary  // 其他状态使用主色调
+            return .primary // 其他状态使用主色调
         }
     }
-    
+
     // 导航到详情页面的辅助方法
     @ViewBuilder
     private func navigationDestination(for id: Int, category: String) -> some View {
@@ -449,7 +478,7 @@ struct ContractDetailView: View {
             EmptyView()
         }
     }
-    
+
     // 根据类型返回默认图标
     private func getDefaultIcon(for category: String) -> Image {
         switch category {
@@ -479,10 +508,10 @@ struct ContractDetailView: View {
                                 "\(NSLocalizedString("Contract_Type_\(contract.type)", comment: "")) "
                             )
                             .foregroundColor(.secondary)
-                                + Text(
-                                    "[\(NSLocalizedString("Contract_Status_\(contract.status)", comment: ""))]"
-                                )
-                                .foregroundColor(getStatusColor(contract.status)))
+                            + Text(
+                                "[\(NSLocalizedString("Contract_Status_\(contract.status)", comment: ""))]"
+                            )
+                            .foregroundColor(getStatusColor(contract.status)))
                                 .font(.caption)
                         }
 
@@ -494,16 +523,16 @@ struct ContractDetailView: View {
                                     // 左侧：标题和文本
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(NSLocalizedString("Contract_Location", comment: ""))
-                                        
+
                                         LocationInfoView(
                                             stationName: startInfo.stationName,
                                             solarSystemName: startInfo.solarSystemName,
                                             security: startInfo.security
                                         )
                                     }
-                                    
+
                                     Spacer()
-                                    
+
                                     // 右侧：图标
                                     if let iconFileName = startInfo.iconFileName {
                                         IconManager.shared.loadImage(for: iconFileName)
@@ -523,17 +552,20 @@ struct ContractDetailView: View {
                                 HStack(spacing: 12) {
                                     // 左侧：标题和文本
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text(NSLocalizedString("Contract_Start_Location", comment: ""))
-                                        
+                                        Text(
+                                            NSLocalizedString(
+                                                "Contract_Start_Location", comment: ""
+                                            ))
+
                                         LocationInfoView(
                                             stationName: startInfo.stationName,
                                             solarSystemName: startInfo.solarSystemName,
                                             security: startInfo.security
                                         )
                                     }
-                                    
+
                                     Spacer()
-                                    
+
                                     // 右侧：图标
                                     if let iconFileName = startInfo.iconFileName {
                                         IconManager.shared.loadImage(for: iconFileName)
@@ -548,23 +580,26 @@ struct ContractDetailView: View {
                                             .foregroundColor(.secondary)
                                     }
                                 }
-                                
+
                                 // 显示终点（如果存在）
                                 if let endInfo = viewModel.endLocationInfo {
                                     HStack(spacing: 12) {
                                         // 左侧：标题和文本
                                         VStack(alignment: .leading, spacing: 2) {
-                                            Text(NSLocalizedString("Contract_End_Location", comment: ""))
-                                            
+                                            Text(
+                                                NSLocalizedString(
+                                                    "Contract_End_Location", comment: ""
+                                                ))
+
                                             LocationInfoView(
                                                 stationName: endInfo.stationName,
                                                 solarSystemName: endInfo.solarSystemName,
                                                 security: endInfo.security
                                             )
                                         }
-                                        
+
                                         Spacer()
-                                        
+
                                         // 右侧：图标
                                         if let iconFileName = endInfo.iconFileName {
                                             IconManager.shared.loadImage(for: iconFileName)
@@ -588,7 +623,7 @@ struct ContractDetailView: View {
                             // 左侧：标题和文本
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(NSLocalizedString("Contract_Issuer", comment: ""))
-                                
+
                                 HStack(spacing: 4) {
                                     Text(
                                         viewModel.issuerName.isEmpty
@@ -601,9 +636,9 @@ struct ContractDetailView: View {
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                             }
-                            
+
                             Spacer()
-                            
+
                             // 右侧：头像
                             if let portrait = viewModel.issuerPortrait {
                                 Image(uiImage: portrait)
@@ -622,35 +657,45 @@ struct ContractDetailView: View {
                             Button {
                                 UIPasteboard.general.string = viewModel.issuerName
                             } label: {
-                                Label(NSLocalizedString("Misc_Copy_Name", comment: ""), systemImage: "doc.on.doc")
+                                Label(
+                                    NSLocalizedString("Misc_Copy_Name", comment: ""),
+                                    systemImage: "doc.on.doc"
+                                )
                             }
-                            
-                            if !viewModel.issuerName.isEmpty && !viewModel.issuerCategory.isEmpty && currentCharacter != nil {
+
+                            if !viewModel.issuerName.isEmpty && !viewModel.issuerCategory.isEmpty
+                                && currentCharacter != nil
+                            {
                                 NavigationLink {
-                                    navigationDestination(for: contract.issuer_id, category: viewModel.issuerCategory)
+                                    navigationDestination(
+                                        for: contract.issuer_id, category: viewModel.issuerCategory
+                                    )
                                 } label: {
-                                    Label(NSLocalizedString("Misc_Show_Detail", comment: ""), systemImage: "info.circle")
+                                    Label(
+                                        NSLocalizedString("Misc_Show_Detail", comment: ""),
+                                        systemImage: "info.circle"
+                                    )
                                 }
                             }
                         }
 
                         // 合同对象（如果存在）
                         if let assigneeId = contract.assignee_id,
-                            assigneeId > 0,
-                            !viewModel.assigneeName.isEmpty
+                           assigneeId > 0,
+                           !viewModel.assigneeName.isEmpty
                         {
                             HStack(spacing: 12) {
                                 // 左侧：标题和文本
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(NSLocalizedString("Contract_Assignee", comment: ""))
-                                    
+
                                     Text(viewModel.assigneeName)
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                 }
-                                
+
                                 Spacer()
-                                
+
                                 // 右侧：头像
                                 if let portrait = viewModel.assigneePortrait {
                                     Image(uiImage: portrait)
@@ -669,15 +714,25 @@ struct ContractDetailView: View {
                                 Button {
                                     UIPasteboard.general.string = viewModel.assigneeName
                                 } label: {
-                                    Label(NSLocalizedString("Misc_Copy_Name", comment: ""), systemImage: "doc.on.doc")
+                                    Label(
+                                        NSLocalizedString("Misc_Copy_Name", comment: ""),
+                                        systemImage: "doc.on.doc"
+                                    )
                                 }
-                                
-                                if !viewModel.assigneeName.isEmpty && !viewModel.assigneeCategory.isEmpty,
-                                   let assigneeId = contract.assignee_id, currentCharacter != nil {
+
+                                if !viewModel.assigneeName.isEmpty
+                                    && !viewModel.assigneeCategory.isEmpty,
+                                    let assigneeId = contract.assignee_id, currentCharacter != nil
+                                {
                                     NavigationLink {
-                                        navigationDestination(for: assigneeId, category: viewModel.assigneeCategory)
+                                        navigationDestination(
+                                            for: assigneeId, category: viewModel.assigneeCategory
+                                        )
                                     } label: {
-                                        Label(NSLocalizedString("Misc_Show_Detail", comment: ""), systemImage: "info.circle")
+                                        Label(
+                                            NSLocalizedString("Misc_Show_Detail", comment: ""),
+                                            systemImage: "info.circle"
+                                        )
                                     }
                                 }
                             }
@@ -685,22 +740,22 @@ struct ContractDetailView: View {
 
                         // 如果接收人存在且与对象不同，显示接收人
                         if let acceptorId = contract.acceptor_id,
-                            acceptorId > 0,
-                            !viewModel.acceptorName.isEmpty
-                                && viewModel.acceptorName != viewModel.assigneeName
+                           acceptorId > 0,
+                           !viewModel.acceptorName.isEmpty
+                           && viewModel.acceptorName != viewModel.assigneeName
                         {
                             HStack(spacing: 12) {
                                 // 左侧：标题和文本
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(NSLocalizedString("Contract_Acceptor", comment: ""))
-                                    
+
                                     Text(viewModel.acceptorName)
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                 }
-                                
+
                                 Spacer()
-                                
+
                                 // 右侧：头像
                                 if let portrait = viewModel.acceptorPortrait {
                                     Image(uiImage: portrait)
@@ -719,15 +774,25 @@ struct ContractDetailView: View {
                                 Button {
                                     UIPasteboard.general.string = viewModel.acceptorName
                                 } label: {
-                                    Label(NSLocalizedString("Misc_Copy_Name", comment: ""), systemImage: "doc.on.doc")
+                                    Label(
+                                        NSLocalizedString("Misc_Copy_Name", comment: ""),
+                                        systemImage: "doc.on.doc"
+                                    )
                                 }
-                                
-                                if !viewModel.acceptorName.isEmpty && !viewModel.acceptorCategory.isEmpty,
-                                   let acceptorId = contract.acceptor_id, currentCharacter != nil {
+
+                                if !viewModel.acceptorName.isEmpty
+                                    && !viewModel.acceptorCategory.isEmpty,
+                                    let acceptorId = contract.acceptor_id, currentCharacter != nil
+                                {
                                     NavigationLink {
-                                        navigationDestination(for: acceptorId, category: viewModel.acceptorCategory)
+                                        navigationDestination(
+                                            for: acceptorId, category: viewModel.acceptorCategory
+                                        )
                                     } label: {
-                                        Label(NSLocalizedString("Misc_Show_Detail", comment: ""), systemImage: "info.circle")
+                                        Label(
+                                            NSLocalizedString("Misc_Show_Detail", comment: ""),
+                                            systemImage: "info.circle"
+                                        )
                                     }
                                 }
                             }
@@ -778,7 +843,7 @@ struct ContractDetailView: View {
                                     .foregroundColor(.secondary)
                             }
                         }
-                        
+
                         // 合同发布日期
                         VStack(alignment: .leading, spacing: 2) {
                             Text(NSLocalizedString("Contract_Date_Issued", comment: "发布日期"))
@@ -786,41 +851,55 @@ struct ContractDetailView: View {
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
-                        
+
                         // 根据合同状态显示相应的日期信息
                         if contract.status == "outstanding" {
                             // 未决合同显示过期日期和剩余时间
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(NSLocalizedString("Contract_Date_Expired", comment: "过期日期"))
-                                
-                                let expiredText = "\(dateFormatter.string(from: contract.date_expired))"
-                                
+
+                                let expiredText =
+                                    "\(dateFormatter.string(from: contract.date_expired))"
+
                                 // 计算剩余天数
-                                let remainingDays = Calendar.current.dateComponents(
-                                    [.day], 
-                                    from: Date(), 
-                                    to: contract.date_expired
-                                ).day ?? 0
-                                
+                                let remainingDays =
+                                    Calendar.current.dateComponents(
+                                        [.day],
+                                        from: Date(),
+                                        to: contract.date_expired
+                                    ).day ?? 0
+
                                 if remainingDays > 0 {
-                                    Text("\(expiredText) (\(String(format: NSLocalizedString("Contract_Days_Remaining_Full", comment: ""), remainingDays)))")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
+                                    Text(
+                                        "\(expiredText) (\(String(format: NSLocalizedString("Contract_Days_Remaining_Full", comment: ""), remainingDays)))"
+                                    )
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
                                 } else if remainingDays == 0 {
-                                    Text("\(expiredText) (\(NSLocalizedString("Contract_Expires_Today", comment: "")))")
-                                        .font(.caption)
-                                        .foregroundColor(.orange)
+                                    Text(
+                                        "\(expiredText) (\(NSLocalizedString("Contract_Expires_Today", comment: "")))"
+                                    )
+                                    .font(.caption)
+                                    .foregroundColor(.orange)
                                 } else {
-                                    Text("\(expiredText) (\(NSLocalizedString("Contract_Expired", comment: "")))")
-                                        .font(.caption)
-                                        .foregroundColor(.red)
+                                    Text(
+                                        "\(expiredText) (\(NSLocalizedString("Contract_Expired", comment: "")))"
+                                    )
+                                    .font(.caption)
+                                    .foregroundColor(.red)
                                 }
                             }
-                        } else if contract.status == "finished" || contract.status == "finished_issuer" || contract.status == "finished_contractor" {
+                        } else if contract.status == "finished"
+                            || contract.status == "finished_issuer"
+                            || contract.status == "finished_contractor"
+                        {
                             // 已完成合同显示完成日期
                             if let dateCompleted = contract.date_completed {
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(NSLocalizedString("Contract_Date_Completed", comment: "完成日期"))
+                                    Text(
+                                        NSLocalizedString(
+                                            "Contract_Date_Completed", comment: "完成日期"
+                                        ))
                                     Text("\(dateFormatter.string(from: dateCompleted))")
                                         .font(.caption)
                                         .foregroundColor(.secondary)
@@ -893,13 +972,13 @@ struct ContractDetailView: View {
         .task {
             guard !hasLoadedInitialData else { return }
             Logger.debug("ContractDetailView.task 开始执行初始数据加载")
-            
+
             // 首先加载当前角色信息
             let characterId = viewModel.characterId
             if let auth = EVELogin.shared.getCharacterByID(characterId) {
                 currentCharacter = auth.character
             }
-            
+
             // 使用withTaskGroup来更好地管理并发任务
             await withTaskGroup(of: Void.self) { group in
                 group.addTask { await viewModel.loadContractItems() }

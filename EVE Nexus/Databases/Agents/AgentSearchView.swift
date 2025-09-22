@@ -5,16 +5,16 @@ import SwiftUI
 let agentTypeIDs: [Int] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
 // 部门图标映射
 let divisionIcons: [Int: String] = [
-    24: "gunnery_turret",  // 安全
-    23: "miner",  // 采矿
-    22: "cargo_fit",  // 物流
-    18: "pg",  // 研发
-    25: "not_found",  // 工业家 - 商业大亨
-    26: "not_found",  // 探险家
-    27: "not_found",  // 工业家 - 制造商
-    28: "not_found",  // 执法者
-    29: "not_found",  // 自由战士
-    37: "not_found",  // 星际捷运
+    24: "gunnery_turret", // 安全
+    23: "miner", // 采矿
+    22: "cargo_fit", // 物流
+    18: "pg", // 研发
+    25: "not_found", // 工业家 - 商业大亨
+    26: "not_found", // 探险家
+    27: "not_found", // 工业家 - 制造商
+    28: "not_found", // 执法者
+    29: "not_found", // 自由战士
+    37: "not_found", // 星际捷运
 ]
 
 // 获取代理人类型名称的函数
@@ -79,7 +79,7 @@ struct AgentSearchView: View {
     @ObservedObject var databaseManager: DatabaseManager
     @State private var isNavigatingToResults = false
     @State private var searchResultsDestination: String? = nil
-    @State private var searchResults: [AgentItem] = []  // 添加存储搜索结果的状态变量
+    @State private var searchResults: [AgentItem] = [] // 添加存储搜索结果的状态变量
 
     // 过滤条件
     @State private var selectedDivisionID: Int?
@@ -88,12 +88,12 @@ struct AgentSearchView: View {
     @State private var selectedFactionID: Int?
     @State private var selectedCorporationID: Int?
     @State private var isLocatorOnly = false
-    @State private var isSpaceAgentOnly = false  // 添加空间代理人筛选条件
-    @State private var selectedAgentType: Int? = nil  // 不默认选择任何代理人类型
-    @State private var selectedRegionID: Int? = nil  // 添加选中的星域ID
-    @State private var selectedRegionName: String? = nil  // 添加选中的星域名称
-    @State private var selectedSolarSystemID: Int? = nil  // 添加选中的星系ID
-    @State private var selectedSolarSystemName: String? = nil  // 添加选中的星系名称
+    @State private var isSpaceAgentOnly = false // 添加空间代理人筛选条件
+    @State private var selectedAgentType: Int? = nil // 不默认选择任何代理人类型
+    @State private var selectedRegionID: Int? = nil // 添加选中的星域ID
+    @State private var selectedRegionName: String? = nil // 添加选中的星域名称
+    @State private var selectedSolarSystemID: Int? = nil // 添加选中的星系ID
+    @State private var selectedSolarSystemName: String? = nil // 添加选中的星系名称
 
     // 可用的选项数据
     @State private var availableFactions: [(Int, String, String)] = []
@@ -263,7 +263,8 @@ struct AgentSearchView: View {
                             VStack(alignment: .leading) {
                                 Text(
                                     NSLocalizedString(
-                                        "Agent_Search_Locator_Only", comment: "仅显示寻人代理人")
+                                        "Agent_Search_Locator_Only", comment: "仅显示寻人代理人"
+                                    )
                                 )
                                 .font(.system(size: 16))
                                 .foregroundColor(.primary)
@@ -284,7 +285,8 @@ struct AgentSearchView: View {
                             VStack(alignment: .leading) {
                                 Text(
                                     NSLocalizedString(
-                                        "Agent_Search_Space_Only", comment: "仅显示空间代理人")
+                                        "Agent_Search_Space_Only", comment: "仅显示空间代理人"
+                                    )
                                 )
                                 .font(.system(size: 16))
                                 .foregroundColor(.primary)
@@ -339,7 +341,8 @@ struct AgentSearchView: View {
                                     ?? (selectedRegionID == nil
                                         ? NSLocalizedString("System_All", comment: "所有星系")
                                         : NSLocalizedString(
-                                            "System_All_In_Region", comment: "该星域内所有星系"))
+                                            "System_All_In_Region", comment: "该星域内所有星系"
+                                        ))
                             )
                             .foregroundColor(.gray)
                         }
@@ -376,7 +379,7 @@ struct AgentSearchView: View {
             AgentListHierarchyView(
                 databaseManager: databaseManager,
                 level: .faction,
-                searchResults: searchResults,  // 使用存储的搜索结果
+                searchResults: searchResults, // 使用存储的搜索结果
                 title: NSLocalizedString("Agent_Search_Results", comment: "搜索结果")
             )
         }
@@ -395,11 +398,11 @@ struct AgentSearchView: View {
         selectedFactionID = nil
         selectedCorporationID = nil
         isLocatorOnly = false
-        isSpaceAgentOnly = false  // 重置空间代理人筛选条件
-        selectedAgentType = nil  // 重置为nil
-        selectedRegionID = nil  // 重置星域过滤
+        isSpaceAgentOnly = false // 重置空间代理人筛选条件
+        selectedAgentType = nil // 重置为nil
+        selectedRegionID = nil // 重置星域过滤
         selectedRegionName = nil
-        selectedSolarSystemID = nil  // 重置星系过滤
+        selectedSolarSystemID = nil // 重置星系过滤
         selectedSolarSystemName = nil
     }
 
@@ -502,53 +505,55 @@ struct AgentSearchView: View {
         let whereClause = conditions.isEmpty ? "" : "WHERE " + conditions.joined(separator: " AND ")
 
         let query = """
-                SELECT 
-                    a.agent_id, 
-                    a.agent_type, 
-                    COALESCE(a.agent_name, 'Unknown') as name,
-                    a.level, 
-                    a.corporationID, 
-                    a.divisionID, 
-                    a.isLocator, 
-                    a.locationID,
-                    COALESCE(st.stationName, 'Unknown') as locationName,
-                    a.solarSystemID, 
-                    s.solarSystemName as solarSystemName,
-                    s.security_status as system_security,
-                    st.security as station_security,
-                    c.name as corporationName, 
-                    f.id as factionID, 
-                    f.name as factionName, 
-                    f.iconName as factionIcon,
-                    d.name as divisionName,
-                    COALESCE(s.solarSystemName, ss.solarSystemName, 'Unknown') as sortLocation
-                FROM agents a
-                LEFT JOIN solarsystems s ON a.solarSystemID = s.solarSystemID
-                LEFT JOIN stations st ON a.locationID = st.stationID
-                LEFT JOIN solarsystems ss ON st.solarSystemID = ss.solarSystemID
-                JOIN npcCorporations c ON a.corporationID = c.corporation_id
-                JOIN factions f ON c.faction_id = f.id
-                LEFT JOIN divisions d ON a.divisionID = d.division_id
-                \(whereClause)
-                ORDER BY sortLocation, f.name, c.name, d.name, a.level DESC, name
-            """
+            SELECT 
+                a.agent_id, 
+                a.agent_type, 
+                COALESCE(a.agent_name, 'Unknown') as name,
+                a.level, 
+                a.corporationID, 
+                a.divisionID, 
+                a.isLocator, 
+                a.locationID,
+                COALESCE(st.stationName, 'Unknown') as locationName,
+                a.solarSystemID, 
+                s.solarSystemName as solarSystemName,
+                s.security_status as system_security,
+                st.security as station_security,
+                c.name as corporationName, 
+                f.id as factionID, 
+                f.name as factionName, 
+                f.iconName as factionIcon,
+                d.name as divisionName,
+                COALESCE(s.solarSystemName, ss.solarSystemName, 'Unknown') as sortLocation
+            FROM agents a
+            LEFT JOIN solarsystems s ON a.solarSystemID = s.solarSystemID
+            LEFT JOIN stations st ON a.locationID = st.stationID
+            LEFT JOIN solarsystems ss ON st.solarSystemID = ss.solarSystemID
+            JOIN npcCorporations c ON a.corporationID = c.corporation_id
+            JOIN factions f ON c.faction_id = f.id
+            LEFT JOIN divisions d ON a.divisionID = d.division_id
+            \(whereClause)
+            ORDER BY sortLocation, f.name, c.name, d.name, a.level DESC, name
+        """
 
         var results: [AgentItem] = []
 
         if case let .success(rows) = databaseManager.executeQuery(query, parameters: parameters) {
             results = rows.compactMap { row in
                 guard let agentID = row["agent_id"] as? Int,
-                    let name = row["name"] as? String,
-                    let level = row["level"] as? Int,
-                    let corporationID = row["corporationID"] as? Int,
-                    let divisionID = row["divisionID"] as? Int,
-                    let isLocator = row["isLocator"] as? Int,
-                    let locationID = row["locationID"] as? Int
+                      let name = row["name"] as? String,
+                      let level = row["level"] as? Int,
+                      let corporationID = row["corporationID"] as? Int,
+                      let divisionID = row["divisionID"] as? Int,
+                      let isLocator = row["isLocator"] as? Int,
+                      let locationID = row["locationID"] as? Int
                 else {
                     return nil
                 }
 
-                let locationName = row["locationName"] as? String ?? NSLocalizedString("Unknown_Location", comment: "未知位置")
+                let locationName =
+                    row["locationName"] as? String
+                        ?? NSLocalizedString("Unknown_Location", comment: "未知位置")
                 let solarSystemID = row["solarSystemID"] as? Int
                 let solarSystemName = row["solarSystemName"] as? String
                 let agentType = row["agent_type"] as? Int ?? 0
@@ -599,17 +604,17 @@ struct AgentSearchView: View {
     // 加载所有势力
     private func loadFactions() {
         let query = """
-                SELECT DISTINCT f.id, f.name, f.iconName
-                FROM agents a
-                JOIN npcCorporations c ON a.corporationID = c.corporation_id
-                JOIN factions f ON c.faction_id = f.id
-                ORDER BY f.name
-            """
+            SELECT DISTINCT f.id, f.name, f.iconName
+            FROM agents a
+            JOIN npcCorporations c ON a.corporationID = c.corporation_id
+            JOIN factions f ON c.faction_id = f.id
+            ORDER BY f.name
+        """
 
         if case let .success(rows) = databaseManager.executeQuery(query) {
             availableFactions = rows.compactMap { row in
                 guard let factionID = row["id"] as? Int,
-                    let name = row["name"] as? String
+                      let name = row["name"] as? String
                 else {
                     return nil
                 }
@@ -622,11 +627,11 @@ struct AgentSearchView: View {
     // 加载所有部门
     private func loadDivisions() {
         let query = """
-                SELECT DISTINCT d.division_id, d.name
-                FROM divisions d
-                JOIN agents a ON d.division_id = a.divisionID
-                ORDER BY d.division_id
-            """
+            SELECT DISTINCT d.division_id, d.name
+            FROM divisions d
+            JOIN agents a ON d.division_id = a.divisionID
+            ORDER BY d.division_id
+        """
 
         if case let .success(rows) = databaseManager.executeQuery(query) {
             var mainDivisions: [(Int, String, String)] = []
@@ -637,7 +642,7 @@ struct AgentSearchView: View {
 
             for row in rows {
                 guard let divisionID = row["division_id"] as? Int,
-                    let name = row["name"] as? String
+                      let name = row["name"] as? String
                 else {
                     continue
                 }
@@ -655,7 +660,7 @@ struct AgentSearchView: View {
             // 按指定顺序排序主要部门
             mainDivisions.sort { first, second in
                 guard let firstIndex = mainDivisionIDs.firstIndex(of: first.0),
-                    let secondIndex = mainDivisionIDs.firstIndex(of: second.0)
+                      let secondIndex = mainDivisionIDs.firstIndex(of: second.0)
                 else {
                     return false
                 }
@@ -673,18 +678,18 @@ struct AgentSearchView: View {
     // 加载特定势力的军团
     private func loadCorporationsForFaction(_ factionID: Int) {
         let query = """
-                SELECT DISTINCT c.corporation_id, c.name, c.icon_filename
-                FROM agents a
-                JOIN npcCorporations c ON a.corporationID = c.corporation_id
-                WHERE c.faction_id = ?
-                ORDER BY c.name
-            """
+            SELECT DISTINCT c.corporation_id, c.name, c.icon_filename
+            FROM agents a
+            JOIN npcCorporations c ON a.corporationID = c.corporation_id
+            WHERE c.faction_id = ?
+            ORDER BY c.name
+        """
 
         if case let .success(rows) = databaseManager.executeQuery(query, parameters: [factionID]) {
             availableCorporations = rows.compactMap { row in
                 guard let corporationID = row["corporation_id"] as? Int,
-                    let name = row["name"] as? String,
-                    let iconFile = row["icon_filename"] as? String
+                      let name = row["name"] as? String,
+                      let iconFile = row["icon_filename"] as? String
                 else {
                     return nil
                 }
@@ -696,10 +701,10 @@ struct AgentSearchView: View {
     // 加载可用的代理人类型
     private func loadAgentTypes() {
         let query = """
-                SELECT DISTINCT agent_type
-                FROM agents
-                ORDER BY agent_type
-            """
+            SELECT DISTINCT agent_type
+            FROM agents
+            ORDER BY agent_type
+        """
 
         if case let .success(rows) = databaseManager.executeQuery(query) {
             var mainTypes: [(Int, String)] = []
@@ -729,7 +734,7 @@ struct AgentSearchView: View {
             // 按指定顺序排序主要类型
             mainTypes.sort { first, second in
                 guard let firstIndex = mainAgentTypeIDs.firstIndex(of: first.0),
-                    let secondIndex = mainAgentTypeIDs.firstIndex(of: second.0)
+                      let secondIndex = mainAgentTypeIDs.firstIndex(of: second.0)
                 else {
                     return false
                 }
@@ -739,7 +744,7 @@ struct AgentSearchView: View {
             // 按指定顺序排序次要类型
             secondaryTypes.sort { first, second in
                 guard let firstIndex = secondaryAgentTypeIDs.firstIndex(of: first.0),
-                    let secondIndex = secondaryAgentTypeIDs.firstIndex(of: second.0)
+                      let secondIndex = secondaryAgentTypeIDs.firstIndex(of: second.0)
                 else {
                     return false
                 }
@@ -773,7 +778,7 @@ struct AgentSearchView: View {
             // 按指定顺序排序主要类型
             mainTypes.sort { first, second in
                 guard let firstIndex = mainAgentTypeIDs.firstIndex(of: first.0),
-                    let secondIndex = mainAgentTypeIDs.firstIndex(of: second.0)
+                      let secondIndex = mainAgentTypeIDs.firstIndex(of: second.0)
                 else {
                     return false
                 }
@@ -783,7 +788,7 @@ struct AgentSearchView: View {
             // 按指定顺序排序次要类型
             secondaryTypes.sort { first, second in
                 guard let firstIndex = secondaryAgentTypeIDs.firstIndex(of: first.0),
-                    let secondIndex = secondaryAgentTypeIDs.firstIndex(of: second.0)
+                      let secondIndex = secondaryAgentTypeIDs.firstIndex(of: second.0)
                 else {
                     return false
                 }
@@ -801,11 +806,11 @@ struct AgentSearchView: View {
 
 // 代理人层级视图
 enum AgentListLevel {
-    case faction  // 势力层级
-    case corporation  // 军团层级
-    case division  // 部门层级
-    case level  // 等级层级
-    case agent  // 代理人层级
+    case faction // 势力层级
+    case corporation // 军团层级
+    case division // 部门层级
+    case level // 等级层级
+    case agent // 代理人层级
 }
 
 // 合并后的代理人列表层级视图
@@ -830,10 +835,10 @@ struct AgentListHierarchyView: View {
     @State private var factionAgentCounts: [Int: Int] = [:]
 
     // 各层级数据
-    @State private var factions: [(Int, String, String)] = []  // ID, 名称, 图标
-    @State private var corporations: [(Int, String, String)] = []  // ID, 名称, 图标
-    @State private var divisions: [(Int, String, String)] = []  // ID, 名称, 图标
-    @State private var levels: [(Int, String)] = []  // 等级, 名称
+    @State private var factions: [(Int, String, String)] = [] // ID, 名称, 图标
+    @State private var corporations: [(Int, String, String)] = [] // ID, 名称, 图标
+    @State private var divisions: [(Int, String, String)] = [] // ID, 名称, 图标
+    @State private var levels: [(Int, String)] = [] // 等级, 名称
 
     @State private var isLoading = true
 
@@ -1156,16 +1161,16 @@ struct AgentListHierarchyView: View {
 
         // 一次性查询指定势力下的所有军团
         let query = """
-                SELECT c.corporation_id, c.name, c.icon_filename
-                FROM npcCorporations c
-                WHERE c.faction_id = ?
-                ORDER BY c.name
-            """
+            SELECT c.corporation_id, c.name, c.icon_filename
+            FROM npcCorporations c
+            WHERE c.faction_id = ?
+            ORDER BY c.name
+        """
 
         if case let .success(rows) = databaseManager.executeQuery(query, parameters: [factionID]) {
             let allCorporations = rows.compactMap { row -> (Int, String, String)? in
                 guard let corporationID = row["corporation_id"] as? Int,
-                    let name = row["name"] as? String
+                      let name = row["name"] as? String
                 else {
                     return nil
                 }
@@ -1196,14 +1201,14 @@ struct AgentListHierarchyView: View {
 
         // 查询部门名称
         let query = """
-                SELECT division_id, name
-                FROM divisions
-                WHERE division_id IN (
-                    SELECT DISTINCT divisionID FROM agents WHERE agent_id IN (
-                        SELECT agent_id FROM agents WHERE corporationID = ?
-                    )
+            SELECT division_id, name
+            FROM divisions
+            WHERE division_id IN (
+                SELECT DISTINCT divisionID FROM agents WHERE agent_id IN (
+                    SELECT agent_id FROM agents WHERE corporationID = ?
                 )
-            """
+            )
+        """
 
         if case let .success(rows) = databaseManager.executeQuery(
             query, parameters: [corporationID]
@@ -1212,7 +1217,7 @@ struct AgentListHierarchyView: View {
 
             for row in rows {
                 if let divisionID = row["division_id"] as? Int,
-                    let name = row["name"] as? String
+                   let name = row["name"] as? String
                 {
                     divisionNames[divisionID] = name
                 }
@@ -1246,12 +1251,13 @@ struct AgentListHierarchyView: View {
                     (
                         agent.level,
                         String(
-                            format: NSLocalizedString("Misc_Level", comment: "lv%d"), agent.level)
+                            format: NSLocalizedString("Misc_Level", comment: "lv%d"), agent.level
+                        )
                     ))
             }
         }
 
-        levels = levelsList.sorted(by: { $0.0 > $1.0 })  // 等级从高到低排序
+        levels = levelsList.sorted(by: { $0.0 > $1.0 }) // 等级从高到低排序
         isLoading = false
     }
 
@@ -1259,16 +1265,16 @@ struct AgentListHierarchyView: View {
     private func loadCorporationFactionMapping() {
         // 一次性查询所有军团和势力的映射关系
         let query = """
-                SELECT c.corporation_id, c.faction_id
-                FROM npcCorporations c
-            """
+            SELECT c.corporation_id, c.faction_id
+            FROM npcCorporations c
+        """
 
         if case let .success(rows) = databaseManager.executeQuery(query) {
             var corpToFaction: [Int: Int] = [:]
 
             for row in rows {
                 if let corporationID = row["corporation_id"] as? Int,
-                    let factionID = row["faction_id"] as? Int
+                   let factionID = row["faction_id"] as? Int
                 {
                     corpToFaction[corporationID] = factionID
                 }
@@ -1300,12 +1306,12 @@ struct AgentListHierarchyView: View {
         // 2. 一次性查询所有军团所属的势力
         let placeholders = Array(repeating: "?", count: corporationIDs.count).joined(separator: ",")
         let query = """
-                SELECT DISTINCT c.corporation_id, f.id as faction_id, f.name as faction_name, f.iconName as faction_icon
-                FROM npcCorporations c
-                JOIN factions f ON c.faction_id = f.id
-                WHERE c.corporation_id IN (\(placeholders))
-                ORDER BY f.name
-            """
+            SELECT DISTINCT c.corporation_id, f.id as faction_id, f.name as faction_name, f.iconName as faction_icon
+            FROM npcCorporations c
+            JOIN factions f ON c.faction_id = f.id
+            WHERE c.corporation_id IN (\(placeholders))
+            ORDER BY f.name
+        """
 
         if case let .success(rows) = databaseManager.executeQuery(
             query, parameters: Array(corporationIDs)
@@ -1314,8 +1320,8 @@ struct AgentListHierarchyView: View {
             var corporationToFaction: [Int: (Int, String, String)] = [:]
             for row in rows {
                 if let corporationID = row["corporation_id"] as? Int,
-                    let factionID = row["faction_id"] as? Int,
-                    let factionName = row["faction_name"] as? String
+                   let factionID = row["faction_id"] as? Int,
+                   let factionName = row["faction_name"] as? String
                 {
                     let iconName = row["faction_icon"] as? String ?? "faction_default"
                     corporationToFaction[corporationID] = (factionID, factionName, iconName)
@@ -1378,7 +1384,7 @@ struct AgentCellView: View {
     )
     @State private var affiliationInfo:
         (factionName: String, corporationName: String, factionIcon: String, corporationIcon: String) =
-            ("", "", "", "")
+        ("", "", "", "")
     @State private var divisionName: String = ""
 
     var body: some View {
@@ -1421,8 +1427,7 @@ struct AgentCellView: View {
                 )
 
                 // 势力和军团信息
-                if !affiliationInfo.factionName.isEmpty && !affiliationInfo.corporationName.isEmpty
-                {
+                if !affiliationInfo.factionName.isEmpty && !affiliationInfo.corporationName.isEmpty {
                     HStack(spacing: 8) {
                         // 势力图标
                         IconManager.shared.loadImage(for: affiliationInfo.factionIcon)
@@ -1516,23 +1521,32 @@ struct AgentCellView: View {
                 Button {
                     UIPasteboard.general.string = agent.name
                 } label: {
-                    Label(NSLocalizedString("Misc_Copy_CharID", comment: ""), systemImage: "doc.on.doc")
+                    Label(
+                        NSLocalizedString("Misc_Copy_CharID", comment: ""),
+                        systemImage: "doc.on.doc"
+                    )
                 }
-                
+
                 // 根据代理人位置类型决定是否显示复制位置按钮
                 if agent.solarSystemID == nil && !agent.locationName.isEmpty {
                     // 空间站代理人，复制空间站名称
                     Button {
                         UIPasteboard.general.string = agent.locationName
                     } label: {
-                        Label(NSLocalizedString("Misc_Copy_Location", comment: ""), systemImage: "doc.on.doc")
+                        Label(
+                            NSLocalizedString("Misc_Copy_Location", comment: ""),
+                            systemImage: "doc.on.doc"
+                        )
                     }
                 } else if let systemName = agent.solarSystemName, !systemName.isEmpty {
                     // 空间代理人，复制星系名称
                     Button {
                         UIPasteboard.general.string = systemName
                     } label: {
-                        Label(NSLocalizedString("Misc_Copy_Location", comment: ""), systemImage: "doc.on.doc")
+                        Label(
+                            NSLocalizedString("Misc_Copy_Location", comment: ""),
+                            systemImage: "doc.on.doc"
+                        )
                     }
                 }
             }
@@ -1570,14 +1584,13 @@ struct AgentCellView: View {
         if let systemID = agent.solarSystemID {
             // 查询太阳系信息
             let query = """
-                    SELECT solarSystemName, security_status
-                    FROM solarsystems
-                    WHERE solarSystemID = ?
-                """
-            if case let .success(rows) = databaseManager.executeQuery(query, parameters: [systemID])
-            {
+                SELECT solarSystemName, security_status
+                FROM solarsystems
+                WHERE solarSystemID = ?
+            """
+            if case let .success(rows) = databaseManager.executeQuery(query, parameters: [systemID]) {
                 if let row = rows.first,
-                    let name = row["solarSystemName"] as? String
+                   let name = row["solarSystemName"] as? String
                 {
                     let security = row["security_status"] as? Double
                     locationInfo = (name, security)
@@ -1586,15 +1599,15 @@ struct AgentCellView: View {
         } else {
             // 查询空间站信息
             let query = """
-                    SELECT stationName, security
-                    FROM stations
-                    WHERE stationID = ?
-                """
+                SELECT stationName, security
+                FROM stations
+                WHERE stationID = ?
+            """
             if case let .success(rows) = databaseManager.executeQuery(
                 query, parameters: [agent.locationID]
             ) {
                 if let row = rows.first,
-                    let name = row["stationName"] as? String
+                   let name = row["stationName"] as? String
                 {
                     let security = row["security"] as? Double
                     locationInfo = (name, security)
@@ -1604,20 +1617,20 @@ struct AgentCellView: View {
 
         // 查询势力和军团信息
         let affiliationQuery = """
-                SELECT c.name as corporationName, f.name as factionName, 
-                       f.iconName as factionIcon,
-                       c.icon_filename as corporationIcon
-                FROM npcCorporations c
-                JOIN factions f ON c.faction_id = f.id
-                WHERE c.corporation_id = ?
-            """
+            SELECT c.name as corporationName, f.name as factionName, 
+                   f.iconName as factionIcon,
+                   c.icon_filename as corporationIcon
+            FROM npcCorporations c
+            JOIN factions f ON c.faction_id = f.id
+            WHERE c.corporation_id = ?
+        """
 
         if case let .success(rows) = databaseManager.executeQuery(
             affiliationQuery, parameters: [agent.corporationID]
         ) {
             if let row = rows.first,
-                let corporationName = row["corporationName"] as? String,
-                let factionName = row["factionName"] as? String
+               let corporationName = row["corporationName"] as? String,
+               let factionName = row["factionName"] as? String
             {
                 let factionIcon = row["factionIcon"] as? String ?? "faction_default"
                 let corporationIcon = row["corporationIcon"] as? String ?? "corporation_default"
@@ -1629,16 +1642,16 @@ struct AgentCellView: View {
     // 加载部门名称
     private func loadDivisionName() {
         let query = """
-                SELECT name
-                FROM divisions
-                WHERE division_id = ?
-            """
+            SELECT name
+            FROM divisions
+            WHERE division_id = ?
+        """
 
         if case let .success(rows) = databaseManager.executeQuery(
             query, parameters: [agent.divisionID]
         ) {
             if let row = rows.first,
-                let name = row["name"] as? String
+               let name = row["name"] as? String
             {
                 divisionName = name
             }
@@ -1660,11 +1673,11 @@ struct AgentCellView: View {
     // 根据部门ID获取颜色
     private func getDivisionColor(_ divisionID: Int) -> Color {
         switch divisionID {
-        case 18: return Color.blue.opacity(0.8)  // 研发 - 深蓝色
-        case 22: return Color.purple.opacity(0.8)  // 物流 - 紫色
-        case 23: return Color(red: 0.8, green: 0.6, blue: 0.0)  // 采矿 - 深黄色
-        case 24: return Color.red.opacity(0.8)  // 安全 - 深红色
-        default: return Color.gray.opacity(0.8)  // 其他 - 灰色
+        case 18: return Color.blue.opacity(0.8) // 研发 - 深蓝色
+        case 22: return Color.purple.opacity(0.8) // 物流 - 紫色
+        case 23: return Color(red: 0.8, green: 0.6, blue: 0.0) // 采矿 - 深黄色
+        case 24: return Color.red.opacity(0.8) // 安全 - 深红色
+        default: return Color.gray.opacity(0.8) // 其他 - 灰色
         }
     }
 
@@ -1694,7 +1707,7 @@ struct RegionSearchView: View {
     @ObservedObject var databaseManager: DatabaseManager
     @Environment(\.dismiss) private var dismiss
     @State private var searchText = ""
-    @State private var regions: [(Int, String, String, String)] = []  // ID, 名称, 英文名, 中文名
+    @State private var regions: [(Int, String, String, String)] = [] // ID, 名称, 英文名, 中文名
     @State private var isLoading = true
     @Binding var selectedRegionID: Int?
     @Binding var selectedRegionName: String?
@@ -1737,11 +1750,11 @@ struct RegionSearchView: View {
                         // 按首字母分组显示星域列表
                         ForEach(sectionTitles, id: \.self) { sectionTitle in
                             if let regionsInSection = sectionedRegions[sectionTitle],
-                                !regionsInSection.isEmpty
+                               !regionsInSection.isEmpty
                             {
                                 Section(header: Text(sectionTitle).id(sectionTitle)) {
                                     ForEach(regionsInSection, id: \.0) {
-                                        regionID, regionName, regionName_en, regionName_zh in
+                                        regionID, regionName, _, _ in
                                         Button(action: {
                                             selectedRegionID = regionID
                                             selectedRegionName = regionName
@@ -1791,9 +1804,9 @@ struct RegionSearchView: View {
         // 如果有搜索文本，过滤数据
         if !searchText.isEmpty {
             filteredData = regions.filter { region in
-                region.1.localizedCaseInsensitiveContains(searchText)  // 原始名称
-                    || region.2.localizedCaseInsensitiveContains(searchText)  // 英文名
-                    || region.3.localizedCaseInsensitiveContains(searchText)  // 中文名
+                region.1.localizedCaseInsensitiveContains(searchText) // 原始名称
+                    || region.2.localizedCaseInsensitiveContains(searchText) // 英文名
+                    || region.3.localizedCaseInsensitiveContains(searchText) // 中文名
             }
         }
 
@@ -1848,17 +1861,17 @@ struct RegionSearchView: View {
         isLoading = true
 
         let query = """
-                SELECT regionID, regionName, regionName_en, regionName_zh
-                FROM regions
-                WHERE regionID < 11000000
-            """
+            SELECT regionID, regionName, regionName_en, regionName_zh
+            FROM regions
+            WHERE regionID < 11000000
+        """
 
         if case let .success(rows) = databaseManager.executeQuery(query) {
             regions = rows.compactMap { row in
                 guard let regionID = row["regionID"] as? Int,
-                    let regionName = row["regionName"] as? String,
-                    let regionName_en = row["regionName_en"] as? String,
-                    let regionName_zh = row["regionName_zh"] as? String
+                      let regionName = row["regionName"] as? String,
+                      let regionName_en = row["regionName_en"] as? String,
+                      let regionName_zh = row["regionName_zh"] as? String
                 else {
                     return nil
                 }
@@ -1878,7 +1891,7 @@ struct SolarSystemSearchView: View {
     @ObservedObject var databaseManager: DatabaseManager
     @Environment(\.dismiss) private var dismiss
     @State private var searchText = ""
-    @State private var solarSystems: [(Int, String, String, String, Double)] = []  // ID, 名称, 英文名, 中文名, 安全等级
+    @State private var solarSystems: [(Int, String, String, String, Double)] = [] // ID, 名称, 英文名, 中文名, 安全等级
     @State private var isLoading = true
     @Binding var selectedSolarSystemID: Int?
     @Binding var selectedSolarSystemName: String?
@@ -1920,7 +1933,7 @@ struct SolarSystemSearchView: View {
 
                     // 过滤并显示星系列表
                     ForEach(filteredSystems, id: \.0) {
-                        systemID, systemName, systemName_en, systemName_zh, security in
+                        systemID, systemName, _, _, security in
                         Button(action: {
                             selectedSolarSystemID = systemID
                             selectedSolarSystemName = systemName
@@ -1966,9 +1979,9 @@ struct SolarSystemSearchView: View {
             result = solarSystems
         } else {
             result = solarSystems.filter { system in
-                system.1.localizedCaseInsensitiveContains(searchText)  // 原始名称
-                    || system.2.localizedCaseInsensitiveContains(searchText)  // 英文名
-                    || system.3.localizedCaseInsensitiveContains(searchText)  // 中文名
+                system.1.localizedCaseInsensitiveContains(searchText) // 原始名称
+                    || system.2.localizedCaseInsensitiveContains(searchText) // 英文名
+                    || system.3.localizedCaseInsensitiveContains(searchText) // 中文名
             }
         }
         return result.sorted { $0.1.localizedStandardCompare($1.1) == .orderedAscending }
@@ -1979,11 +1992,11 @@ struct SolarSystemSearchView: View {
         isLoading = true
 
         var query = """
-                SELECT s.solarSystemID, s.solarSystemName, s.solarSystemName_en, s.solarSystemName_zh, s.security_status
-                FROM solarsystems s
-                JOIN universe u ON s.solarSystemID = u.solarsystem_id
-                WHERE u.region_id < 11000000
-            """
+            SELECT s.solarSystemID, s.solarSystemName, s.solarSystemName_en, s.solarSystemName_zh, s.security_status
+            FROM solarsystems s
+            JOIN universe u ON s.solarSystemID = u.solarsystem_id
+            WHERE u.region_id < 11000000
+        """
 
         var parameters: [Any] = []
 
@@ -1995,10 +2008,10 @@ struct SolarSystemSearchView: View {
         if case let .success(rows) = databaseManager.executeQuery(query, parameters: parameters) {
             solarSystems = rows.compactMap { row in
                 guard let systemID = row["solarSystemID"] as? Int,
-                    let systemName = row["solarSystemName"] as? String,
-                    let systemName_en = row["solarSystemName_en"] as? String,
-                    let systemName_zh = row["solarSystemName_zh"] as? String,
-                    let security = row["security_status"] as? Double
+                      let systemName = row["solarSystemName"] as? String,
+                      let systemName_en = row["solarSystemName_en"] as? String,
+                      let systemName_zh = row["solarSystemName_zh"] as? String,
+                      let security = row["security_status"] as? Double
                 else {
                     return nil
                 }

@@ -70,7 +70,7 @@ enum MarketAPIError: LocalizedError {
 @MarketOrdersAPIActor
 class MarketOrdersAPI {
     static let shared = MarketOrdersAPI()
-    private let cacheDuration: TimeInterval = 3 * 60 * 60  // 3 小时缓存
+    private let cacheDuration: TimeInterval = 3 * 60 * 60 // 3 小时缓存
 
     private init() {}
 
@@ -108,9 +108,9 @@ class MarketOrdersAPI {
 
     private func loadFromCache(typeID: Int, regionID: Int) -> [MarketOrder]? {
         guard let cacheFile = getCacheFilePath(typeID: typeID, regionID: regionID),
-            let data = try? Data(contentsOf: cacheFile),
-            let cached = try? JSONDecoder().decode(CachedData.self, from: data),
-            cached.timestamp.addingTimeInterval(cacheDuration) > Date()
+              let data = try? Data(contentsOf: cacheFile),
+              let cached = try? JSONDecoder().decode(CachedData.self, from: data),
+              cached.timestamp.addingTimeInterval(cacheDuration) > Date()
         else {
             return nil
         }
@@ -138,12 +138,12 @@ class MarketOrdersAPI {
         -> [MarketOrder]
     {
         var actualRegionID = regionID
-        
+
         // PLEX 特殊处理
         if typeID == 44992 {
-            actualRegionID = 19000001
+            actualRegionID = 19_000_001
         }
-        
+
         // 如果不是强制刷新，尝试从缓存获取
         if !forceRefresh {
             if let cached = loadFromCache(typeID: typeID, regionID: actualRegionID) {

@@ -48,6 +48,7 @@ struct IndustrySection: View {
                         }
                     }
                 }
+                .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
 
                 // 可以制造该物品的蓝图列表跳转链接
                 if !blueprintDest.blueprints.isEmpty {
@@ -59,14 +60,15 @@ struct IndustrySection: View {
                         )
                     } label: {
                         HStack {
-                            IconManager.shared.loadImage(for: "items_9_64_15.png")
+                            IconManager.shared.loadImage(for: "blueprints")
                                 .resizable()
                                 .frame(width: 32, height: 32)
                                 .cornerRadius(6)
                             VStack(alignment: .leading) {
                                 Text(
                                     NSLocalizedString(
-                                        "Main_Database_Applicable_Blueprints", comment: "")
+                                        "Main_Database_Applicable_Blueprints", comment: ""
+                                    )
                                 )
                                 .font(.system(size: 16))
                                 .foregroundColor(.primary)
@@ -85,6 +87,7 @@ struct IndustrySection: View {
                             .foregroundColor(.secondary)
                         }
                     }
+                    .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                 }
 
                 // 回收材料下拉列表
@@ -119,6 +122,7 @@ struct IndustrySection: View {
                                 }
                             }
                         }
+                        .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                     } label: {
                         HStack {
                             Image("reprocess")
@@ -175,6 +179,7 @@ struct IndustrySection: View {
                                 }
                             }
                         }
+                        .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                     } label: {
                         HStack {
                             IconManager.shared.loadImage(
@@ -191,6 +196,7 @@ struct IndustrySection: View {
                             .frame(alignment: .trailing)
                         }
                     }
+                    .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                 }
             }
         }
@@ -228,6 +234,7 @@ struct BlueprintDestView: View {
                         }
                     }
                 }
+                .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
             }
             .navigationTitle(NSLocalizedString("Main_Database_Applicable_Blueprints", comment: ""))
         } else {
@@ -252,6 +259,7 @@ struct BlueprintDestView: View {
                         }
                     }
                 }
+                .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
             }
             .navigationTitle(NSLocalizedString("Main_Database_Applicable_Blueprints", comment: ""))
         }
@@ -292,6 +300,7 @@ struct BlueprintGroupView: View {
                     }
                 }
             }
+            .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
         }
         .navigationTitle(groupName)
     }
@@ -377,6 +386,7 @@ struct MutationSourceItemsSection: View {
                         }
                     }
                 }
+                .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
             }
         }
     }
@@ -398,7 +408,8 @@ struct MutationSourceMutaplasmidsSection: View {
                 ForEach(mutationSource.mutaplasmids, id: \.typeID) { mutaplasmid in
                     NavigationLink {
                         ShowMutationInfo(
-                            itemID: mutaplasmid.typeID, databaseManager: databaseManager)
+                            itemID: mutaplasmid.typeID, databaseManager: databaseManager
+                        )
                     } label: {
                         HStack {
                             IconManager.shared.loadImage(for: mutaplasmid.iconFileName)
@@ -411,6 +422,7 @@ struct MutationSourceMutaplasmidsSection: View {
                         }
                     }
                 }
+                .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
             }
         }
     }
@@ -432,7 +444,8 @@ struct MutationResultsSection: View {
                 ForEach(mutationResults, id: \.typeID) { result in
                     NavigationLink {
                         ShowItemInfo(
-                            databaseManager: databaseManager, itemID: result.typeID)
+                            databaseManager: databaseManager, itemID: result.typeID
+                        )
                     } label: {
                         HStack {
                             IconManager.shared.loadImage(for: result.iconFileName)
@@ -445,6 +458,7 @@ struct MutationResultsSection: View {
                         }
                     }
                 }
+                .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
             }
         }
     }
@@ -466,7 +480,8 @@ struct RequiredMutaplasmidsSection: View {
                 ForEach(requiredMutaplasmids, id: \.typeID) { mutaplasmid in
                     NavigationLink {
                         ShowMutationInfo(
-                            itemID: mutaplasmid.typeID, databaseManager: databaseManager)
+                            itemID: mutaplasmid.typeID, databaseManager: databaseManager
+                        )
                     } label: {
                         HStack {
                             IconManager.shared.loadImage(for: mutaplasmid.iconFileName)
@@ -479,6 +494,7 @@ struct RequiredMutaplasmidsSection: View {
                         }
                     }
                 }
+                .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
             }
         }
     }

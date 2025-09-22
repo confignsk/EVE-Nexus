@@ -30,7 +30,7 @@ final class SovereigntyViewModel: ObservableObject {
 
     func fetchSovereignty(forceRefresh: Bool = false) async {
         // 如果已经加载过且不是强制刷新，则跳过
-        if initialLoadDone && !forceRefresh {
+        if initialLoadDone, !forceRefresh {
             return
         }
 
@@ -230,7 +230,10 @@ struct SovereigntyCell: View {
                                 Button {
                                     UIPasteboard.general.string = sovereignty.location.systemName
                                 } label: {
-                                    Label(NSLocalizedString("Misc_Copy_Location", comment: ""), systemImage: "doc.on.doc")
+                                    Label(
+                                        NSLocalizedString("Misc_Copy_Location", comment: ""),
+                                        systemImage: "doc.on.doc"
+                                    )
                                 }
                             }
                     }

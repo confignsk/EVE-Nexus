@@ -90,7 +90,7 @@ class IconManager {
 
         let iconURL = typeIconsDirectory.appendingPathComponent(iconName)
         if let imageData = try? Data(contentsOf: iconURL),
-            let image = UIImage(data: imageData)
+           let image = UIImage(data: imageData)
         {
             return image
         }
@@ -194,7 +194,7 @@ class IconManager {
         for name in possibleNames {
             let iconURL = iconsDirectory.appendingPathComponent(name)
             if let imageData = try? Data(contentsOf: iconURL),
-                let image = UIImage(data: imageData)
+               let image = UIImage(data: imageData)
             {
                 // 缓存图片
                 imageCache.setObject(image, forKey: cacheKey)
@@ -205,7 +205,7 @@ class IconManager {
 
         // 检查是否是类型图标（以"icon_"开头）
         if extractTypeID(from: iconName) != nil,
-            let typeIcon = loadTypeIconFromDisk(iconName: iconName)
+           let typeIcon = loadTypeIconFromDisk(iconName: iconName)
         {
             // 缓存图片
             imageCache.setObject(typeIcon, forKey: cacheKey)
@@ -262,7 +262,7 @@ class IconManager {
 
         // 验证解压是否成功
         if let contents = try? fileManager.contentsOfDirectory(atPath: destinationURL.path),
-            !contents.isEmpty
+           !contents.isEmpty
         {
             // 设置解压完成状态
             isExtractionComplete = true

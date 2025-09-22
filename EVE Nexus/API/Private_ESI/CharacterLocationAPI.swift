@@ -41,9 +41,9 @@ struct CharacterOnlineStatus: Codable {
 
 // 当前飞船信息模型
 struct CharacterShipInfo: Codable {
-    let ship_item_id: Int64  // 飞船的item_id，用于查询装备
-    let ship_name: String  // 飞船名称
-    let ship_type_id: Int  // 飞船类型ID
+    let ship_item_id: Int64 // 飞船的item_id，用于查询装备
+    let ship_name: String // 飞船名称
+    let ship_type_id: Int // 飞船类型ID
 }
 
 class CharacterLocationAPI {
@@ -69,8 +69,8 @@ class CharacterLocationAPI {
     // 内存缓存
     private var locationMemoryCache: [Int: LocationCacheEntry] = [:]
     private var onlineStatusMemoryCache: [Int: OnlineStatusCacheEntry] = [:]
-    private let cacheTimeout: TimeInterval = 20 * 60  // 20 分钟缓存
-    private let onlineStatusCacheTimeout: TimeInterval = 60  // 1 分钟缓存
+    private let cacheTimeout: TimeInterval = 20 * 60 // 20 分钟缓存
+    private let onlineStatusCacheTimeout: TimeInterval = 60 // 1 分钟缓存
 
     // UserDefaults键前缀
     private let locationCachePrefix = "location_cache_"
@@ -105,7 +105,7 @@ class CharacterLocationAPI {
         let key = locationCachePrefix + String(characterId)
         Logger.debug("正在从 UserDefaults 读取键: \(key)")
         guard let data = UserDefaults.standard.data(forKey: key),
-            let cache = try? JSONDecoder().decode(LocationCacheEntry.self, from: data)
+              let cache = try? JSONDecoder().decode(LocationCacheEntry.self, from: data)
         else {
             return nil
         }
@@ -132,7 +132,7 @@ class CharacterLocationAPI {
         if !forceRefresh {
             // 1. 先检查内存缓存
             if let memoryCached = getLocationMemoryCache(characterId: characterId),
-                isCacheValid(memoryCached)
+               isCacheValid(memoryCached)
             {
                 Logger.info("使用内存缓存的位置信息 - 角色ID: \(characterId)")
                 return memoryCached.value
@@ -140,7 +140,7 @@ class CharacterLocationAPI {
 
             // 2. 如果内存缓存不可用，检查磁盘缓存
             if let diskCached = getDiskCache(characterId: characterId),
-                isCacheValid(diskCached)
+               isCacheValid(diskCached)
             {
                 Logger.info("使用磁盘缓存的位置信息 - 角色ID: \(characterId)")
                 // 更新内存缓存
@@ -188,7 +188,7 @@ class CharacterLocationAPI {
         if !forceRefresh {
             // 1. 先检查内存缓存
             if let memoryCached = getOnlineStatusMemoryCache(characterId: characterId),
-                isCacheValid(memoryCached, timeout: onlineStatusCacheTimeout)
+               isCacheValid(memoryCached, timeout: onlineStatusCacheTimeout)
             {
                 Logger.info("使用内存缓存的在线状态 - 角色ID: \(characterId)")
                 return memoryCached.value
@@ -196,7 +196,7 @@ class CharacterLocationAPI {
 
             // 2. 如果内存缓存不可用，检查磁盘缓存
             if let diskCached = getOnlineStatusDiskCache(characterId: characterId),
-                isCacheValid(diskCached, timeout: onlineStatusCacheTimeout)
+               isCacheValid(diskCached, timeout: onlineStatusCacheTimeout)
             {
                 Logger.info("使用磁盘缓存的在线状态 - 角色ID: \(characterId)")
                 // 更新内存缓存
@@ -265,7 +265,7 @@ class CharacterLocationAPI {
         let key = onlineStatusCachePrefix + String(characterId)
         Logger.debug("正在从 UserDefaults 读取在线状态键: \(key)")
         guard let data = UserDefaults.standard.data(forKey: key),
-            let cache = try? JSONDecoder().decode(OnlineStatusCacheEntry.self, from: data)
+              let cache = try? JSONDecoder().decode(OnlineStatusCacheEntry.self, from: data)
         else {
             return nil
         }

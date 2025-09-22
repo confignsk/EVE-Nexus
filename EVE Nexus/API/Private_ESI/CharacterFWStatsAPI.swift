@@ -41,9 +41,9 @@ private struct FWStatsCacheData: Codable {
 
 public class CharacterFWStatsAPI {
     public static let shared = CharacterFWStatsAPI()
-    
+
     private static let cacheDirectory = "fw_stats"
-    private static let cacheExpiration: TimeInterval = 24 * 60 * 60  // 24小时
+    private static let cacheExpiration: TimeInterval = 24 * 60 * 60 // 24小时
 
     private init() {}
 
@@ -52,7 +52,9 @@ public class CharacterFWStatsAPI {
     ///   - characterId: 角色ID
     ///   - forceRefresh: 是否强制刷新
     /// - Returns: 派系战争统计数据
-    public func getFWStats(characterId: Int, forceRefresh: Bool = false) async throws -> CharacterFWStats {
+    public func getFWStats(characterId: Int, forceRefresh: Bool = false) async throws
+        -> CharacterFWStats
+    {
         // 如果不是强制刷新，尝试从缓存获取数据
         if !forceRefresh, let cachedData = try? loadFromCache(characterId: characterId) {
             Logger.info("成功从缓存获取派系战争统计数据，角色ID: \(characterId)")
@@ -60,9 +62,10 @@ public class CharacterFWStatsAPI {
         }
 
         Logger.info("缓存未命中或强制刷新，从API获取派系战争统计数据，角色ID: \(characterId)")
-        
+
         // 从API获取数据
-        let urlString = "https://esi.evetech.net/characters/\(characterId)/fw/stats/?datasource=tranquility"
+        let urlString =
+            "https://esi.evetech.net/characters/\(characterId)/fw/stats/?datasource=tranquility"
         guard let url = URL(string: urlString) else {
             Logger.error("无效的URL: \(urlString)")
             throw APIError.invalidURL
@@ -128,7 +131,8 @@ public class CharacterFWStatsAPI {
                 return nil
             }
 
-            let remainingTime = CharacterFWStatsAPI.cacheExpiration - Date().timeIntervalSince(cache.timestamp)
+            let remainingTime =
+                CharacterFWStatsAPI.cacheExpiration - Date().timeIntervalSince(cache.timestamp)
             Logger.info("从缓存获取派系战争统计数据: \(fileURL), 剩余有效时间: \(Int(remainingTime / 3600))小时")
             return cache.data
         } catch {
@@ -157,4 +161,4 @@ public class CharacterFWStatsAPI {
             throw error
         }
     }
-} 
+}

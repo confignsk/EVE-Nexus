@@ -33,23 +33,23 @@ struct CorpMergedTransactionEntry: Identifiable {
     let averagePrice: Double
     let totalAmount: Double
     let originalEntries: [CorpWalletTransactionEntry]
-    
+
     init(entries: [CorpWalletTransactionEntry]) {
         guard let firstEntry = entries.first else {
             fatalError("Cannot create merged entry from empty array")
         }
-        
+
         // 按transaction_id排序，最新的在前
         let sortedEntries = entries.sorted { $0.transaction_id > $1.transaction_id }
-        
-        self.type_id = firstEntry.type_id
-        self.is_buy = firstEntry.is_buy
-        self.location_id = firstEntry.location_id
-        self.date = sortedEntries.first!.date // 使用最新的日期
-        self.totalQuantity = entries.reduce(0) { $0 + $1.quantity }
-        self.totalAmount = entries.reduce(0.0) { $0 + ($1.unit_price * Double($1.quantity)) }
-        self.averagePrice = self.totalAmount / Double(self.totalQuantity)
-        self.originalEntries = sortedEntries
+
+        type_id = firstEntry.type_id
+        is_buy = firstEntry.is_buy
+        location_id = firstEntry.location_id
+        date = sortedEntries.first!.date // 使用最新的日期
+        totalQuantity = entries.reduce(0) { $0 + $1.quantity }
+        totalAmount = entries.reduce(0.0) { $0 + ($1.unit_price * Double($1.quantity)) }
+        averagePrice = totalAmount / Double(totalQuantity)
+        originalEntries = sortedEntries
     }
 }
 
@@ -66,13 +66,14 @@ final class CorpWalletTransactionsViewModel: ObservableObject {
     @Published private(set) var transactionGroups: [CorpWalletTransactionGroup] = []
     @Published var isLoading = true
     @Published var errorMessage: String?
-    @Published var searchText = ""  // 添加搜索文本状态
-    @Published var showSettings = false  // 添加设置显示状态
+    @Published var searchText = "" // 添加搜索文本状态
+    @Published var showSettings = false // 添加设置显示状态
     @Published var mergeSimilarTransactions: Bool {
         didSet {
             UserDefaultsManager.shared.mergeSimilarTransactions = mergeSimilarTransactions
         }
     }
+
     private var initialLoadDone = false
 
     private let characterId: Int
@@ -92,7 +93,7 @@ final class CorpWalletTransactionsViewModel: ObservableObject {
 
     private let calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone.current  // 使用本地时区
+        calendar.timeZone = TimeZone.current // 使用本地时区
         return calendar
     }()
 
@@ -100,7 +101,7 @@ final class CorpWalletTransactionsViewModel: ObservableObject {
         self.characterId = characterId
         self.division = division
         self.databaseManager = databaseManager
-        self.mergeSimilarTransactions = UserDefaultsManager.shared.mergeSimilarTransactions
+        mergeSimilarTransactions = UserDefaultsManager.shared.mergeSimilarTransactions
 
         // 在初始化时立即开始加载数据
         loadingTask = Task {
@@ -125,10 +126,10 @@ final class CorpWalletTransactionsViewModel: ObservableObject {
         if case let .success(rows) = result {
             for row in rows {
                 if let typeId = row["type_id"] as? Int,
-                    let name = row["name"] as? String,
-                    let enName = row["en_name"] as? String,
-                    let zhName = row["zh_name"] as? String,
-                    let iconFileName = row["icon_filename"] as? String
+                   let name = row["name"] as? String,
+                   let enName = row["en_name"] as? String,
+                   let zhName = row["zh_name"] as? String,
+                   let iconFileName = row["icon_filename"] as? String
                 {
                     itemInfoCache[typeId] = TransactionItemInfo(
                         name: name,
@@ -168,24 +169,28 @@ final class CorpWalletTransactionsViewModel: ObservableObject {
     }
 
     // 合并相似交易记录
-    private func mergeSimilarTransactions(_ entries: [CorpWalletTransactionEntry]) -> [CorpMergedTransactionEntry] {
+    private func mergeSimilarTransactions(_ entries: [CorpWalletTransactionEntry])
+        -> [CorpMergedTransactionEntry]
+    {
         var mergedDict: [String: [CorpWalletTransactionEntry]] = [:]
-        
+
         for entry in entries {
             // 创建唯一键：时间（精确到分钟）+ 物品ID + 买卖类型 + 地点ID
             let dateComponents = dateFormatter.date(from: entry.date) ?? Date()
             let calendar = Calendar.current
-            let minuteComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: dateComponents)
+            let minuteComponents = calendar.dateComponents(
+                [.year, .month, .day, .hour, .minute], from: dateComponents
+            )
             let minuteDate = calendar.date(from: minuteComponents) ?? dateComponents
-            
+
             let minuteString = dateFormatter.string(from: minuteDate)
             let key = "\(minuteString)_\(entry.type_id)_\(entry.is_buy)_\(entry.location_id)"
-            
+
             mergedDict[key, default: []].append(entry)
         }
-        
+
         return mergedDict.values.map { CorpMergedTransactionEntry(entries: $0) }
-            .sorted { 
+            .sorted {
                 // 按原始交易记录中最大的transaction_id排序（最新的在前）
                 let maxId1 = $0.originalEntries.map { $0.transaction_id }.max() ?? 0
                 let maxId2 = $1.originalEntries.map { $0.transaction_id }.max() ?? 0
@@ -195,7 +200,7 @@ final class CorpWalletTransactionsViewModel: ObservableObject {
 
     func loadTransactionData(forceRefresh: Bool = false) async {
         // 如果已经加载过且不是强制刷新，则跳过
-        if initialLoadDone && !forceRefresh {
+        if initialLoadDone, !forceRefresh {
             return
         }
 
@@ -219,9 +224,9 @@ final class CorpWalletTransactionsViewModel: ObservableObject {
                 if Task.isCancelled { return }
 
                 guard let jsonData = jsonString.data(using: .utf8),
-                    let entries = try? JSONDecoder().decode(
-                        [CorpWalletTransactionEntry].self, from: jsonData
-                    )
+                      let entries = try? JSONDecoder().decode(
+                          [CorpWalletTransactionEntry].self, from: jsonData
+                      )
                 else {
                     throw NetworkError.invalidResponse
                 }
@@ -343,9 +348,13 @@ struct CorpWalletTransactionSettingsView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(NSLocalizedString("Wallet_Transaction_Merge_Similar", comment: ""))
                                 .font(.body)
-                            Text(NSLocalizedString("Wallet_Transaction_Merge_Similar_Description", comment: ""))
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                            Text(
+                                NSLocalizedString(
+                                    "Wallet_Transaction_Merge_Similar_Description", comment: ""
+                                )
+                            )
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                         }
                     }
                 }
@@ -465,11 +474,18 @@ struct CorpWalletTransactionsView: View {
 
                                         Spacer()
 
-                                        let (buyCount, sellCount) = if viewModel.mergeSimilarTransactions {
-                                            (group.mergedEntries.filter { $0.is_buy }.count, group.mergedEntries.filter { !$0.is_buy }.count)
-                                        } else {
-                                            (group.entries.filter { $0.is_buy }.count, group.entries.filter { !$0.is_buy }.count)
-                                        }
+                                        let (buyCount, sellCount) =
+                                            if viewModel.mergeSimilarTransactions {
+                                                (
+                                                    group.mergedEntries.filter { $0.is_buy }.count,
+                                                    group.mergedEntries.filter { !$0.is_buy }.count
+                                                )
+                                            } else {
+                                                (
+                                                    group.entries.filter { $0.is_buy }.count,
+                                                    group.entries.filter { !$0.is_buy }.count
+                                                )
+                                            }
                                         Text(
                                             "\(NSLocalizedString("Main_Market_Transactions_Buy", comment: "")): \(buyCount), \(NSLocalizedString("Main_Market_Transactions_Sell", comment: "")): \(sellCount)"
                                         )
@@ -497,7 +513,7 @@ struct CorpWalletTransactionsView: View {
                 }
             }
         }
-        .opacity(selectedTab == .transactions ? 1 : 0)  // 控制整个视图的显示/隐藏
+        .opacity(selectedTab == .transactions ? 1 : 0) // 控制整个视图的显示/隐藏
         .sheet(isPresented: $viewModel.showSettings) {
             CorpWalletTransactionSettingsView(viewModel: viewModel)
         }

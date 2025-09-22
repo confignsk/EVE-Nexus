@@ -76,9 +76,9 @@ struct LocalFittingItem: Codable {
     let flag: FittingFlag
     let quantity: Int
     let type_id: Int
-    let status: Int?           // 装备状态（可选）
-    let charge_type_id: Int?   // 弹药类型ID（可选）
-    let charge_quantity: Int?  // 弹药数量（可选）
+    let status: Int? // 装备状态（可选）
+    let charge_type_id: Int? // 弹药类型ID（可选）
+    let charge_quantity: Int? // 弹药数量（可选）
 }
 
 struct LocalFitting: Codable {
@@ -87,29 +87,29 @@ struct LocalFitting: Codable {
     let items: [LocalFittingItem]
     let name: String
     let ship_type_id: Int
-    let drones: [Drone]?           // 无人机列表
-    let fighters: [FighterSquad]?  // 舰载机中队列表
-    let cargo: [CargoItem]?        // 货舱物品列表
-    let implants: [Int]?           // 植入体typeId列表
-    let environment_type_id: Int?  // 环境typeId（可选）
+    let drones: [Drone]? // 无人机列表
+    let fighters: [FighterSquad]? // 舰载机中队列表
+    let cargo: [CargoItem]? // 货舱物品列表
+    let implants: [Int]? // 植入体typeId列表
+    let environment_type_id: Int? // 环境typeId（可选）
 }
 
 // 无人机结构体
 struct Drone: Codable {
-    let type_id: Int           // 无人机类型ID
-    let quantity: Int         // 携带数量
-    let active_count: Int      // 激活数量
+    let type_id: Int // 无人机类型ID
+    let quantity: Int // 携带数量
+    let active_count: Int // 激活数量
 }
 
 // 货舱物品结构体
 struct CargoItem: Codable {
-    let type_id: Int           // 物品类型ID
-    let quantity: Int         // 物品数量
+    let type_id: Int // 物品类型ID
+    let quantity: Int // 物品数量
 }
 
 // 舰载机中队结构体
 struct FighterSquad: Codable {
-    let type_id: Int           // 舰载机类型ID
-    let quantity: Int          // 舰载机数量
-    let tubeId: Int            // 舰载机发射管ID
+    let type_id: Int // 舰载机类型ID
+    let quantity: Int // 舰载机数量
+    let tubeId: Int // 舰载机发射管ID
 }

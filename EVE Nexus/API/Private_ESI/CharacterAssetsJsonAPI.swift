@@ -47,16 +47,16 @@ public struct AssetTreeNode: Codable {
     let icon_name: String?
     let is_singleton: Bool
     let is_blueprint_copy: Bool?
-    let system_id: Int?  // 星系ID
-    let region_id: Int?  // 星域ID
-    let security_status: Double?  // 星系安全等级
+    let system_id: Int? // 星系ID
+    let region_id: Int? // 星域ID
+    let security_status: Double? // 星系安全等级
     var items: [AssetTreeNode]?
 }
 
 // 多语言系统信息
 private struct SysInfo {
-    let regionId: Int  // 星域ID
-    let security: Double  // 安全等级
+    let regionId: Int // 星域ID
+    let security: Double // 安全等级
 }
 
 // MARK: - Error Types
@@ -70,19 +70,19 @@ public enum AssetError: Error {
 // MARK: - Progress Types
 
 public enum AssetLoadingProgress {
-    case loading(page: Int)  // 正在加载特定页面
-    case buildingTree  // 正在构建资产树
-    case processingLocations  // 正在处理位置信息
-    case fetchingStructureInfo(current: Int, total: Int)  // 正在获取建筑详情
-    case preparingContainers  // 正在准备容器信息
-    case loadingNames(current: Int, total: Int)  // 正在加载容器名称
-    case savingCache  // 正在保存缓存
-    case completed  // 加载完成
+    case loading(page: Int) // 正在加载特定页面
+    case buildingTree // 正在构建资产树
+    case processingLocations // 正在处理位置信息
+    case fetchingStructureInfo(current: Int, total: Int) // 正在获取建筑详情
+    case preparingContainers // 正在准备容器信息
+    case loadingNames(current: Int, total: Int) // 正在加载容器名称
+    case savingCache // 正在保存缓存
+    case completed // 加载完成
 }
 
 public class CharacterAssetsJsonAPI {
     public static let shared = CharacterAssetsJsonAPI()
-    private let cacheTimeout: TimeInterval = 24 * 3600  // 24 小时缓存
+    private let cacheTimeout: TimeInterval = 24 * 3600 // 24 小时缓存
 
     private init() {}
 
@@ -96,9 +96,9 @@ public class CharacterAssetsJsonAPI {
         // 1. 检查缓存
         if !forceRefresh {
             if let cacheFile = getCacheFilePath(characterId: characterId),
-                let jsonString = try? String(contentsOf: cacheFile, encoding: .utf8),
-                let data = jsonString.data(using: .utf8),
-                let wrapper = try? JSONDecoder().decode(AssetTreeWrapper.self, from: data)
+               let jsonString = try? String(contentsOf: cacheFile, encoding: .utf8),
+               let data = jsonString.data(using: .utf8),
+               let wrapper = try? JSONDecoder().decode(AssetTreeWrapper.self, from: data)
             {
                 // 检查缓存是否过期
                 let cacheDate = Date(timeIntervalSince1970: TimeInterval(wrapper.update_time))
@@ -166,7 +166,7 @@ public class CharacterAssetsJsonAPI {
 
     private func saveToCache(jsonString: String, characterId: Int) {
         guard let cacheFile = getCacheFilePath(characterId: characterId),
-            let data = jsonString.data(using: .utf8)
+              let data = jsonString.data(using: .utf8)
         else {
             return
         }
@@ -196,7 +196,7 @@ public class CharacterAssetsJsonAPI {
             characterId: characterId,
             maxConcurrentPages: 3,
             decoder: { try JSONDecoder().decode([CharacterAsset].self, from: $0) },
-            progressCallback: { currentPage, totalPages in
+            progressCallback: { currentPage, _ in
                 progressCallback?(.loading(page: currentPage))
             }
         )
@@ -207,10 +207,10 @@ public class CharacterAssetsJsonAPI {
         -> StationInfo
     {
         let query = """
-                SELECT stationID, stationTypeID, stationName, regionID, solarSystemID, security
-                FROM stations
-                WHERE stationID = ?
-            """
+            SELECT stationID, stationTypeID, stationName, regionID, solarSystemID, security
+            FROM stations
+            WHERE stationID = ?
+        """
 
         // 将 stationId 转换为字符串
         let stationIdStr = String(stationId)
@@ -219,11 +219,11 @@ public class CharacterAssetsJsonAPI {
         switch result {
         case let .success(rows):
             guard let row = rows.first,
-                let stationName = row["stationName"] as? String,
-                let stationTypeID = row["stationTypeID"] as? Int,
-                let solarSystemID = row["solarSystemID"] as? Int,
-                let regionID = row["regionID"] as? Int,
-                let security = row["security"] as? Double
+                  let stationName = row["stationName"] as? String,
+                  let stationTypeID = row["stationTypeID"] as? Int,
+                  let solarSystemID = row["solarSystemID"] as? Int,
+                  let regionID = row["regionID"] as? Int,
+                  let security = row["security"] as? Double
             else {
                 throw AssetError.locationFetchError("Failed to fetch station info from database")
             }
@@ -249,8 +249,8 @@ public class CharacterAssetsJsonAPI {
     )? {
         let query = "SELECT icon_filename, bpc_icon_filename FROM types WHERE type_id = ?"
         if case let .success(rows) = databaseManager.executeQuery(query, parameters: [typeId]),
-            let row = rows.first,
-            let iconFile = row["icon_filename"] as? String
+           let row = rows.first,
+           let iconFile = row["icon_filename"] as? String
         {
             let normalIcon = iconFile.isEmpty ? DatabaseConfig.defaultItemIcon : iconFile
             var bpcIcon = normalIcon
@@ -384,7 +384,7 @@ public class CharacterAssetsJsonAPI {
             icon_name: iconName,
             is_singleton: asset.is_singleton,
             is_blueprint_copy: asset.is_blueprint_copy,
-            system_id: nil,  // 子节点不需要系统和区域信息
+            system_id: nil, // 子节点不需要系统和区域信息
             region_id: nil,
             security_status: nil,
             items: children.isEmpty ? nil : children
@@ -397,17 +397,17 @@ public class CharacterAssetsJsonAPI {
     )] {
         // 构建查询语句，仅获取图标相关信息
         let query = """
-                SELECT type_id, icon_filename, bpc_icon_filename
-                FROM types
-                WHERE type_id IN (\(typeIds.sorted().map { String($0) }.joined(separator: ",")))
-            """
+            SELECT type_id, icon_filename, bpc_icon_filename
+            FROM types
+            WHERE type_id IN (\(typeIds.sorted().map { String($0) }.joined(separator: ",")))
+        """
 
         var iconMap: [Int: (normal: String, blueprint_copy: String)] = [:]
 
         if case let .success(rows) = databaseManager.executeQuery(query) {
             for row in rows {
                 if let typeId = row["type_id"] as? Int,
-                    let iconFilename = row["icon_filename"] as? String
+                   let iconFilename = row["icon_filename"] as? String
                 {
                     let normalIcon =
                         iconFilename.isEmpty ? DatabaseConfig.defaultItemIcon : iconFilename
@@ -415,7 +415,7 @@ public class CharacterAssetsJsonAPI {
                     // 获取蓝图复制品图标，如果没有则使用普通图标
                     var bpcIcon = normalIcon
                     if let bpcIconFilename = row["bpc_icon_filename"] as? String,
-                        !bpcIconFilename.isEmpty
+                       !bpcIconFilename.isEmpty
                     {
                         bpcIcon = bpcIconFilename
                     }
@@ -550,15 +550,15 @@ public class CharacterAssetsJsonAPI {
     {
         // 构建查询语句获取星系信息和区域信息
         let query = """
-                SELECT region_id, system_security from universe where solarsystem_id = ?
-            """
+            SELECT region_id, system_security from universe where solarsystem_id = ?
+        """
 
         if case let .success(rows) = databaseManager.executeQuery(
             query, parameters: [solarSystemId]
         ) {
             if let row = rows.first,
-                let security = row["system_security"] as? Double,
-                let region_id = row["region_id"] as? Int
+               let security = row["system_security"] as? Double,
+               let region_id = row["region_id"] as? Int
             {
                 return SysInfo(
                     regionId: region_id,
@@ -671,7 +671,7 @@ public class CharacterAssetsJsonAPI {
         iconMap: [Int: (normal: String, blueprint_copy: String)]
     ) async throws -> [AssetTreeNode] {
         var rootNodes: [AssetTreeNode] = []
-        let concurrentLimit = 5  // 并发数量限制
+        let concurrentLimit = 5 // 并发数量限制
 
         // 将 topLocations 转换为数组以便分批处理
         let locationArray = Array(topLocations)
@@ -684,7 +684,7 @@ public class CharacterAssetsJsonAPI {
             ) { group in
                 // 添加并发任务
                 let endIndex = min(currentIndex + concurrentLimit, locationArray.count)
-                for locationId in locationArray[currentIndex..<endIndex] {
+                for locationId in locationArray[currentIndex ..< endIndex] {
                     if let items = locationMap[locationId] {
                         let locationType =
                             items.first?.location_type ?? NSLocalizedString("Unknown", comment: "")
@@ -786,7 +786,7 @@ public class CharacterAssetsJsonAPI {
 
             // 添加短暂延迟以避免请求过于频繁
             if currentIndex < locationArray.count {
-                try await Task.sleep(nanoseconds: UInt64(0.1 * 1_000_000_000))  // 100ms延迟
+                try await Task.sleep(nanoseconds: UInt64(0.1 * 1_000_000_000)) // 100ms延迟
             }
         }
 
@@ -796,11 +796,11 @@ public class CharacterAssetsJsonAPI {
     // 获取星系图标
     private func getSystemIcon(solarSystemId: Int, databaseManager: DatabaseManager) -> String? {
         let query = """
-                SELECT t.icon_filename 
-                FROM universe u 
-                JOIN types t ON u.system_type = t.type_id 
-                WHERE u.solarsystem_id = ?
-            """
+            SELECT t.icon_filename 
+            FROM universe u 
+            JOIN types t ON u.system_type = t.type_id 
+            WHERE u.solarsystem_id = ?
+        """
 
         guard
             case let .success(rows) = databaseManager.executeQuery(

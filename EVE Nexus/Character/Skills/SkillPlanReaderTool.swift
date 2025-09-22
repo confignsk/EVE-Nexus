@@ -30,16 +30,16 @@ class SkillPlanReaderTool {
             // 使用正则表达式匹配技能名称和等级
             let pattern = "^(.+?)\\s+([1-5])$"
             if let regex = try? NSRegularExpression(pattern: pattern),
-                let match = regex.firstMatch(
-                    in: trimmedLine, range: NSRange(trimmedLine.startIndex..., in: trimmedLine)
-                )
+               let match = regex.firstMatch(
+                   in: trimmedLine, range: NSRange(trimmedLine.startIndex..., in: trimmedLine)
+               )
             {
                 let nameRange = Range(match.range(at: 1), in: trimmedLine)!
                 let levelRange = Range(match.range(at: 2), in: trimmedLine)!
 
                 let skillName = String(trimmedLine[nameRange]).trimmingCharacters(in: .whitespaces)
                 if let level = Int(trimmedLine[levelRange]),
-                    level >= 1 && level <= 5
+                   level >= 1 && level <= 5
                 {
                     skillEntries.append((name: skillName, level: level))
                 } else {
@@ -57,11 +57,11 @@ class SkillPlanReaderTool {
             let skillNamesString = uniqueSkillNames.sorted().map { "'\($0)'" }.joined(
                 separator: " UNION SELECT ")
             let query = """
-                    SELECT t.type_id, t.name, t.en_name
-                    FROM types t
-                    WHERE (t.name IN (SELECT \(skillNamesString)) or t.en_name IN (SELECT \(skillNamesString)))
-                    AND t.categoryID = 16
-                """
+                SELECT t.type_id, t.name, t.en_name
+                FROM types t
+                WHERE (t.name IN (SELECT \(skillNamesString)) or t.en_name IN (SELECT \(skillNamesString)))
+                AND t.categoryID = 16
+            """
 
             let queryResult = databaseManager.executeQuery(query)
             var typeIdMap: [String: Int] = [:]
@@ -73,8 +73,8 @@ class SkillPlanReaderTool {
                         // 遍历skillEntries找到匹配的技能名称
                         for skillName in uniqueSkillNames {
                             if let name = row["name"] as? String,
-                                let enName = row["en_name"] as? String,
-                                skillName == name || skillName == enName
+                               let enName = row["en_name"] as? String,
+                               skillName == name || skillName == enName
                             {
                                 typeIdMap[skillName] = typeId
                                 break

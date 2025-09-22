@@ -4,7 +4,7 @@ struct CalendarEventDetailView: View {
     let characterId: Int
     let eventId: Int
     let databaseManager: DatabaseManager
-    
+
     @StateObject private var viewModel = CalendarEventDetailViewModel()
     @StateObject private var notificationManager = NotificationManager.shared
     @Environment(\.dismiss) private var dismiss
@@ -12,7 +12,7 @@ struct CalendarEventDetailView: View {
     @State private var reminderSuccess = false
     @State private var showingNotificationTimePicker = false
     @State private var selectedNotificationTime: NotificationTime = .oneHour
-    
+
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
@@ -23,29 +23,37 @@ struct CalendarEventDetailView: View {
                 } else if let eventDetail = viewModel.eventDetail {
                     List {
                         // 基本信息部分
-                        Section(NSLocalizedString("Calendar_Event_Basic_Info", comment: "Basic Info")) {
+                        Section(
+                            NSLocalizedString("Calendar_Event_Basic_Info", comment: "Basic Info")
+                        ) {
                             HStack {
                                 Text(NSLocalizedString("Calendar_Event_Date", comment: "Date"))
                                 Spacer()
                                 Text(formatEventDate(eventDetail.eventDate))
                                     .foregroundColor(.secondary)
                             }
-                            
+
                             HStack {
-                                Text(NSLocalizedString("Calendar_Event_Duration", comment: "Duration"))
+                                Text(
+                                    NSLocalizedString(
+                                        "Calendar_Event_Duration", comment: "Duration"
+                                    ))
                                 Spacer()
                                 Text(formatDuration(eventDetail.durationInMinutes))
                                     .foregroundColor(.secondary)
                             }
-                            
+
                             HStack {
-                                Text(NSLocalizedString("Calendar_Event_Response", comment: "Response"))
+                                Text(
+                                    NSLocalizedString(
+                                        "Calendar_Event_Response", comment: "Response"
+                                    ))
                                 Spacer()
                                 Text(formatResponse(eventDetail.response))
                                     .foregroundColor(.secondary)
                             }
                         }
-                        
+
                         // 组织者信息部分
                         Section(NSLocalizedString("Calendar_Event_Organizer", comment: "Organizer")) {
                             HStack(spacing: 12) {
@@ -56,32 +64,38 @@ struct CalendarEventDetailView: View {
                                     displaySize: 40,
                                     cornerRadius: 6
                                 )
-                                
+
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(eventDetail.owner_name)
                                         .font(.subheadline)
                                         .fontWeight(.medium)
-                                    
+
                                     Text(formatOwnerType(eventDetail.owner_type))
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                 }
-                                
+
                                 Spacer()
                             }
                             .padding(.vertical, 4)
                         }
-                        
+
                         // 事件描述部分 - 使用RichTextView处理HTML内容
                         if !eventDetail.text.isEmpty {
-                            Section(NSLocalizedString("Calendar_Event_Description", comment: "Description")) {
-                                RichTextView(text: eventDetail.text, databaseManager: databaseManager)
-                                    .font(.body)
-                                    .lineLimit(nil)
-                                    .fixedSize(horizontal: false, vertical: true)
+                            Section(
+                                NSLocalizedString(
+                                    "Calendar_Event_Description", comment: "Description"
+                                )
+                            ) {
+                                RichTextView(
+                                    text: eventDetail.text, databaseManager: databaseManager
+                                )
+                                .font(.body)
+                                .lineLimit(nil)
+                                .fixedSize(horizontal: false, vertical: true)
                             }
                         }
-                        
+
                         // 添加提醒按钮
                         Button(action: {
                             showingNotificationTimePicker = true
@@ -89,9 +103,13 @@ struct CalendarEventDetailView: View {
                             HStack(spacing: 8) {
                                 Image(systemName: "plus.circle.fill")
                                     .foregroundColor(.white)
-                                                                    Text(NSLocalizedString("Calendar_Add_Notification", comment: "Add Notification"))
-                                    .fontWeight(.medium)
-                                    .foregroundColor(.white)
+                                Text(
+                                    NSLocalizedString(
+                                        "Calendar_Add_Notification", comment: "Add Notification"
+                                    )
+                                )
+                                .fontWeight(.medium)
+                                .foregroundColor(.white)
                             }
                             .frame(maxWidth: .infinity)
                             .frame(height: 44)
@@ -109,18 +127,20 @@ struct CalendarEventDetailView: View {
                         Image(systemName: "exclamationmark.triangle")
                             .font(.system(size: 50))
                             .foregroundColor(.orange)
-                        
+
                         Text(NSLocalizedString("Calendar_Error", comment: "Error"))
                             .font(.headline)
-                        
+
                         Text(viewModel.errorMessage)
                             .font(.body)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
-                        
+
                         Button(NSLocalizedString("Calendar_Retry", comment: "Retry")) {
                             Task {
-                                await viewModel.loadEventDetail(characterId: characterId, eventId: eventId)
+                                await viewModel.loadEventDetail(
+                                    characterId: characterId, eventId: eventId
+                                )
                             }
                         }
                         .buttonStyle(.borderedProminent)
@@ -129,7 +149,10 @@ struct CalendarEventDetailView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
-            .navigationTitle(viewModel.eventDetail?.title ?? NSLocalizedString("Calendar_Event_Detail", comment: "Event Detail"))
+            .navigationTitle(
+                viewModel.eventDetail?.title
+                    ?? NSLocalizedString("Calendar_Event_Detail", comment: "Event Detail")
+            )
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -138,12 +161,22 @@ struct CalendarEventDetailView: View {
                     }
                 }
             }
-            .alert(NSLocalizedString("Calendar_Notification_Alert_Title", comment: "Notification"), isPresented: $showingReminderAlert) {
-                Button(NSLocalizedString("Calendar_OK", comment: "OK")) { }
+            .alert(
+                NSLocalizedString("Calendar_Notification_Alert_Title", comment: "Notification"),
+                isPresented: $showingReminderAlert
+            ) {
+                Button(NSLocalizedString("Calendar_OK", comment: "OK")) {}
             } message: {
-                Text(reminderSuccess ? 
-                     NSLocalizedString("Calendar_Notification_Success", comment: "Notification scheduled successfully") : 
-                     NSLocalizedString("Calendar_Notification_Failed", comment: "Failed to schedule notification, please check permissions"))
+                Text(
+                    reminderSuccess
+                        ? NSLocalizedString(
+                            "Calendar_Notification_Success",
+                            comment: "Notification scheduled successfully"
+                        )
+                        : NSLocalizedString(
+                            "Calendar_Notification_Failed",
+                            comment: "Failed to schedule notification, please check permissions"
+                        ))
             }
             .sheet(isPresented: $showingNotificationTimePicker) {
                 NotificationTimePickerView(
@@ -162,8 +195,8 @@ struct CalendarEventDetailView: View {
             await viewModel.loadEventDetail(characterId: characterId, eventId: eventId)
         }
     }
-    
-        // 添加通知的方法
+
+    // 添加通知的方法
     private func addNotification(with notificationTime: NotificationTime) async {
         guard let eventDetail = viewModel.eventDetail else { return }
         guard let eventDate = eventDetail.eventDate else {
@@ -173,7 +206,7 @@ struct CalendarEventDetailView: View {
             }
             return
         }
-        
+
         let success = await notificationManager.scheduleEventNotificationWithCustomTime(
             eventId: eventDetail.event_id,
             title: eventDetail.title,
@@ -184,25 +217,25 @@ struct CalendarEventDetailView: View {
             description: eventDetail.cleanText.isEmpty ? nil : eventDetail.cleanText,
             notificationTime: notificationTime
         )
-        
+
         await MainActor.run {
             reminderSuccess = success
             showingReminderAlert = true
         }
     }
-    
+
     private func formatEventDate(_ date: Date?) -> String {
-        guard let date = date else { 
-            return NSLocalizedString("Calendar_Unknown_Time", comment: "Unknown time") 
+        guard let date = date else {
+            return NSLocalizedString("Calendar_Unknown_Time", comment: "Unknown time")
         }
-        
+
         let formatter = DateFormatter()
         formatter.dateStyle = .full
         formatter.timeStyle = .short
         formatter.locale = Locale.current
         return formatter.string(from: date)
     }
-    
+
     private func formatDuration(_ minutes: Int) -> String {
         if minutes < 60 {
             return "\(minutes) " + NSLocalizedString("Calendar_Minutes", comment: "minutes")
@@ -212,12 +245,13 @@ struct CalendarEventDetailView: View {
             if remainingMinutes == 0 {
                 return "\(hours) " + NSLocalizedString("Calendar_Hours", comment: "hours")
             } else {
-                return "\(hours) " + NSLocalizedString("Calendar_Hours", comment: "hours") + 
-                       " \(remainingMinutes) " + NSLocalizedString("Calendar_Minutes", comment: "minutes")
+                return "\(hours) " + NSLocalizedString("Calendar_Hours", comment: "hours")
+                    + " \(remainingMinutes) "
+                    + NSLocalizedString("Calendar_Minutes", comment: "minutes")
             }
         }
     }
-    
+
     private func formatResponse(_ response: String) -> String {
         switch response {
         case "accepted":
@@ -230,7 +264,7 @@ struct CalendarEventDetailView: View {
             return NSLocalizedString("Calendar_Response_Not_Responded", comment: "Not responded")
         }
     }
-    
+
     private func formatOwnerType(_ ownerType: String) -> String {
         switch ownerType.lowercased() {
         case "character":
@@ -251,24 +285,29 @@ class CalendarEventDetailViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var showError = false
     @Published var errorMessage = ""
-    
+
     func loadEventDetail(characterId: Int, eventId: Int) async {
         isLoading = true
         showError = false
         errorMessage = ""
-        
+
         do {
             let detail = try await CharacterCalendarDetailAPI.shared.fetchEventDetail(
-                characterId: characterId, 
+                characterId: characterId,
                 eventId: eventId
             )
             eventDetail = detail
         } catch {
-            errorMessage = String(format: NSLocalizedString("Calendar_Load_Detail_Failed", comment: "Failed to load event detail"), error.localizedDescription)
+            errorMessage = String(
+                format: NSLocalizedString(
+                    "Calendar_Load_Detail_Failed", comment: "Failed to load event detail"
+                ),
+                error.localizedDescription
+            )
             showError = true
             Logger.error("加载事件详情失败: \(error)")
         }
-        
+
         isLoading = false
     }
 }
@@ -276,10 +315,10 @@ class CalendarEventDetailViewModel: ObservableObject {
 struct NotificationTimePickerView: View {
     let eventTime: Date
     let onTimeSelected: (NotificationTime) -> Void
-    
+
     @Environment(\.dismiss) private var dismiss
     @State private var selectedTime: NotificationTime = .oneHour
-    
+
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
@@ -288,16 +327,22 @@ struct NotificationTimePickerView: View {
                     Text(NSLocalizedString("Calendar_Event_Time", comment: "Event Time"))
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    
+
                     Text(formatEventTime(eventTime))
                         .font(.headline)
                         .foregroundColor(.primary)
                 }
                 .padding()
-                
+
                 // 时间选项列表
                 List {
-                    Section(header: Text(NSLocalizedString("Calendar_Notification_Time_Options", comment: "Notification Time Options"))) {
+                    Section(
+                        header: Text(
+                            NSLocalizedString(
+                                "Calendar_Notification_Time_Options",
+                                comment: "Notification Time Options"
+                            ))
+                    ) {
                         ForEach(availableTimeOptions, id: \.self) { timeOption in
                             NotificationTimeRow(
                                 timeOption: timeOption,
@@ -311,7 +356,11 @@ struct NotificationTimePickerView: View {
                 }
                 .listStyle(InsetGroupedListStyle())
             }
-            .navigationTitle(NSLocalizedString("Calendar_Select_Notification_Time", comment: "Select Notification Time"))
+            .navigationTitle(
+                NSLocalizedString(
+                    "Calendar_Select_Notification_Time", comment: "Select Notification Time"
+                )
+            )
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -319,7 +368,7 @@ struct NotificationTimePickerView: View {
                         dismiss()
                     }
                 }
-                
+
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(NSLocalizedString("Common_Confirm", comment: "Confirm")) {
                         onTimeSelected(selectedTime)
@@ -329,18 +378,18 @@ struct NotificationTimePickerView: View {
             }
         }
     }
-    
+
     // 根据事件时间过滤可用的通知选项
     private var availableTimeOptions: [NotificationTime] {
         let now = Date()
-        let _ = eventTime.timeIntervalSince(now)
-        
+        _ = eventTime.timeIntervalSince(now)
+
         return NotificationTime.allCases.filter { timeOption in
             let triggerTime = eventTime.addingTimeInterval(timeOption.timeInterval)
             return triggerTime > now
         }
     }
-    
+
     private func formatEventTime(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateStyle = .full
@@ -355,21 +404,21 @@ struct NotificationTimeRow: View {
     let eventTime: Date
     let isSelected: Bool
     let onTap: () -> Void
-    
+
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
                 Text(timeOption.displayName)
                     .font(.body)
                     .foregroundColor(.primary)
-                
+
                 Text(notificationTimeDescription)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
-            
+
             Spacer()
-            
+
             if isSelected {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundColor(.blue)
@@ -385,21 +434,27 @@ struct NotificationTimeRow: View {
             onTap()
         }
     }
-    
+
     private var notificationTimeDescription: String {
         let triggerTime = eventTime.addingTimeInterval(timeOption.timeInterval)
         let formatter = DateFormatter()
         formatter.timeStyle = .short
         formatter.locale = Locale.current
-        
+
         if timeOption == .atEventTime {
-            return NSLocalizedString("Calendar_Notification_At_Event_Start", comment: "At event start") + " (\(formatter.string(from: triggerTime)))"
+            return NSLocalizedString(
+                "Calendar_Notification_At_Event_Start", comment: "At event start"
+            )
+                + " (\(formatter.string(from: triggerTime)))"
         } else {
-            return NSLocalizedString("Calendar_Notification_At", comment: "At") + " \(formatter.string(from: triggerTime))"
+            return NSLocalizedString("Calendar_Notification_At", comment: "At")
+                + " \(formatter.string(from: triggerTime))"
         }
     }
 }
 
 #Preview {
-    CalendarEventDetailView(characterId: 2112343155, eventId: 3101668, databaseManager: DatabaseManager.shared)
-} 
+    CalendarEventDetailView(
+        characterId: 2_112_343_155, eventId: 3_101_668, databaseManager: DatabaseManager.shared
+    )
+}

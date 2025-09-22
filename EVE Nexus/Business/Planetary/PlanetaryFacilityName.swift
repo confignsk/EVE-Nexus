@@ -25,11 +25,11 @@ struct PlanetaryFacility {
 
         // 基础字符集
         let baseString = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        let len = Int64(baseString.count - 1)  // 注意这里减1，与原始代码保持一致
+        let len = Int64(baseString.count - 1) // 注意这里减1，与原始代码保持一致
         var pinName = ""
 
         // 生成5位字符的名称，中间带连字符
-        for i in 0..<5 {
+        for i in 0 ..< 5 {
             // 计算当前位置的字符索引
             let at = Int((identifier / Int64(pow(Double(len), Double(i)))) % len)
 

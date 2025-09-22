@@ -255,3 +255,11 @@ Fixes & Improvements:
 1. Fix time zone of contracts.
 2. Able to convert fitting to image.
 3. Note: Still waitting for update of official SDE.
+
+# v1.8 Sep 28, 2025
+
+1. Update to the latest SDE.
+2. Adaptation for iOS 26
+3. Fixed errors related to capacitor simulation and subsystem issues in the fitting simulation and fitting export functions.
+4. Add DPS and DPH attributes for NPC.
+5. Some UI improvements. 

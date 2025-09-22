@@ -54,8 +54,8 @@ struct BRKillMailSearchView: View {
                 Section {
                     // 只在非星系和星域搜索时显示过滤器
                     if let selectedResult = viewModel.selectedResult,
-                        selectedResult.category != .solar_system
-                            && selectedResult.category != .region
+                       selectedResult.category != .solar_system
+                       && selectedResult.category != .region
                     {
                         Picker(
                             NSLocalizedString("KillMail_Filter", comment: ""),
@@ -105,7 +105,8 @@ struct BRKillMailSearchView: View {
                                         name: String(
                                             format: NSLocalizedString(
                                                 "KillMail_Unknown_Item", comment: ""
-                                            ), shipId),
+                                            ), shipId
+                                        ),
                                         iconFileName: DatabaseConfig.defaultItemIcon
                                     ),
                                     allianceIcon: allianceIconMap[allyId ?? 0],
@@ -194,8 +195,8 @@ struct BRKillMailSearchView: View {
 
     private func loadMoreKillMails() async {
         guard let selectedResult = viewModel.selectedResult,
-            !isLoadingMore,
-            currentPage < totalPages
+              !isLoadingMore,
+              currentPage < totalPages
         else { return }
 
         isLoadingMore = true
@@ -227,17 +228,17 @@ struct BRKillMailSearchView: View {
 
         let placeholders = String(repeating: "?,", count: shipIds.count).dropLast()
         let query = """
-                SELECT type_id, name, icon_filename 
-                FROM types 
-                WHERE type_id IN (\(placeholders))
-            """
+            SELECT type_id, name, icon_filename 
+            FROM types 
+            WHERE type_id IN (\(placeholders))
+        """
 
         let result = DatabaseManager.shared.executeQuery(query, parameters: shipIds)
         if case let .success(rows) = result {
             for row in rows {
                 if let typeId = row["type_id"] as? Int,
-                    let name = row["name"] as? String,
-                    let iconFileName = row["icon_filename"] as? String
+                   let name = row["name"] as? String,
+                   let iconFileName = row["icon_filename"] as? String
                 {
                     shipInfoMap[typeId] = (name: name, iconFileName: iconFileName)
                 }
@@ -250,8 +251,8 @@ struct BRKillMailSearchView: View {
             if let victInfo = mail["vict"] as? [String: Any] {
                 // 优先检查联盟ID
                 if let allyInfo = victInfo["ally"] as? [String: Any],
-                    let allyId = allyInfo["id"] as? Int,
-                    allyId > 0
+                   let allyId = allyInfo["id"] as? Int,
+                   allyId > 0
                 {
                     // 只有当联盟ID有效且图标未加载时才加载联盟图标
                     if allianceIconMap[allyId] == nil {
@@ -264,8 +265,8 @@ struct BRKillMailSearchView: View {
                         }
                     }
                 } else if let corpInfo = victInfo["corp"] as? [String: Any],
-                    let corpId = corpInfo["id"] as? Int,
-                    corpId > 0
+                          let corpId = corpInfo["id"] as? Int,
+                          corpId > 0
                 {
                     // 只有在没有有效联盟ID的情况下才加载军团图标
                     if corporationIconMap[corpId] == nil {
@@ -362,8 +363,7 @@ struct SearchSelectorSheet: View {
                     } else {
                         List {
                             ForEach(viewModel.categories, id: \.self) { category in
-                                if let results = viewModel.searchResults[category], !results.isEmpty
-                                {
+                                if let results = viewModel.searchResults[category], !results.isEmpty {
                                     Section(header: Text(category.localizedTitle)) {
                                         ForEach(results) { result in
                                             Button {
@@ -523,7 +523,7 @@ class BRKillMailSearchViewModel: ObservableObject {
         }
 
         // 如果搜索关键词与上次相同，不执行新的搜索
-        if searchText == lastSearchText && !searchResults.isEmpty {
+        if searchText == lastSearchText, !searchResults.isEmpty {
             return
         }
 
@@ -544,14 +544,14 @@ class BRKillMailSearchViewModel: ObservableObject {
     }
 
     func search(characterId: Int, searchText: String) async {
-        guard !searchText.isEmpty && searchText.count >= 3 else {
+        guard !searchText.isEmpty, searchText.count >= 3 else {
             searchResults = [:]
             lastSearchText = ""
             return
         }
 
         // 如果搜索关键词与上次相同，不执行新的搜索
-        if searchText == lastSearchText && !searchResults.isEmpty {
+        if searchText == lastSearchText, !searchResults.isEmpty {
             return
         }
 
@@ -572,7 +572,7 @@ class BRKillMailSearchViewModel: ObservableObject {
                 guard let category = SearchResultCategory(rawValue: categoryStr) else { continue }
 
                 var results: [SearchResult] = []
-                var seenIds = Set<Int>()  // 用于跟踪已经见过的id
+                var seenIds = Set<Int>() // 用于跟踪已经见过的id
 
                 for item in items {
                     // 检查id是否已经存在

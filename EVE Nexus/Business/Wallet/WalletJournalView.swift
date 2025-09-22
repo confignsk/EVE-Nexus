@@ -53,9 +53,9 @@ final class WalletJournalViewModel: ObservableObject {
     }
 
     enum TimeRange: String, CaseIterable {
-        case last30Days = "last30Days"
-        case last7Days = "last7Days"
-        case last1Day = "last1Day"
+        case last30Days
+        case last7Days
+        case last1Day
 
         var localizedString: String {
             switch self {
@@ -72,10 +72,10 @@ final class WalletJournalViewModel: ObservableObject {
     private let characterId: Int
 
     // 使用FormatUtil进行日期处理，无需自定义格式化器
-    
+
     private let calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone.current  // 使用本地时区
+        calendar.timeZone = TimeZone.current // 使用本地时区
         return calendar
     }()
 
@@ -112,7 +112,7 @@ final class WalletJournalViewModel: ObservableObject {
 
         for entry in entries {
             guard let entryDate = FormatUtil.parseUTCDate(entry.date),
-                entryDate >= startDate
+                  entryDate >= startDate
             else {
                 continue
             }
@@ -136,7 +136,7 @@ final class WalletJournalViewModel: ObservableObject {
 
     func loadJournalData(forceRefresh: Bool = false) async {
         // 如果已经加载过且不是强制刷新，则跳过
-        if initialLoadDone && !forceRefresh {
+        if initialLoadDone, !forceRefresh {
             return
         }
 
@@ -160,9 +160,9 @@ final class WalletJournalViewModel: ObservableObject {
                 if Task.isCancelled { return }
 
                 guard let jsonData = jsonString.data(using: .utf8),
-                    let entries = try? JSONDecoder().decode(
-                        [WalletJournalEntry].self, from: jsonData
-                    )
+                      let entries = try? JSONDecoder().decode(
+                          [WalletJournalEntry].self, from: jsonData
+                      )
                 else {
                     throw NetworkError.invalidResponse
                 }
@@ -176,7 +176,7 @@ final class WalletJournalViewModel: ObservableObject {
                 if totalEntries >= 9500 {
                     // 获取最久远的记录日期
                     if let oldestEntry = entries.min(by: { $0.date < $1.date }),
-                        let oldestDate = FormatUtil.parseUTCDate(oldestEntry.date)
+                       let oldestDate = FormatUtil.parseUTCDate(oldestEntry.date)
                     {
                         let calendar = Calendar.current
                         let now = Date()
@@ -385,7 +385,8 @@ struct WalletJournalView: View {
 
         // 使用新的处理方法获取本地化名称
         return LocalizationManager.shared.processEntryTypeName(
-            for: lowercaseRefType, esiText: refType, language: language)
+            for: lowercaseRefType, esiText: refType, language: language
+        )
     }
 
     // 添加过滤视图组件
@@ -433,8 +434,7 @@ struct WalletJournalView: View {
                     }
                 }
 
-                Section(header: Text(NSLocalizedString("Wallet_Transaction_Category", comment: "")))
-                {
+                Section(header: Text(NSLocalizedString("Wallet_Transaction_Category", comment: ""))) {
                     Button(action: {
                         viewModel.selectedRefType = nil
                     }) {
@@ -500,19 +500,34 @@ struct WalletJournalView: View {
                         ForEach(viewModel.filteredJournalGroups) { group in
                             NavigationLink(destination: WalletJournalDayDetailView(group: group)) {
                                 HStack {
-                                    Text(FormatUtil.formatDateToLocalDate(group.date))
-                                        .font(.system(size: 16))
+                                    // 左侧：日期和交易数垂直排列
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(FormatUtil.formatDateToLocalDate(group.date))
+                                            .font(.system(size: 16))
+
+                                        Text(
+                                            "\(group.entries.count)\(NSLocalizedString("transactions", comment: ""))"
+                                        )
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    }
 
                                     Spacer()
 
+                                    // 右侧：净收益
+                                    let dayNetIncome = group.entries.reduce(0.0) { $0 + $1.amount }
                                     Text(
-                                        "\(group.entries.count) \(NSLocalizedString("transactions", comment: ""))"
+                                        "\(dayNetIncome >= 0 ? "+" : "")\(FormatUtil.formatISK(dayNetIncome))"
                                     )
                                     .font(.caption)
-                                    .foregroundColor(.secondary)
+                                    .foregroundColor(
+                                        dayNetIncome > 0
+                                            ? .green : dayNetIncome < 0 ? .red : .secondary)
                                 }
+                                .padding(.vertical, 4)
                             }
                         }
+                        .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                     }
 
                     if viewModel.isPartialData {
@@ -538,8 +553,7 @@ struct WalletJournalView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 16) {
-                    if viewModel.selectedRefType != nil || viewModel.selectedTransactionType != nil
-                    {
+                    if viewModel.selectedRefType != nil || viewModel.selectedTransactionType != nil {
                         Button(action: {
                             viewModel.selectedRefType = nil
                             viewModel.selectedTransactionType = nil
@@ -576,7 +590,8 @@ struct WalletJournalEntryRow: View {
 
         // 使用新的处理方法获取本地化名称
         return LocalizationManager.shared.processEntryTypeName(
-            for: lowercaseRefType, esiText: refType, language: language)
+            for: lowercaseRefType, esiText: refType, language: language
+        )
     }
 
     var body: some View {

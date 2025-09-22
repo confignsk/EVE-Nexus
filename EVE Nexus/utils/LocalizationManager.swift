@@ -24,7 +24,8 @@ public class LocalizationManager {
 
         guard
             let path = Bundle.main.path(
-                forResource: "accountingentrytypes_localized", ofType: "json")
+                forResource: "accountingentrytypes_localized", ofType: "json"
+            )
         else {
             Logger.error("无法找到账目类型本地化文件")
             return
@@ -35,7 +36,7 @@ public class LocalizationManager {
         do {
             let data = try Data(contentsOf: URL(fileURLWithPath: path))
             if let json = try JSONSerialization.jsonObject(with: data) as? [String: [String: Any]] {
-                self.accountingEntryTypes = json
+                accountingEntryTypes = json
                 Logger.debug("成功加载账目类型本地化数据")
             }
         } catch {
@@ -45,7 +46,7 @@ public class LocalizationManager {
 
     public func getEntryTypeName(for key: String, language: String = "en") -> [String]? {
         guard let entryType = accountingEntryTypes[key],
-            let nameData = entryType["entryTypeName"] as? [String: [String]]
+              let nameData = entryType["entryTypeName"] as? [String: [String]]
         else {
             return nil
         }
@@ -54,7 +55,7 @@ public class LocalizationManager {
 
     public func getEntryJournalMessage(for key: String, language: String = "en") -> [String]? {
         guard let entryType = accountingEntryTypes[key],
-            let messageData = entryType["entryJournalMessage"] as? [String: [String]]
+              let messageData = entryType["entryJournalMessage"] as? [String: [String]]
         else {
             Logger.info("未找到 \(key) 的模板: entryJournalMessage")
             return nil
@@ -86,7 +87,8 @@ public class LocalizationManager {
 
         let nsString = englishTemplate as NSString
         let matches = regex.matches(
-            in: englishTemplate, range: NSRange(location: 0, length: nsString.length))
+            in: englishTemplate, range: NSRange(location: 0, length: nsString.length)
+        )
 
         // 如果没有找到占位符，根据checkExactMatch参数决定是否检查英文模板匹配度
         if matches.isEmpty {
@@ -141,7 +143,8 @@ public class LocalizationManager {
         let nsEsiText = esiText as NSString
         guard
             let match = matchRegex.firstMatch(
-                in: esiText, range: NSRange(location: 0, length: nsEsiText.length))
+                in: esiText, range: NSRange(location: 0, length: nsEsiText.length)
+            )
         else {
             Logger.info("无法匹配文本，返回原文: \(esiText)")
             return esiText
@@ -149,7 +152,7 @@ public class LocalizationManager {
 
         // 4. 提取所有匹配的值
         var values: [String: String] = [:]
-        for i in 0..<matches.count {
+        for i in 0 ..< matches.count {
             let range = match.range(at: i + 1)
             let value = nsEsiText.substring(with: range)
             let placeholder = nsString.substring(with: matches[i].range)
@@ -191,7 +194,7 @@ public class LocalizationManager {
         }
 
         if let targetTemplates = targetTemplates,
-            let englishTemplates = englishTemplates
+           let englishTemplates = englishTemplates
         {
             // 确保两个数组长度相同
             guard targetTemplates.count == englishTemplates.count else {
@@ -245,7 +248,7 @@ public class LocalizationManager {
         }
 
         if let targetTemplates = targetTemplates,
-            let englishTemplates = englishTemplates
+           let englishTemplates = englishTemplates
         {
             // 确保两个数组长度相同
             guard targetTemplates.count == englishTemplates.count else {

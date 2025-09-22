@@ -41,7 +41,7 @@ class JaniceCache {
     }
 
     private var cache: [String: CacheItem] = [:]
-    private let cacheDuration: TimeInterval = 30 * 60  // 30分钟
+    private let cacheDuration: TimeInterval = 30 * 60 // 30分钟
 
     func getCache(for key: String) -> Data? {
         guard let cacheItem = cache[key] else { return nil }
@@ -84,7 +84,7 @@ class JaniceMarketAPI {
     private func generateBoundary() -> String {
         let length = 16
         let characters = "abcdef0123456789"
-        let randomString = (0..<length).map { _ in
+        let randomString = (0 ..< length).map { _ in
             String(characters.randomElement()!)
         }.joined()
         return "geckoformboundary\(randomString)"
@@ -128,7 +128,7 @@ class JaniceMarketAPI {
                 let typeId = String(typeIdInt)
 
                 if let name = row["en_name"] as? String,
-                    let quantity = items[typeId]
+                   let quantity = items[typeId]
                 {
                     itemsMap[typeIdInt] = (name: name, quantity: quantity)
                 }
@@ -193,14 +193,14 @@ class JaniceMarketAPI {
             "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2",
             forHTTPHeaderField: "Accept-Language"
         )
-        request.setValue("identity", forHTTPHeaderField: "Accept-Encoding")  // 使用 identity 表示不接受压缩
+        request.setValue("identity", forHTTPHeaderField: "Accept-Encoding") // 使用 identity 表示不接受压缩
         request.httpBody = requestData
 
         // 7. 发送请求
         let (data, response) = try await URLSession.shared.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse,
-            (200...299).contains(httpResponse.statusCode)
+              (200 ... 299).contains(httpResponse.statusCode)
         else {
             throw NSError(
                 domain: "JaniceMarketAPI", code: -1,
