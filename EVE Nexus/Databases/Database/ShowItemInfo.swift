@@ -3,6 +3,7 @@ import SwiftUI
 // ShowItemInfo view
 struct ShowItemInfo: View {
     @ObservedObject var databaseManager: DatabaseManager
+    @ObservedObject private var skillsManager = SharedSkillsManager.shared
     private let currentCharacterId: Int = {
         guard let id = UserDefaults.standard.object(forKey: "currentCharacterId") as? Int else {
             return 0
@@ -133,6 +134,12 @@ struct ShowItemInfo: View {
             getItemDetails(for: itemID)
             loadAttributes(for: itemID)
         }
+        .onChange(of: skillsManager.isLoading) { _, isLoading in
+            // 当技能数据加载完成时，重新加载属性以更新技能等级
+            if !isLoading {
+                loadAttributes(for: itemID)
+            }
+        }
     }
 
     // 加载 item 详细信息
@@ -177,8 +184,20 @@ struct ShowItemInfo: View {
 
     // 加载属性
     private func loadAttributes(for itemID: Int) {
+        // 检查当前角色是否登录，如果登录则尝试获取技能等级作为属性280的值
+        var attributes = modifiedAttributes
+        if currentCharacterId != 0 {
+            if let level = skillsManager.getSkillLevel(for: itemID), level >= 0 {
+                if attributes == nil {
+                    attributes = [:]
+                }
+                attributes?[280] = Double(level)
+            }
+        }
+
         attributeGroups = databaseManager.loadAttributeGroups(
-            for: itemID, modifiedAttributes: modifiedAttributes
+            for: itemID,
+            modifiedAttributes: attributes
         )
         // 初始化属性单位
         let units = databaseManager.loadAttributeUnits()

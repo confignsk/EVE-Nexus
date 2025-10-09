@@ -25,6 +25,12 @@ class GetCorpContacts {
     private func loadFromCache(corporationId: Int) -> [ContactInfo]? {
         let cacheFile = getCacheFilePath(corporationId: corporationId)
 
+        // 先检查文件是否存在
+        guard FileManager.default.fileExists(atPath: cacheFile.path) else {
+            Logger.debug("军团联系人缓存文件不存在 - 军团ID: \(corporationId)")
+            return nil
+        }
+
         do {
             let data = try Data(contentsOf: cacheFile)
             let decoder = JSONDecoder()

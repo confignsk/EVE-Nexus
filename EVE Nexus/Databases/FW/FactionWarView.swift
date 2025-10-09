@@ -23,7 +23,7 @@ final class FactionWarViewModel: ObservableObject {
 
     // 添加计算属性获取海盗势力列表
     var pirateFactions: [FactionInfo] {
-        let pirateIds = Set(insurgencyCampaigns.map { $0.pirateFaction.id })
+        let pirateIds = Set(insurgencyCampaigns.map { $0.pirateFactionId })
 
         // 查询海盗势力信息
         let placeholders = String(repeating: "?,", count: pirateIds.count).dropLast()
@@ -239,7 +239,7 @@ struct FactionWarView: View {
                             NavigationLink {
                                 InsurgencyView(
                                     campaigns: viewModel.insurgencyCampaigns.filter {
-                                        $0.pirateFaction.id == faction.id
+                                        $0.pirateFactionId == faction.id
                                     },
                                     databaseManager: databaseManager,
                                     factionName: faction.name

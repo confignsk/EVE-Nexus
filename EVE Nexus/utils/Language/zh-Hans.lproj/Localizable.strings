@@ -229,7 +229,10 @@
 "Main_Setting_Cache_Expired" = "已过期";
 
 "Main_About" = "关于";
-"Main_About_Database_Version" = "数据库版本";
+"Main_About_Database_Version" = "SDE 数据库";
+"Main_About_Database_Update_Available" = "可更新";
+"Main_About_Build_Number" = "构建号";
+"Main_About_Patch_Number" = "补丁号";
 "Main_About_Author" = "作者";
 "Main_About_Github" = "Github";
 "Main_About_Report_Bug" = "报告缺陷";
@@ -275,13 +278,17 @@
 "Misc_Copy_Name" = "复制名称";
 "Misc_Copy_Victim_Name" = "复制受害人";
 "Misc_Copy_Module_Name" = "复制装备名称";
+
+"Wallet_Transaction_View_Buyer_Info" = "查看买家信息";
+"Wallet_Transaction_View_Seller_Info" = "查看卖家信息";
 "Misc_Copy_Item_Name" = "复制物品名称";
 "Misc_Copy_Trans" = "复制翻译";
 "Misc_Save_Render_Image" = "保存渲染图";
 "Misc_Save_Render_Image_Success" = "渲染图已保存到相册";
 "Misc_Save_Render_Image_Error" = "无法保存渲染图到相册，请检查相册权限设置";
 "Misc_Save_Render_Image_Error_Title" = "保存失败";
-"Misc_Copy_Title" = "复制头衔";
+"Misc_Copy_Char_Title" = "复制头衔";
+"Misc_Copy_Contract_Title" = "复制标题";
 "Misc_Copy_LP_Offer_Name" = "复制商品名称";
 "Misc_Constellation" = "星座";
 "Misc_Copy_Structure" = "复制建筑名称";
@@ -611,6 +618,7 @@
 "Wallet_Income" = "收入";
 "Wallet_Expense" = "支出";
 "Wallet_Partial_Data_Notice" = "由于数据量较大,仅显示最近30天的部分流水记录";
+"Wallet_Copy_Detail" = "复制详情";
 
 // Market Orders
 "Orders_Remaining" = "剩余";
@@ -642,6 +650,7 @@
 "Industry_Remaining_Minutes_Seconds" = "%d分 %d秒";
 "Industry_Remaining_Seconds" = "%d秒";
 "Finished_on" = "将完成于";
+"Industry_Completed_At" = "已完成于";
 "Industry_runs" = "流程";
 "Industry_copies" = "拷贝";
 "Industry_Runs_Format" = "%d流程 ×";
@@ -751,12 +760,6 @@
 "Mining_Monthly_Summary" = "%@月采矿汇总";
 "Mining_Total_Volume" = "总量";
 
-"Main_Setting_Reset_Database" = "重置数据库";
-"Main_Setting_Reset_Database_Detail" = "删除并重新初始化角色数据库";
-"Main_Setting_Reset_Database_Title" = "重置数据库";
-"Main_Setting_Reset_Database_Message" = "这将删除所有角色数据库内容并重新初始化。此操作无法撤销，是否继续？";
-"Main_Setting_Reset_Database_Success_Title" = "重置完成";
-"Main_Setting_Reset_Database_Success_Message" = "数据库已成功重置。";
 "Common_info" = "基本信息";
 "Character_Security_Status" = "安全等级";
 "Character_Current_Ship" = "当前飞船";
@@ -964,7 +967,7 @@
 "Main_EVE_Mail_Searching" = "搜索中...";
 "Main_EVE_Mail_Search_Failed" = "搜索失败";
 
-"Main_Setting_Corporation_Affairs" = "军团事务";
+"Main_Setting_Function" = "功能设置";
 "Main_Setting_Show_Corporation_Affairs" = "展示军团事务";
 
 // Corporation Section
@@ -1163,6 +1166,10 @@
 "Creator" = "创建人";
 "Executor" = "执行军团";
 "Unknown" = "未知";
+"View" = "查看";
+"View Corporation" = "查看军团";
+"View Alliance" = "查看联盟";
+"View CEO" = "查看CEO";
 
 // Market Watch List
 "Main_Market_Watch_List" = "市场关注列表";
@@ -1442,7 +1449,6 @@
 "Contract_Price_Max" = "最高价格";
 "Contract_Price_Clear" = "清除价格筛选";
 "Contract_No_Title" = "无";
-"Misc_Copy_Title" = "复制标题";
 "Contract_Show_Finished" = "显示已完成合同";
 "Contract_Show_Courier" = "显示运输合同";
 "Contract_Show_ItemExchange" = "显示物品交换合同";
@@ -1475,6 +1481,13 @@
 // Contract Courier Mode Text
 "Contract_Courier_Active_Count" = "%d个待处理合同";
 "Contract_Courier_Active_Count_Limited" = "%d个待处理合同，仅显示前%d个";
+
+// Contract Grouping Mode
+"Contract_Group_By_Issue_Date" = "按发起时间分组";
+"Contract_Group_By_Completion_Date" = "按完成时间分组";
+"Contract_Group_Incomplete" = "未完成";
+"Contract_Group_Issued_On" = "发起于";
+"Contract_Group_Completed_On" = "完成于";
 
 "Main_Corporation_Members_Favorites" = "特别关注";
 "Main_Corporation_Members_Favorites_Title" = "特别关注列表";
@@ -2546,3 +2559,58 @@
 "DNA_Fitting_Link_Save_Error" = "保存DNA装配失败";
 "DNA_Fitting_Link_Default_Name" = "DNA装配";
 "DNA_Fitting_Link_Default_Description" = "从DNA链接导入";
+
+// SDE静态数据相关字符串
+"Main_Setting_SDE_Static_Data" = "SDE静态数据";
+"Main_Setting_Checking_Updates" = "正在检查更新";
+"Main_Setting_No_Updates" = "暂无更新";
+"Main_Setting_Updates_Available" = "有更新可用";
+"Main_Setting_Updates_Available_With_Version" = "有更新可用 (v%@)";
+"Main_Setting_Check_Failed" = "检查失败";
+
+// SDE更新详情页面
+"SDE_Update_Details" = "SDE更新详情";
+"SDE_Data_Package" = "SDE数据包";
+"SDE_Icon_Package" = "图标包";
+"SDE_Current_Version" = "当前版本";
+"SDE_Latest_Version" = "最新版本";
+"SDE_Not_Available" = "不可用";
+"SDE_Already_Latest" = "已是最新";
+"SDE_Update" = "更新";
+"SDE_Exit" = "返回";
+"SDE_Update_Completed" = "更新完成！";
+"SDE_Done" = "完成";
+"SDE_Reset_Database" = "重置SDE数据库";
+"SDE_Reset_Database_Detail" = "删除本地SDE数据，使用内置数据库";
+"SDE_Reset_Confirm_Title" = "重置SDE数据库";
+"SDE_Reset_Cancel" = "取消";
+"SDE_Reset_Confirm" = "重置";
+"SDE_Reset_Message" = "这将删除所有本地SDE数据，应用将重新使用内置的数据库。此操作不可撤销。";
+"SDE_Reset_Success_Title" = "重置成功";
+"SDE_Reset_Success_Message" = "SDE 数据库已恢复到默认版本";
+"SDE_Reset_Section" = "重置 SDE";
+
+// SDE 更新进度日志
+"SDE_Log_Clearing_Directory" = "清理下载目录...";
+"SDE_Log_Checking_Requirements" = "检查更新需求...";
+"SDE_Log_SDE_Needs_Update" = "SDE需要更新: %@ (当前: %@, 最新: %@)";
+"SDE_Log_Icons_Need_Update" = "图标需要更新: %@ (当前 v%d, 最新 v%d)";
+"SDE_Log_Icons_Up_To_Date" = "图标已是最新，跳过下载";
+"SDE_Log_SDE_Up_To_Date" = "SDE已是最新，跳过下载";
+"SDE_Log_Update_Failed" = "更新失败: %@";
+"SDE_Log_Downloading_Icons" = "从CloudKit下载 icons.zip...";
+"SDE_Log_Download_Completed" = "CloudKit下载完成！";
+"SDE_Log_Preparing_Icons" = "准备 icons.zip...";
+"SDE_Log_Verifying_Icons_SHA" = "验证 icons.zip SHA256...";
+"SDE_Log_SHA_Failed" = "SHA256验证失败";
+"SDE_Log_SHA_Verified" = "SHA256验证通过";
+"SDE_Log_Extracting_Icons" = "解压 icons.zip...";
+"SDE_Log_Extract_Icons_Success" = "icons.zip 解压成功！";
+"SDE_Log_Downloading_Metadata" = "下载 metadata.json...";
+"SDE_Log_Metadata_Saved" = "metadata.json 已保存到图标目录";
+"SDE_Log_Metadata_Failed" = "保存 metadata.json 失败: %@";
+"SDE_Log_Downloading_SDE" = "从CloudKit下载 sde.zip...";
+"SDE_Log_Preparing_SDE" = "准备 sde.zip...";
+"SDE_Log_Verifying_SDE_SHA" = "验证 sde.zip SHA256...";
+"SDE_Log_Extracting_SDE" = "解压 sde.zip...";
+"SDE_Log_Extract_SDE_Success" = "sde.zip 解压成功！";

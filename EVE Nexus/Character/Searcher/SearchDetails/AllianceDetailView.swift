@@ -194,6 +194,20 @@ struct AllianceDetailView: View {
     @State private var error: Error?
     @State private var isLoading = true
     @State private var standingsLoaded = false
+    @State private var idCopied: Bool = false
+
+    // 导航辅助方法
+    @ViewBuilder
+    private func navigationDestination(for id: Int, type: String) -> some View {
+        switch type {
+        case "character":
+            CharacterDetailView(characterId: id, character: character)
+        case "corporation":
+            CorporationDetailView(corporationId: id, character: character)
+        default:
+            EmptyView()
+        }
+    }
 
     var body: some View {
         List {
@@ -314,37 +328,62 @@ struct AllianceDetailView: View {
                                 systemImage: "doc.on.doc"
                             )
                         }
-                        if let executorInfo = executorCorpInfo {
-                            Button {
-                                UIPasteboard.general.string = executorInfo.name
-                            } label: {
-                                Label(
-                                    "\(NSLocalizedString("Misc_Copy", comment: "")) \(NSLocalizedString("Executor Corp", comment: ""))",
-                                    systemImage: "doc.on.doc"
-                                )
-                            }
+
+                        Divider()
+
+                        NavigationLink {
+                            navigationDestination(
+                                for: allianceInfo.executor_corporation_id, type: "corporation"
+                            )
+                        } label: {
+                            Label(
+                                "\(NSLocalizedString("View", comment: "")) \(NSLocalizedString("Executor Corp", comment: ""))",
+                                systemImage: "info.circle"
+                            )
                         }
-                        if let creatorCorpInfo = creatorCorpInfo {
-                            Button {
-                                UIPasteboard.general.string = creatorCorpInfo.name
-                            } label: {
-                                Label(
-                                    "\(NSLocalizedString("Misc_Copy", comment: "")) \(NSLocalizedString("Creator Corp", comment: ""))",
-                                    systemImage: "doc.on.doc"
-                                )
-                            }
+
+                        NavigationLink {
+                            navigationDestination(
+                                for: allianceInfo.creator_corporation_id, type: "corporation"
+                            )
+                        } label: {
+                            Label(
+                                "\(NSLocalizedString("View", comment: "")) \(NSLocalizedString("Creator Corp", comment: ""))",
+                                systemImage: "info.circle"
+                            )
                         }
-                        if let creatorInfo = creatorInfo {
-                            Button {
-                                UIPasteboard.general.string = creatorInfo.name
-                            } label: {
-                                Label(
-                                    "\(NSLocalizedString("Misc_Copy", comment: "")) \(NSLocalizedString("Creator", comment: ""))",
-                                    systemImage: "doc.on.doc"
-                                )
-                            }
+
+                        NavigationLink {
+                            navigationDestination(
+                                for: allianceInfo.creator_id, type: "character"
+                            )
+                        } label: {
+                            Label(
+                                "\(NSLocalizedString("View", comment: "")) \(NSLocalizedString("Creator", comment: ""))",
+                                systemImage: "info.circle"
+                            )
                         }
                     }
+                } footer: {
+                    Button {
+                        UIPasteboard.general.string = String(allianceId)
+                        idCopied = true
+                        Task {
+                            try? await Task.sleep(nanoseconds: 2_000_000_000)
+                            idCopied = false
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Spacer()
+                            Image(systemName: idCopied ? "checkmark" : "doc.on.doc")
+                                .font(.caption)
+                                .frame(width: 12, height: 12)
+                            Text("ID: \(allianceId)")
+                                .font(.caption)
+                        }
+                        .foregroundColor(.blue)
+                    }
+                    .buttonStyle(.plain)
                 }
 
                 // 联盟基本信息

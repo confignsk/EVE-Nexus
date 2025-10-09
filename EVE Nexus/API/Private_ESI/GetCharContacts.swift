@@ -41,6 +41,12 @@ class GetCharContacts {
     private func loadFromCache(characterId: Int) -> [ContactInfo]? {
         let cacheFile = getCacheFilePath(characterId: characterId)
 
+        // 先检查文件是否存在
+        guard FileManager.default.fileExists(atPath: cacheFile.path) else {
+            Logger.debug("角色联系人缓存文件不存在 - 角色ID: \(characterId)")
+            return nil
+        }
+
         do {
             let data = try Data(contentsOf: cacheFile)
             let decoder = JSONDecoder()

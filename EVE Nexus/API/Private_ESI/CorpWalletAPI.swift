@@ -56,6 +56,13 @@ class CorpWalletAPI {
             "CorpJournal_\(corporationId)_\(division).json")
     }
 
+    // 获取军团钱包交易记录缓存文件路径
+    private func getCorpTransactionsCacheFilePath(corporationId: Int, division: Int) -> URL {
+        let cacheDirectory = getCorpWalletJournalCacheDirectory()
+        return cacheDirectory.appendingPathComponent(
+            "CorpTransactions_\(corporationId)_\(division).json")
+    }
+
     // 检查军团钱包流水缓存是否过期
     private func isCorpJournalCacheExpired(corporationId: Int, division: Int) -> Bool {
         let filePath = getCorpJournalCacheFilePath(corporationId: corporationId, division: division)
@@ -90,6 +97,80 @@ class CorpWalletAPI {
         return true
     }
 
+    // 检查军团钱包交易记录缓存是否过期
+    private func isCorpTransactionsCacheExpired(corporationId: Int, division: Int) -> Bool {
+        let filePath = getCorpTransactionsCacheFilePath(corporationId: corporationId, division: division)
+
+        guard FileManager.default.fileExists(atPath: filePath.path) else {
+            Logger.info(
+                "军团钱包交易记录缓存文件不存在，需要刷新 - 军团ID: \(corporationId), 部门: \(division), 文件路径: \(filePath.path)"
+            )
+            return true
+        }
+
+        do {
+            let attributes = try FileManager.default.attributesOfItem(atPath: filePath.path)
+            if let modificationDate = attributes[.modificationDate] as? Date {
+                let timeInterval = Date().timeIntervalSince(modificationDate)
+                let remainingTime = journalCacheTimeout - timeInterval
+                let remainingMinutes = Int(remainingTime / 60)
+                let remainingSeconds = Int(remainingTime.truncatingRemainder(dividingBy: 60))
+                let isExpired = timeInterval > journalCacheTimeout
+
+                Logger.info(
+                    "军团钱包交易记录缓存状态检查 - 军团ID: \(corporationId), 部门: \(division), 文件修改时间: \(modificationDate), 当前时间: \(Date()), 时间间隔: \(timeInterval)秒, 剩余时间: \(remainingMinutes)分\(remainingSeconds)秒, 是否过期: \(isExpired)"
+                )
+                return isExpired
+            }
+        } catch {
+            Logger.error(
+                "获取军团钱包交易记录缓存文件属性失败: \(error) - 军团ID: \(corporationId), 部门: \(division), 文件路径: \(filePath.path)"
+            )
+        }
+
+        return true
+    }
+
+    /// 使指定部门的钱包相关缓存失效（包括流水、交易记录和钱包余额）
+    /// - Parameters:
+    ///   - corporationId: 军团ID
+    ///   - division: 部门编号
+    ///   - invalidateWalletBalance: 是否同时失效钱包余额缓存，默认为true
+    private func invalidateDivisionCache(corporationId: Int, division: Int, invalidateWalletBalance: Bool = true) {
+        let journalFilePath = getCorpJournalCacheFilePath(corporationId: corporationId, division: division)
+        let transactionsFilePath = getCorpTransactionsCacheFilePath(corporationId: corporationId, division: division)
+
+        // 删除流水记录缓存文件
+        if FileManager.default.fileExists(atPath: journalFilePath.path) {
+            do {
+                try FileManager.default.removeItem(at: journalFilePath)
+                Logger.info("已删除军团钱包流水缓存文件 - 军团ID: \(corporationId), 部门: \(division), 文件路径: \(journalFilePath.path)")
+            } catch {
+                Logger.error("删除军团钱包流水缓存文件失败 - 军团ID: \(corporationId), 部门: \(division), 错误: \(error)")
+            }
+        }
+
+        // 删除交易记录缓存文件
+        if FileManager.default.fileExists(atPath: transactionsFilePath.path) {
+            do {
+                try FileManager.default.removeItem(at: transactionsFilePath)
+                Logger.info("已删除军团钱包交易记录缓存文件 - 军团ID: \(corporationId), 部门: \(division), 文件路径: \(transactionsFilePath.path)")
+            } catch {
+                Logger.error("删除军团钱包交易记录缓存文件失败 - 军团ID: \(corporationId), 部门: \(division), 错误: \(error)")
+            }
+        }
+
+        // 删除军团钱包余额缓存（UserDefaults）
+        if invalidateWalletBalance {
+            let cacheKey = "corp_wallets_\(corporationId)"
+            let cacheTimeKey = "corp_wallets_\(corporationId)_time"
+
+            UserDefaults.standard.removeObject(forKey: cacheKey)
+            UserDefaults.standard.removeObject(forKey: cacheTimeKey)
+            Logger.info("已删除军团钱包余额缓存 - 军团ID: \(corporationId)")
+        }
+    }
+
     /// 获取军团钱包信息
     /// - Parameters:
     ///   - characterId: 角色ID
@@ -104,7 +185,16 @@ class CorpWalletAPI {
             throw NetworkError.authenticationError("无法获取军团ID")
         }
 
-        // 2. 获取部门信息
+        // 2. 如果是强制刷新，先使所有部门的关联缓存失效
+        if forceRefresh {
+            Logger.info("强制刷新军团钱包，使关联缓存失效 - 军团ID: \(corporationId)")
+            // 失效所有可能的部门缓存（EVE军团钱包最多7个部门）
+            for division in 1 ... 7 {
+                invalidateDivisionCache(corporationId: corporationId, division: division)
+            }
+        }
+
+        // 3. 获取部门信息
         let divisions = try await fetchCorpDivisions(
             characterId: characterId, forceRefresh: forceRefresh
         )
@@ -390,6 +480,74 @@ class CorpWalletAPI {
         }
     }
 
+    /// 从缓存文件获取军团钱包交易记录
+    /// - Parameters:
+    ///   - corporationId: 军团ID
+    ///   - division: 部门编号
+    /// - Returns: 交易记录数组
+    private func getCorpWalletTransactionsFromCache(corporationId: Int, division: Int) -> [[String: Any]]? {
+        let filePath = getCorpTransactionsCacheFilePath(corporationId: corporationId, division: division)
+
+        guard FileManager.default.fileExists(atPath: filePath.path) else {
+            Logger.info(
+                "军团钱包交易记录缓存文件不存在 - 军团ID: \(corporationId), 部门: \(division), 文件路径: \(filePath.path)")
+            return nil
+        }
+
+        Logger.info(
+            "开始读取军团钱包交易记录缓存文件 - 军团ID: \(corporationId), 部门: \(division), 文件路径: \(filePath.path)")
+
+        do {
+            let data = try Data(contentsOf: filePath)
+            let jsonObject = try JSONSerialization.jsonObject(with: data, options: [])
+
+            if let transactionEntries = jsonObject as? [[String: Any]] {
+                Logger.info(
+                    "成功从缓存文件读取军团钱包交易记录 - 军团ID: \(corporationId), 部门: \(division), 记录数量: \(transactionEntries.count), 文件大小: \(data.count) bytes"
+                )
+                return transactionEntries
+            } else {
+                Logger.error(
+                    "军团钱包交易记录缓存文件格式不正确 - 军团ID: \(corporationId), 部门: \(division), 文件路径: \(filePath.path)")
+                return nil
+            }
+        } catch {
+            Logger.error(
+                "读取军团钱包交易记录缓存文件失败 - 军团ID: \(corporationId), 部门: \(division), 错误: \(error), 文件路径: \(filePath.path)")
+            return nil
+        }
+    }
+
+    /// 保存军团钱包交易记录到缓存文件
+    /// - Parameters:
+    ///   - corporationId: 军团ID
+    ///   - division: 部门编号
+    ///   - entries: 交易记录条目
+    /// - Returns: 是否保存成功
+    private func saveCorpWalletTransactionsToCache(
+        corporationId: Int, division: Int, entries: [[String: Any]]
+    ) -> Bool {
+        let filePath = getCorpTransactionsCacheFilePath(corporationId: corporationId, division: division)
+
+        Logger.info(
+            "开始保存军团钱包交易记录到缓存文件 - 军团ID: \(corporationId), 部门: \(division), 记录数量: \(entries.count), 文件路径: \(filePath.path)")
+
+        do {
+            let jsonData = try JSONSerialization.data(
+                withJSONObject: entries, options: [.prettyPrinted, .sortedKeys]
+            )
+            try jsonData.write(to: filePath)
+            Logger.info(
+                "成功保存军团钱包交易记录到缓存文件 - 军团ID: \(corporationId), 部门: \(division), 记录数量: \(entries.count), 文件大小: \(jsonData.count) bytes, 文件路径: \(filePath.path)"
+            )
+            return true
+        } catch {
+            Logger.error(
+                "保存军团钱包交易记录到缓存文件失败 - 军团ID: \(corporationId), 部门: \(division), 错误: \(error), 文件路径: \(filePath.path)")
+            return false
+        }
+    }
+
     /// 获取军团钱包流水（公开方法）
     /// - Parameters:
     ///   - characterId: 角色ID
@@ -415,7 +573,13 @@ class CorpWalletAPI {
             "开始获取军团钱包流水 - 角色ID: \(characterId), 军团ID: \(corporationId), 部门: \(division), 强制刷新: \(forceRefresh)"
         )
 
-        // 2. 如果强制刷新或缓存过期，则从网络获取
+        // 2. 如果是强制刷新，先使关联缓存失效
+        if forceRefresh {
+            Logger.info("强制刷新军团钱包流水，使关联缓存失效 - 军团ID: \(corporationId), 部门: \(division)")
+            invalidateDivisionCache(corporationId: corporationId, division: division)
+        }
+
+        // 3. 如果强制刷新或缓存过期，则从网络获取
         if forceRefresh
             || isCorpJournalCacheExpired(corporationId: corporationId, division: division)
         {
@@ -464,45 +628,43 @@ class CorpWalletAPI {
             throw NetworkError.authenticationError("无法获取军团ID")
         }
 
-        // 2. 检查数据库中是否有数据
-        let checkQuery =
-            "SELECT COUNT(*) as count FROM corp_wallet_transactions WHERE corporation_id = ? AND division = ?"
-        let result = CharacterDatabaseManager.shared.executeQuery(
-            checkQuery, parameters: [corporationId, division]
-        )
-        let isEmpty =
-            if case let .success(rows) = result,
-            let row = rows.first,
-            let count = row["count"] as? Int64 {
-                count == 0
-            } else {
-                true
-            }
+        Logger.info(
+            "开始获取军团钱包交易记录 - 角色ID: \(characterId), 军团ID: \(corporationId), 部门: \(division), 强制刷新: \(forceRefresh)")
 
-        // 3. 如果数据为空或强制刷新，则从网络获取
-        if isEmpty || forceRefresh {
-            Logger.debug("军团钱包交易记录为空或需要刷新，从网络获取数据")
+        // 2. 如果是强制刷新，先使关联缓存失效
+        if forceRefresh {
+            Logger.info("强制刷新军团钱包交易记录，使关联缓存失效 - 军团ID: \(corporationId), 部门: \(division)")
+            invalidateDivisionCache(corporationId: corporationId, division: division)
+        }
+
+        // 3. 如果强制刷新或缓存过期，则从网络获取
+        if forceRefresh || isCorpTransactionsCacheExpired(corporationId: corporationId, division: division) {
+            Logger.info("军团钱包交易记录缓存过期或需要强制刷新，从网络获取数据 - 军团ID: \(corporationId), 部门: \(division)")
             let transactionData = try await fetchCorpTransactionsFromServer(
                 characterId: characterId, corporationId: corporationId, division: division
             )
-            if !saveCorpWalletTransactionsToDB(
+            if !saveCorpWalletTransactionsToCache(
                 corporationId: corporationId, division: division, entries: transactionData
             ) {
-                Logger.error("保存军团钱包交易记录到数据库失败")
+                Logger.error("保存军团钱包交易记录到缓存文件失败 - 军团ID: \(corporationId), 部门: \(division)")
             }
         } else {
-            Logger.debug("使用数据库中的军团钱包交易记录数据")
+            Logger.info("使用缓存文件中的军团钱包交易记录数据 - 军团ID: \(corporationId), 部门: \(division)")
         }
 
-        // 4. 从数据库获取数据并返回
-        if let results = getCorpWalletTransactionsFromDB(
+        // 3. 从缓存文件获取数据并返回
+        if let results = getCorpWalletTransactionsFromCache(
             corporationId: corporationId, division: division
         ) {
             let jsonData = try JSONSerialization.data(
                 withJSONObject: results, options: [.prettyPrinted, .sortedKeys]
             )
+            Logger.info(
+                "军团钱包交易记录数据处理完成 - 军团ID: \(corporationId), 部门: \(division), JSON大小: \(jsonData.count) bytes")
             return String(data: jsonData, encoding: .utf8)
         }
+
+        Logger.error("无法获取军团钱包交易记录数据 - 军团ID: \(corporationId), 部门: \(division)")
         return nil
     }
 
@@ -528,141 +690,5 @@ class CorpWalletAPI {
 
         Logger.info("成功获取军团钱包交易记录，共\(transactions.count)条记录")
         return transactions
-    }
-
-    /// 从数据库获取军团钱包交易记录
-    private func getCorpWalletTransactionsFromDB(corporationId: Int, division: Int) -> [[String:
-            Any]]?
-    {
-        let query = """
-            SELECT transaction_id, client_id, date, is_buy, is_personal,
-                   journal_ref_id, location_id, quantity, type_id,
-                   unit_price, last_updated
-            FROM corp_wallet_transactions 
-            WHERE corporation_id = ? AND division = ?
-            ORDER BY date DESC 
-            LIMIT 1000
-        """
-
-        if case let .success(results) = CharacterDatabaseManager.shared.executeQuery(
-            query, parameters: [corporationId, division]
-        ) {
-            // 将整数转换回布尔值
-            return results.map { row in
-                var mutableRow = row
-                if let isBuy = row["is_buy"] as? Int64 {
-                    mutableRow["is_buy"] = isBuy != 0
-                }
-                if let isPersonal = row["is_personal"] as? Int64 {
-                    mutableRow["is_personal"] = isPersonal != 0
-                }
-                return mutableRow
-            }
-        }
-        return nil
-    }
-
-    /// 保存军团钱包交易记录到数据库
-    private func saveCorpWalletTransactionsToDB(
-        corporationId: Int, division: Int, entries: [[String: Any]]
-    ) -> Bool {
-        // 首先获取已存在的交易ID
-        let checkQuery =
-            "SELECT transaction_id FROM corp_wallet_transactions WHERE corporation_id = ? AND division = ?"
-        guard
-            case let .success(existingResults) = CharacterDatabaseManager.shared.executeQuery(
-                checkQuery, parameters: [corporationId, division]
-            )
-        else {
-            Logger.error("查询现有交易记录失败")
-            return false
-        }
-
-        let existingIds = Set(existingResults.compactMap { ($0["transaction_id"] as? Int64) })
-
-        // 过滤出需要插入的新记录
-        let newEntries = entries.filter { entry in
-            let transactionId = entry["transaction_id"] as? Int64 ?? 0
-            return !existingIds.contains(transactionId)
-        }
-
-        if newEntries.isEmpty {
-            Logger.info("无需新增交易记录")
-            return true
-        }
-
-        // 开始事务
-        let beginTransaction = "BEGIN TRANSACTION"
-        _ = CharacterDatabaseManager.shared.executeQuery(beginTransaction)
-
-        // 计算每批次的大小（每条记录12个参数）
-        let batchSize = 500 // 每批次处理500条记录
-        var success = true
-
-        // 分批处理数据
-        for batchStart in stride(from: 0, to: newEntries.count, by: batchSize) {
-            let batchEnd = min(batchStart + batchSize, newEntries.count)
-            let currentBatch = Array(newEntries[batchStart ..< batchEnd])
-
-            // 构建批量插入语句
-            let placeholders = Array(
-                repeating: "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", count: currentBatch.count
-            ).joined(separator: ",")
-            let insertSQL = """
-                INSERT OR REPLACE INTO corp_wallet_transactions (
-                    transaction_id, corporation_id, division, client_id, date, is_buy,
-                    is_personal, journal_ref_id, location_id, quantity,
-                    type_id, unit_price
-                ) VALUES \(placeholders)
-            """
-
-            // 准备参数数组
-            var parameters: [Any] = []
-            for entry in currentBatch {
-                let transactionId = entry["transaction_id"] as? Int64 ?? 0
-
-                // 将布尔值转换为整数
-                let isBuy = (entry["is_buy"] as? Bool ?? false) ? 1 : 0
-                let isPersonal = (entry["is_personal"] as? Bool ?? false) ? 1 : 0
-
-                let params: [Any] = [
-                    transactionId,
-                    corporationId,
-                    division,
-                    entry["client_id"] as? Int ?? 0,
-                    entry["date"] as? String ?? "",
-                    isBuy,
-                    isPersonal,
-                    entry["journal_ref_id"] as? Int64 ?? 0,
-                    entry["location_id"] as? Int64 ?? 0,
-                    entry["quantity"] as? Int ?? 0,
-                    entry["type_id"] as? Int ?? 0,
-                    entry["unit_price"] as? Double ?? 0.0,
-                ]
-                parameters.append(contentsOf: params)
-            }
-
-            Logger.debug("执行批量插入军团钱包交易记录，批次大小: \(currentBatch.count), 参数数量: \(parameters.count)")
-
-            // 执行批量插入
-            if case let .error(message) = CharacterDatabaseManager.shared.executeQuery(
-                insertSQL, parameters: parameters
-            ) {
-                Logger.error("批量插入军团钱包交易记录失败: \(message)")
-                success = false
-                break
-            }
-        }
-
-        // 根据执行结果提交或回滚事务
-        if success {
-            _ = CharacterDatabaseManager.shared.executeQuery("COMMIT")
-            Logger.info("新增\(newEntries.count)条军团钱包交易记录到数据库")
-            return true
-        } else {
-            _ = CharacterDatabaseManager.shared.executeQuery("ROLLBACK")
-            Logger.error("保存军团钱包交易记录失败，执行回滚")
-            return false
-        }
     }
 }

@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Data Models
 
-/// 派系战争统计信息
+/// 势力战争统计信息
 public struct CharacterFWStats: Codable {
     public let current_rank: Int?
     public let enlisted_on: String?
@@ -47,21 +47,21 @@ public class CharacterFWStatsAPI {
 
     private init() {}
 
-    /// 获取角色派系战争统计数据
+    /// 获取角色势力战争统计数据
     /// - Parameters:
     ///   - characterId: 角色ID
     ///   - forceRefresh: 是否强制刷新
-    /// - Returns: 派系战争统计数据
+    /// - Returns: 势力战争统计数据
     public func getFWStats(characterId: Int, forceRefresh: Bool = false) async throws
         -> CharacterFWStats
     {
         // 如果不是强制刷新，尝试从缓存获取数据
         if !forceRefresh, let cachedData = try? loadFromCache(characterId: characterId) {
-            Logger.info("成功从缓存获取派系战争统计数据，角色ID: \(characterId)")
+            Logger.info("成功从缓存获取势力战争统计数据，角色ID: \(characterId)")
             return cachedData
         }
 
-        Logger.info("缓存未命中或强制刷新，从API获取派系战争统计数据，角色ID: \(characterId)")
+        Logger.info("缓存未命中或强制刷新，从API获取势力战争统计数据，角色ID: \(characterId)")
 
         // 从API获取数据
         let urlString =
@@ -78,13 +78,13 @@ public class CharacterFWStatsAPI {
             )
 
             let fwStats = try JSONDecoder().decode(CharacterFWStats.self, from: data)
-            Logger.info("成功从API获取派系战争统计数据，角色ID: \(characterId)")
+            Logger.info("成功从API获取势力战争统计数据，角色ID: \(characterId)")
 
             // 保存到缓存
             try saveToCache(characterId: characterId, fwStats: fwStats)
             return fwStats
         } catch {
-            Logger.error("获取派系战争统计数据失败: \(error)")
+            Logger.error("获取势力战争统计数据失败: \(error)")
             throw error
         }
     }
@@ -111,7 +111,7 @@ public class CharacterFWStatsAPI {
 
     /// 从缓存加载数据
     /// - Parameter characterId: 角色ID
-    /// - Returns: 缓存的派系战争统计数据，如果不存在或过期则返回nil
+    /// - Returns: 缓存的势力战争统计数据，如果不存在或过期则返回nil
     private func loadFromCache(characterId: Int) throws -> CharacterFWStats? {
         let fileURL = CharacterFWStatsAPI.getCacheFilePath(characterId: characterId)
 
@@ -133,7 +133,7 @@ public class CharacterFWStatsAPI {
 
             let remainingTime =
                 CharacterFWStatsAPI.cacheExpiration - Date().timeIntervalSince(cache.timestamp)
-            Logger.info("从缓存获取派系战争统计数据: \(fileURL), 剩余有效时间: \(Int(remainingTime / 3600))小时")
+            Logger.info("从缓存获取势力战争统计数据: \(fileURL), 剩余有效时间: \(Int(remainingTime / 3600))小时")
             return cache.data
         } catch {
             Logger.error("解析缓存数据失败: \(error)")
@@ -146,7 +146,7 @@ public class CharacterFWStatsAPI {
     /// 保存数据到缓存
     /// - Parameters:
     ///   - characterId: 角色ID
-    ///   - fwStats: 派系战争统计数据
+    ///   - fwStats: 势力战争统计数据
     private func saveToCache(characterId: Int, fwStats: CharacterFWStats) throws {
         let fileURL = CharacterFWStatsAPI.getCacheFilePath(characterId: characterId)
 
@@ -155,9 +155,9 @@ public class CharacterFWStatsAPI {
 
         do {
             try data.write(to: fileURL)
-            Logger.info("派系战争统计数据已保存到缓存: \(fileURL)")
+            Logger.info("势力战争统计数据已保存到缓存: \(fileURL)")
         } catch {
-            Logger.error("保存派系战争统计数据到缓存失败: \(error)")
+            Logger.error("保存势力战争统计数据到缓存失败: \(error)")
             throw error
         }
     }

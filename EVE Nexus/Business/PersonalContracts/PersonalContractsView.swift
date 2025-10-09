@@ -64,9 +64,47 @@ final class PersonalContractsViewModel: ObservableObject {
         }
     }
 
+    // 分组方式枚举
+    enum GroupingMode: Int, CaseIterable {
+        case byIssueDate = 0
+        case byCompletionDate = 1
+
+        var localizedName: String {
+            switch self {
+            case .byIssueDate:
+                return NSLocalizedString("Contract_Group_By_Issue_Date", comment: "")
+            case .byCompletionDate:
+                return NSLocalizedString("Contract_Group_By_Completion_Date", comment: "")
+            }
+        }
+    }
+
     @Published var selectedContractType: ContractType = .personal {
         didSet {
             Logger.debug("合同类型切换: \(selectedContractType.localizedName)")
+        }
+    }
+
+    @Published var groupingMode: GroupingMode = .byIssueDate {
+        didSet {
+            // 保存设置到 UserDefaults
+            UserDefaults.standard.set(groupingMode.rawValue, forKey: "groupingMode_\(characterId)")
+            // 当切换分组方式时，重新分组
+            Task {
+                let contracts =
+                    switch self.selectedContractType {
+                    case .personal:
+                        self.cachedPersonalContracts
+                    case .corporation:
+                        self.cachedCorporationContracts
+                    case .alliance:
+                        self.cachedAllianceContracts
+                    }
+                let groups = await processContractGroups(contracts)
+                await MainActor.run {
+                    self.contractGroups = groups
+                }
+            }
         }
     }
 
@@ -143,6 +181,14 @@ final class PersonalContractsViewModel: ObservableObject {
             forKey: "courierMode_\(characterId)") as? Bool
         {
             courierMode = courierModeSetting
+        }
+
+        // 从 UserDefaults 读取分组方式设置
+        if let groupingModeValue = UserDefaults.standard.value(
+            forKey: "groupingMode_\(characterId)") as? Int,
+            let savedGroupingMode = GroupingMode(rawValue: groupingModeValue)
+        {
+            groupingMode = savedGroupingMode
         }
     }
 
@@ -427,24 +473,86 @@ final class PersonalContractsViewModel: ObservableObject {
             // 快递模式
             return await groupContractsByRoute(contracts)
         } else {
-            // 普通模式的分组逻辑
-            var groupedContracts: [Date: [ContractInfo]] = [:]
-            for contract in contracts {
-                let date = calendar.startOfDay(for: contract.date_issued)
-                if groupedContracts[date] == nil {
-                    groupedContracts[date] = []
-                }
-                groupedContracts[date]?.append(contract)
+            // 根据分组方式选择不同的分组逻辑
+            switch groupingMode {
+            case .byIssueDate:
+                return groupContractsByIssueDate(contracts)
+            case .byCompletionDate:
+                return groupContractsByCompletionDate(contracts)
+            }
+        }
+    }
+
+    // 按发起时间分组
+    private func groupContractsByIssueDate(_ contracts: [ContractInfo]) -> [ContractGroup] {
+        var groupedContracts: [Date: [ContractInfo]] = [:]
+        for contract in contracts {
+            let date = calendar.startOfDay(for: contract.date_issued)
+            if groupedContracts[date] == nil {
+                groupedContracts[date] = []
+            }
+            groupedContracts[date]?.append(contract)
+        }
+
+        // 创建分组并排序
+        return groupedContracts.map { date, contracts in
+            ContractGroup(
+                date: date,
+                contracts: contracts.sorted { $0.date_issued > $1.date_issued }
+            )
+        }.sorted { $0.date > $1.date }
+    }
+
+    // 按完成时间分组
+    private func groupContractsByCompletionDate(_ contracts: [ContractInfo]) -> [ContractGroup] {
+        var result: [ContractGroup] = []
+
+        // 第一组：未完成的合同（outstanding 和 in_progress）
+        let incompleteContracts = contracts.filter { contract in
+            contract.status == "outstanding" || contract.status == "in_progress"
+        }.sorted { $0.contract_id > $1.contract_id }
+
+        if !incompleteContracts.isEmpty {
+            // 使用一个特殊的日期表示"未完成"分组
+            result.append(ContractGroup(
+                date: Date.distantFuture,
+                contracts: incompleteContracts
+            ))
+        }
+
+        // 其他已完成的合同按完成时间分组
+        let completedContracts = contracts.filter { contract in
+            contract.status != "outstanding" && contract.status != "in_progress"
+        }
+
+        var groupedContracts: [Date: [ContractInfo]] = [:]
+        for contract in completedContracts {
+            // 使用完成时间，如果没有完成时间则使用发起时间
+            let date: Date
+            if let completedDate = contract.date_completed {
+                date = calendar.startOfDay(for: completedDate)
+            } else {
+                // 如果没有完成时间，使用发起时间
+                date = calendar.startOfDay(for: contract.date_issued)
             }
 
-            // 创建分组并排序
-            return groupedContracts.map { date, contracts in
-                ContractGroup(
-                    date: date,
-                    contracts: contracts.sorted { $0.date_issued > $1.date_issued }
-                )
-            }.sorted { $0.date > $1.date }
+            if groupedContracts[date] == nil {
+                groupedContracts[date] = []
+            }
+            groupedContracts[date]?.append(contract)
         }
+
+        // 创建已完成合同的分组并排序
+        let completedGroups = groupedContracts.map { date, contracts in
+            ContractGroup(
+                date: date,
+                contracts: contracts.sorted { $0.contract_id > $1.contract_id }
+            )
+        }.sorted { $0.date > $1.date }
+
+        result.append(contentsOf: completedGroups)
+
+        return result
     }
 }
 
@@ -655,7 +763,8 @@ struct PersonalContractsView: View {
                                 ContractRow(
                                     contract: contract,
                                     contractType: viewModel.selectedContractType,
-                                    databaseManager: viewModel.databaseManager
+                                    databaseManager: viewModel.databaseManager,
+                                    groupingMode: viewModel.groupingMode
                                 )
                             }
                         } header: {
@@ -673,10 +782,26 @@ struct PersonalContractsView: View {
                                     .textCase(nil)
                                 }
                             } else {
-                                Text(FormatUtil.formatDateToLocalDate(group.date))
-                                    .font(.headline)
-                                    .foregroundColor(.primary)
-                                    .textCase(nil)
+                                // 根据分组方式显示不同的标题
+                                if viewModel.groupingMode == .byCompletionDate && group.date == Date.distantFuture {
+                                    // 未完成分组
+                                    Text(NSLocalizedString("Contract_Group_Incomplete", comment: ""))
+                                        .font(.headline)
+                                        .foregroundColor(.primary)
+                                        .textCase(nil)
+                                } else if viewModel.groupingMode == .byIssueDate {
+                                    // 按发起时间分组
+                                    Text(NSLocalizedString("Contract_Group_Issued_On", comment: "") + " " + FormatUtil.formatDateToLocalDate(group.date))
+                                        .font(.headline)
+                                        .foregroundColor(.primary)
+                                        .textCase(nil)
+                                } else {
+                                    // 按完成时间分组
+                                    Text(NSLocalizedString("Contract_Group_Completed_On", comment: "") + " " + FormatUtil.formatDateToLocalDate(group.date))
+                                        .font(.headline)
+                                        .foregroundColor(.primary)
+                                        .textCase(nil)
+                                }
                             }
                         }
                     }
@@ -1169,6 +1294,22 @@ struct PersonalContractsView: View {
         .navigationTitle(NSLocalizedString("Main_Contracts", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            // 分组方式选择器（仅在非快递模式下显示）
+            if !courierMode {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Menu {
+                        Picker(selection: $viewModel.groupingMode, label: Text("")) {
+                            ForEach(PersonalContractsViewModel.GroupingMode.allCases, id: \.self) { mode in
+                                Label(mode.localizedName, systemImage: mode == .byIssueDate ? "calendar.badge.plus" : "calendar.badge.checkmark")
+                                    .tag(mode)
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "line.3.horizontal.decrease.circle")
+                    }
+                }
+            }
+
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: {
                     showSettings = true
@@ -1253,6 +1394,7 @@ struct ContractRow: View {
     let contract: ContractInfo
     let contractType: PersonalContractsViewModel.ContractType
     let databaseManager: DatabaseManager
+    let groupingMode: PersonalContractsViewModel.GroupingMode
     @AppStorage("currentCharacterId") private var currentCharacterId: Int = 0
 
     // 使用FormatUtil进行日期处理，无需自定义格式化器
@@ -1489,40 +1631,88 @@ struct ContractRow: View {
                         .lineLimit(1)
                     }
                     Spacer()
-                    // 只对未决合同显示剩余时间
-                    if contract.status == "outstanding" {
-                        // 计算剩余天数
-                        let remainingDays =
-                            Calendar.current.dateComponents(
-                                [.day],
-                                from: Date(),
-                                to: contract.date_expired
-                            ).day ?? 0
 
-                        if remainingDays > 0 {
-                            Text(
-                                "\(FormatUtil.formatDateToLocalTime(contract.date_issued)) (\(String(format: NSLocalizedString("Contract_Days_Remaining", comment: ""), remainingDays)))"
-                            )
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                        } else if remainingDays == 0 {
-                            Text(
-                                "\(FormatUtil.formatDateToLocalTime(contract.date_issued)) (\(NSLocalizedString("Contract_Expires_Today", comment: "")))"
-                            )
-                            .font(.caption)
-                            .foregroundColor(.orange)
+                    // 根据分组方式决定显示的时间
+                    if groupingMode == .byIssueDate {
+                        // 按发起时间分组：显示发起时间
+                        if contract.status == "outstanding" {
+                            // 计算剩余天数
+                            let remainingDays =
+                                Calendar.current.dateComponents(
+                                    [.day],
+                                    from: Date(),
+                                    to: contract.date_expired
+                                ).day ?? 0
+
+                            if remainingDays > 0 {
+                                Text(
+                                    "\(FormatUtil.formatDateToLocalTime(contract.date_issued)) (\(String(format: NSLocalizedString("Contract_Days_Remaining", comment: ""), remainingDays)))"
+                                )
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                            } else if remainingDays == 0 {
+                                Text(
+                                    "\(FormatUtil.formatDateToLocalTime(contract.date_issued)) (\(NSLocalizedString("Contract_Expires_Today", comment: "")))"
+                                )
+                                .font(.caption)
+                                .foregroundColor(.orange)
+                            } else {
+                                Text(
+                                    "\(FormatUtil.formatDateToLocalTime(contract.date_issued)) (\(NSLocalizedString("Contract_Expired", comment: "")))"
+                                )
+                                .font(.caption)
+                                .foregroundColor(.red)
+                            }
                         } else {
-                            Text(
-                                "\(FormatUtil.formatDateToLocalTime(contract.date_issued)) (\(NSLocalizedString("Contract_Expired", comment: "")))"
-                            )
-                            .font(.caption)
-                            .foregroundColor(.red)
+                            Text("\(FormatUtil.formatDateToLocalTime(contract.date_issued))")
+                                .font(.caption)
+                                .foregroundColor(.gray)
                         }
                     } else {
-                        // 非未决合同只显示发布时间
-                        Text("\(FormatUtil.formatDateToLocalTime(contract.date_issued))")
-                            .font(.caption)
-                            .foregroundColor(.gray)
+                        // 按完成时间分组
+                        if contract.status == "outstanding" || contract.status == "in_progress" {
+                            // 未完成的合同：只显示剩余天数
+                            if contract.status == "outstanding" {
+                                // 计算剩余天数
+                                let remainingDays =
+                                    Calendar.current.dateComponents(
+                                        [.day],
+                                        from: Date(),
+                                        to: contract.date_expired
+                                    ).day ?? 0
+
+                                if remainingDays > 0 {
+                                    Text(String(format: NSLocalizedString("Contract_Days_Remaining_Full", comment: ""), remainingDays))
+                                        .font(.caption)
+                                        .foregroundColor(.gray)
+                                } else if remainingDays == 0 {
+                                    Text(NSLocalizedString("Contract_Expires_Today", comment: ""))
+                                        .font(.caption)
+                                        .foregroundColor(.orange)
+                                } else {
+                                    Text(NSLocalizedString("Contract_Expired", comment: ""))
+                                        .font(.caption)
+                                        .foregroundColor(.red)
+                                }
+                            } else {
+                                // in_progress 状态显示进行中
+                                Text(NSLocalizedString("Contract_Status_in_progress", comment: ""))
+                                    .font(.caption)
+                                    .foregroundColor(.blue)
+                            }
+                        } else {
+                            // 已完成的合同：显示完成时间
+                            if let completedDate = contract.date_completed {
+                                Text("\(FormatUtil.formatDateToLocalTime(completedDate))")
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                            } else {
+                                // 如果没有完成时间，降级显示发起时间
+                                Text("\(FormatUtil.formatDateToLocalTime(contract.date_issued))")
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                            }
+                        }
                     }
                 }
             }
@@ -1533,7 +1723,7 @@ struct ContractRow: View {
                         UIPasteboard.general.string = contract.title
                     } label: {
                         Label(
-                            NSLocalizedString("Misc_Copy_Title", comment: ""),
+                            NSLocalizedString("Misc_Copy_Contract_Title", comment: ""),
                             systemImage: "doc.on.doc"
                         )
                     }

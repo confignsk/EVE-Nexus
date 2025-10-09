@@ -1292,26 +1292,13 @@ struct CharacterRowView: View {
                         if let currentSkill = character.currentSkill {
                             VStack(alignment: .leading, spacing: 4) {
                                 // 技能进度条
-                                GeometryReader { geometry in
-                                    ZStack(alignment: .leading) {
-                                        // 背景
-                                        RoundedRectangle(cornerRadius: 2)
-                                            .fill(Color.gray.opacity(0.3))
-                                            .frame(height: 4)
-
-                                        // 进度
-                                        RoundedRectangle(cornerRadius: 2)
-                                            .fill(
-                                                currentSkill.remainingTime != nil
-                                                    ? Color.green : Color.gray
-                                            )
-                                            .frame(
-                                                width: geometry.size.width * currentSkill.progress,
-                                                height: 4
-                                            )
-                                    }
-                                }
-                                .frame(height: 4)
+                                PulsingProgressBar(
+                                    progress: currentSkill.progress,
+                                    color: currentSkill.remainingTime != nil ? .green : .gray,
+                                    height: 4,
+                                    cornerRadius: 2,
+                                    showPulse: currentSkill.remainingTime != nil
+                                )
 
                                 // 技能信息
                                 HStack {

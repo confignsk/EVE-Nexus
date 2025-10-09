@@ -29,7 +29,7 @@ func getAgentTypeName(_ agentType: Int) -> String {
         return NSLocalizedString("Agent_Type_GenericStorylineMissionAgent", comment: "通用剧情任务代理人")
     case 7: return NSLocalizedString("Agent_Type_StorylineMissionAgent", comment: "剧情任务代理人")
     case 8: return NSLocalizedString("Agent_Type_EventMissionAgent", comment: "事件任务代理人")
-    case 9: return NSLocalizedString("Agent_Type_FactionalWarfareAgent", comment: "派系战争代理人")
+    case 9: return NSLocalizedString("Agent_Type_FactionalWarfareAgent", comment: "势力战争代理人")
     case 10: return NSLocalizedString("Agent_Type_EpicArcAgent", comment: "史诗弧线代理人")
     case 11: return NSLocalizedString("Agent_Type_AuraAgent", comment: "Aura代理人")
     case 12: return NSLocalizedString("Agent_Type_CareerAgent", comment: "职业代理人")

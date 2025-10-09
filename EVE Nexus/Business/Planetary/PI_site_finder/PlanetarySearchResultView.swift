@@ -75,21 +75,34 @@ class PlanetarySearchResultViewModel: ObservableObject {
     }
 
     func loadAllIcons() async {
+        // 批量加载联盟名称
+        let allianceIds = Array(allianceToSystems.keys)
+        if !allianceIds.isEmpty {
+            let nameTask = Task {
+                do {
+                    Logger.debug("开始批量加载联盟名称，数量: \(allianceIds.count)")
+
+                    // 使用 getNamesWithFallback 批量获取联盟名称
+                    let namesMap = try await UniverseAPI.shared.getNamesWithFallback(ids: allianceIds)
+
+                    await MainActor.run {
+                        for (allianceId, info) in namesMap {
+                            allianceNames[allianceId] = info.name
+                        }
+                        Logger.debug("批量加载联盟名称成功，数量: \(namesMap.count)")
+                    }
+                } catch {
+                    Logger.error("批量加载联盟名称失败: \(error)")
+                }
+            }
+            loadingTasks[-1] = nameTask
+        }
+
         // 加载联盟图标和名称
         for (allianceId, systems) in allianceToSystems {
             let task = Task {
                 do {
                     Logger.debug("开始加载联盟图标: \(allianceId)，影响 \(systems.count) 个星系")
-
-                    // 加载联盟名称
-                    if let allianceInfo = try? await AllianceAPI.shared.fetchAllianceInfo(
-                        allianceId: allianceId)
-                    {
-                        await MainActor.run {
-                            allianceNames[allianceId] = allianceInfo.name
-                        }
-                        Logger.debug("联盟名称加载成功: \(allianceId)")
-                    }
 
                     // 加载联盟图标
                     do {

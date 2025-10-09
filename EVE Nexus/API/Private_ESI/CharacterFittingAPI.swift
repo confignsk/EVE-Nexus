@@ -193,6 +193,7 @@ public class CharacterFittingAPI {
     }
 
     private static func saveToCache(characterID: Int, fittings: [CharacterFitting]) throws {
+        Logger.info("开始保存装配数据到缓存 - 角色ID: \(characterID), 数据数量: \(fittings.count)")
         let cache = FittingCache(
             update_time: Int64(Date().timeIntervalSince1970),
             data: fittings
@@ -203,6 +204,7 @@ public class CharacterFittingAPI {
 
         let fileURL = getCacheFilePath(characterID: characterID)
         try data.write(to: fileURL)
+        Logger.info("成功保存装配数据到缓存 - 角色ID: \(characterID), 数据数量: \(fittings.count)")
     }
 }
 

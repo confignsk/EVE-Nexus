@@ -265,7 +265,7 @@ class CorporationAPI {
         // 创建缓存目录
         let cacheDirectory = getAllianceHistoryCacheDirectory()
         let cacheFilePath = cacheDirectory.appendingPathComponent(
-            "\(corporationId)_alliancehistory.json")
+            "alliancehistory_\(corporationId).json")
 
         // 检查文件缓存
         if !forceRefresh, let cachedHistory = loadAllianceHistoryFromFile(filePath: cacheFilePath) {

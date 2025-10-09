@@ -161,7 +161,7 @@ struct LanguageMapView: View {
         .onAppear {
             // 从UserDefaults读取选中的语言
             selectedLanguages =
-                UserDefaults.standard.stringArray(forKey: LanguageMapConstants.userDefaultsKey)
+                UserDefaults.standard.stringArray(forKey: LanguageMapConstants.languageMapDefaultsKey)
                     ?? LanguageMapConstants.languageMapDefaultLanguages
         }
     }
@@ -227,7 +227,7 @@ struct LanguageMapView: View {
             .onAppear {
                 // 从UserDefaults读取选中的语言
                 selectedLanguages =
-                    UserDefaults.standard.stringArray(forKey: LanguageMapConstants.userDefaultsKey)
+                    UserDefaults.standard.stringArray(forKey: LanguageMapConstants.languageMapDefaultsKey)
                         ?? LanguageMapConstants.languageMapDefaultLanguages
             }
         }

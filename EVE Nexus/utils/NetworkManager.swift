@@ -146,7 +146,7 @@ class NetworkManager: NSObject, @unchecked Sendable {
                         throw NetworkError.httpError(statusCode: httpResponse.statusCode)
                     }
                 }
-                Logger.debug("URL: \(url.absoluteString), Code: \(httpResponse.statusCode)")
+                Logger.debug("URL: \(url.absoluteString), Code: \(httpResponse.statusCode), 响应体长度: \(data.count) bytes")
                 return data
             }.value
         }

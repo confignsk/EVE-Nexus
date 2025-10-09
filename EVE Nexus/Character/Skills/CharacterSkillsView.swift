@@ -600,9 +600,13 @@ struct CharacterSkillsView: View {
                             }
                         }
 
-                        ProgressView(value: realtimeProgress.percentage)
-                            .progressViewStyle(LinearProgressViewStyle())
-                            .padding(.top, 1)
+                        PulsingProgressBar(
+                            progress: realtimeProgress.percentage,
+                            color: .blue,
+                            height: 4,
+                            cornerRadius: 2
+                        )
+                        .padding(.top, 1)
                     }
                 }
             } else {

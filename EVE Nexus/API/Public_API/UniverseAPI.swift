@@ -19,7 +19,14 @@ class UniverseAPI {
     /// - Returns: 成功获取的数量
     /// Resolve a set of IDs to names and categories. Supported ID's for resolving are: Characters, Corporations, Alliances, Stations, Solar Systems, Constellations, Regions, Types, Factions
     func fetchAndSaveNames(ids: [Int]) async throws -> Int {
-        Logger.info("开始获取实体名称信息 - IDs: \(ids)")
+        // 去重
+        let uniqueIds = Array(Set(ids))
+
+        if uniqueIds.count < ids.count {
+            Logger.info("去重后：\(ids.count) -> \(uniqueIds.count) 个ID")
+        }
+
+        Logger.info("开始获取实体名称信息 - IDs: \(uniqueIds)")
 
         // 构建请求URL
         let urlString = "https://esi.evetech.net/universe/names/?datasource=tranquility"
@@ -28,7 +35,7 @@ class UniverseAPI {
         }
 
         // 准备请求数据
-        let jsonData = try JSONEncoder().encode(ids)
+        let jsonData = try JSONEncoder().encode(uniqueIds)
 
         // 发送POST请求
         let data = try await networkManager.fetchData(
