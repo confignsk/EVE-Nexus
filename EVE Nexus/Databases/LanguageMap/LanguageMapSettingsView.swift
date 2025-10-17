@@ -7,7 +7,7 @@ struct LanguageMapSettingsView: View {
     init() {
         // 从UserDefaults读取选中的语言，如果没有则使用默认值
         let savedLanguages =
-            UserDefaults.standard.stringArray(forKey: LanguageMapConstants.userDefaultsKey)
+            UserDefaults.standard.stringArray(forKey: LanguageMapConstants.languageMapDefaultsKey)
                 ?? LanguageMapConstants.languageMapDefaultLanguages
         _selectedLanguages = State(initialValue: savedLanguages)
     }
@@ -95,6 +95,6 @@ struct LanguageMapSettingsView: View {
         }
 
         // 保存到UserDefaults
-        UserDefaults.standard.set(selectedLanguages, forKey: LanguageMapConstants.userDefaultsKey)
+        UserDefaults.standard.set(selectedLanguages, forKey: LanguageMapConstants.languageMapDefaultsKey)
     }
 }

@@ -97,24 +97,12 @@ struct IndustryProgressView: View {
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1.0)) { context in
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    // 背景
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.2))
-                        .frame(height: 4)
-                        .cornerRadius(2)
-
-                    // 进度
-                    Rectangle()
-                        .fill(getProgressColor(at: context.date))
-                        .frame(
-                            width: geometry.size.width * getProgress(at: context.date), height: 4
-                        )
-                        .cornerRadius(2)
-                }
-            }
-            .frame(height: 4)
+            PulsingProgressBar(
+                progress: getProgress(at: context.date),
+                color: getProgressColor(at: context.date),
+                height: 4,
+                cornerRadius: 2
+            )
         }
     }
 
@@ -303,7 +291,7 @@ class CharacterIndustryViewModel: ObservableObject {
     }
 
     // 刷新所有数据（包括技能数据）
-    func refreshAllData() async {
+    func refreshAllIndustryData() async {
         // 重新加载技能数据（槽位和操作范围）- 强制刷新
         await loadMaxSlots(forceRefresh: true)
         await loadOperationRanges(forceRefresh: true)
@@ -1178,7 +1166,7 @@ struct CharacterIndustryView: View {
         }
         .listStyle(.insetGrouped)
         .refreshable {
-            await viewModel.refreshAllData()
+            await viewModel.refreshAllIndustryData()
         }
         .navigationTitle(NSLocalizedString("Main_Industry_Jobs", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
@@ -1414,6 +1402,15 @@ struct IndustryJobRow: View {
                             Text(blueprintName)
                                 .font(.headline)
                                 .lineLimit(1)
+
+                            Spacer()
+
+                            // 已完成可交付标记
+                            if job.status == "ready" || (job.status == "active" && currentTime >= job.end_date) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.green)
+                                    .font(.system(size: 16))
+                            }
                         }
 
                         // 数量信息
@@ -1506,7 +1503,14 @@ struct IndustryJobRow: View {
                         .font(.caption)
                         .foregroundColor(statusInfo.color)
                     Spacer()
-                    Text("\(NSLocalizedString("Finished_on", comment: "")) \(getTimeDisplay())")
+
+                    // 根据完成状态显示不同的时间前缀
+                    let isCompleted = job.status == "delivered" || job.status == "ready" || currentTime >= job.end_date
+                    let timePrefix = isCompleted
+                        ? NSLocalizedString("Industry_Completed_At", comment: "已完成于")
+                        : NSLocalizedString("Finished_on", comment: "")
+
+                    Text("\(timePrefix) \(getTimeDisplay())")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }

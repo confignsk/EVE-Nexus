@@ -2,7 +2,7 @@ import Foundation
 
 enum LanguageMapConstants {
     static let languageMapDefaultLanguages = ["en", "ja", "ru", "zh"]
-    static let userDefaultsKey = "selectedLanguageMapLanguages"
+    static let languageMapDefaultsKey = "selectedLanguageMapLanguages"
 
     static let availableLanguages = [
         "de": "Deutsch",

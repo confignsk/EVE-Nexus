@@ -85,23 +85,83 @@ class AllianceAPI {
         }
     }
 
-    func fetchAllianceInfo(allianceId: Int, forceRefresh: Bool = false) async throws -> AllianceInfo {
-        let cacheKey = "alliance_info_\(allianceId)"
-        let cacheTimeKey = "alliance_info_\(allianceId)_time"
+    // MARK: - 文件缓存相关方法
 
-        // 检查缓存
-        if !forceRefresh,
-           let cachedData = UserDefaults.standard.data(forKey: cacheKey),
-           let lastUpdateTime = UserDefaults.standard.object(forKey: cacheTimeKey) as? Date,
-           Date().timeIntervalSince(lastUpdateTime) < 7 * 24 * 3600
-        {
+    /// 获取联盟信息缓存目录
+    private func getCacheDirectory() -> URL {
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let cacheDirectory = documentsPath.appendingPathComponent("AllianceCache")
+
+        // 确保缓存目录存在
+        if !FileManager.default.fileExists(atPath: cacheDirectory.path) {
             do {
-                let info = try JSONDecoder().decode(AllianceInfo.self, from: cachedData)
-                Logger.info("使用缓存的联盟信息 - 联盟ID: \(allianceId)")
-                return info
+                try FileManager.default.createDirectory(
+                    at: cacheDirectory, withIntermediateDirectories: true
+                )
+                Logger.info("[AllianceAPI]创建联盟缓存目录: \(cacheDirectory.path)")
             } catch {
-                Logger.error("解析缓存的联盟信息失败: \(error)")
+                Logger.error("[AllianceAPI]创建联盟缓存目录失败: \(error)")
             }
+        }
+
+        return cacheDirectory
+    }
+
+    /// 从文件加载联盟信息
+    private func loadAllianceInfoFromFile(filePath: URL) -> AllianceInfo? {
+        guard FileManager.default.fileExists(atPath: filePath.path) else {
+            return nil
+        }
+
+        do {
+            // 检查文件修改时间，如果超过7天则视为过期
+            let attributes = try FileManager.default.attributesOfItem(atPath: filePath.path)
+            if let modificationDate = attributes[.modificationDate] as? Date {
+                let daysSinceModification = Date().timeIntervalSince(modificationDate) / (24 * 3600)
+                if daysSinceModification > 7 {
+                    Logger.info("[AllianceAPI]联盟缓存文件已过期 - 联盟ID: \(filePath.lastPathComponent)")
+                    return nil
+                } else {
+                    let remainingDays = 7 - daysSinceModification
+                    Logger.info(
+                        "[AllianceAPI]联盟缓存文件有效 - 联盟ID: \(filePath.lastPathComponent), 剩余时间: \(String(format: "%.1f", remainingDays))天"
+                    )
+                }
+            }
+
+            let data = try Data(contentsOf: filePath)
+            let info = try JSONDecoder().decode(AllianceInfo.self, from: data)
+            Logger.info("[AllianceAPI]成功从文件加载联盟信息 - 文件: \(filePath.lastPathComponent)")
+            return info
+        } catch {
+            Logger.error("[AllianceAPI]加载联盟缓存文件失败: \(error) - 文件: \(filePath.lastPathComponent)")
+            return nil
+        }
+    }
+
+    /// 保存联盟信息到文件
+    private func saveAllianceInfoToFile(info: AllianceInfo, filePath: URL) {
+        do {
+            let data = try JSONEncoder().encode(info)
+            try data.write(to: filePath)
+            Logger.info(
+                "[AllianceAPI]成功保存联盟信息到文件 - 文件: \(filePath.lastPathComponent), 大小: \(data.count) bytes"
+            )
+        } catch {
+            Logger.error(
+                "[AllianceAPI]保存联盟信息到文件失败: \(error) - 文件: \(filePath.lastPathComponent)")
+        }
+    }
+
+    func fetchAllianceInfo(allianceId: Int, forceRefresh: Bool = false) async throws -> AllianceInfo {
+        // 创建缓存目录
+        let cacheDirectory = getCacheDirectory()
+        let cacheFilePath = cacheDirectory.appendingPathComponent("\(allianceId).json")
+
+        // 检查文件缓存
+        if !forceRefresh, let cachedInfo = loadAllianceInfoFromFile(filePath: cacheFilePath) {
+            Logger.info("[AllianceAPI]使用文件缓存的联盟信息 - 联盟ID: \(allianceId)")
+            return cachedInfo
         }
 
         // 从网络获取数据
@@ -114,12 +174,10 @@ class AllianceAPI {
         let data = try await NetworkManager.shared.fetchData(from: url)
         let info = try JSONDecoder().decode(AllianceInfo.self, from: data)
 
-        // 更新缓存
-        Logger.info("保存联盟信息到缓存 - Key: \(cacheKey), 数据大小: \(data.count) bytes")
-        UserDefaults.standard.set(data, forKey: cacheKey)
-        UserDefaults.standard.set(Date(), forKey: cacheTimeKey)
+        // 保存到文件缓存
+        saveAllianceInfoToFile(info: info, filePath: cacheFilePath)
 
-        Logger.info("成功获取联盟信息 - 联盟ID: \(allianceId)")
+        Logger.info("[AllianceAPI]成功获取联盟信息 - 联盟ID: \(allianceId)")
         return info
     }
 }

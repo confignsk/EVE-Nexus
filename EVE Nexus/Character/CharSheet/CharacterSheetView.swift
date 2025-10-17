@@ -79,6 +79,19 @@ struct CharacterSheetView: View {
         }
     }
 
+    // 导航辅助方法
+    @ViewBuilder
+    private func navigationDestination(for id: Int, type: String) -> some View {
+        switch type {
+        case "corporation":
+            CorporationDetailView(corporationId: id, character: character)
+        case "alliance":
+            AllianceDetailView(allianceId: id, character: character)
+        default:
+            EmptyView()
+        }
+    }
+
     // 初始化数据加载，确保只加载一次
     private func loadInitialDataIfNeeded() {
         guard !hasInitialized else { return }
@@ -426,23 +439,30 @@ struct CharacterSheetView: View {
                             systemImage: "doc.on.doc"
                         )
                     }
-                    if let allianceInfo = allianceInfo {
-                        Button {
-                            UIPasteboard.general.string = allianceInfo.name
+
+                    Divider()
+
+                    if corporationInfo != nil, let corpId = character.corporationId {
+                        NavigationLink {
+                            navigationDestination(
+                                for: corpId, type: "corporation"
+                            )
                         } label: {
                             Label(
-                                NSLocalizedString("Misc_Copy_Alliance", comment: ""),
-                                systemImage: "doc.on.doc"
+                                NSLocalizedString("View Corporation", comment: ""),
+                                systemImage: "info.circle"
                             )
                         }
                     }
-                    if let corpInfo = corporationInfo {
-                        Button {
-                            UIPasteboard.general.string = corpInfo.name
+                    if allianceInfo != nil, let allianceId = character.allianceId {
+                        NavigationLink {
+                            navigationDestination(
+                                for: allianceId, type: "alliance"
+                            )
                         } label: {
                             Label(
-                                NSLocalizedString("Misc_Copy_CorpID", comment: ""),
-                                systemImage: "doc.on.doc"
+                                NSLocalizedString("View Alliance", comment: ""),
+                                systemImage: "info.circle"
                             )
                         }
                     }
@@ -767,7 +787,7 @@ struct CharacterSheetView: View {
         }
         .refreshable {
             // 用户下拉刷新时，强制从API获取最新数据
-            await refreshAllData()
+            await refreshChatSheetData()
         }
     }
 
@@ -1034,8 +1054,8 @@ struct CharacterSheetView: View {
     }
 
     // 下拉刷新时重新获取所有网络数据
-    private func refreshAllData() async {
-        Logger.info("开始刷新所有数据")
+    private func refreshChatSheetData() async {
+        Logger.info("开始刷新人物表单的所有数据")
 
         // 并行执行所有网络请求
         async let locationTask = CharacterLocationAPI.shared.fetchCharacterLocation(

@@ -291,7 +291,7 @@ struct InsurgencyView: View {
                         // 第一行：势力图标和星系信息
                         HStack(spacing: 12) {
                             // 左侧海盗图标
-                            let factionId = firstCampaign.pirateFaction.id
+                            let factionId = firstCampaign.pirateFactionId
                             let query = "SELECT id, name, iconName FROM factions WHERE id = ?"
                             if case let .success(rows) = databaseManager.executeQuery(
                                 query, parameters: [factionId]

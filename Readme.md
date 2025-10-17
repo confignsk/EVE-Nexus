@@ -40,6 +40,12 @@ swift run LocalizableChecker "/EVE-Nexus/EVE Nexus/utils/Language/en.lproj/Local
 
 iOS / iPadOS / macOS: [Tritanium on the App Store](https://apps.apple.com/us/app/tritanium/id6739530875)
 
+# APP 图标 
+
+1. 使用 macOS 的预览功能保存 png 图片，去除 alpha 通道
+2. 使用此网站导出：[https://makeappicon.com/](https://makeappicon.com/)
+3. 后续会设计脚本来做
+
 # 功能
 
 ## 角色（Character）
@@ -188,9 +194,9 @@ iOS / iPadOS / macOS: [Tritanium on the App Store](https://apps.apple.com/us/app
 
 - 查看各类 ESI 接口运行状态
 
-## 派系战争（Factional Warfare）
+## 势力战争（Factional Warfare）
 
-- 查看派系战争相关信息
+- 查看势力战争相关信息
 
 # 画廊
 

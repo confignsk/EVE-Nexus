@@ -135,11 +135,6 @@ enum ItemInfoMap {
         databaseManager: DatabaseManager,
         modifiedAttributes: [Int: Double]? = nil
     ) -> AnyView {
-        // 预加载技能数据
-        Task {
-            await SharedSkillsManager.shared.preloadSkills()
-        }
-
         // 从缓存中获取分类信息
         guard let itemCategory = categoryCache[itemID] else {
             Logger.error("ItemInfoMap - 无法获取物品分类信息，itemID: \(itemID)")

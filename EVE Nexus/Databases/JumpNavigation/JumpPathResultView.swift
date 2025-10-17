@@ -302,33 +302,48 @@ class JumpResultViewModel: ObservableObject {
         // 加载联盟图标和名称
         let allianceIds = Array(allianceToSystems.keys)
 
-        // 加载联盟名称
-        for allianceId in allianceIds {
+        // 批量加载联盟名称
+        if !allianceIds.isEmpty {
             let task = Task {
                 do {
-                    Logger.debug("开始加载联盟名称: \(allianceId)")
+                    Logger.debug("开始批量加载联盟名称，数量: \(allianceIds.count)")
 
-                    // 加载联盟名称
-                    if let allianceInfo = try? await AllianceAPI.shared.fetchAllianceInfo(
-                        allianceId: allianceId)
-                    {
-                        await MainActor.run {
-                            allianceNames[allianceId] = allianceInfo.name
+                    // 使用 getNamesWithFallback 批量获取联盟名称
+                    let namesMap = try await UniverseAPI.shared.getNamesWithFallback(ids: allianceIds)
+
+                    await MainActor.run {
+                        // 更新联盟名称缓存
+                        for (allianceId, info) in namesMap {
+                            allianceNames[allianceId] = info.name
                         }
-                        Logger.debug("联盟名称加载成功: \(allianceId)")
-                    }
 
-                    // 更新所有使用这个联盟的星系的加载状态
-                    if let systems = allianceToSystems[allianceId] {
-                        await MainActor.run {
-                            for systemId in systems {
-                                self.loadingSystemIcons.remove(systemId)
+                        // 更新所有联盟相关星系的加载状态
+                        for allianceId in allianceIds {
+                            if let systems = allianceToSystems[allianceId] {
+                                for systemId in systems {
+                                    self.loadingSystemIcons.remove(systemId)
+                                }
+                            }
+                        }
+
+                        Logger.debug("批量加载联盟名称成功，数量: \(namesMap.count)")
+                    }
+                } catch {
+                    Logger.error("批量加载联盟名称失败: \(error)")
+
+                    // 即使失败也要清除加载状态
+                    await MainActor.run {
+                        for allianceId in allianceIds {
+                            if let systems = allianceToSystems[allianceId] {
+                                for systemId in systems {
+                                    self.loadingSystemIcons.remove(systemId)
+                                }
                             }
                         }
                     }
                 }
             }
-            loadingTasks[allianceId] = task
+            loadingTasks[-1] = task // 使用-1作为批量加载任务的key
         }
 
         // 使用 AllianceIconLoader 加载联盟图标

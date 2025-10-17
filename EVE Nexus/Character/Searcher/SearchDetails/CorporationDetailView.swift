@@ -20,6 +20,23 @@ struct CorporationDetailView: View {
     @State private var standingsLoaded = false
     @State private var selectedTab = 0 // 添加选项卡状态
     @State private var allianceHistory: [CorporationAllianceHistory] = []
+    @State private var allianceNamesCache: [Int: String] = [:]
+    @State private var allianceIconsCache: [Int: UIImage] = [:]
+    @State private var isLoadingAllianceNames: Bool = false
+    @State private var idCopied: Bool = false
+
+    // 导航辅助方法
+    @ViewBuilder
+    private func navigationDestination(for id: Int, type: String) -> some View {
+        switch type {
+        case "character":
+            CharacterDetailView(characterId: id, character: character)
+        case "alliance":
+            AllianceDetailView(allianceId: id, character: character)
+        default:
+            EmptyView()
+        }
+    }
 
     var body: some View {
         List {
@@ -135,23 +152,30 @@ struct CorporationDetailView: View {
                                     systemImage: "doc.on.doc"
                                 )
                             }
-                            if let ceoInfo = ceoInfo {
-                                Button {
-                                    UIPasteboard.general.string = ceoInfo.name
+
+                            Divider()
+
+                            if ceoInfo != nil {
+                                NavigationLink {
+                                    navigationDestination(
+                                        for: corporationInfo.ceo_id, type: "character"
+                                    )
                                 } label: {
                                     Label(
-                                        NSLocalizedString("Misc_Copy_CEO_CharID", comment: ""),
-                                        systemImage: "doc.on.doc"
+                                        NSLocalizedString("View CEO", comment: ""),
+                                        systemImage: "info.circle"
                                     )
                                 }
                             }
-                            if let allianceInfo = allianceInfo {
-                                Button {
-                                    UIPasteboard.general.string = allianceInfo.name
+                            if corporationInfo.alliance_id != nil {
+                                NavigationLink {
+                                    navigationDestination(
+                                        for: corporationInfo.alliance_id!, type: "alliance"
+                                    )
                                 } label: {
                                     Label(
-                                        NSLocalizedString("Misc_Copy_Alliance", comment: ""),
-                                        systemImage: "doc.on.doc"
+                                        NSLocalizedString("View Alliance", comment: ""),
+                                        systemImage: "info.circle"
                                     )
                                 }
                             }
@@ -159,6 +183,26 @@ struct CorporationDetailView: View {
                         .frame(height: 96) // 与Logo等高
                     }
                     .padding(.vertical, 4)
+                } footer: {
+                    Button {
+                        UIPasteboard.general.string = String(corporationId)
+                        idCopied = true
+                        Task {
+                            try? await Task.sleep(nanoseconds: 2_000_000_000)
+                            idCopied = false
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Spacer()
+                            Image(systemName: idCopied ? "checkmark" : "doc.on.doc")
+                                .font(.caption)
+                                .frame(width: 12, height: 12)
+                            Text("ID: \(corporationId)")
+                                .font(.caption)
+                        }
+                        .foregroundColor(.blue)
+                    }
+                    .buttonStyle(.plain)
                 }
 
                 // 军团基本信息
@@ -252,7 +296,10 @@ struct CorporationDetailView: View {
                     } else if selectedTab == 1 {
                         AllianceHistoryView(
                             history: allianceHistory, corporationId: corporationId,
-                            corporationLogo: logo
+                            corporationLogo: logo, allianceNamesCache: allianceNamesCache,
+                            allianceIconsCache: $allianceIconsCache,
+                            character: character,
+                            isLoadingAllianceNames: isLoadingAllianceNames
                         )
                     }
                 }
@@ -332,6 +379,11 @@ struct CorporationDetailView: View {
                 }
             }
 
+            // 异步加载联盟历史中的联盟名称（不阻塞UI显示）
+            Task {
+                await loadAllianceHistoryNames()
+            }
+
             // 加载声望数据
             if !standingsLoaded {
                 await loadStandings()
@@ -345,6 +397,45 @@ struct CorporationDetailView: View {
 
         isLoading = false
         Logger.info("军团详细信息加载完成")
+    }
+
+    private func loadAllianceHistoryNames() async {
+        await MainActor.run {
+            isLoadingAllianceNames = true
+        }
+
+        Logger.info("[+] 开始 loadAllianceHistoryNames")
+
+        // 收集所有联盟历史中的联盟ID（已去重）
+        let allianceIds = Array(Set(allianceHistory.compactMap { $0.alliance_id }))
+        Logger.info("[+] 开始批量加载 \(allianceIds.count) 个联盟的名称")
+
+        // 如果没有联盟，直接返回
+        if allianceIds.isEmpty {
+            Logger.info("[-] 没有联盟需要加载")
+            await MainActor.run {
+                isLoadingAllianceNames = false
+            }
+            return
+        }
+
+        // 批量获取所有联盟名称
+        do {
+            let namesMap = try await UniverseAPI.shared.getNamesWithFallback(ids: allianceIds)
+            await MainActor.run {
+                for (allianceId, info) in namesMap {
+                    allianceNamesCache[allianceId] = info.name
+                }
+                Logger.info("[+] 批量加载联盟历史名称成功，数量: \(namesMap.count)")
+            }
+        } catch {
+            Logger.error("[x] 批量获取联盟名称失败: \(error)")
+        }
+
+        await MainActor.run {
+            isLoadingAllianceNames = false
+            Logger.info("[+] loadAllianceHistoryNames 完成")
+        }
     }
 
     private func loadStandings() async {
@@ -643,6 +734,10 @@ struct AllianceHistoryView: View {
     let history: [CorporationAllianceHistory]
     let corporationId: Int
     let corporationLogo: UIImage?
+    let allianceNamesCache: [Int: String]
+    @Binding var allianceIconsCache: [Int: UIImage]
+    let character: EVECharacterInfo
+    let isLoadingAllianceNames: Bool
 
     var body: some View {
         // 过滤掉没有联盟的记录（alliance_id为nil的记录）
@@ -668,7 +763,11 @@ struct AllianceHistoryView: View {
                             startDate: startDate,
                             endDate: endDate,
                             corporationId: corporationId,
-                            corporationLogo: corporationLogo
+                            corporationLogo: corporationLogo,
+                            allianceNamesCache: allianceNamesCache,
+                            allianceIconsCache: $allianceIconsCache,
+                            character: character,
+                            isLoadingAllianceNames: isLoadingAllianceNames
                         )
                     }
                 }
@@ -692,12 +791,16 @@ struct AllianceHistoryRowView: View {
     let endDate: Date?
     let corporationId: Int
     let corporationLogo: UIImage?
-    @State private var allianceInfo: (name: String, icon: UIImage?)?
+    let allianceNamesCache: [Int: String]
+    @Binding var allianceIconsCache: [Int: UIImage]
+    let character: EVECharacterInfo
+    let isLoadingAllianceNames: Bool
+    @State private var allianceIcon: UIImage?
 
     var body: some View {
         HStack(spacing: 6) {
             // 联盟图标
-            if let icon = allianceInfo?.icon {
+            if let icon = allianceIcon {
                 Image(uiImage: icon)
                     .resizable()
                     .frame(width: 32, height: 32)
@@ -711,9 +814,20 @@ struct AllianceHistoryRowView: View {
             // 右侧信息
             VStack(alignment: .leading, spacing: 2) {
                 // 联盟名称
-                Text(allianceInfo?.name ?? NSLocalizedString("Misc_Loading", comment: ""))
-                    .font(.system(size: 12))
-                    .lineLimit(1)
+                if isLoadingAllianceNames {
+                    HStack(spacing: 4) {
+                        ProgressView()
+                            .scaleEffect(0.7)
+                        Text(NSLocalizedString("Misc_Loading", comment: ""))
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+                } else {
+                    Text(allianceNamesCache[allianceId] ?? NSLocalizedString("Unknown", comment: ""))
+                        .font(.system(size: 12))
+                        .lineLimit(1)
+                }
 
                 // 时间信息
                 HStack(spacing: 4) {
@@ -733,34 +847,46 @@ struct AllianceHistoryRowView: View {
         .background(Color.clear)
         .contentShape(Rectangle())
         .contextMenu {
-            if let allianceName = allianceInfo?.name {
-                Button {
-                    UIPasteboard.general.string = allianceName
+            // 只有当联盟信息加载完成时才显示跳转按钮
+            if !isLoadingAllianceNames {
+                NavigationLink {
+                    AllianceDetailView(allianceId: allianceId, character: character)
                 } label: {
                     Label(
-                        NSLocalizedString("Misc_Copy_Alliance", comment: ""),
-                        systemImage: "doc.on.doc"
+                        NSLocalizedString("View Alliance", comment: ""),
+                        systemImage: "info.circle"
                     )
                 }
             }
         }
         .task {
-            await loadAllianceInfo()
+            await loadAllianceIcon()
         }
     }
 
-    private func loadAllianceInfo() async {
-        // 获取联盟名称
-        if let allianceNames = try? await UniverseAPI.shared.getNamesWithFallback(ids: [allianceId]
-        ),
-            let name = allianceNames[allianceId]?.name
-        {
-            // 并发加载联盟图标
-            let allianceIcon = try? await AllianceAPI.shared.fetchAllianceLogo(
-                allianceID: allianceId)
-
+    private func loadAllianceIcon() async {
+        // 先检查缓存
+        if let cachedIcon = allianceIconsCache[allianceId] {
             await MainActor.run {
-                self.allianceInfo = (name: name, icon: allianceIcon)
+                self.allianceIcon = cachedIcon
+            }
+            return
+        }
+
+        // 等待名称加载完成后再加载图标
+        // 如果名称还在加载中，等待一下
+        var attempts = 0
+        while isLoadingAllianceNames, attempts < 50 {
+            try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
+            attempts += 1
+        }
+
+        // 从API加载联盟图标
+        if let icon = try? await AllianceAPI.shared.fetchAllianceLogo(allianceID: allianceId) {
+            await MainActor.run {
+                self.allianceIcon = icon
+                // 保存到缓存
+                self.allianceIconsCache[allianceId] = icon
             }
         }
     }

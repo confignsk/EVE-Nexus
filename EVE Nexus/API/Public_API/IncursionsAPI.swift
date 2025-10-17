@@ -41,12 +41,84 @@ class IncursionsAPI {
     private init() {}
 
     // 缓存相关常量
-    private let cacheKey = "incursions_data"
     private let cacheDuration: TimeInterval = 30 * 60 // 30 分钟缓存
 
     struct CachedData: Codable {
         let data: [Incursion]
         let timestamp: Date
+    }
+
+    // MARK: - 文件缓存相关方法
+
+    /// 获取入侵信息缓存目录
+    private func getCacheDirectory() -> URL {
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let cacheDirectory = documentsPath.appendingPathComponent("IncursionsCache")
+
+        // 确保缓存目录存在
+        if !FileManager.default.fileExists(atPath: cacheDirectory.path) {
+            do {
+                try FileManager.default.createDirectory(
+                    at: cacheDirectory, withIntermediateDirectories: true
+                )
+                Logger.info("[IncursionsAPI]创建入侵缓存目录: \(cacheDirectory.path)")
+            } catch {
+                Logger.error("[IncursionsAPI]创建入侵缓存目录失败: \(error)")
+            }
+        }
+
+        return cacheDirectory
+    }
+
+    /// 从文件加载入侵信息
+    private func loadFromCache() -> [Incursion]? {
+        let cacheDirectory = getCacheDirectory()
+        let cacheFilePath = cacheDirectory.appendingPathComponent("incursions.json")
+
+        guard FileManager.default.fileExists(atPath: cacheFilePath.path) else {
+            Logger.debug("[IncursionsAPI]入侵缓存文件不存在")
+            return nil
+        }
+
+        do {
+            // 检查文件修改时间
+            let attributes = try FileManager.default.attributesOfItem(atPath: cacheFilePath.path)
+            if let modificationDate = attributes[.modificationDate] as? Date {
+                let timeSinceModification = Date().timeIntervalSince(modificationDate)
+                if timeSinceModification > cacheDuration {
+                    Logger.info("[IncursionsAPI]入侵缓存已过期，已过: \(Int(timeSinceModification / 60))分钟")
+                    return nil
+                } else {
+                    let remainingMinutes = (cacheDuration - timeSinceModification) / 60
+                    Logger.info("[IncursionsAPI]入侵缓存有效，剩余时间: \(Int(remainingMinutes))分钟")
+                }
+            }
+
+            let data = try Data(contentsOf: cacheFilePath)
+            let cached = try JSONDecoder().decode(CachedData.self, from: data)
+            Logger.info("[IncursionsAPI]成功从文件加载入侵信息，数量: \(cached.data.count)")
+            return cached.data
+        } catch {
+            Logger.error("[IncursionsAPI]加载入侵缓存文件失败: \(error)")
+            return nil
+        }
+    }
+
+    /// 保存入侵信息到文件
+    private func saveToCache(_ incursions: [Incursion]) {
+        let cacheDirectory = getCacheDirectory()
+        let cacheFilePath = cacheDirectory.appendingPathComponent("incursions.json")
+        let cachedData = CachedData(data: incursions, timestamp: Date())
+
+        do {
+            let data = try JSONEncoder().encode(cachedData)
+            try data.write(to: cacheFilePath)
+            Logger.info(
+                "[IncursionsAPI]成功保存入侵信息到文件，数量: \(incursions.count), 大小: \(data.count) bytes"
+            )
+        } catch {
+            Logger.error("[IncursionsAPI]保存入侵缓存文件失败: \(error)")
+        }
     }
 
     // MARK: - 公共方法
@@ -57,7 +129,7 @@ class IncursionsAPI {
     func fetchIncursions(forceRefresh: Bool = false) async throws -> [Incursion] {
         // 如果不是强制刷新，尝试从缓存获取
         if !forceRefresh {
-            if let cached = try? loadFromCache() {
+            if let cached = loadFromCache() {
                 return cached
             }
         }
@@ -78,29 +150,9 @@ class IncursionsAPI {
         let incursions = try JSONDecoder().decode([Incursion].self, from: data)
 
         // 保存到缓存
-        try? saveToCache(incursions)
+        saveToCache(incursions)
 
+        Logger.info("[IncursionsAPI]成功获取入侵数据，数量: \(incursions.count)")
         return incursions
-    }
-
-    // MARK: - 私有方法
-
-    private func loadFromCache() throws -> [Incursion]? {
-        guard let cachedData = UserDefaults.standard.data(forKey: cacheKey),
-              let cached = try? JSONDecoder().decode(CachedData.self, from: cachedData),
-              cached.timestamp.addingTimeInterval(cacheDuration) > Date()
-        else {
-            return nil
-        }
-
-        Logger.info("使用缓存的入侵数据")
-        return cached.data
-    }
-
-    private func saveToCache(_ incursions: [Incursion]) throws {
-        let cachedData = CachedData(data: incursions, timestamp: Date())
-        let encodedData = try JSONEncoder().encode(cachedData)
-        Logger.info("正在缓存入侵数据, key: \(cacheKey), 数据大小: \(encodedData.count) bytes")
-        UserDefaults.standard.set(encodedData, forKey: cacheKey)
     }
 }

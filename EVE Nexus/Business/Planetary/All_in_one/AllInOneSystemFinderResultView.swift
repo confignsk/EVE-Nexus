@@ -369,18 +369,33 @@ class AllInOneSystemFinderResultViewModel: ObservableObject {
     }
 
     private func loadAllIcons() async {
+        // 批量加载联盟名称
+        let allianceIds = Array(allianceToSystems.keys)
+        if !allianceIds.isEmpty {
+            let nameTask = Task {
+                do {
+                    Logger.debug("开始批量加载联盟名称，数量: \(allianceIds.count)")
+
+                    // 使用 getNamesWithFallback 批量获取联盟名称
+                    let namesMap = try await UniverseAPI.shared.getNamesWithFallback(ids: allianceIds)
+
+                    await MainActor.run {
+                        for (allianceId, info) in namesMap {
+                            allianceNames[allianceId] = info.name
+                        }
+                        Logger.debug("批量加载联盟名称成功，数量: \(namesMap.count)")
+                    }
+                } catch {
+                    Logger.error("批量加载联盟名称失败: \(error)")
+                }
+            }
+            loadingTasks[-1] = nameTask
+        }
+
         // 加载联盟图标
         for (allianceId, systems) in allianceToSystems {
             let task = Task {
                 do {
-                    if let allianceInfo = try? await AllianceAPI.shared.fetchAllianceInfo(
-                        allianceId: allianceId)
-                    {
-                        await MainActor.run {
-                            allianceNames[allianceId] = allianceInfo.name
-                        }
-                    }
-
                     let uiImage = try await AllianceAPI.shared.fetchAllianceLogo(
                         allianceID: allianceId, size: 64
                     )

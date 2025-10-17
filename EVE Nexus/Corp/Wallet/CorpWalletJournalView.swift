@@ -691,5 +691,22 @@ struct CorpWalletJournalEntryRow: View {
                 .foregroundColor(.gray)
         }
         .padding(.vertical, 2)
+        .contextMenu {
+            Button {
+                let processedDescription = LocalizationManager.shared.processJournalMessage(
+                    for: entry.ref_type.lowercased(),
+                    esiText: entry.description,
+                    language: selectedLanguage == "zh-Hans" ? "zh" : "en"
+                )
+                let sign = entry.amount >= 0 ? "+" : ""
+                let detailText = "\(processedDescription): \(sign)\(FormatUtil.format(entry.amount)) ISK"
+                UIPasteboard.general.string = detailText
+            } label: {
+                Label(
+                    NSLocalizedString("Wallet_Copy_Detail", comment: ""),
+                    systemImage: "doc.on.doc"
+                )
+            }
+        }
     }
 }

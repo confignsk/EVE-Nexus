@@ -76,7 +76,7 @@ final class CorpWalletTransactionsViewModel: ObservableObject {
 
     private var initialLoadDone = false
 
-    private let characterId: Int
+    let characterId: Int
     private let division: Int
     let databaseManager: DatabaseManager
     var itemInfoCache: [Int: TransactionItemInfo] = [:]
@@ -166,6 +166,10 @@ final class CorpWalletTransactionsViewModel: ObservableObject {
             )
         }
         return nil
+    }
+
+    func getLocationName(for locationId: Int64) -> String? {
+        return locationInfoCache[locationId]?.stationName
     }
 
     // 合并相似交易记录
@@ -376,6 +380,7 @@ struct CorpWalletTransactionSettingsView: View {
 struct CorpWalletTransactionDayDetailView: View {
     let group: CorpWalletTransactionGroup
     let viewModel: CorpWalletTransactionsViewModel
+    let currentCharacter: EVECharacterInfo?
 
     private let displayDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -389,11 +394,11 @@ struct CorpWalletTransactionDayDetailView: View {
         List {
             if viewModel.mergeSimilarTransactions {
                 ForEach(group.mergedEntries) { entry in
-                    CorpMergedTransactionEntryRow(entry: entry, viewModel: viewModel)
+                    CorpMergedTransactionEntryRow(entry: entry, viewModel: viewModel, currentCharacter: currentCharacter)
                 }
             } else {
                 ForEach(group.entries) { entry in
-                    CorpWalletTransactionEntryRow(entry: entry, viewModel: viewModel)
+                    CorpWalletTransactionEntryRow(entry: entry, viewModel: viewModel, currentCharacter: currentCharacter)
                 }
             }
         }
@@ -405,6 +410,7 @@ struct CorpWalletTransactionDayDetailView: View {
 struct CorpWalletTransactionsView: View {
     @ObservedObject var viewModel: CorpWalletTransactionsViewModel
     @Binding var selectedTab: WalletTab
+    @State private var currentCharacter: EVECharacterInfo?
 
     private let displayDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -465,7 +471,8 @@ struct CorpWalletTransactionsView: View {
                                 NavigationLink(
                                     destination: CorpWalletTransactionDayDetailView(
                                         group: group,
-                                        viewModel: viewModel
+                                        viewModel: viewModel,
+                                        currentCharacter: currentCharacter
                                     )
                                 ) {
                                     HStack {
@@ -517,12 +524,19 @@ struct CorpWalletTransactionsView: View {
         .sheet(isPresented: $viewModel.showSettings) {
             CorpWalletTransactionSettingsView(viewModel: viewModel)
         }
+        .task {
+            let characterId = viewModel.characterId
+            if let auth = EVELogin.shared.getCharacterByID(characterId) {
+                currentCharacter = auth.character
+            }
+        }
     }
 }
 
 struct CorpWalletTransactionEntryRow: View {
     let entry: CorpWalletTransactionEntry
     let viewModel: CorpWalletTransactionsViewModel
+    let currentCharacter: EVECharacterInfo?
     @State private var itemIcon: Image?
 
     private let dateFormatter: DateFormatter = {
@@ -540,6 +554,20 @@ struct CorpWalletTransactionEntryRow: View {
         formatter.locale = Locale(identifier: "en_US_POSIX")
         return formatter
     }()
+
+    // 导航到详情页面的辅助方法
+    @ViewBuilder
+    private func navigationDestination(for clientId: Int, isPersonal: Bool) -> some View {
+        if let character = currentCharacter {
+            if isPersonal {
+                CharacterDetailView(characterId: clientId, character: character)
+            } else {
+                CorporationDetailView(corporationId: clientId, character: character)
+            }
+        } else {
+            EmptyView()
+        }
+    }
 
     var body: some View {
         NavigationLink {
@@ -602,6 +630,32 @@ struct CorpWalletTransactionEntryRow: View {
             }
             .padding(.vertical, 2)
         }
+        .contextMenu {
+            if currentCharacter != nil {
+                NavigationLink {
+                    navigationDestination(for: entry.client_id, isPersonal: entry.is_personal)
+                } label: {
+                    Label(
+                        entry.is_buy
+                            ? NSLocalizedString("Wallet_Transaction_View_Seller_Info", comment: "")
+                            : NSLocalizedString("Wallet_Transaction_View_Buyer_Info", comment: ""),
+                        systemImage: "person.circle"
+                    )
+                }
+            }
+
+            // 复制交易地点
+            if let locationName = viewModel.getLocationName(for: entry.location_id) {
+                Button {
+                    UIPasteboard.general.string = locationName
+                } label: {
+                    Label(
+                        NSLocalizedString("Misc_Copy_Location", comment: ""),
+                        systemImage: "doc.on.doc"
+                    )
+                }
+            }
+        }
         .task {
             // 直接从缓存中获取物品信息并加载图标
             if let itemInfo = viewModel.itemInfoCache[entry.type_id] {
@@ -615,7 +669,9 @@ struct CorpWalletTransactionEntryRow: View {
 struct CorpMergedTransactionEntryRow: View {
     let entry: CorpMergedTransactionEntry
     let viewModel: CorpWalletTransactionsViewModel
+    let currentCharacter: EVECharacterInfo?
     @State private var itemIcon: Image?
+    @State private var showClientList = false
 
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -632,6 +688,20 @@ struct CorpMergedTransactionEntryRow: View {
         formatter.locale = Locale(identifier: "en_US_POSIX")
         return formatter
     }()
+
+    // 导航到详情页面的辅助方法
+    @ViewBuilder
+    private func navigationDestination(for clientId: Int, isPersonal: Bool) -> some View {
+        if let character = currentCharacter {
+            if isPersonal {
+                CharacterDetailView(characterId: clientId, character: character)
+            } else {
+                CorporationDetailView(corporationId: clientId, character: character)
+            }
+        } else {
+            EmptyView()
+        }
+    }
 
     var body: some View {
         NavigationLink {
@@ -694,11 +764,259 @@ struct CorpMergedTransactionEntryRow: View {
             }
             .padding(.vertical, 2)
         }
+        .contextMenu {
+            // 查看买家/卖家信息
+            if currentCharacter != nil {
+                // 收集所有不同的交易对象
+                let uniqueClients: [(clientId: Int, isPersonal: Bool)] = {
+                    var seen = Set<String>()
+                    var result: [(Int, Bool)] = []
+                    for entry in entry.originalEntries {
+                        let key = "\(entry.client_id)_\(entry.is_personal)"
+                        if !seen.contains(key) {
+                            seen.insert(key)
+                            result.append((entry.client_id, entry.is_personal))
+                        }
+                    }
+                    return result
+                }()
+
+                if uniqueClients.count == 1, let client = uniqueClients.first {
+                    // 只有一个交易对象，直接跳转
+                    NavigationLink {
+                        navigationDestination(for: client.0, isPersonal: client.1)
+                    } label: {
+                        Label(
+                            entry.is_buy
+                                ? NSLocalizedString("Wallet_Transaction_View_Seller_Info", comment: "")
+                                : NSLocalizedString("Wallet_Transaction_View_Buyer_Info", comment: ""),
+                            systemImage: "person.circle"
+                        )
+                    }
+                } else if uniqueClients.count > 1 {
+                    // 多个交易对象，显示列表
+                    Button {
+                        showClientList = true
+                    } label: {
+                        Label(
+                            entry.is_buy
+                                ? NSLocalizedString("Wallet_Transaction_View_Seller_Info", comment: "")
+                                : NSLocalizedString("Wallet_Transaction_View_Buyer_Info", comment: ""),
+                            systemImage: "person.2"
+                        )
+                    }
+                }
+            }
+
+            // 复制交易地点
+            if let locationName = viewModel.getLocationName(for: entry.location_id) {
+                Button {
+                    UIPasteboard.general.string = locationName
+                } label: {
+                    Label(
+                        NSLocalizedString("Misc_Copy_Location", comment: ""),
+                        systemImage: "doc.on.doc"
+                    )
+                }
+            }
+        }
+        .sheet(isPresented: $showClientList) {
+            CorpTransactionClientListSheet(
+                entry: entry,
+                currentCharacter: currentCharacter
+            )
+        }
         .task {
             // 加载图标
             if let itemInfo = viewModel.itemInfoCache[entry.type_id] {
                 itemIcon = IconManager.shared.loadImage(for: itemInfo.iconFileName)
             }
+        }
+    }
+}
+
+// 军团交易对象列表 Sheet
+struct CorpTransactionClientListSheet: View {
+    let entry: CorpMergedTransactionEntry
+    let currentCharacter: EVECharacterInfo?
+    @Environment(\.dismiss) private var dismiss
+    @State private var clientInfos: [(clientId: Int, isPersonal: Bool, name: String, category: String, portrait: UIImage?)] = []
+    @State private var isLoading = true
+
+    // 导航到详情页面的辅助方法
+    @ViewBuilder
+    private func navigationDestination(for clientId: Int, isPersonal: Bool) -> some View {
+        if let character = currentCharacter {
+            if isPersonal {
+                CharacterDetailView(characterId: clientId, character: character)
+            } else {
+                CorporationDetailView(corporationId: clientId, character: character)
+            }
+        } else {
+            EmptyView()
+        }
+    }
+
+    // 根据类型返回默认图标
+    private func getDefaultIcon(for category: String) -> Image {
+        switch category {
+        case "character":
+            return Image(systemName: "person.circle")
+        case "corporation":
+            return Image(systemName: "building.2.crop.circle")
+        default:
+            return Image(systemName: "questionmark.circle")
+        }
+    }
+
+    var body: some View {
+        NavigationView {
+            List {
+                if isLoading {
+                    // 显示占位行
+                    ForEach(0 ..< getPlaceholderCount(), id: \.self) { _ in
+                        HStack(spacing: 12) {
+                            // 占位头像
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(width: 40, height: 40)
+
+                            // 加载指示器
+                            ProgressView()
+
+                            Spacer()
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+                } else {
+                    // 显示实际数据
+                    ForEach(clientInfos, id: \.clientId) { client in
+                        NavigationLink {
+                            navigationDestination(for: client.clientId, isPersonal: client.isPersonal)
+                        } label: {
+                            HStack(spacing: 12) {
+                                // 头像
+                                if let portrait = client.portrait {
+                                    Image(uiImage: portrait)
+                                        .resizable()
+                                        .frame(width: 40, height: 40)
+                                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                                } else {
+                                    getDefaultIcon(for: client.category)
+                                        .resizable()
+                                        .frame(width: 40, height: 40)
+                                        .foregroundColor(.secondary)
+                                }
+
+                                // 名称
+                                Text(client.name)
+                                    .font(.body)
+
+                                Spacer()
+                            }
+                            .padding(.vertical, 4)
+                        }
+                        .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+                    }
+                }
+            }
+            .listStyle(.insetGrouped)
+            .navigationTitle(
+                entry.is_buy
+                    ? NSLocalizedString("Wallet_Transaction_View_Seller_Info", comment: "")
+                    : NSLocalizedString("Wallet_Transaction_View_Buyer_Info", comment: "")
+            )
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(NSLocalizedString("Wallet_Transaction_Settings_Done", comment: "")) {
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .task {
+            await loadClientInfos()
+        }
+    }
+
+    // 获取占位行数量
+    private func getPlaceholderCount() -> Int {
+        var seen = Set<String>()
+        for entry in entry.originalEntries {
+            let key = "\(entry.client_id)_\(entry.is_personal)"
+            seen.insert(key)
+        }
+        return seen.count
+    }
+
+    private func loadClientInfos() async {
+        // 收集所有不同的 client_id 和 is_personal 组合
+        var seen = Set<String>()
+        var uniqueClients: [(clientId: Int, isPersonal: Bool)] = []
+        for entry in entry.originalEntries {
+            let key = "\(entry.client_id)_\(entry.is_personal)"
+            if !seen.contains(key) {
+                seen.insert(key)
+                uniqueClients.append((entry.client_id, entry.is_personal))
+            }
+        }
+
+        // 按 client_id 排序
+        uniqueClients.sort { $0.clientId < $1.clientId }
+
+        // 获取所有 ID 的名称和类型信息
+        let ids = Set(uniqueClients.map { $0.clientId })
+
+        do {
+            let namesWithCategories = try await UniverseAPI.shared.getNamesWithFallback(ids: Array(ids))
+
+            // 加载所有客户端信息（包括头像）
+            var loadedInfos: [(Int, Bool, String, String, UIImage?)] = []
+
+            for client in uniqueClients {
+                if let nameInfo = namesWithCategories[client.clientId] {
+                    let portrait = await loadPortrait(id: client.clientId, category: nameInfo.category)
+                    loadedInfos.append((
+                        client.clientId,
+                        client.isPersonal,
+                        nameInfo.name,
+                        nameInfo.category,
+                        portrait
+                    ))
+                } else {
+                    loadedInfos.append((
+                        client.clientId,
+                        client.isPersonal,
+                        "Unknown",
+                        "",
+                        nil
+                    ))
+                }
+            }
+
+            await MainActor.run {
+                clientInfos = loadedInfos
+                isLoading = false
+            }
+        } catch {
+            Logger.error("加载交易对象信息失败: \(error)")
+            await MainActor.run {
+                isLoading = false
+            }
+        }
+    }
+
+    // 根据类型加载头像
+    private func loadPortrait(id: Int, category: String) async -> UIImage? {
+        switch category {
+        case "character":
+            return try? await CharacterAPI.shared.fetchCharacterPortrait(characterId: id, catchImage: false)
+        case "corporation":
+            return try? await CorporationAPI.shared.fetchCorporationLogo(corporationId: id)
+        default:
+            return nil
         }
     }
 }

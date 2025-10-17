@@ -199,7 +199,10 @@
 "Main_Database_Show_Important_Only_Detail" = "Only show important attributes in database function";
 
 "Main_About" = "About";
-"Main_About_Database_Version" = "Database Version";
+"Main_About_Database_Version" = "SDE";
+"Main_About_Database_Update_Available" = "Update Available";
+"Main_About_Build_Number" = "Build";
+"Main_About_Patch_Number" = "Patch";
 "Main_About_Author" = "Author";
 "Main_About_Github" = "Github";
 "Main_About_Report_Bug" = "Report Bug";
@@ -249,13 +252,17 @@
 "Misc_Copy_Name" = "Copy Name";
 "Misc_Copy_Victim_Name" = "Copy Victim";
 "Misc_Copy_Module_Name" = "Copy Module Name";
+
+"Wallet_Transaction_View_Buyer_Info" = "View Buyer Info";
+"Wallet_Transaction_View_Seller_Info" = "View Seller Info";
 "Misc_Copy_Item_Name" = "Copy Item Name";
 "Misc_Copy_Trans" = "Copy Translation";
 "Misc_Save_Render_Image" = "Save Render Image";
 "Misc_Save_Render_Image_Success" = "Render image saved to photo library";
 "Misc_Save_Render_Image_Error" = "Failed to save render image, please check photo library permissions";
 "Misc_Save_Render_Image_Error_Title" = "Save Failed";
-"Misc_Copy_Title" = "Copy Title";
+"Misc_Copy_Char_Title" = "Copy title";
+"Misc_Copy_Contract_Title" = "Copy title";
 "Misc_Copy_LP_Offer_Name" = "Corp Offer Name";
 "Misc_Constellation" = "Constellation";
 "Misc_Copy_Structure" = "Copy Structure";
@@ -611,6 +618,7 @@
 "Wallet_Income" = "Income";
 "Wallet_Expense" = "Expense";
 "Wallet_Partial_Data_Notice" = "Too many records, only showing partial transaction journal";
+"Wallet_Copy_Detail" = "Copy Detail";
 
 // Market Orders
 "Orders_Remaining" = "remaining";
@@ -684,6 +692,7 @@
 "Industry_Status_ready" = "Ready";
 "Industry_Status_reverted" = "Reverted";
 "Finished_on" = "Finish on";
+"Industry_Completed_At" = "Completed at";
 "Industry_runs" = "runs";
 "Industry_copies" = "copies";
 
@@ -744,12 +753,6 @@
 "Mining_Monthly_Summary" = "Mining Summary for %@";
 "Mining_Total_Volume" = "Total Volume";
 
-"Main_Setting_Reset_Database" = "Reset Database";
-"Main_Setting_Reset_Database_Detail" = "Delete and reinitialize character database";
-"Main_Setting_Reset_Database_Title" = "Reset Database";
-"Main_Setting_Reset_Database_Message" = "This will delete all character database content and reinitialize it. This action cannot be undone. Do you want to continue?";
-"Main_Setting_Reset_Database_Success_Title" = "Reset Complete";
-"Main_Setting_Reset_Database_Success_Message" = "Database has been successfully reset";
 "Common_info" = "Basic info";
 "Timer" = "Timer";
 
@@ -942,7 +945,7 @@
 "Main_EVE_Mail_Searching" = "Searching...";
 "Main_EVE_Mail_Search_Failed" = "Search Failed";
 
-"Main_Setting_Corporation_Affairs" = "Corporation Affairs";
+"Main_Setting_Function" = "Function Setting";
 "Main_Setting_Show_Corporation_Affairs" = "Show Corporation Affairs";
 
 // Corporation Section
@@ -1037,7 +1040,7 @@
 "Main_Search" = "Search";
 
 // Searcher View
-"Main_Contact_Search" = "People & Places";
+"Main_Contact_Search" = "People & Locations";
 "Main_Search_Title" = "Search";
 "Main_Search_Placeholder" = "Enter search content...";
 "Main_Search_Type_Character" = "Character";
@@ -1134,6 +1137,10 @@
 "Creator" = "Creator";
 "Unknown" = "Unknown";
 "Executor" = "Executor";
+"View" = "View";
+"View Corporation" = "View Corporation";
+"View Alliance" = "View Alliance";
+"View CEO" = "View CEO";
 
 // Market Watch List
 "Main_Market_Watch_List" = "Market Watch List";
@@ -1401,7 +1408,6 @@
 "Contract_Price_Max" = "Max Price";
 "Contract_Price_Clear" = "Clear Price Filter";
 "Contract_No_Title" = "None";
-"Misc_Copy_Title" = "Copy Title";
 "Contract_Show_Finished" = "Show Finished Contracts";
 "Contract_Show_Courier" = "Show Courier Contracts";
 "Contract_Show_ItemExchange" = "Show Item Exchange Contracts";
@@ -1432,6 +1438,13 @@
 // Contract Courier Mode Text
 "Contract_Courier_Active_Count" = "%d Outstanding Contracts";
 "Contract_Courier_Active_Count_Limited" = "%d Outstanding Contracts, showing first %d";
+
+// Contract Grouping Mode
+"Contract_Group_By_Issue_Date" = "Group by Issue Date";
+"Contract_Group_By_Completion_Date" = "Group by Completion Date";
+"Contract_Group_Incomplete" = "Incomplete";
+"Contract_Group_Issued_On" = "Issued on";
+"Contract_Group_Completed_On" = "Completed on";
 
 // Contract Settings
 "Contract_Show_Active_Only" = "Outstanding";
@@ -2508,3 +2521,58 @@
 "Ore_Refinery_Remaining_List_Empty" = "Remaining Items List Empty";
 "Ore_Refinery_Output_List_Empty" = "Refinery Output List Empty";
 "Ore_Refinery_Result_Tax_Zero" = "0 ISK (Tax rate: %.1f%%)";
+
+// SDE Static Data related strings
+"Main_Setting_SDE_Static_Data" = "SDE Static Data";
+"Main_Setting_Checking_Updates" = "Checking for updates";
+"Main_Setting_No_Updates" = "No updates";
+"Main_Setting_Updates_Available" = "Updates available";
+"Main_Setting_Updates_Available_With_Version" = "Updates available (v%@)";
+"Main_Setting_Check_Failed" = "Check failed";
+
+// SDE Update Details Page
+"SDE_Update_Details" = "SDE Update Details";
+"SDE_Data_Package" = "SDE Data Package";
+"SDE_Icon_Package" = "Icon Package";
+"SDE_Current_Version" = "Current Version";
+"SDE_Latest_Version" = "Latest Version";
+"SDE_Not_Available" = "Not Available";
+"SDE_Already_Latest" = "Already Latest";
+"SDE_Update" = "Update";
+"SDE_Exit" = "Dismiss";
+"SDE_Update_Completed" = "Update completed successfully!";
+"SDE_Done" = "Done";
+"SDE_Reset_Database" = "Reset SDE Database";
+"SDE_Reset_Database_Detail" = "Delete local SDE data and use built-in database";
+"SDE_Reset_Confirm_Title" = "Reset SDE Database";
+"SDE_Reset_Cancel" = "Cancel";
+"SDE_Reset_Confirm" = "Reset";
+"SDE_Reset_Message" = "This will delete all local SDE data and the app will use the built-in database again. This action cannot be undone.";
+"SDE_Reset_Success_Title" = "Reset Successful";
+"SDE_Reset_Success_Message" = "SDE database has been restored to default version";
+"SDE_Reset_Section" = "Reset SDE";
+
+// SDE Update Progress Logs
+"SDE_Log_Clearing_Directory" = "Clearing download directory...";
+"SDE_Log_Checking_Requirements" = "Checking update requirements...";
+"SDE_Log_SDE_Needs_Update" = "SDE needs update: %@ (current: %@, latest: %@)";
+"SDE_Log_Icons_Need_Update" = "Icons need update: %@ (current v%d, latest v%d)";
+"SDE_Log_Icons_Up_To_Date" = "Icons already up to date, skipping download";
+"SDE_Log_SDE_Up_To_Date" = "SDE already up to date, skipping download";
+"SDE_Log_Update_Failed" = "Update failed: %@";
+"SDE_Log_Downloading_Icons" = "Downloading icons.zip from CloudKit...";
+"SDE_Log_Download_Completed" = "CloudKit download completed!";
+"SDE_Log_Preparing_Icons" = "Preparing icons.zip...";
+"SDE_Log_Verifying_Icons_SHA" = "Verifying icons.zip SHA256...";
+"SDE_Log_SHA_Failed" = "SHA256 verification failed";
+"SDE_Log_SHA_Verified" = "SHA256 verified";
+"SDE_Log_Extracting_Icons" = "Extracting icons.zip...";
+"SDE_Log_Extract_Icons_Success" = "icons.zip extracted successfully!";
+"SDE_Log_Downloading_Metadata" = "Downloading metadata.json...";
+"SDE_Log_Metadata_Saved" = "metadata.json saved to icons directory";
+"SDE_Log_Metadata_Failed" = "Failed to save metadata.json: %@";
+"SDE_Log_Downloading_SDE" = "Downloading sde.zip from CloudKit...";
+"SDE_Log_Preparing_SDE" = "Preparing sde.zip...";
+"SDE_Log_Verifying_SDE_SHA" = "Verifying sde.zip SHA256...";
+"SDE_Log_Extracting_SDE" = "Extracting sde.zip...";
+"SDE_Log_Extract_SDE_Success" = "sde.zip extracted successfully!";

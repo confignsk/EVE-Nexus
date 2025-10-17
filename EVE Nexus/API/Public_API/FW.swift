@@ -52,7 +52,7 @@ struct Insurgency: Codable {
 
 struct InsurgencyCampaign: Codable {
     let campaignId: Int
-    let pirateFaction: pirateFaction
+    let pirateFactionId: Int
     let corruptionThresHold: Int
     let endDateTime: String?
     let startDateTime: String
@@ -60,10 +60,6 @@ struct InsurgencyCampaign: Codable {
     let suppressionThresHold: Int
     let originSolarSystem: originSolarSystem
     let insurgencies: [Insurgency]
-}
-
-struct pirateFaction: Codable {
-    let id: Int
 }
 
 // 星系邻居数据模型
@@ -123,7 +119,7 @@ class FWAPI {
     // MARK: - 私有方法
 
     private func loadNeighboursData() {
-        guard let url = Bundle.main.url(forResource: "neighbors_data", withExtension: "json")
+        guard let url = StaticResourceManager.shared.getMapDataURL(filename: "neighbors_data")
         else {
             Logger.error("找不到neighbors_data.json文件")
             return

@@ -71,24 +71,12 @@ struct CorpIndustryProgressView: View {
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1.0)) { context in
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    // 背景
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.2))
-                        .frame(height: 4)
-                        .cornerRadius(2)
-
-                    // 进度
-                    Rectangle()
-                        .fill(getProgressColor(at: context.date))
-                        .frame(
-                            width: geometry.size.width * getProgress(at: context.date), height: 4
-                        )
-                        .cornerRadius(2)
-                }
-            }
-            .frame(height: 4)
+            PulsingProgressBar(
+                progress: getProgress(at: context.date),
+                color: getProgressColor(at: context.date),
+                height: 4,
+                cornerRadius: 2
+            )
         }
     }
 
@@ -140,6 +128,9 @@ struct CorpIndustryProgressView: View {
 
 @MainActor
 class CorpIndustryViewModel: ObservableObject {
+    // 配置常量
+    private let soonCompleteThreshold: TimeInterval = 8 * 3600 // 即将完成阈值：8小时
+
     @Published var jobs: [CorpIndustryJob] = []
     @Published var groupedJobs: [String: [CorpIndustryJob]] = [:] // 按日期分组的工作项目
     @Published var isLoading = true
@@ -209,8 +200,16 @@ class CorpIndustryViewModel: ObservableObject {
                 // 已完成但未交付的项目
                 groupKey = "ready"
             } else if job.status == "active" && job.end_date > currentTime {
-                // 正在进行中的项目
-                groupKey = "active"
+                // 检查是否即将完成（剩余时间小于阈值）
+                let remainingTime = job.end_date.timeIntervalSince(currentTime)
+
+                if remainingTime <= soonCompleteThreshold {
+                    // 即将完成的项目
+                    groupKey = "soon"
+                } else {
+                    // 正在进行中的项目
+                    groupKey = "active"
+                }
             } else if job.status == "delivered" || job.status == "cancelled"
                 || job.status == "revoked" || job.status == "failed"
             {
@@ -233,6 +232,9 @@ class CorpIndustryViewModel: ObservableObject {
             case "ready":
                 // 已完成未交付：按job_id排序
                 grouped[key] = value.sorted { $0.job_id > $1.job_id }
+            case "soon":
+                // 即将完成：按剩余时间从短到长排序
+                grouped[key] = value.sorted { $0.end_date < $1.end_date }
             case "active":
                 // 正在进行中：按剩余时间从短到长排序
                 grouped[key] = value.sorted { $0.end_date < $1.end_date }
@@ -560,6 +562,8 @@ struct CorpIndustryView: View {
         switch statusKey {
         case "ready":
             return NSLocalizedString("Industry_Ready_For_Delivery", comment: "准备交付")
+        case "soon":
+            return NSLocalizedString("Industry_Soon_Complete", comment: "即将完成")
         case "active":
             return NSLocalizedString("Industry_In_Progress", comment: "进行中")
         case "completed":
@@ -705,9 +709,9 @@ struct CorpIndustryView: View {
                     }
                     .listSectionSpacing(.compact)
                 } else if !viewModel.isFiltering {
-                    // 按优先级排序：ready -> active -> completed
+                    // 按优先级排序：ready -> soon -> active -> completed
                     ForEach(
-                        ["ready", "active", "completed"].filter {
+                        ["ready", "soon", "active", "completed"].filter {
                             viewModel.filteredGroupedJobs.keys.contains($0)
                         },
                         id: \.self

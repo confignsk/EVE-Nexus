@@ -539,10 +539,16 @@ struct ContentView: View {
                     }
                     .listStyle(.insetGrouped)
                     .refreshable {
-                        await viewModel.refreshAllData(forceRefresh: true)
+                        Logger.info("强制刷新基本数据")
+                        await viewModel.refreshAllBasicData(forceRefresh: true)
                     }
                 }
                 .navigationTitle(NSLocalizedString("Main_Home", comment: ""))
+                .task {
+                    Logger.info("[ContentView] Sidebar appeared, refreshing data...")
+                    await viewModel.refreshAllBasicData()
+                    updateTokenStatus()
+                }
                 .toolbar {
                     // 在导航栏左侧显示人物头像（仅当滚动且已登录时）
                     ToolbarItem(placement: .navigationBarLeading) {
@@ -622,7 +628,7 @@ struct ContentView: View {
                                 // 清除旧的技能数据，确保加载新角色的技能
                                 Task {
                                     SharedSkillsManager.shared.clearSkillData()
-                                    await viewModel.refreshAllData()
+                                    await viewModel.refreshAllBasicData()
                                 }
                             }
                         case "character_sheet":
@@ -821,7 +827,8 @@ struct ContentView: View {
         ) { _ in
             // 语言变更时的处理
             Task {
-                await viewModel.refreshAllData()
+                Logger.info("语言变更，刷新数据")
+                await viewModel.refreshAllBasicData()
             }
         }
         .onReceive(
@@ -836,11 +843,15 @@ struct ContentView: View {
                 SharedSkillsManager.shared.clearSkillData()
             }
         }
-        .task {
-            await viewModel.refreshAllData()
-
-            // 检查token状态
-            updateTokenStatus()
+        .onReceive(
+            NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)
+        ) { _ in
+            // App 从后台返回前台时刷新数据
+            Logger.info("[ContentView] App entering foreground, refreshing data...")
+            Task {
+                await viewModel.refreshAllBasicData()
+                updateTokenStatus()
+            }
         }
         .onChange(of: viewModel.selectedCharacter) { _, _ in
             // 当选中的角色变化时，更新token状态

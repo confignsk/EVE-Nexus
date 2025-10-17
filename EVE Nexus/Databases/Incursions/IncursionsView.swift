@@ -269,14 +269,10 @@ final class IncursionsViewModel: ObservableObject {
                 do {
                     Logger.debug("开始加载联盟图标: \(allianceId)，影响 \(sovereignties.count) 个入侵")
 
-                    // 并行加载联盟信息和图标
-                    async let allianceInfoTask = AllianceAPI.shared.fetchAllianceInfo(
-                        allianceId: allianceId)
-                    async let allianceLogoTask = AllianceAPI.shared.fetchAllianceLogo(
+                    // 加载联盟图标
+                    let logo = try await AllianceAPI.shared.fetchAllianceLogo(
                         allianceID: allianceId, size: 64
                     )
-
-                    let (_, logo) = try await (allianceInfoTask, allianceLogoTask)
 
                     await MainActor.run {
                         for sovereignty in sovereignties {
