@@ -237,6 +237,8 @@
 "Main_About_Github" = "Github";
 "Main_About_Report_Bug" = "报告缺陷";
 "Main_About_copyright_Title" = "版权与隐私说明";
+"Main_About_Acknowledgement" = "致谢";
+"Main_About_Acknowledgement_Text" = "向我的合作伙伴 KD Hsueh 致谢";
 
 "Misc_Now" = "现在";
 "Misc_true" = "是";
@@ -264,6 +266,7 @@
 "Misc_Items" = "%d 个物品";
 "Misc_Copy" = "复制";
 "Misc_Show_Detail" = "查看详情";
+"Misc_Delete" = "删除";
 
 "Misc_Copy_CharID" = "复制人物名称";
 "Misc_Copy_CEO_CharID" = "复制 CEO 名称";
@@ -704,6 +707,9 @@
 "Contract_Start_Location" = "起点";
 "Contract_End_Location" = "终点";
 "Contract_Select1" = "需要选择至少一项";
+"Contract_Load_Error_Title" = "加载失败";
+"Contract_Load_Error_Message" = "合同可能已经取消，或出现网络错误";
+"Contract_Not_Found_Message" = "找不到合同，可能已经完结";
 
 "Industry_Status_active" = "进行中";
 "Industry_Status_cancelled" = "已取消";
@@ -1002,6 +1008,7 @@
 "Main_Corporation_Hangar_Default" = "军团机库 %d";
 "Main_Corporation_Wallet_Default" = "部门钱包 %d";
 "Balance" = "余额: %@ ISK";
+"Reason" = "理由: %@";
 
 // Wallet Journal
 "Summary" = "摘要";
@@ -1054,6 +1061,18 @@
 "Main_Skills_Plan_Import_Not_Found" = "以下技能未找到：";
 "Main_Skills_Plan_Import_Success" = "成功导入";
 "Main_Skills_Plan_Show_Completed" = "显示已完成的技能";
+"Main_Skills_Plan_Show_Completed_Short" = "显示完成";
+"Main_Skills_Plan_Add_Item" = "添加物品";
+"Main_Skills_Plan_Add_Skill" = "添加技能";
+"Main_Skills_Plan_Clear_All" = "清空队列";
+"Main_Skills_Plan_All_Completed" = "已全部完成";
+"Main_Skills_Plan_Export_Chinese" = "导出中文";
+"Main_Skills_Plan_Export_English" = "导出英文";
+"Main_Skills_Plan_Export_Success_Title" = "导出成功";
+"Main_Skills_Plan_Export_Success_Message" = "技能计划已复制到剪贴板";
+"Main_Skills_Plan_Export_Empty" = "技能计划为空，无法导出";
+"Main_Skills_Plan_Has_Dependencies" = "此技能被其他技能依赖";
+"Main_Skills_Plan_Cannot_Delete_Has_Dependencies" = "无法删除：部分技能被其他技能依赖";
 
 "Main_Search" = "搜索";
 
@@ -1869,6 +1888,15 @@
 "Main_Jump_Navigation" = "跳跃导航";
 "Jump_Navigation_Ship_Selection" = "飞船";
 "Jump_Navigation_JDC_Skill" = "跳跃引擎校准理论(JDC)";
+
+// 保险
+"Insurance_Title" = "保险";
+"Insurance_Levels" = "保险等级";
+"Insurance_Cost" = "保险费用";
+"Insurance_Payout" = "赔付金额";
+"Insurance_Net_Profit" = "净收益";
+"Insurance_No_Data" = "该飞船暂无保险数据";
+"Insurance_Info_Tip" = "保险赔付在飞船被摧毁时发放";
 "Jump_Navigation_Start_Point" = "起点";
 "Jump_Navigation_Add_Waypoint" = "添加路径点";
 "Jump_Navigation_Waypoint" = "路径点%d";
@@ -2535,8 +2563,11 @@
 "Ore_Refinery_Unknown" = "未知状态";
 "Ore_Refinery_Ratio_Label" = "精炼比例：";
 "Ore_Refinery_Result_Title" = "精炼结果";
-"Ore_Refinery_Result_Input_Market_Value" = "精炼前市场总价";
-"Ore_Refinery_Result_Product_Market_Value" = "精炼后市场总价";
+"Ore_Refinery_Result_Product_Buy_Value" = "精炼后产品买价";
+"Ore_Refinery_Result_Product_Sell_Value" = "精炼后产品卖价";
+"Ore_Refinery_Result_Product_Jita_Buy_Value" = "精炼后Jita买价";
+"Ore_Refinery_Result_Product_Jita_Sell_Value" = "精炼后Jita卖价";
+"Ore_Refinery_Result_Product_Jita_Market_Value" = "精炼后产品Jita市场价";
 "Ore_Refinery_Result_Market_Settings" = "市场设置";
 "Ore_Refinery_Result_Input_Market" = "输入市场";
 "Ore_Refinery_Result_Output_Market" = "输出市场";
@@ -2614,3 +2645,26 @@
 "SDE_Log_Verifying_SDE_SHA" = "验证 sde.zip SHA256...";
 "SDE_Log_Extracting_SDE" = "解压 sde.zip...";
 "SDE_Log_Extract_SDE_Success" = "sde.zip 解压成功！";
+
+// EVE状态事件
+"EVE_Status_Incidents_Title" = "EVE Online 故障通知";
+"EVE_Status_Incidents_Detail" = "查看EVE Online服务状态和故障通知";
+"EVE_Status_Loading" = "正在加载状态信息...";
+"EVE_Status_All_Good" = "一切正常";
+"EVE_Status_No_Issues" = "当前没有EVE Online服务问题";
+"EVE_Status_Details" = "详细信息";
+"EVE_Status_External_Link" = "相关链接";
+"EVE_Status_View_Details" = "在浏览器中查看详情";
+"EVE_Status_Incident_Detail" = "事件详情";
+
+// EVE状态徽章状态
+"EVE_Status_Resolved" = "已解决";
+"EVE_Status_Issue" = "问题";
+
+// 保险等级
+"Insurance_Level_Platinum" = "铂金";
+"Insurance_Level_Gold" = "黄金";
+"Insurance_Level_Silver" = "白银";
+"Insurance_Level_Bronze" = "青铜";
+"Insurance_Level_Standard" = "标准";
+"Insurance_Level_Basic" = "基础";

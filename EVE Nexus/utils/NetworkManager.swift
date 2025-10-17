@@ -12,6 +12,35 @@ class CachedData<T> {
     }
 }
 
+// 频率限制信息结构
+struct RateLimitInfo {
+    let group: String?
+    let limit: String?
+    let remaining: Int?
+    let used: Int?
+    let retryAfter: Int?
+
+    init(from response: HTTPURLResponse) {
+        group = response.value(forHTTPHeaderField: "X-Ratelimit-Group")
+        limit = response.value(forHTTPHeaderField: "X-Ratelimit-Limit")
+        remaining = Int(response.value(forHTTPHeaderField: "X-Ratelimit-Remaining") ?? "")
+        used = Int(response.value(forHTTPHeaderField: "X-Ratelimit-Used") ?? "")
+        retryAfter = Int(response.value(forHTTPHeaderField: "Retry-After") ?? "")
+    }
+
+    var logString: String {
+        var components: [String] = []
+
+        components.append("组: \(group ?? "N/A")")
+        components.append("限制: \(limit ?? "N/A")")
+        components.append("剩余: \(remaining?.description ?? "N/A")")
+        components.append("已用: \(used?.description ?? "N/A")")
+        components.append("重试间隔: \(retryAfter?.description ?? "N/A")")
+
+        return components.joined(separator: ", ")
+    }
+}
+
 // 修改类定义，继承自NSObject
 @globalActor actor NetworkManagerActor {
     static let shared = NetworkManagerActor()
@@ -115,7 +144,7 @@ class NetworkManager: NSObject, @unchecked Sendable {
 
         return try await retrier.execute(noRetryKeywords: noRetryKeywords, timeouts: timeouts) {
             Logger.info(
-                "HTTP \(method) Request to: \(url), User-Agent: \(request.value(forHTTPHeaderField: "User-Agent") ?? "N/A")"
+                "[HTTP-Request] HTTP \(method) Request to: \(url), User-Agent: \(request.value(forHTTPHeaderField: "User-Agent") ?? "N/A")"
             )
 
             // 使用Task.detached确保在后台线程执行，并设置合适的QoS
@@ -146,7 +175,9 @@ class NetworkManager: NSObject, @unchecked Sendable {
                         throw NetworkError.httpError(statusCode: httpResponse.statusCode)
                     }
                 }
-                Logger.debug("URL: \(url.absoluteString), Code: \(httpResponse.statusCode), 响应体长度: \(data.count) bytes")
+                // 解析频率限制信息
+                let rateLimitInfo = RateLimitInfo(from: httpResponse)
+                Logger.debug("[HTTP-Response] URL: \(url.absoluteString), Code: \(httpResponse.statusCode), Body Length: \(data.count) bytes, Rate Limit: \(rateLimitInfo.logString)")
                 return data
             }.value
         }

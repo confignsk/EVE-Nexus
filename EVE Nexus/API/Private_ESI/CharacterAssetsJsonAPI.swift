@@ -505,12 +505,18 @@ public class CharacterAssetsJsonAPI {
         var allNames = names
         if !containerIds.isEmpty {
             progressCallback?(.loadingNames(current: 0, total: containerIds.count))
-            let containerNames = try await fetchContainerNames(
-                containerIds: Array(containerIds),
-                characterId: characterId
-            )
-            for (id, name) in containerNames {
-                allNames[id] = name
+            do {
+                let containerNames = try await fetchContainerNames(
+                    containerIds: Array(containerIds),
+                    characterId: characterId
+                )
+                for (id, name) in containerNames {
+                    allNames[id] = name
+                }
+            } catch {
+                // 如果获取容器名称失败，记录警告但不中断流程
+                Logger.warning("获取容器名称失败，将不显示自定义名称: \(error)")
+                // 不设置 allNames，保持原有的 names 字典（通常为空）
             }
         }
 

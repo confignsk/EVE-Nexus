@@ -27,6 +27,12 @@ struct RefineryResultView: View {
     @State private var isLoadingEIV = false
     @State private var outputEIVPrices: [Int: MarketPriceData] = [:]
 
+    // 市场订单买卖价相关状态变量（根据用户选择的市场）
+    @State private var isLoadingBuySellPrices = false
+    @State private var marketOrders: [Int: [MarketOrder]] = [:]
+    @State private var sellPrices: [Int: Double] = [:]
+    @State private var buyPrices: [Int: Double] = [:]
+
     init(
         databaseManager: DatabaseManager,
         taxRate: Double,
@@ -95,37 +101,30 @@ struct RefineryResultView: View {
 
             // Section 2: 产品价值和税率
             Section {
-                // 精炼后产品总价（市场价格）
+                // 精炼后产品总价（市场卖价）
                 HStack {
-                    Text(
-                        NSLocalizedString(
-                            "Ore_Refinery_Result_Product_Market_Value", comment: "精炼后产品市场总价"
-                        ))
+                    Text(NSLocalizedString("Ore_Refinery_Result_Product_Sell_Value", comment: "精炼后产品卖价"))
                     Spacer()
-                    if isLoadingPrices {
-                        if StructureMarketManager.isStructureId(selectedRegionID),
-                           let progress = structureOrdersProgress
-                        {
-                            switch progress {
-                            case let .loading(currentPage, totalPages):
-                                HStack(spacing: 4) {
-                                    ProgressView()
-                                        .scaleEffect(0.7)
-                                    Text("\(currentPage)/\(totalPages)")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                            case .completed:
-                                ProgressView()
-                                    .scaleEffect(0.7)
-                            }
-                        } else {
-                            ProgressView()
-                                .scaleEffect(0.7)
-                        }
+                    if isLoadingBuySellPrices {
+                        ProgressView()
+                            .scaleEffect(0.7)
                     } else {
-                        let totalValue = calculateTotalOutputValue()
-                        Text("\(FormatUtil.formatISK(totalValue))")
+                        let sellValue = calculateTotalOutputSellValue()
+                        Text("\(FormatUtil.formatISK(sellValue))")
+                            .foregroundColor(.secondary)
+                    }
+                }
+
+                // 精炼后产品总价（市场买价）
+                HStack {
+                    Text(NSLocalizedString("Ore_Refinery_Result_Product_Buy_Value", comment: "精炼后产品买价"))
+                    Spacer()
+                    if isLoadingBuySellPrices {
+                        ProgressView()
+                            .scaleEffect(0.7)
+                    } else {
+                        let buyValue = calculateTotalOutputBuyValue()
+                        Text("\(FormatUtil.formatISK(buyValue))")
                             .foregroundColor(.secondary)
                     }
                 }
@@ -215,11 +214,28 @@ struct RefineryResultView: View {
                         }
                     }
                 } header: {
-                    Text(NSLocalizedString("Ore_Refinery_Result_Output_List", comment: ""))
-                        .fontWeight(.semibold)
-                        .font(.system(size: 18))
-                        .foregroundColor(.primary)
-                        .textCase(.none)
+                    HStack {
+                        Text(NSLocalizedString("Ore_Refinery_Result_Output_List", comment: ""))
+                            .fontWeight(.semibold)
+                            .font(.system(size: 18))
+                            .foregroundColor(.primary)
+                            .textCase(.none)
+
+                        Spacer()
+
+                        Button {
+                            copyRefineryOutputsToClipboard()
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "doc.on.doc")
+                                    .font(.caption)
+                                Text(NSLocalizedString("Misc_Copy", comment: "复制"))
+                                    .font(.caption)
+                            }
+                            .foregroundColor(.accentColor)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
                 }
             } else {
                 Section {
@@ -276,6 +292,7 @@ struct RefineryResultView: View {
                 saveSelection: $saveSelection,
                 databaseManager: databaseManager
             )
+            .presentationDragIndicator(.visible)
         }
         .onChange(of: selectedRegionID) { oldValue, newValue in
             if oldValue != newValue {
@@ -430,142 +447,96 @@ struct RefineryResultView: View {
 
         isLoadingPrices = true
         isLoadingEIV = true
+        isLoadingBuySellPrices = true
 
         Task {
             // 并发加载不同类型的价格数据
-            async let outputMarketPricesTask: Void = {
-                // 加载输出市场价格（精炼后产品）
-                if await StructureMarketManager.isStructureId(selectedRegionID) {
-                    await loadOutputStructureMarketPrices()
-                } else {
-                    await loadOutputRegionMarketPrices()
-                }
-            }()
+            async let outputMarketPricesTask: Void = loadOutputMarketPrices()
 
             async let eivPricesTask: Void = loadEIVPrices()
+            async let buySellPricesTask: Void = loadOutputBuySellPrices()
             async let volumesTask: Void = loadVolumes()
 
             // 等待所有任务完成
-            _ = await (outputMarketPricesTask, eivPricesTask, volumesTask)
+            _ = await (outputMarketPricesTask, eivPricesTask, buySellPricesTask, volumesTask)
 
             await MainActor.run {
                 self.isLoadingPrices = false
                 self.isLoadingEIV = false
-                Logger.info("Finished loading prices, EIV, and volumes")
+                self.isLoadingBuySellPrices = false
+                Logger.info("Finished loading prices, EIV, buy/sell prices, and volumes")
             }
         }
     }
 
-    // 加载输出星域市场价格（精炼后产品）
-    private func loadOutputRegionMarketPrices() async {
-        // 加载精炼输出物品的价格
-        let outputTypeIDs = Array(refineryOutputs.keys)
-        Logger.info("Loading output region prices for output items: \(outputTypeIDs)")
-        if !outputTypeIDs.isEmpty {
-            let prices = await MarketPriceUtil.getMarketPrices(typeIds: outputTypeIDs)
-            Logger.info("Got \(prices.count) output prices")
-            await MainActor.run {
-                self.outputPrices = prices
+    // 加载输出市场价格（精炼后产品）- 自动判断星域/建筑
+    private func loadOutputMarketPrices() async {
+        // 合并所有需要价格的物品ID
+        var allTypeIds: [Int] = []
+        allTypeIds.append(contentsOf: Array(refineryOutputs.keys))
+        allTypeIds.append(contentsOf: Array(remainingItems.keys))
+
+        guard !allTypeIds.isEmpty else { return }
+
+        Logger.info("Loading market prices for \(allTypeIds.count) items from regionID: \(selectedRegionID)")
+
+        // 使用工具类自动判断并加载订单（星域或建筑）
+        let ordersMap = await MarketOrdersUtil.loadOrders(
+            typeIds: allTypeIds,
+            regionID: selectedRegionID,
+            forceRefresh: false,
+            progressCallback: { progress in
+                Task { @MainActor in
+                    structureOrdersProgress = progress
+                }
             }
-        }
+        )
 
-        // 加载剩余物品的价格
-        let remainingTypeIDs = Array(remainingItems.keys)
-        Logger.info("Loading output region prices for remaining items: \(remainingTypeIDs)")
-        if !remainingTypeIDs.isEmpty {
-            let prices = await MarketPriceUtil.getMarketPrices(typeIds: remainingTypeIDs)
-            Logger.info("Got \(prices.count) remaining prices")
-            await MainActor.run {
-                self.remainingPrices = prices
-            }
-        }
-    }
+        Logger.info("Got \(ordersMap.count) items orders")
 
-    // 加载输出建筑市场价格（精炼后产品）
-    private func loadOutputStructureMarketPrices() async {
-        guard let structureId = StructureMarketManager.getStructureId(from: selectedRegionID),
-              let structure = getStructureById(structureId)
-        else {
-            Logger.error("无效的建筑ID或未找到建筑信息: \(selectedRegionID)")
-            return
-        }
+        // 计算每个物品的平均价格并分类
+        var outputPricesTemp: [Int: MarketPriceData] = [:]
+        var remainingPricesTemp: [Int: MarketPriceData] = [:]
 
-        do {
-            // 合并输出物品需要查询价格的物品ID
-            var allTypeIds: [Int] = []
-            allTypeIds.append(contentsOf: Array(refineryOutputs.keys))
-            allTypeIds.append(contentsOf: Array(remainingItems.keys))
-
-            Logger.info(
-                "Loading output structure market prices for \(allTypeIds.count) items from structure \(structure.structureName)"
+        for (typeId, orders) in ordersMap {
+            let averagePrice = calculateAveragePrice(from: orders)
+            let priceData = MarketPriceData(
+                adjustedPrice: averagePrice,
+                averagePrice: averagePrice
             )
 
-            let batchOrders = try await StructureMarketManager.shared.getBatchItemOrdersInStructure(
-                structureId: structureId,
-                characterId: structure.characterId,
-                typeIds: allTypeIds,
-                forceRefresh: false,
-                progressCallback: { progress in
-                    Task { @MainActor in
-                        structureOrdersProgress = progress
-                    }
-                }
-            )
-
-            Logger.info("Got structure orders for \(batchOrders.count) items")
-
-            // 计算每个输出物品的平均价格
-            var outputPricesTemp: [Int: MarketPriceData] = [:]
-            var remainingPricesTemp: [Int: MarketPriceData] = [:]
-
-            for (typeId, orders) in batchOrders {
-                let averagePrice = calculateAveragePrice(from: orders)
-                let priceData = MarketPriceData(
-                    adjustedPrice: averagePrice, averagePrice: averagePrice
-                )
-
-                if refineryOutputs.keys.contains(typeId) {
-                    outputPricesTemp[typeId] = priceData
-                }
-                if remainingItems.keys.contains(typeId) {
-                    remainingPricesTemp[typeId] = priceData
-                }
+            if refineryOutputs.keys.contains(typeId) {
+                outputPricesTemp[typeId] = priceData
             }
-
-            await MainActor.run {
-                self.outputPrices = outputPricesTemp
-                self.remainingPrices = remainingPricesTemp
-                Logger.info(
-                    "Set output structure prices: output=\(outputPricesTemp.count), remaining=\(remainingPricesTemp.count)"
-                )
+            if remainingItems.keys.contains(typeId) {
+                remainingPricesTemp[typeId] = priceData
             }
+        }
 
-        } catch {
-            Logger.error("加载输出建筑市场价格失败: \(error)")
+        await MainActor.run {
+            self.outputPrices = outputPricesTemp
+            self.remainingPrices = remainingPricesTemp
+            Logger.info("Set market prices: output=\(outputPricesTemp.count), remaining=\(remainingPricesTemp.count)")
         }
     }
 
-    // 计算订单的平均价格（用于输出物品）
+    // 计算订单的平均价格（使用通用工具类）
     private func calculateAveragePrice(from orders: [MarketOrder]) -> Double {
-        guard !orders.isEmpty else { return 0.0 }
+        // 对于星域市场，只考虑主贸易星系（如Jita）；建筑市场则考虑所有订单
+        let systemID: Int? = StructureMarketManager.isStructureId(selectedRegionID) ? nil : 30_000_142
+        return MarketOrdersUtil.calculateAveragePrice(from: orders, systemId: systemID)
+    }
 
-        // 分别计算买单和卖单的最优价格
-        let buyOrders = orders.filter { $0.isBuyOrder }.sorted { $0.price > $1.price }
-        let sellOrders = orders.filter { !$0.isBuyOrder }.sorted { $0.price < $1.price }
+    // 计算市场卖价（使用通用工具类）
+    private func calculateSellPrice(from orders: [MarketOrder]) -> Double {
+        let systemID: Int? = StructureMarketManager.isStructureId(selectedRegionID) ? nil : 30_000_142
+        return MarketOrdersUtil.calculatePrice(from: orders, orderType: .sell, quantity: nil, systemId: systemID).price ?? 0.0
+    }
 
-        let bestBuyPrice = buyOrders.first?.price ?? 0.0
-        let bestSellPrice = sellOrders.first?.price ?? 0.0
-
-        // 如果只有一种订单类型，使用该类型的价格
-        if bestBuyPrice > 0 && bestSellPrice > 0 {
-            return (bestBuyPrice + bestSellPrice) / 2.0
-        } else if bestSellPrice > 0 {
-            return bestSellPrice
-        } else if bestBuyPrice > 0 {
-            return bestBuyPrice
-        } else {
-            return 0.0
-        }
+    // 计算市场买价（使用通用工具类）
+    private func calculateBuyPrice(from orders: [MarketOrder]) -> Double {
+        let systemID: Int? = StructureMarketManager.isStructureId(selectedRegionID) ? nil : 30_000_142
+        return MarketOrdersUtil.calculatePrice(from: orders, orderType: .buy, quantity: nil, systemId: systemID).price ?? 0.0
     }
 
     // 根据建筑ID获取建筑信息
@@ -640,6 +611,55 @@ struct RefineryResultView: View {
         }
     }
 
+    // 加载输出市场订单并计算买价和卖价（根据用户选择的市场）
+    private func loadOutputBuySellPrices() async {
+        Logger.info("=== loadOutputBuySellPrices called ===")
+
+        let outputTypeIDs = Array(refineryOutputs.keys)
+        guard !outputTypeIDs.isEmpty else {
+            Logger.info("No output items to load market orders for")
+            return
+        }
+
+        Logger.info("Loading market orders for \(outputTypeIDs.count) output items from regionID: \(selectedRegionID)")
+
+        // 使用工具类加载用户选择市场的订单（自动判断星域/建筑）
+        let orders = await MarketOrdersUtil.loadOrders(
+            typeIds: outputTypeIDs,
+            regionID: selectedRegionID,
+            forceRefresh: false,
+            progressCallback: { progress in
+                Task { @MainActor in
+                    structureOrdersProgress = progress
+                }
+            }
+        )
+        Logger.info("Got market orders for \(orders.count) items")
+
+        // 计算每个物品的买价和卖价
+        var sellPricesTemp: [Int: Double] = [:]
+        var buyPricesTemp: [Int: Double] = [:]
+
+        for (typeId, itemOrders) in orders {
+            let sellPrice = calculateSellPrice(from: itemOrders)
+            let buyPrice = calculateBuyPrice(from: itemOrders)
+
+            if sellPrice > 0 {
+                sellPricesTemp[typeId] = sellPrice
+            }
+            if buyPrice > 0 {
+                buyPricesTemp[typeId] = buyPrice
+            }
+        }
+
+        await MainActor.run {
+            self.marketOrders = orders
+            self.sellPrices = sellPricesTemp
+            self.buyPrices = buyPricesTemp
+            Logger.info("Set market prices: sell=\(sellPricesTemp.count), buy=\(buyPricesTemp.count)")
+        }
+    }
+
     // 加载体积信息
     private func loadVolumes() async {
         Logger.info("=== loadVolumes called ===")
@@ -701,32 +721,53 @@ struct RefineryResultView: View {
         return volumes
     }
 
-    // 计算产品总价值（用于显示，使用市场价格）
-    private func calculateTotalOutputValue() -> Double {
+    // 计算产品市场卖价总价值（根据用户选择的市场）
+    private func calculateTotalOutputSellValue() -> Double {
         var totalValue: Double = 0
 
-        Logger.info("=== calculateTotalOutputValue called ===")
+        Logger.info("=== calculateTotalOutputSellValue called ===")
         Logger.info("refineryOutputs count: \(refineryOutputs.count)")
-        Logger.info("outputPrices count: \(outputPrices.count)")
+        Logger.info("sellPrices count: \(sellPrices.count)")
 
         for (materialID, quantity) in refineryOutputs {
-            Logger.info("Processing material \(materialID) with quantity \(quantity)")
-            if let priceData = outputPrices[materialID] {
-                let marketPrice = priceData.averagePrice
-                Logger.info("Found price data for \(materialID): marketPrice = \(marketPrice)")
-                if marketPrice > 0 {
-                    let itemValue = marketPrice * Double(quantity)
+            if let sellPrice = sellPrices[materialID] {
+                Logger.info("Found sell price for \(materialID): \(sellPrice)")
+                if sellPrice > 0 {
+                    let itemValue = sellPrice * Double(quantity)
                     totalValue += itemValue
-                    Logger.info("Added \(itemValue) to total (now \(totalValue))")
-                } else {
-                    Logger.info("Price is 0 or negative for \(materialID)")
+                    Logger.info("Added \(itemValue) to sell total (now \(totalValue))")
                 }
             } else {
-                Logger.info("No price data found for \(materialID)")
+                Logger.info("No sell price found for \(materialID)")
             }
         }
 
-        Logger.info("Final total value: \(totalValue)")
+        Logger.info("Final sell total value: \(totalValue)")
+        return totalValue
+    }
+
+    // 计算产品市场买价总价值（根据用户选择的市场）
+    private func calculateTotalOutputBuyValue() -> Double {
+        var totalValue: Double = 0
+
+        Logger.info("=== calculateTotalOutputBuyValue called ===")
+        Logger.info("refineryOutputs count: \(refineryOutputs.count)")
+        Logger.info("buyPrices count: \(buyPrices.count)")
+
+        for (materialID, quantity) in refineryOutputs {
+            if let buyPrice = buyPrices[materialID] {
+                Logger.info("Found buy price for \(materialID): \(buyPrice)")
+                if buyPrice > 0 {
+                    let itemValue = buyPrice * Double(quantity)
+                    totalValue += itemValue
+                    Logger.info("Added \(itemValue) to buy total (now \(totalValue))")
+                }
+            } else {
+                Logger.info("No buy price found for \(materialID)")
+            }
+        }
+
+        Logger.info("Final buy total value: \(totalValue)")
         return totalValue
     }
 
@@ -825,5 +866,29 @@ struct RefineryResultView: View {
         }
 
         return DatabaseConfig.defaultItemIcon // 使用默认图标
+    }
+
+    // 复制精炼输出物品到剪贴板
+    private func copyRefineryOutputsToClipboard() {
+        var exportLines: [String] = []
+
+        // 按材料ID排序，确保输出顺序一致
+        let sortedMaterialIDs = Array(refineryOutputs.keys).sorted()
+
+        for materialID in sortedMaterialIDs {
+            if let quantity = refineryOutputs[materialID] {
+                let materialName = materialNameMap[materialID] ?? "Unknown Material"
+                let line = "\(materialName)\t\(quantity)"
+                exportLines.append(line)
+            }
+        }
+
+        // 将所有行合并为一个字符串，以换行符分隔
+        let exportContent = exportLines.joined(separator: "\n")
+
+        // 复制到剪贴板
+        UIPasteboard.general.string = exportContent
+
+        Logger.info("成功复制 \(exportLines.count) 个精炼输出物品到剪贴板")
     }
 }

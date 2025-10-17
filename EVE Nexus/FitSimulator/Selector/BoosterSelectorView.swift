@@ -57,6 +57,7 @@ struct BoosterSelectorView: View {
                                         dismiss()
                                     }
                                 }
+                                .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                             }
                         }
                     }

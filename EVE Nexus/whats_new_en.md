@@ -273,3 +273,15 @@ Fixes & Improvements:
 5. Some UI improvements.
 6. Update the schema of insurgency api in faction war.
 7. Enhance the “People & Locations” feature to enable navigate to the detail pages of a person’s corp or alliance. Also, refine the employment history feature so that a person’s faction is determined based on the end date of each employment record.
+
+# v1.8.2 Nov 3, 2025
+
+1. Fixed a bug in the asset feature that prevented the page from loading due to an incorrect container name.
+2. Corrected the valuation error in the ore refining calculator.
+3. Added support for custom skill queues in the "Skill Plans" feature.
+4. Added an RSS-based EVE Online outage monitoring feature.
+5. Optimized the “Market Watchlist” import function to support more formats.
+6. Add insurance data for ships in database function. 
+7. Fixed a bug in the "Skill Plans" feature that caused certain queues to be unremovable.
+
+

@@ -184,24 +184,102 @@ struct ShowItemInfo: View {
 
     // 加载属性
     private func loadAttributes(for itemID: Int) {
-        // 检查当前角色是否登录，如果登录则尝试获取技能等级作为属性280的值
-        var attributes = modifiedAttributes
-        if currentCharacterId != 0 {
-            if let level = skillsManager.getSkillLevel(for: itemID), level >= 0 {
-                if attributes == nil {
-                    attributes = [:]
+        // 先加载基础属性组
+        attributeGroups = databaseManager.loadAttributeGroups(
+            for: itemID,
+            modifiedAttributes: modifiedAttributes
+        )
+
+        // 检查是否是技能（categoryID == 16）
+        if let categoryID = itemDetails?.categoryID, categoryID == 16 {
+            // 检查当前角色是否登录，如果登录则尝试获取技能等级
+            if currentCharacterId != 0 {
+                if let level = skillsManager.getSkillLevel(for: itemID), level >= 0 {
+                    // 为技能添加或更新属性280（技能等级）
+                    addOrUpdateSkillLevelAttribute(level: level)
                 }
-                attributes?[280] = Double(level)
             }
         }
 
-        attributeGroups = databaseManager.loadAttributeGroups(
-            for: itemID,
-            modifiedAttributes: attributes
-        )
         // 初始化属性单位
         let units = databaseManager.loadAttributeUnits()
         AttributeDisplayConfig.initializeUnits(with: units)
+    }
+
+    // 添加或更新技能等级属性（属性ID 280）
+    private func addOrUpdateSkillLevelAttribute(level: Int) {
+        let skillLevelAttributeID = 280
+
+        // 查找是否已存在属性280
+        var found = false
+        for (index, group) in attributeGroups.enumerated() {
+            if let attrIndex = group.attributes.firstIndex(where: { $0.id == skillLevelAttributeID }) {
+                // 更新现有属性值
+                var updatedAttributes = group.attributes
+                let updatedAttribute = updatedAttributes[attrIndex]
+                updatedAttributes[attrIndex] = DogmaAttribute(
+                    id: updatedAttribute.id,
+                    categoryID: updatedAttribute.categoryID,
+                    name: updatedAttribute.name,
+                    displayName: updatedAttribute.displayName,
+                    iconID: updatedAttribute.iconID,
+                    iconFileName: updatedAttribute.iconFileName,
+                    value: updatedAttribute.value,
+                    unitID: updatedAttribute.unitID,
+                    highIsGood: updatedAttribute.highIsGood,
+                    modifiedValue: Double(level)
+                )
+                attributeGroups[index] = AttributeGroup(
+                    id: group.id,
+                    name: group.name,
+                    attributes: updatedAttributes
+                )
+                found = true
+                break
+            }
+        }
+
+        // 如果不存在，创建新的属性280并添加到对应分类
+        if !found {
+            // 从数据库获取属性280的完整信息
+            if let attributeInfo = databaseManager.getAttributeInfo(for: skillLevelAttributeID) {
+                let newAttribute = DogmaAttribute(
+                    id: skillLevelAttributeID,
+                    categoryID: attributeInfo.categoryID,
+                    name: attributeInfo.name,
+                    displayName: attributeInfo.displayName,
+                    iconID: attributeInfo.iconID,
+                    iconFileName: attributeInfo.iconFileName,
+                    value: 0, // 默认值
+                    unitID: attributeInfo.unitID,
+                    highIsGood: attributeInfo.highIsGood,
+                    modifiedValue: Double(level) // 实际技能等级
+                )
+
+                // 查找对应的属性组，如果不存在则创建
+                if let groupIndex = attributeGroups.firstIndex(where: { $0.id == attributeInfo.categoryID }) {
+                    // 在现有组中添加属性
+                    var updatedAttributes = attributeGroups[groupIndex].attributes
+                    updatedAttributes.append(newAttribute)
+                    updatedAttributes.sort { $0.id < $1.id }
+                    attributeGroups[groupIndex] = AttributeGroup(
+                        id: attributeGroups[groupIndex].id,
+                        name: attributeGroups[groupIndex].name,
+                        attributes: updatedAttributes
+                    )
+                } else {
+                    // 创建新的属性组
+                    let categoryName = databaseManager.getAttributeCategoryName(for: attributeInfo.categoryID) ?? "Skills"
+                    let newGroup = AttributeGroup(
+                        id: attributeInfo.categoryID,
+                        name: categoryName,
+                        attributes: [newAttribute]
+                    )
+                    attributeGroups.append(newGroup)
+                    attributeGroups.sort { $0.id < $1.id }
+                }
+            }
+        }
     }
 }
 

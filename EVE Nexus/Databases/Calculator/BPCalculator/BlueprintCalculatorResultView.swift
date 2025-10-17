@@ -739,6 +739,12 @@ struct BlueprintCalculatorResultView: View {
                 Task { @MainActor in
                     structureOrdersProgress = progress
                 }
+            },
+            itemCallback: { typeId, orders in
+                // 每完成一个物品的订单加载，立即更新UI
+                Task { @MainActor in
+                    marketOrders[typeId] = orders
+                }
             }
         )
 
@@ -747,97 +753,22 @@ struct BlueprintCalculatorResultView: View {
         }
     }
 
-    // MARK: - 通用订单加载方法
+    // MARK: - 通用订单加载方法（使用工具类）
 
     private func loadOrdersForItems(
         typeIds: [Int],
         regionID: Int,
         forceRefresh: Bool = false,
-        progressCallback: ((StructureOrdersProgress) -> Void)? = nil
+        progressCallback: ((StructureOrdersProgress) -> Void)? = nil,
+        itemCallback: ((Int, [MarketOrder]) -> Void)? = nil
     ) async -> [Int: [MarketOrder]] {
-        if StructureMarketManager.isStructureId(regionID) {
-            // 建筑订单
-            guard let structureId = StructureMarketManager.getStructureId(from: regionID),
-                  let structure = getStructureById(structureId)
-            else {
-                Logger.error("无效的建筑ID或未找到建筑信息: \(regionID)")
-                return [:]
-            }
-
-            do {
-                Logger.info("开始加载建筑订单，物品数量: \(typeIds.count)")
-
-                let batchOrders = try await StructureMarketManager.shared
-                    .getBatchItemOrdersInStructure(
-                        structureId: structureId,
-                        characterId: structure.characterId,
-                        typeIds: typeIds,
-                        forceRefresh: forceRefresh,
-                        progressCallback: progressCallback
-                    )
-
-                Logger.info("成功加载建筑订单，获得 \(batchOrders.count) 个物品的订单数据")
-                return batchOrders
-            } catch {
-                Logger.error("批量加载建筑订单失败: \(error)")
-                return [:]
-            }
-        } else {
-            // 星域订单
-            let concurrency = max(1, min(10, typeIds.count))
-            Logger.info("开始加载星域订单，物品数量: \(typeIds.count)，并发数: \(concurrency)")
-
-            var newOrders: [Int: [MarketOrder]] = [:]
-
-            await withTaskGroup(of: (Int, [MarketOrder])?.self) { group in
-                var pendingTypeIds = typeIds
-
-                for _ in 0 ..< concurrency {
-                    if !pendingTypeIds.isEmpty {
-                        let typeId = pendingTypeIds.removeFirst()
-                        group.addTask {
-                            do {
-                                let orders = try await MarketOrdersAPI.shared.fetchMarketOrders(
-                                    typeID: typeId,
-                                    regionID: regionID,
-                                    forceRefresh: forceRefresh
-                                )
-                                return (typeId, orders)
-                            } catch {
-                                Logger.error("加载市场订单失败 (物品ID: \(typeId)): \(error)")
-                                return nil
-                            }
-                        }
-                    }
-                }
-
-                while let result = await group.next() {
-                    if let (typeID, orders) = result {
-                        newOrders[typeID] = orders
-                    }
-
-                    if !pendingTypeIds.isEmpty {
-                        let typeId = pendingTypeIds.removeFirst()
-                        group.addTask {
-                            do {
-                                let orders = try await MarketOrdersAPI.shared.fetchMarketOrders(
-                                    typeID: typeId,
-                                    regionID: regionID,
-                                    forceRefresh: forceRefresh
-                                )
-                                return (typeId, orders)
-                            } catch {
-                                Logger.error("加载市场订单失败 (物品ID: \(typeId)): \(error)")
-                                return nil
-                            }
-                        }
-                    }
-                }
-            }
-
-            Logger.info("完成星域订单加载，成功获取 \(newOrders.count) 个物品的订单数据")
-            return newOrders
-        }
+        return await MarketOrdersUtil.loadOrders(
+            typeIds: typeIds,
+            regionID: regionID,
+            forceRefresh: forceRefresh,
+            progressCallback: progressCallback,
+            itemCallback: itemCallback
+        )
     }
 
     private func calculateTotalPrice() -> (total: Double, hasInsufficientStock: Bool) {
@@ -946,7 +877,8 @@ struct BlueprintCalculatorResultView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(material.typeName)
                         .lineLimit(1)
-                    if isLoadingOrders {
+                    // 细粒度加载状态：已加载的显示价格，未加载的显示加载指示器
+                    if isLoadingOrders && marketOrders[material.typeId] == nil {
                         HStack(spacing: 4) {
                             ProgressView()
                                 .scaleEffect(0.6)
@@ -1084,7 +1016,7 @@ struct BlueprintCalculatorResultView: View {
             }
         }
 
-        // 使用通用的订单加载方法
+        // 使用通用的订单加载方法（支持渐进式显示）
         let orders = await loadOrdersForItems(
             typeIds: [product.typeId],
             regionID: productSelectedRegionID,
@@ -1092,6 +1024,14 @@ struct BlueprintCalculatorResultView: View {
             progressCallback: { progress in
                 Task { @MainActor in
                     productOrdersProgress = progress
+                }
+            },
+            itemCallback: { typeId, orders in
+                // 立即更新产品订单
+                Task { @MainActor in
+                    if typeId == product.typeId {
+                        productMarketOrders = orders
+                    }
                 }
             }
         )

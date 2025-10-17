@@ -193,7 +193,7 @@ struct PIAllInOneMainView: View {
                 // 遍历所有单星球产品，检查该星系是否能支持
                 for product in allProducts {
                     var canSupport = false
-                    var maxPlanetCount = 0
+                    var totalPlanetCount = 0
 
                     // 检查每个兼容的行星类型
                     for planetType in product.compatiblePlanetTypes {
@@ -202,13 +202,13 @@ struct PIAllInOneMainView: View {
                            planetCount > 0
                         {
                             canSupport = true
-                            maxPlanetCount = max(maxPlanetCount, planetCount)
+                            totalPlanetCount += planetCount
                         }
                     }
 
                     if canSupport {
                         supportedProducts.append(product)
-                        systemPlanetCountsTemp["\(product.productId)"] = maxPlanetCount
+                        systemPlanetCountsTemp["\(product.productId)"] = totalPlanetCount
                     }
                 }
             }
@@ -216,14 +216,14 @@ struct PIAllInOneMainView: View {
             // 按产品等级、可用行星数量和type_id排序（P4-P3-P2-P1顺序）
             supportedProducts.sort { lhs, rhs in
                 if lhs.productLevel == rhs.productLevel {
-                    // 同等级内，首先按可用行星数量降序排序
-                    let lhsPlanetCount = systemPlanetCountsTemp["\(lhs.productId)"] ?? 0
-                    let rhsPlanetCount = systemPlanetCountsTemp["\(rhs.productId)"] ?? 0
-                    if lhsPlanetCount == rhsPlanetCount {
-                        // 可用行星数量相同时，按type_id升序排序
+                    // 同等级内，首先按可用行星总数量降序排序
+                    let lhsTotalPlanetCount = systemPlanetCountsTemp["\(lhs.productId)"] ?? 0
+                    let rhsTotalPlanetCount = systemPlanetCountsTemp["\(rhs.productId)"] ?? 0
+                    if lhsTotalPlanetCount == rhsTotalPlanetCount {
+                        // 可用行星总数量相同时，按type_id升序排序
                         return lhs.productId < rhs.productId
                     }
-                    return lhsPlanetCount > rhsPlanetCount // 可用行星数量多的优先
+                    return lhsTotalPlanetCount > rhsTotalPlanetCount // 可用行星总数量多的优先
                 }
                 return lhs.productLevel > rhs.productLevel // 高等级优先
             }
@@ -241,61 +241,83 @@ struct PIAllInOneMainView: View {
 struct AllInOneSinglePlanetProductRowView: View {
     let product: AllInOneSinglePlanetProductResult
     let systemPlanetCounts: [String: Int]
+    @State private var showItemDetail = false
 
     var body: some View {
-        HStack {
-            // 产品图标
-            Image(uiImage: IconManager.shared.loadUIImage(for: product.iconFileName))
-                .resizable()
-                .frame(width: 32, height: 32)
-                .cornerRadius(4)
+        Button(action: {
+            showItemDetail = true
+        }) {
+            HStack {
+                // 产品图标
+                Image(uiImage: IconManager.shared.loadUIImage(for: product.iconFileName))
+                    .resizable()
+                    .frame(width: 32, height: 32)
+                    .cornerRadius(4)
 
-            VStack(alignment: .leading, spacing: 4) {
-                // 产品名称
-                Text(product.productName)
-                    .font(.headline)
-                    .foregroundColor(.primary)
+                VStack(alignment: .leading, spacing: 4) {
+                    // 产品名称
+                    Text(product.productName)
+                        .font(.headline)
+                        .foregroundColor(.primary)
 
-                // 支持的行星类型
-                Text(
-                    String(
-                        format: NSLocalizedString(
-                            "All_in_One_Compatible_Planets", comment: "支持行星: %@"
-                        ),
-                        product.compatiblePlanetTypes.map { $0.name }.joined(separator: ", ")
-                    )
-                )
-                .font(.caption)
-                .foregroundColor(.secondary)
-
-                // 可用行星数量
-                if let count = systemPlanetCounts["\(product.productId)"] {
+                    // 支持的行星类型
                     Text(
                         String(
                             format: NSLocalizedString(
-                                "All_in_One_Available_Planets", comment: "可用行星: %d 颗"
-                            ), count
+                                "All_in_One_Compatible_Planets", comment: "支持行星: %@"
+                            ),
+                            product.compatiblePlanetTypes.map { $0.name }.joined(separator: ", ")
                         )
                     )
                     .font(.caption)
-                    .foregroundColor(.green)
-                    .fontWeight(.medium)
+                    .foregroundColor(.secondary)
+
+                    // 可用行星数量
+                    if let count = systemPlanetCounts["\(product.productId)"] {
+                        Text(
+                            String(
+                                format: NSLocalizedString(
+                                    "All_in_One_Available_Planets", comment: "可用行星: %d 颗"
+                                ), count
+                            )
+                        )
+                        .font(.caption)
+                        .foregroundColor(.green)
+                        .fontWeight(.medium)
+                    }
                 }
+
+                Spacer()
+
+                // P等级标识
+                Text("P\(product.productLevel)")
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(levelColor(for: product.productLevel))
+                    .cornerRadius(4)
+
+                // 箭头指示器
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+                    .padding(.leading, 4)
             }
-
-            Spacer()
-
-            // P等级标识
-            Text("P\(product.productLevel)")
-                .font(.caption)
-                .fontWeight(.bold)
-                .foregroundColor(.white)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(levelColor(for: product.productLevel))
-                .cornerRadius(4)
+            .padding(.vertical, 4)
+            .contentShape(Rectangle())
         }
-        .padding(.vertical, 4)
+        .buttonStyle(PlainButtonStyle())
+        .sheet(isPresented: $showItemDetail) {
+            NavigationView {
+                ShowPlanetaryInfo(
+                    itemID: product.productId,
+                    databaseManager: DatabaseManager.shared
+                )
+            }
+            .presentationDragIndicator(.visible)
+        }
     }
 
     // 根据产品等级返回颜色

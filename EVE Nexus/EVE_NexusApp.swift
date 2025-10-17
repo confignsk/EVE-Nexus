@@ -253,6 +253,16 @@ struct EVE_NexusApp: App {
         do {
             // 在图标解压完成后加载主权数据
             // _ = try await SovereigntyDataAPI.shared.fetchSovereigntyData()
+
+            // 异步加载保险价格数据，不阻塞主进程
+            Task.detached(priority: .background) {
+                do {
+                    _ = try await InsurancePricesAPI.shared.fetchInsurancePrices()
+                } catch {
+                    Logger.error("[x] 后台加载保险价格数据失败: \(error)")
+                }
+            }
+
             await MainActor.run {
                 databaseManager.loadDatabase()
                 CharacterDatabaseManager.shared.loadDatabase()

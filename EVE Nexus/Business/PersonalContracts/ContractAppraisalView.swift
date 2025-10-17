@@ -412,56 +412,13 @@ struct ContractAppraisalView: View {
         }
 
         do {
-            // 创建任务组并发获取市场订单
-            var marketOrders: [Int: [MarketOrder]] = [:]
-            let concurrency = max(1, min(10, itemsDict.count))
-
-            await withTaskGroup(of: (Int, [MarketOrder])?.self) { group in
-                var pendingItems = Array(itemsDict.keys)
-
-                // 初始添加并发数量的任务
-                for _ in 0 ..< min(concurrency, pendingItems.count) {
-                    if let typeID = pendingItems.popLast() {
-                        group.addTask {
-                            do {
-                                let orders = try await MarketOrdersAPI.shared.fetchMarketOrders(
-                                    typeID: typeID,
-                                    regionID: regionID,
-                                    forceRefresh: true
-                                )
-                                return (typeID, orders)
-                            } catch {
-                                Logger.error("加载市场订单失败: \(error)")
-                                return nil
-                            }
-                        }
-                    }
-                }
-
-                // 处理结果并添加新任务
-                while let result = await group.next() {
-                    if let (typeID, orders) = result {
-                        marketOrders[typeID] = orders
-                    }
-
-                    // 如果还有待处理的物品，添加新任务
-                    if let typeID = pendingItems.popLast() {
-                        group.addTask {
-                            do {
-                                let orders = try await MarketOrdersAPI.shared.fetchMarketOrders(
-                                    typeID: typeID,
-                                    regionID: regionID,
-                                    forceRefresh: true
-                                )
-                                return (typeID, orders)
-                            } catch {
-                                Logger.error("加载市场订单失败: \(error)")
-                                return nil
-                            }
-                        }
-                    }
-                }
-            }
+            // 使用通用工具类并发获取市场订单
+            let typeIds = Array(itemsDict.keys)
+            let marketOrders = await MarketOrdersUtil.loadRegionOrders(
+                typeIds: typeIds,
+                regionID: regionID,
+                forceRefresh: true
+            )
 
             // 计算每个物品的价格
             var totalBuyPrice: Double = 0

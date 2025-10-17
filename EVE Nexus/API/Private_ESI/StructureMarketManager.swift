@@ -29,10 +29,35 @@ struct StructureMarketOrder: Codable {
     }
 }
 
-// 建筑订单加载进度
+/// 建筑市场订单加载进度
+///
+/// 建筑市场订单需要分页加载，此枚举用于显示加载进度
+///
+/// 使用场景：
+/// - 建筑市场订单批量加载时，在UI显示"第X页/共Y页"
+/// - 提供加载进度反馈，改善用户体验
+///
+/// 示例：
+/// ```swift
+/// let orders = await MarketOrdersUtil.loadOrders(
+///     typeIds: itemIds,
+///     regionID: structureRegionID,
+///     progressCallback: { progress in
+///         Task { @MainActor in
+///             switch progress {
+///             case .loading(let currentPage, let totalPages):
+///                 // 显示: "第2页/共5页"
+///                 print("加载进度: \(currentPage)/\(totalPages)")
+///             case .completed:
+///                 // 加载完成
+///             }
+///         }
+///     }
+/// )
+/// ```
 public enum StructureOrdersProgress {
-    case loading(currentPage: Int, totalPages: Int)
-    case completed
+    case loading(currentPage: Int, totalPages: Int) // 正在加载，包含当前页和总页数
+    case completed // 加载完成
 }
 
 // 将StructureMarketManager标记为网络管理器Actor

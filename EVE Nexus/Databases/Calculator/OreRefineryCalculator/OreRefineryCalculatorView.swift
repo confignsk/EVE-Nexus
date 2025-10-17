@@ -439,6 +439,7 @@ struct OreRefineryCalculatorView: View {
                 saveSelection: .constant(false),
                 databaseManager: databaseManager
             )
+            .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showRefinerySettings) {
             RefinerySettingsView(
@@ -451,6 +452,7 @@ struct OreRefineryCalculatorView: View {
                 selectedCharacterName: $selectedCharacterName,
                 selectedCharacterId: $selectedCharacterId
             )
+            .presentationDragIndicator(.visible)
         }
         .sheet(item: $refineryResultData) { data in
             NavigationView {
@@ -462,6 +464,7 @@ struct OreRefineryCalculatorView: View {
                     remainingItems: data.remaining
                 )
             }
+            .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $isShowingItemSelector) {
             // TODO: 实现矿石选择器 - 可以复用MarketItemSelectorView但需要限制只显示矿石
@@ -508,6 +511,7 @@ struct OreRefineryCalculatorView: View {
                 showSelected: true,
                 allowTypeIDs: nil // TODO: 这里应该限制只显示矿石类物品
             )
+            .presentationDragIndicator(.visible)
         }
         .onChange(of: selectedRegionID) { oldValue, newValue in
             if oldValue != newValue {
@@ -2160,6 +2164,7 @@ struct RefinerySettingsView: View {
                 )
                 .navigationBarTitleDisplayMode(.inline)
             }
+            .presentationDragIndicator(.visible)
         }
     }
 }

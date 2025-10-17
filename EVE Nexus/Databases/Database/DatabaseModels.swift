@@ -22,7 +22,7 @@ public struct Category: Identifiable {
 }
 
 // 组模型
-public struct Group: Identifiable {
+public struct TypeGroup: Identifiable {
     public let id: Int
     public let name: String
     public let enName: String // 添加英文名称

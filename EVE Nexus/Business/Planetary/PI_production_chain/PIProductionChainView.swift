@@ -65,10 +65,17 @@ final class PIProductionChainViewModel: ObservableObject {
         // 存储所有轮次的原始数据
         var allRoundsData: [[Int: (name: String, iconFileName: String, quantity: Int)]] = []
 
-        // 一次性计算所有轮次
-        var currentLevelItems: [Int: (name: String, iconFileName: String, quantity: Int)] = [
-            productId: (productInfo.name, productInfo.iconFileName, 1),
-        ]
+        // 一次性计算所有轮次（起点使用该产品的配方产出批量；若无配方则为1）
+        var currentLevelItems: [Int: (name: String, iconFileName: String, quantity: Int)]
+        if let productSchematic = resourceCache.getSchematic(for: productId) {
+            currentLevelItems = [
+                productId: (productInfo.name, productInfo.iconFileName, productSchematic.outputValue),
+            ]
+        } else {
+            currentLevelItems = [
+                productId: (productInfo.name, productInfo.iconFileName, 1),
+            ]
+        }
         var currentLevel = productLevel.rawValue
 
         while currentLevel > 0, !currentLevelItems.isEmpty {
@@ -218,7 +225,7 @@ struct PIProductionChainView: View {
                                     .cornerRadius(6)
 
                                 VStack(alignment: .leading) {
-                                    Text(product.name)
+                                    Text("\(product.name)（数量：\(PIResourceCache.shared.getSchematic(for: product.id)?.outputValue ?? 1)）")
                                         .font(.headline)
                                         .foregroundColor(.primary)
                                     Text(

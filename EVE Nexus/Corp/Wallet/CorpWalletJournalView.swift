@@ -675,6 +675,13 @@ struct CorpWalletJournalEntryRow: View {
             .font(.caption)
             .foregroundColor(.secondary)
 
+            // Reason 信息
+            if !entry.reason.isEmpty {
+                Text(String(format: NSLocalizedString("Reason", comment: ""), entry.reason))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
             // 余额
             Text(
                 String(
@@ -699,7 +706,7 @@ struct CorpWalletJournalEntryRow: View {
                     language: selectedLanguage == "zh-Hans" ? "zh" : "en"
                 )
                 let sign = entry.amount >= 0 ? "+" : ""
-                let detailText = "\(processedDescription): \(sign)\(FormatUtil.format(entry.amount)) ISK"
+                let detailText = "[\(FormatUtil.formatUTCToLocalTime(entry.date))] \(processedDescription): \(sign)\(FormatUtil.format(entry.amount)) ISK"
                 UIPasteboard.general.string = detailText
             } label: {
                 Label(
