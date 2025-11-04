@@ -108,7 +108,7 @@ class DatabaseManager: ObservableObject {
     }
 
     // 加载组
-    func loadGroups(for categoryID: Int) -> ([Group], [Group]) {
+    func loadGroups(for categoryID: Int) -> ([TypeGroup], [TypeGroup]) {
         let query = """
             SELECT g.group_id, g.name, g.en_name, g.categoryID, g.published, g.icon_filename
             FROM groups g
@@ -117,8 +117,8 @@ class DatabaseManager: ObservableObject {
 
         let result = executeQuery(query, parameters: [categoryID])
 
-        var published: [Group] = []
-        var unpublished: [Group] = []
+        var published: [TypeGroup] = []
+        var unpublished: [TypeGroup] = []
 
         switch result {
         case let .success(rows):
@@ -134,7 +134,7 @@ class DatabaseManager: ObservableObject {
 
                 let isPublished = (row["published"] as? Int ?? 0) != 0
 
-                let group = Group(
+                let group = TypeGroup(
                     id: groupId,
                     name: name,
                     enName: enName,
@@ -554,6 +554,43 @@ class DatabaseManager: ObservableObject {
         let query = "SELECT name FROM groups WHERE group_id = ?"
 
         if case let .success(rows) = executeQuery(query, parameters: [groupID]),
+           let row = rows.first,
+           let name = row["name"] as? String
+        {
+            return name
+        }
+        return nil
+    }
+
+    // 获取属性完整信息
+    func getAttributeInfo(for attributeID: Int) -> (categoryID: Int, name: String, displayName: String?, iconID: Int, iconFileName: String, unitID: Int?, highIsGood: Bool)? {
+        let query = """
+            SELECT categoryID, name, display_name, iconID, icon_filename, unitID, highIsGood
+            FROM dogmaAttributes
+            WHERE attribute_id = ?
+        """
+
+        if case let .success(rows) = executeQuery(query, parameters: [attributeID]),
+           let row = rows.first,
+           let categoryID = row["categoryID"] as? Int,
+           let name = row["name"] as? String,
+           let iconID = row["iconID"] as? Int
+        {
+            let displayName = row["display_name"] as? String
+            let iconFileName = (row["icon_filename"] as? String) ?? DatabaseConfig.defaultIcon
+            let unitID = row["unitID"] as? Int
+            let highIsGood = (row["highIsGood"] as? Int) == 1
+
+            return (categoryID, name, displayName, iconID, iconFileName, unitID, highIsGood)
+        }
+        return nil
+    }
+
+    // 获取属性分类名称
+    func getAttributeCategoryName(for categoryID: Int) -> String? {
+        let query = "SELECT name FROM dogmaAttributesCategory WHERE category_id = ?"
+
+        if case let .success(rows) = executeQuery(query, parameters: [categoryID]),
            let row = rows.first,
            let name = row["name"] as? String
         {
@@ -1378,7 +1415,7 @@ class DatabaseManager: ObservableObject {
                                 bonusType: bonusType
                             ))
                     case "typeBonuses":
-                        if let skill = row["skill"] as? Int {
+                        if let skill = row["skill"] as? Int, skill > 0 {
                             typeBonuses.append(
                                 Trait(
                                     content: content,

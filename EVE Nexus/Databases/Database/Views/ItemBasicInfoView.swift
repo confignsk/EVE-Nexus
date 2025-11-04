@@ -404,24 +404,45 @@ struct ItemBasicInfoView: View {
         }
 
         // 市场详情 Section
-        if itemDetails.marketGroupID != nil {
+        if itemDetails.marketGroupID != nil || itemDetails.categoryID == 6 {
             Section {
-                NavigationLink {
-                    MarketItemDetailView(
-                        databaseManager: databaseManager,
-                        itemID: itemDetails.typeId
-                    )
-                } label: {
-                    HStack {
-                        Image("isk")
-                            .resizable()
-                            .frame(width: 32, height: 32)
-                            .cornerRadius(6)
-                        Text(NSLocalizedString("Main_Market", comment: ""))
-                        Spacer()
+                if itemDetails.marketGroupID != nil {
+                    NavigationLink {
+                        MarketItemDetailView(
+                            databaseManager: databaseManager,
+                            itemID: itemDetails.typeId
+                        )
+                    } label: {
+                        HStack {
+                            Image("isk")
+                                .resizable()
+                                .frame(width: 32, height: 32)
+                                .cornerRadius(6)
+                            Text(NSLocalizedString("Main_Market", comment: ""))
+                            Spacer()
+                        }
+                    }
+                }
+
+                if itemDetails.categoryID == 6 {
+                    NavigationLink {
+                        ShipInsuranceView(
+                            typeId: itemDetails.typeId,
+                            typeName: itemDetails.name
+                        )
+                    } label: {
+                        HStack {
+                            Image("insurance")
+                                .resizable()
+                                .frame(width: 32, height: 32)
+                                .cornerRadius(6)
+                            Text(NSLocalizedString("Insurance_Title", comment: "保险"))
+                            Spacer()
+                        }
                     }
                 }
             }
+            .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
         }
 
         // 基础属性 Section

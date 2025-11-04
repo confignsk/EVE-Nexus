@@ -476,7 +476,7 @@ struct ItemNodeRow: View {
             }
         }
         .foregroundColor(.primary)
-        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+        .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
     }
 }
 
@@ -533,6 +533,7 @@ struct MarketGroupNodeRow: View {
             }
             updateCurrentGroup(group.id)
         }
+        .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
     }
 }
 

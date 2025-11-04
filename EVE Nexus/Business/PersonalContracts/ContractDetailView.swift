@@ -167,9 +167,21 @@ final class ContractDetailViewModel: ObservableObject {
                     isLoading = false
                 } catch is CancellationError {
                     Logger.debug("合同物品加载任务被取消 - 合同ID: \(contract.contract_id)")
+                    isLoading = false
                 } catch {
                     Logger.error("加载合同物品失败: \(error.localizedDescription)")
-                    errorMessage = error.localizedDescription
+
+                    // 检查是否是 404 错误（合同不存在）
+                    if let networkError = error as? NetworkError,
+                       case let .httpError(statusCode, _) = networkError,
+                       statusCode == 404
+                    {
+                        errorMessage = NSLocalizedString("Contract_Not_Found_Message", comment: "")
+                    } else {
+                        errorMessage = NSLocalizedString("Contract_Load_Error_Message", comment: "")
+                    }
+
+                    isLoading = false
                 }
             },
             onCancel: {
@@ -996,6 +1008,21 @@ struct ContractDetailView: View {
                         Image(systemName: "list.clipboard")
                     }
                 }
+            }
+        }
+        .alert(
+            NSLocalizedString("Contract_Load_Error_Title", comment: ""),
+            isPresented: .init(
+                get: { viewModel.errorMessage != nil },
+                set: { if !$0 { viewModel.errorMessage = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {
+                viewModel.errorMessage = nil
+            }
+        } message: {
+            if let errorMessage = viewModel.errorMessage {
+                Text(errorMessage)
             }
         }
     }

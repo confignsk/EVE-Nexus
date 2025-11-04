@@ -319,7 +319,8 @@ struct MarketRegionPickerView: View {
                                         dismiss()
                                     }
                                 },
-                                onUnpin: {
+                                onUnpin: region.id == 10_000_002 ? nil : {
+                                    // The Forge (Jita) 不允许移除，其他星域可移除
                                     withAnimation {
                                         pinnedRegions.removeAll { $0.id == region.id }
                                         savePinnedRegions()

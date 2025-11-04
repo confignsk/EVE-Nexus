@@ -16,6 +16,7 @@ struct CalculatorView: View {
                         .font(.body)
                 }
             }
+            .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
 
             NavigationLink(destination: OreRefineryCalculatorView(databaseManager: databaseManager)) {
                 HStack {
@@ -28,6 +29,7 @@ struct CalculatorView: View {
                         .font(.body)
                 }
             }
+            .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
         }
         .navigationTitle(NSLocalizedString("Calculator_Title", comment: ""))
         .navigationBarTitleDisplayMode(.large)

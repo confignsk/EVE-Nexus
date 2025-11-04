@@ -22,3 +22,11 @@ bfg --replace-text secrets.txt
 # 已知问题
 
 - https://stackoverflow.com/questions/79012075/issue-with-swiftui-navigationstack-searchable-modifier-and-returning-to-root-v
+
+# 整行点击
+
+```
+.onTapGesture {
+    onTap()
+}
+```

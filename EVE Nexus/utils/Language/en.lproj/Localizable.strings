@@ -179,6 +179,15 @@
 "Main_Other" = "Other";
 "Main_Unzipping_Icons" = "Unzipping Icons...";
 
+// Insurance
+"Insurance_Title" = "Insurance";
+"Insurance_Levels" = "Insurance Levels";
+"Insurance_Cost" = "Cost";
+"Insurance_Payout" = "Payout";
+"Insurance_Net_Profit" = "Net Profit";
+"Insurance_No_Data" = "No insurance data available for this ship";
+"Insurance_Info_Tip" = "Insurance payout is issued when the ship is destroyed";
+
 "Main_Setting" = "Setting";
 "Main_Setting_Title" = "Setting";
 "Main_Setting_Language" = "App Language";
@@ -207,6 +216,8 @@
 "Main_About_Github" = "Github";
 "Main_About_Report_Bug" = "Report Bug";
 "Main_About_copyright_Title" = "Copy Right And Privacy Statement";
+"Main_About_Acknowledgement" = "Acknowledgement";
+"Main_About_Acknowledgement_Text" = "Special thanks to my partner: KD Hsueh";
 
 "Misc_Now" = "Now";
 "Misc_true" = "True";
@@ -238,6 +249,7 @@
 "Misc_Items" = "%d items";
 "Misc_Copy" = "Copy";
 "Misc_Show_Detail" = "Show Info";
+"Misc_Delete" = "Delete";
 
 "Misc_Copy_CharID" = "Copy Char Name";
 "Misc_Copy_CEO_CharID" = "Copy CEO Name";
@@ -683,6 +695,9 @@
 "Contract_Start_Location" = "Start Location";
 "Contract_End_Location" = "End Location";
 "Contract_Select1" = "Select at least 1 option";
+"Contract_Load_Error_Title" = "Load Failed";
+"Contract_Load_Error_Message" = "The contract may have been cancelled, or a network error occurred";
+"Contract_Not_Found_Message" = "Contract not found, it may have been completed";
 
 "Industry_Status_active" = "Active";
 "Industry_Status_cancelled" = "Cancelled";
@@ -996,6 +1011,7 @@
 "Net Balance" = "Net Balance";
 "Load More" = "Load More";
 "Balance" = "Balance: %@ ISK";
+"Reason" = "Reason: %@";
 
 "Total_volume" = "Total volume";
 
@@ -1036,6 +1052,18 @@
 "Main_Skills_Plan_Import_Not_Found" = "The following skills were not found:";
 "Main_Skills_Plan_Import_Success" = "Import successfully";
 "Main_Skills_Plan_Show_Completed" = "Show Completed Skills";
+"Main_Skills_Plan_Show_Completed_Short" = "Show Completed";
+"Main_Skills_Plan_Add_Item" = "Add Item";
+"Main_Skills_Plan_Add_Skill" = "Add Skill";
+"Main_Skills_Plan_Clear_All" = "Clear Queue";
+"Main_Skills_Plan_All_Completed" = "All skills completed";
+"Main_Skills_Plan_Export_Chinese" = "Export Chinese";
+"Main_Skills_Plan_Export_English" = "Export English";
+"Main_Skills_Plan_Export_Success_Title" = "Export Successful";
+"Main_Skills_Plan_Export_Success_Message" = "Skill plan has been copied to clipboard";
+"Main_Skills_Plan_Export_Empty" = "Skill plan is empty, cannot export";
+"Main_Skills_Plan_Has_Dependencies" = "This skill is required by other skills";
+"Main_Skills_Plan_Cannot_Delete_Has_Dependencies" = "Cannot delete: some skills are required by others";
 
 "Main_Search" = "Search";
 
@@ -1143,10 +1171,10 @@
 "View CEO" = "View CEO";
 
 // Market Watch List
-"Main_Market_Watch_List" = "Market Watch List";
-"Main_Market_Watch_List_Empty" = "No items in watch list";
-"Main_Market_Watch_List_Add" = "Add Watch List";
-"Main_Market_Watch_List_Name" = "Watch List Name";
+"Main_Market_Watch_List" = "Market Watchlist";
+"Main_Market_Watch_List_Empty" = "No items in watchlist";
+"Main_Market_Watch_List_Add" = "Add Watchlist";
+"Main_Market_Watch_List_Name" = "Watchlist Name";
 "Main_Market_Watch_List_Items" = "%d items";
 "Main_Market_Watch_List_Add_Item" = "Add Item";
 
@@ -1185,12 +1213,12 @@
 // Clipboard export related
 "Main_Market_Clipboard_Export" = "Clipboard Export";
 "Main_Market_Clipboard_Export_Success" = "Successfully exported %d items to clipboard";
-"Main_Market_Clipboard_Export_Empty" = "Watch list is empty, nothing to export";
+"Main_Market_Clipboard_Export_Empty" = "Watchlist is empty, nothing to export";
 
 // Clipboard import confirmation related
 "Main_Market_Clipboard_Import_Confirm" = "Confirm Import";
 "Main_Market_Clipboard_Import_Confirm_Yes" = "Confirm Import";
-"Main_Market_Clipboard_Import_Confirm_Message" = "Current watch list has %d items. Importing will overwrite existing content. Are you sure you want to continue?";
+"Main_Market_Clipboard_Import_Confirm_Message" = "Current watchlist has %d items. Importing will overwrite existing content. Are you sure you want to continue?";
 
 // New clipboard import result related strings
 "Main_Market_Clipboard_All_Failed" = "All parsing failed";
@@ -2504,8 +2532,11 @@
 "Ore_Refinery_Unknown" = "Unknown Status";
 "Ore_Refinery_Ratio_Label" = "Refinery Ratio: ";
 "Ore_Refinery_Result_Title" = "Refinery Result";
-"Ore_Refinery_Result_Input_Market_Value" = "Input Market Value";
-"Ore_Refinery_Result_Product_Market_Value" = "Output Market Value";
+"Ore_Refinery_Result_Product_Buy_Value" = "Output Buy Price";
+"Ore_Refinery_Result_Product_Sell_Value" = "Output Sell Price";
+"Ore_Refinery_Result_Product_Jita_Buy_Value" = "Output Jita Buy Price";
+"Ore_Refinery_Result_Product_Jita_Sell_Value" = "Output Jita Sell Price";
+"Ore_Refinery_Result_Product_Jita_Market_Value" = "Output Jita Market Price";
 "Ore_Refinery_Result_Market_Settings" = "Market Settings";
 "Ore_Refinery_Result_Input_Market" = "Input Market";
 "Ore_Refinery_Result_Output_Market" = "Output Market";
@@ -2576,3 +2607,26 @@
 "SDE_Log_Verifying_SDE_SHA" = "Verifying sde.zip SHA256...";
 "SDE_Log_Extracting_SDE" = "Extracting sde.zip...";
 "SDE_Log_Extract_SDE_Success" = "sde.zip extracted successfully!";
+
+// EVE Status Incidents
+"EVE_Status_Incidents_Title" = "EVE Online Service Status";
+"EVE_Status_Incidents_Detail" = "View EVE Online service status and incident notifications";
+"EVE_Status_Loading" = "Loading status information...";
+"EVE_Status_All_Good" = "All Systems Operational";
+"EVE_Status_No_Issues" = "No EVE Online service issues at this time";
+"EVE_Status_Details" = "Details";
+"EVE_Status_External_Link" = "Related Links";
+"EVE_Status_View_Details" = "View Details in Browser";
+"EVE_Status_Incident_Detail" = "Incident Details";
+
+// EVE Status Badge States
+"EVE_Status_Resolved" = "Resolved";
+"EVE_Status_Issue" = "Issue";
+
+// Insurance Levels
+"Insurance_Level_Platinum" = "Platinum";
+"Insurance_Level_Gold" = "Gold";
+"Insurance_Level_Silver" = "Silver";
+"Insurance_Level_Bronze" = "Bronze";
+"Insurance_Level_Standard" = "Standard";
+"Insurance_Level_Basic" = "Basic";

@@ -276,6 +276,7 @@ struct SettingView: View {
     @State private var showingESIStatusView = false
     @State private var showingLogsBrowserView = false
     @State private var showingMarketStructureView = false
+    @State private var showingEVEStatusIncidentsView = false
 
     // MARK: - 数据更新函数
 
@@ -499,6 +500,13 @@ struct SettingView: View {
                     action: { showingESIStatusView = true }
                 ),
                 SettingItem(
+                    title: NSLocalizedString("EVE_Status_Incidents_Title", comment: "EVE Online 故障通知"),
+                    detail: NSLocalizedString("EVE_Status_Incidents_Detail", comment: "查看EVE Online服务状态和故障通知"),
+                    icon: "exclamationmark.triangle",
+                    iconColor: .orange,
+                    action: { showingEVEStatusIncidentsView = true }
+                ),
+                SettingItem(
                     title: NSLocalizedString("Main_Database_Attribute_Settings", comment: "属性显示设置"),
                     detail: nil,
                     iconColor: .blue,
@@ -708,6 +716,9 @@ struct SettingView: View {
         }
         .navigationDestination(isPresented: $showingMarketStructureView) {
             MarketStructureSettingsView()
+        }
+        .navigationDestination(isPresented: $showingEVEStatusIncidentsView) {
+            EVEStatusIncidentsView()
         }
         .alert(
             NSLocalizedString("Main_Setting_Clean_Cache_Title", comment: ""),

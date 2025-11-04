@@ -751,6 +751,15 @@ struct MarketQuickbarView: View {
                     } label: {
                         quickbarRowView(quickbar)
                     }
+                    .contextMenu {
+                        Button(role: .destructive) {
+                            if let index = quickbars.firstIndex(where: { $0.id == quickbar.id }) {
+                                deleteQuickbar(at: IndexSet(integer: index))
+                            }
+                        } label: {
+                            Label(NSLocalizedString("Misc_Delete", comment: ""), systemImage: "trash")
+                        }
+                    }
                     .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                 }
                 .onDelete(perform: deleteQuickbar)
@@ -1250,109 +1259,40 @@ struct MarketQuickbarDetailView: View {
         }
     }
 
-    // 加载所有物品的市场订单
+    // 加载所有物品的市场订单（使用通用工具类，支持渐进式显示）
     private func loadAllMarketOrders(forceRefresh: Bool = false) async {
         guard !items.isEmpty else { return }
 
         isLoadingOrders = true
         defer {
             isLoadingOrders = false
-            hasLoadedOrders = true // 标记已加载过订单
+            hasLoadedOrders = true
         }
 
         // 清除旧数据
         marketOrders.removeAll()
 
-        // 判断是否选择了建筑
-        if StructureMarketManager.isStructureId(currentRegionID) {
-            // 选择了建筑，使用批量建筑订单API
-            guard let structureId = StructureMarketManager.getStructureId(from: currentRegionID)
-            else {
-                Logger.error("无效的建筑ID: \(currentRegionID)")
-                return
-            }
-
-            // 获取建筑对应的角色ID
-            guard let structure = getStructureById(structureId) else {
-                Logger.error("未找到建筑信息: \(structureId)")
-                return
-            }
-
-            do {
-                let typeIds = items.map { $0.id }
-                let batchOrders = try await StructureMarketManager.shared
-                    .getBatchItemOrdersInStructure(
-                        structureId: structureId,
-                        characterId: structure.characterId,
-                        typeIds: typeIds,
-                        forceRefresh: forceRefresh,
-                        progressCallback: { progress in
-                            Task { @MainActor in
-                                structureOrdersProgress = progress
-                            }
-                        }
-                    )
-
-                marketOrders = batchOrders
-                Logger.info("从建筑 \(structure.structureName) 批量获取了 \(typeIds.count) 个物品的订单数据")
-            } catch {
-                Logger.error("批量加载建筑订单失败: \(error)")
-            }
-        } else {
-            // 选择了星域，使用原有的并发API加载
-            // 计算并发数
-            let concurrency = max(1, min(10, items.count))
-            Logger.info("强制刷新: \(forceRefresh)")
-            // 创建任务组
-            await withTaskGroup(of: (Int, [MarketOrder])?.self) { group in
-                var pendingItems = items
-
-                // 初始添加并发数量的任务
-                for _ in 0 ..< concurrency {
-                    if !pendingItems.isEmpty {
-                        let item = pendingItems.removeFirst()
-                        group.addTask {
-                            do {
-                                let orders = try await MarketOrdersAPI.shared.fetchMarketOrders(
-                                    typeID: item.id,
-                                    regionID: currentRegionID,
-                                    forceRefresh: forceRefresh
-                                )
-                                return (item.id, orders)
-                            } catch {
-                                Logger.error("加载市场订单失败: \(error)")
-                                return nil
-                            }
-                        }
-                    }
+        // 使用通用工具类加载订单（自动判断建筑/星域）
+        let typeIds = items.map { $0.id }
+        let orders = await MarketOrdersUtil.loadOrders(
+            typeIds: typeIds,
+            regionID: currentRegionID,
+            forceRefresh: forceRefresh,
+            progressCallback: { progress in
+                Task { @MainActor in
+                    structureOrdersProgress = progress
                 }
-
-                // 处理结果并添加新任务
-                while let result = await group.next() {
-                    if let (typeID, orders) = result {
-                        marketOrders[typeID] = orders
-                    }
-
-                    // 如果还有待处理的物品，添加新任务
-                    if !pendingItems.isEmpty {
-                        let item = pendingItems.removeFirst()
-                        group.addTask {
-                            do {
-                                let orders = try await MarketOrdersAPI.shared.fetchMarketOrders(
-                                    typeID: item.id,
-                                    regionID: currentRegionID,
-                                    forceRefresh: forceRefresh
-                                )
-                                return (item.id, orders)
-                            } catch {
-                                Logger.error("加载市场订单失败: \(error)")
-                                return nil
-                            }
-                        }
-                    }
+            },
+            itemCallback: { typeId, orders in
+                // 每完成一个物品的订单加载，立即更新UI显示该物品的价格
+                Task { @MainActor in
+                    marketOrders[typeId] = orders
                 }
             }
-        }
+        )
+
+        // 最后确保所有数据都已更新（防止回调遗漏）
+        marketOrders = orders
     }
 
     // 获取列表的总价和库存状态
@@ -1408,36 +1348,47 @@ struct MarketQuickbarDetailView: View {
                     Text(item.name)
                         .lineLimit(1)
 
-                    let priceInfo = getListPrice(for: item)
-                    if let price = priceInfo.price {
-                        Text(
-                            NSLocalizedString("Main_Market_Avg_Price", comment: "")
-                                + FormatUtil.format(price)
-                                + " ISK"
-                        )
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    // 细粒度加载状态：已加载的显示价格，未加载的显示加载指示器
+                    if isLoadingOrders && marketOrders[item.id] == nil {
                         HStack(spacing: 4) {
+                            ProgressView()
+                                .scaleEffect(0.6)
+                            Text(NSLocalizedString("Main_Database_Loading", comment: ""))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    } else {
+                        let priceInfo = getListPrice(for: item)
+                        if let price = priceInfo.price {
                             Text(
-                                NSLocalizedString("Main_Market_Total_Price", comment: "")
-                                    + FormatUtil.format(
-                                        price * Double(itemQuantities[item.id] ?? 1))
+                                NSLocalizedString("Main_Market_Avg_Price", comment: "")
+                                    + FormatUtil.format(price)
                                     + " ISK"
                             )
                             .font(.caption)
                             .foregroundColor(.secondary)
-                            if priceInfo.insufficientStock {
+                            HStack(spacing: 4) {
                                 Text(
-                                    NSLocalizedString("Main_Market_Insufficient_Stock", comment: "")
+                                    NSLocalizedString("Main_Market_Total_Price", comment: "")
+                                        + FormatUtil.format(
+                                            price * Double(itemQuantities[item.id] ?? 1))
+                                        + " ISK"
                                 )
                                 .font(.caption)
-                                .foregroundColor(.red)
+                                .foregroundColor(.secondary)
+                                if priceInfo.insufficientStock {
+                                    Text(
+                                        NSLocalizedString("Main_Market_Insufficient_Stock", comment: "")
+                                    )
+                                    .font(.caption)
+                                    .foregroundColor(.red)
+                                }
                             }
+                        } else {
+                            Text(NSLocalizedString("Main_Market_No_Orders", comment: ""))
+                                .font(.caption)
+                                .foregroundColor(.red)
                         }
-                    } else {
-                        Text(NSLocalizedString("Main_Market_No_Orders", comment: ""))
-                            .font(.caption)
-                            .foregroundColor(.red)
                     }
                 }
 
@@ -1490,37 +1441,48 @@ struct MarketQuickbarDetailView: View {
                         Text(item.name)
                             .lineLimit(1)
 
-                        let priceInfo = getListPrice(for: item)
-                        if let price = priceInfo.price {
-                            Text(
-                                NSLocalizedString("Main_Market_Avg_Price", comment: "")
-                                    + FormatUtil.format(price)
-                                    + " ISK"
-                            )
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            Text(
-                                NSLocalizedString("Main_Market_Total_Price", comment: "")
-                                    + FormatUtil.format(
-                                        price
-                                            * Double(
-                                                quickbar.items.first(where: { $0.typeID == item.id }
-                                                )?.quantity ?? 1))
-                                    + " ISK"
-                            )
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            if priceInfo.insufficientStock {
-                                Text(
-                                    NSLocalizedString("Main_Market_Insufficient_Stock", comment: "")
-                                )
-                                .font(.caption)
-                                .foregroundColor(.red)
+                        // 细粒度加载状态：已加载的显示价格，未加载的显示加载指示器
+                        if isLoadingOrders && marketOrders[item.id] == nil {
+                            HStack(spacing: 4) {
+                                ProgressView()
+                                    .scaleEffect(0.6)
+                                Text(NSLocalizedString("Main_Database_Loading", comment: ""))
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
                             }
                         } else {
-                            Text(NSLocalizedString("Main_Market_No_Orders", comment: ""))
+                            let priceInfo = getListPrice(for: item)
+                            if let price = priceInfo.price {
+                                Text(
+                                    NSLocalizedString("Main_Market_Avg_Price", comment: "")
+                                        + FormatUtil.format(price)
+                                        + " ISK"
+                                )
                                 .font(.caption)
-                                .foregroundColor(.red)
+                                .foregroundColor(.secondary)
+                                Text(
+                                    NSLocalizedString("Main_Market_Total_Price", comment: "")
+                                        + FormatUtil.format(
+                                            price
+                                                * Double(
+                                                    quickbar.items.first(where: { $0.typeID == item.id }
+                                                    )?.quantity ?? 1))
+                                        + " ISK"
+                                )
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                if priceInfo.insufficientStock {
+                                    Text(
+                                        NSLocalizedString("Main_Market_Insufficient_Stock", comment: "")
+                                    )
+                                    .font(.caption)
+                                    .foregroundColor(.red)
+                                }
+                            } else {
+                                Text(NSLocalizedString("Main_Market_No_Orders", comment: ""))
+                                    .font(.caption)
+                                    .foregroundColor(.red)
+                            }
                         }
                     }
 
@@ -2018,9 +1980,10 @@ class MarketClipboardParser {
         var itemsToImport: [(name: String, quantity: Int64)] = []
         var failedLines: [String] = []
 
-        // 正则表达式匹配两种格式：
+        // 正则表达式匹配三种格式：
         // 格式1: 数量 + 空白字符 + 物品名称
         // 格式2: 物品名称 + 空白字符 + 数量 + 可选的其他内容
+        // 格式3: 物品名称 + \t + 其他信息 + \t + 数量
         let format1Regex = try! NSRegularExpression(pattern: #"^([\d,]+)\s+(.+)$"#, options: [])
         let format2Regex = try! NSRegularExpression(
             pattern: #"^(.+?)\s+([\d,]+)(\s+|$)"#, options: []
@@ -2045,37 +2008,65 @@ class MarketClipboardParser {
             var quantityStr: String?
             var itemName: String?
 
-            // 尝试格式1: 数量 + 空白字符 + 物品名称
-            if let match = format1Regex.firstMatch(in: trimmedLine, options: [], range: range) {
-                if let quantityRange = Range(match.range(at: 1), in: trimmedLine),
-                   let nameRange = Range(match.range(at: 2), in: trimmedLine)
-                {
-                    quantityStr = String(trimmedLine[quantityRange])
-                    itemName = String(trimmedLine[nameRange]).trimmingCharacters(
-                        in: .whitespacesAndNewlines)
+            // 首先尝试格式3: 通过\t分割的格式 (物品名称\t其他信息\t数量)
+            if trimmedLine.contains("\t") {
+                let components = trimmedLine.components(separatedBy: "\t")
+                if components.count >= 3 {
+                    let nameComponent = components[0].trimmingCharacters(in: .whitespacesAndNewlines)
+                    let quantityComponent = components[2].trimmingCharacters(in: .whitespacesAndNewlines)
+
+                    // 验证数量是否为数字
+                    let cleanQuantityStr = quantityComponent.replacingOccurrences(of: ",", with: "")
+                    if Int64(cleanQuantityStr) != nil {
+                        itemName = nameComponent
+                        quantityStr = quantityComponent
+                        Logger.debug("匹配格式3 - 物品名: '\(itemName ?? "")', 数量: \(quantityStr ?? "")")
+                    }
                 }
             }
-            // 尝试格式2: 物品名称 + 空白字符 + 数量 + 可选的其他内容
-            else if let match = format2Regex.firstMatch(in: trimmedLine, options: [], range: range) {
-                if let nameRange = Range(match.range(at: 1), in: trimmedLine),
-                   let quantityRange = Range(match.range(at: 2), in: trimmedLine)
-                {
-                    itemName = String(trimmedLine[nameRange]).trimmingCharacters(
-                        in: .whitespacesAndNewlines)
-                    quantityStr = String(trimmedLine[quantityRange])
+
+            // 如果格式3没有匹配，尝试格式1: 数量 + 空白字符 + 物品名称
+            if itemName == nil || quantityStr == nil {
+                if let match = format1Regex.firstMatch(in: trimmedLine, options: [], range: range) {
+                    if let quantityRange = Range(match.range(at: 1), in: trimmedLine),
+                       let nameRange = Range(match.range(at: 2), in: trimmedLine)
+                    {
+                        quantityStr = String(trimmedLine[quantityRange])
+                        itemName = String(trimmedLine[nameRange]).trimmingCharacters(
+                            in: .whitespacesAndNewlines)
+                        Logger.debug("匹配格式1 - 物品名: '\(itemName ?? "")', 数量: \(quantityStr ?? "")")
+                    }
+                }
+            }
+
+            // 如果格式1也没有匹配，尝试格式2: 物品名称 + 空白字符 + 数量 + 可选的其他内容
+            if itemName == nil || quantityStr == nil {
+                if let match = format2Regex.firstMatch(in: trimmedLine, options: [], range: range) {
+                    if let nameRange = Range(match.range(at: 1), in: trimmedLine),
+                       let quantityRange = Range(match.range(at: 2), in: trimmedLine)
+                    {
+                        itemName = String(trimmedLine[nameRange]).trimmingCharacters(
+                            in: .whitespacesAndNewlines)
+                        quantityStr = String(trimmedLine[quantityRange])
+                        Logger.debug("匹配格式2 - 物品名: '\(itemName ?? "")', 数量: \(quantityStr ?? "")")
+                    }
                 }
             }
 
             if let quantityStr = quantityStr, let itemName = itemName {
                 Logger.debug("解析成功 - 物品名: '\(itemName)', 数量: \(quantityStr)")
 
+                // 处理物品名末尾的*符号
+                let cleanItemName = itemName.hasSuffix("*") ? String(itemName.dropLast()) : itemName
+                Logger.debug("清理后的物品名: '\(cleanItemName)'")
+
                 // 移除数量字符串中的逗号分隔符
                 let cleanQuantityStr = quantityStr.replacingOccurrences(of: ",", with: "")
 
                 if let quantity = Int64(cleanQuantityStr), quantity > 0 {
                     let validQuantity = min(quantity, 999_999_999)
-                    itemsToImport.append((name: itemName, quantity: validQuantity))
-                    Logger.debug("添加到导入列表: \(itemName) x \(validQuantity)")
+                    itemsToImport.append((name: cleanItemName, quantity: validQuantity))
+                    Logger.debug("添加到导入列表: \(cleanItemName) x \(validQuantity)")
                 } else {
                     Logger.warning("数量解析失败: \(quantityStr) -> \(cleanQuantityStr)")
                     failedLines.append(trimmedLine)
@@ -2104,16 +2095,30 @@ class MarketClipboardParser {
         var successCount = 0
         var failedItems: [String] = []
         var updatedItems: [QuickbarItem] = []
+        var typeIDQuantityMap: [Int: Int64] = [:] // 用于合并相同typeID的数量
 
         for item in itemsToImport {
             if let typeID = typeIDMap[item.name] {
-                // 添加到更新列表
-                updatedItems.append(QuickbarItem(typeID: typeID, quantity: item.quantity))
+                // 合并相同typeID的数量
+                if let existingQuantity = typeIDQuantityMap[typeID] {
+                    let newQuantity = existingQuantity + item.quantity
+                    let validQuantity = min(newQuantity, 999_999_999) // 限制最大数量
+                    typeIDQuantityMap[typeID] = validQuantity
+                    Logger.debug("合并物品 \(item.name) (typeID: \(typeID)): \(existingQuantity) + \(item.quantity) = \(validQuantity)")
+                } else {
+                    typeIDQuantityMap[typeID] = item.quantity
+                    Logger.debug("添加物品 \(item.name) (typeID: \(typeID)): \(item.quantity)")
+                }
                 successCount += 1
             } else {
                 Logger.warning("数据库中未找到物品: \(item.name)")
                 failedItems.append(item.name)
             }
+        }
+
+        // 将合并后的结果转换为QuickbarItem数组
+        for (typeID, quantity) in typeIDQuantityMap {
+            updatedItems.append(QuickbarItem(typeID: typeID, quantity: quantity))
         }
 
         Logger.info("导入完成 - 成功: \(successCount) 个, 失败: \(failedItems.count) 个")

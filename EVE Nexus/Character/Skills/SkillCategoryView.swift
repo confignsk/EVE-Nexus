@@ -33,17 +33,6 @@ struct SkillGroup: Identifiable {
     }
 }
 
-// 技能信息模型（扩展现有的CharacterSkill）
-struct SkillInfo {
-    let id: Int
-    let name: String
-    let zh_name: String
-    let en_name: String
-    let groupID: Int
-    let skillpoints_in_skill: Int
-    let trained_skill_level: Int // -1 表示未吸收，0-5 表示已吸收的等级
-}
-
 // 技能目录视图模型
 @MainActor
 class SkillCategoryViewModel: ObservableObject {
@@ -459,34 +448,6 @@ struct SkillCategoryView: View {
     @StateObject private var viewModel: SkillCategoryViewModel
     @State private var isFirstAppear = true // 添加一个状态来跟踪是否是首次出现
 
-    // 技能组图标映射
-    private let skillGroupIcons: [Int: String] = [
-        255: "1_42", // 射击学
-        256: "1_48", // 导弹
-        257: "1_26", // 飞船操控学
-        258: "1_36", // 舰队支援
-        266: "1_12", // 军团管理
-        268: "1_25", // 生产
-        269: "1_37", // 改装件
-        270: "1_49", // 科学
-        272: "1_24", // 电子系统
-        273: "1_18", // 无人机
-        274: "1_50", // 贸易学
-        275: "1_05", // 导航学
-        278: "1_20", // 社会学
-        1209: "1_14", // 护盾
-        1210: "1_03", // 装甲
-        1213: "1_44", // 锁定系统
-        1216: "1_30", // 工程学
-        1217: "1_43", // 扫描
-        1218: "1_31", // 资源处理
-        1220: "1_13", // 神经增强
-        1240: "1_38", // 子系统
-        1241: "1_19", // 行星管理
-        1545: "1_32", // 建筑管理
-        4734: "1_07", // 排序
-    ]
-
     init(characterId: Int, databaseManager: DatabaseManager) {
         self.characterId = characterId
         self.databaseManager = databaseManager
@@ -535,13 +496,11 @@ struct SkillCategoryView: View {
                         } label: {
                             HStack(spacing: 12) {
                                 // 显示技能组图标
-                                if let iconName = skillGroupIcons[group.id] {
-                                    Image(iconName)
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: 36, height: 32)
-                                        .cornerRadius(8)
-                                }
+                                Image(SkillGroupIconManager.shared.getIconName(for: group.id))
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 36, height: 32)
+                                    .cornerRadius(8)
 
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(group.name)

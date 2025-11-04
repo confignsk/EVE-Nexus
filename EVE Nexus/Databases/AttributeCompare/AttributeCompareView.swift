@@ -183,6 +183,15 @@ struct AttributeCompareView: View {
                     } label: {
                         compareRowView(compare)
                     }
+                    .contextMenu {
+                        Button(role: .destructive) {
+                            if let index = compares.firstIndex(where: { $0.id == compare.id }) {
+                                deleteCompare(at: IndexSet(integer: index))
+                            }
+                        } label: {
+                            Label(NSLocalizedString("Misc_Delete", comment: ""), systemImage: "trash")
+                        }
+                    }
                 }
                 .onDelete(perform: deleteCompare)
                 .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
@@ -311,7 +320,7 @@ struct AttributeCompareDetailView: View {
     @AppStorage("showOnlyDifferences") private var showOnlyDifferences: Bool = false
 
     // 允许的顶级市场分组ID
-    private static let allowedTopMarketGroupIDs: Set<Int> = [4, 9, 157, 11, 2202, 2203, 24, 955]
+    private static let allowedTopMarketGroupIDs: Set<Int> = [4, 9, 157, 11, 477, 2202, 2203, 24, 955]
 
     init(databaseManager: DatabaseManager, compare: AttributeCompare) {
         self.databaseManager = databaseManager

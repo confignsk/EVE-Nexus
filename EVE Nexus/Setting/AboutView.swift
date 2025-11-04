@@ -35,9 +35,9 @@ struct AboutView: View {
             ),
             AboutItem(
                 title: NSLocalizedString("Main_About_Report_Bug", comment: ""),
-                value: "jzx1040798357@icloud.com",
+                value: "tritanium_support@icloud.com",
                 icon: "envelope.fill",
-                url: URL(string: "mailto:jzx1040798357@icloud.com")
+                url: URL(string: "mailto:tritanium_support@icloud.com")
             ),
             AboutItem(
                 title: NSLocalizedString("Main_About_copyright_Title", comment: ""),
@@ -47,6 +47,12 @@ struct AboutView: View {
                     string:
                     "https://raw.githubusercontent.com/EstamelGG/EVE-Nexus/refs/heads/main/Copyright.md"
                 )
+            ),
+            AboutItem(
+                title: NSLocalizedString("Main_About_Acknowledgement", comment: ""),
+                value: NSLocalizedString("Main_About_Acknowledgement_Text", comment: ""),
+                icon: "person.fill",
+                characterId: 2_119_399_734
             ),
         ]
     }
