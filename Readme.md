@@ -2,6 +2,11 @@
 
 [中文](Readme.md) | [English](Readme.en.md)
 
+# SDE 更新
+
+1. 如果 Tritanium 某版本开始不再兼容旧版本 app 的 sde，则需要修改 `EVE Nexus/Info.plist` 中的 `SDEMinimumAppVersion` 为当前 app 版本，以确保此版本 app 不会检查低版本的 sde 更新
+2. 将 Github SDE Release 下载的图标包的 `metadata.json` 覆盖到 `EVE Nexus/utils/icons`
+ 
 # Xcode
 
 使用 Xcode Version 16.2 编译

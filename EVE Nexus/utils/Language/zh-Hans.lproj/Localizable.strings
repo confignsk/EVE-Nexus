@@ -385,6 +385,12 @@
 "Main_Setting_Static_Resource_Net_Renders" = "物品渲染图";
 "Main_Setting_Static_Resource_Incursions" = "入侵事件数据";
 "Main_Setting_Static_Resource_Incursions_num" = "起入侵事件";
+"Incursions_Export_Success" = "成功导出汇总到剪贴板";
+"Incursions_Export_Failed" = "导出失败";
+"Incursions_Export_Failed_Title" = "导出失败";
+"Incursions_Export_Empty" = "没有可导出的入侵数据";
+"Incursions_Export_Title" = "萨沙入侵";
+"Incursions_Export_Constellation_Label" = "星座：";
 "Main_Setting_Static_Resource_Faction_Icons" = "势力图标";
 "Main_Setting_Cache" = "缓存";
 "Main_Setting_Static_Resource_Character_Portraits" = "人物头像";
@@ -765,6 +771,7 @@
 "Mining_Pull_to_Refresh" = "下拉刷新";
 "Mining_Monthly_Summary" = "%@月采矿汇总";
 "Mining_Total_Volume" = "总量";
+"Mining_Unknown_Ore" = "未知矿石：%d";
 
 "Common_info" = "基本信息";
 "Character_Security_Status" = "安全等级";
@@ -908,7 +915,7 @@
 "Main_LP_Available_Items" = "可用物品";
 "Main_LP_Store_Items" = "物品";
 "Main_LP_Unknown_Faction" = "未知势力";
-"LP_Store_Loading_Progress" = "正在加载LP商店数据 (%d/%d)";
+"Main_LP_Militia" = "卫队";
 
 "Main_EVE_Mail_Title" = "EVE 邮件";
 "Main_EVE_Mail_All" = "全部邮件";
@@ -1186,6 +1193,7 @@
 "Executor" = "执行军团";
 "Unknown" = "未知";
 "View" = "查看";
+"View Character" = "查看人物";
 "View Corporation" = "查看军团";
 "View Alliance" = "查看联盟";
 "View CEO" = "查看CEO";
@@ -2637,9 +2645,9 @@
 "SDE_Log_SHA_Verified" = "SHA256验证通过";
 "SDE_Log_Extracting_Icons" = "解压 icons.zip...";
 "SDE_Log_Extract_Icons_Success" = "icons.zip 解压成功！";
-"SDE_Log_Downloading_Metadata" = "下载 metadata.json...";
-"SDE_Log_Metadata_Saved" = "metadata.json 已保存到图标目录";
-"SDE_Log_Metadata_Failed" = "保存 metadata.json 失败: %@";
+"SDE_Log_Downloading_Metadata" = "下载 metadata_file.json...";
+"SDE_Log_Metadata_Saved" = "metadata_file.json 已保存到图标目录";
+"SDE_Log_Metadata_Failed" = "保存 metadata_file.json 失败: %@";
 "SDE_Log_Downloading_SDE" = "从CloudKit下载 sde.zip...";
 "SDE_Log_Preparing_SDE" = "准备 sde.zip...";
 "SDE_Log_Verifying_SDE_SHA" = "验证 sde.zip SHA256...";

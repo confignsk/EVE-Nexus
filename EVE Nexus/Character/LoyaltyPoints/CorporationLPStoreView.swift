@@ -300,9 +300,6 @@ struct CorporationLPStoreView: View {
         //     placement: .navigationBarDrawer(displayMode: .always),
         //     prompt: NSLocalizedString("Main_Search_Placeholder", comment: "")
         // )
-        .refreshable {
-            await loadOffers(forceRefresh: true)
-        }
         .task {
             if !hasLoadedData {
                 await loadOffers()
@@ -310,8 +307,8 @@ struct CorporationLPStoreView: View {
         }
     }
 
-    private func loadOffers(forceRefresh: Bool = false) async {
-        if hasLoadedData, !forceRefresh {
+    private func loadOffers() async {
+        if hasLoadedData {
             return
         }
 
@@ -321,8 +318,7 @@ struct CorporationLPStoreView: View {
         do {
             // 1. 获取所有商品
             offers = try await LPStoreAPI.shared.fetchCorporationLPStoreOffers(
-                corporationId: corporationId,
-                forceRefresh: forceRefresh
+                corporationId: corporationId
             )
 
             // 2. 收集所有需要查询的物品ID

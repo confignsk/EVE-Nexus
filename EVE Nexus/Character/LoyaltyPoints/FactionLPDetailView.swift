@@ -24,7 +24,16 @@ struct LPOfferSupplier {
     let factionName: String?
     let corporationId: Int
     let corporationName: String
+    let corporationEnName: String
     let corporationIcon: String
+    let militiaFaction: Int?
+
+    var isMilitia: Bool {
+        if let militia = militiaFaction, militia > 0 {
+            return true
+        }
+        return false
+    }
 }
 
 struct Faction: Identifiable {
@@ -60,6 +69,7 @@ struct Corporation: Identifiable {
     let zhName: String
     let factionId: Int
     let iconFileName: String
+    let militiaFaction: Int?
 
     init?(from row: [String: Any]) {
         guard let corporationId = row["corporation_id"] as? Int,
@@ -79,6 +89,14 @@ struct Corporation: Identifiable {
         iconFileName =
             (row["icon_filename"] as? String)?.isEmpty == true
                 ? "corporations_default" : (row["icon_filename"] as? String ?? "corporations_default")
+        militiaFaction = row["militia_faction"] as? Int
+    }
+
+    var isMilitia: Bool {
+        if let militia = militiaFaction, militia > 0 {
+            return true
+        }
+        return false
     }
 }
 
@@ -163,6 +181,37 @@ struct FactionLPDetailView: View {
 
                                 Text(corporation.name)
                                     .padding(.leading, 8)
+                                    .contextMenu {
+                                        Button {
+                                            UIPasteboard.general.string = corporation.name
+                                        } label: {
+                                            Label(
+                                                NSLocalizedString("Misc_Copy_Name", comment: ""),
+                                                systemImage: "doc.on.doc"
+                                            )
+                                        }
+                                        if !corporation.enName.isEmpty && corporation.enName != corporation.name {
+                                            Button {
+                                                UIPasteboard.general.string = corporation.enName
+                                            } label: {
+                                                Label(
+                                                    NSLocalizedString("Misc_Copy_Trans", comment: ""),
+                                                    systemImage: "translate"
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                if corporation.isMilitia {
+                                    Spacer()
+                                    Text(NSLocalizedString("Main_LP_Militia", comment: ""))
+                                        .font(.caption)
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 2)
+                                        .background(Color.purple.opacity(0.8))
+                                        .foregroundColor(.white)
+                                        .cornerRadius(4)
+                                }
                             }
                         }
                     }
@@ -191,7 +240,7 @@ struct FactionLPDetailView: View {
                 if !Task.isCancelled {
                     await MainActor.run {
                         debouncedSearchText = newValue
-                        if newValue.count >= 2 {
+                        if !newValue.isEmpty {
                             searchLPItems(searchText: newValue, factionId: faction.id)
                         } else {
                             lpSearchResults = []
@@ -210,15 +259,25 @@ struct FactionLPDetailView: View {
 
         Task {
             do {
-                // 1. 从CharacterDatabaseManager搜索该势力下的物品
+                // 1. 从 SDE 数据库搜索该势力下的物品
                 let itemSearchQuery = """
-                    SELECT type_id, offer_id, faction_id, corporation_id 
-                    FROM LPStoreItemIndex 
-                    WHERE faction_id = \(factionId) 
-                    AND (type_name_zh LIKE '%\(searchText)%' OR type_name_en LIKE '%\(searchText)%')
+                    SELECT DISTINCT
+                        loo.type_id,
+                        lo.offer_id,
+                        nc.faction_id,
+                        lo.corporation_id,
+                        t.name,
+                        t.zh_name,
+                        t.en_name
+                    FROM loyalty_offers lo
+                    JOIN loyalty_offer_outputs loo ON lo.offer_id = loo.offer_id
+                    LEFT JOIN npcCorporations nc ON lo.corporation_id = nc.corporation_id
+                    LEFT JOIN types t ON loo.type_id = t.type_id
+                    WHERE nc.faction_id = \(factionId)
+                    AND (t.zh_name LIKE '%\(searchText)%' OR t.en_name LIKE '%\(searchText)%')
                 """
 
-                let itemResult = CharacterDatabaseManager.shared.executeQuery(itemSearchQuery)
+                let itemResult = DatabaseManager.shared.executeQuery(itemSearchQuery)
                 guard case let .success(itemRows) = itemResult else {
                     await MainActor.run {
                         isSearchingItems = false
@@ -234,19 +293,14 @@ struct FactionLPDetailView: View {
 
                 for row in itemRows {
                     guard
-                        let typeId = (row["type_id"] as? Int64).map(Int.init) ?? row["type_id"]
-                        as? Int,
-                        let offerId = (row["offer_id"] as? Int64).map(Int.init) ?? row["offer_id"]
-                        as? Int,
-                        let corporationId = (row["corporation_id"] as? Int64).map(Int.init) ?? row[
-                            "corporation_id"
-                        ] as? Int
+                        let typeId = row["type_id"] as? Int,
+                        let offerId = row["offer_id"] as? Int,
+                        let corporationId = row["corporation_id"] as? Int
                     else {
                         continue
                     }
 
-                    let searchFactionId =
-                        (row["faction_id"] as? Int64).map(Int.init) ?? row["faction_id"] as? Int
+                    let searchFactionId = row["faction_id"] as? Int
 
                     typeIds.insert(typeId)
                     searchOffers.append(
@@ -528,6 +582,37 @@ struct LPItemSuppliersView: View {
                                     )
                                     Text(supplier.corporationName)
                                         .padding(.leading, 8)
+                                        .contextMenu {
+                                            Button {
+                                                UIPasteboard.general.string = supplier.corporationName
+                                            } label: {
+                                                Label(
+                                                    NSLocalizedString("Misc_Copy_Name", comment: ""),
+                                                    systemImage: "doc.on.doc"
+                                                )
+                                            }
+                                            if !supplier.corporationEnName.isEmpty && supplier.corporationEnName != supplier.corporationName {
+                                                Button {
+                                                    UIPasteboard.general.string = supplier.corporationEnName
+                                                } label: {
+                                                    Label(
+                                                        NSLocalizedString("Misc_Copy_Trans", comment: ""),
+                                                        systemImage: "translate"
+                                                    )
+                                                }
+                                            }
+                                        }
+
+                                    if supplier.isMilitia {
+                                        Spacer()
+                                        Text(NSLocalizedString("Main_LP_Militia", comment: ""))
+                                            .font(.caption)
+                                            .padding(.horizontal, 6)
+                                            .padding(.vertical, 2)
+                                            .background(Color.purple.opacity(0.8))
+                                            .foregroundColor(.white)
+                                            .cornerRadius(4)
+                                    }
                                 }
                                 .padding(.vertical, 2)
                             }
@@ -551,12 +636,16 @@ struct LPItemSuppliersView: View {
             do {
                 // 查询提供此物品的所有军团
                 let itemSearchQuery = """
-                    SELECT DISTINCT corporation_id, faction_id 
-                    FROM LPStoreItemIndex 
-                    WHERE type_id = \(offer.typeId)
+                    SELECT DISTINCT 
+                        lo.corporation_id,
+                        nc.faction_id
+                    FROM loyalty_offers lo
+                    JOIN loyalty_offer_outputs loo ON lo.offer_id = loo.offer_id
+                    LEFT JOIN npcCorporations nc ON lo.corporation_id = nc.corporation_id
+                    WHERE loo.type_id = \(offer.typeId)
                 """
 
-                let result = CharacterDatabaseManager.shared.executeQuery(itemSearchQuery)
+                let result = DatabaseManager.shared.executeQuery(itemSearchQuery)
                 guard case let .success(rows) = result else {
                     await MainActor.run {
                         error = NSError(
@@ -573,16 +662,11 @@ struct LPItemSuppliersView: View {
                 var corporationFactionMap: [Int: Int?] = [:]
 
                 for row in rows {
-                    guard
-                        let corporationId = (row["corporation_id"] as? Int64).map(Int.init) ?? row[
-                            "corporation_id"
-                        ] as? Int
-                    else {
+                    guard let corporationId = row["corporation_id"] as? Int else {
                         continue
                     }
 
-                    let factionId =
-                        (row["faction_id"] as? Int64).map(Int.init) ?? row["faction_id"] as? Int
+                    let factionId = row["faction_id"] as? Int
 
                     corporationIds.insert(corporationId)
                     if let factionId = factionId {
@@ -592,12 +676,12 @@ struct LPItemSuppliersView: View {
                 }
 
                 // 查询军团和势力信息
-                var corporationInfos: [Int: (name: String, icon: String)] = [:]
+                var corporationInfos: [Int: (name: String, enName: String, icon: String, militiaFaction: Int?)] = [:]
                 var factionInfos: [Int: String] = [:]
 
                 if !corporationIds.isEmpty {
                     let corpQuery = """
-                        SELECT corporation_id, name, icon_filename 
+                        SELECT corporation_id, name, en_name, icon_filename, militia_faction 
                         FROM npcCorporations 
                         WHERE corporation_id IN (\(corporationIds.sorted().map { String($0) }.joined(separator: ",")))
                     """
@@ -605,7 +689,8 @@ struct LPItemSuppliersView: View {
                     if case let .success(corpRows) = DatabaseManager.shared.executeQuery(corpQuery) {
                         for row in corpRows {
                             guard let corpId = row["corporation_id"] as? Int,
-                                  let name = row["name"] as? String
+                                  let name = row["name"] as? String,
+                                  let enName = row["en_name"] as? String
                             else {
                                 continue
                             }
@@ -615,7 +700,9 @@ struct LPItemSuppliersView: View {
                                     ? "corporations_default"
                                     : (row["icon_filename"] as? String ?? "corporations_default")
 
-                            corporationInfos[corpId] = (name, iconFileName)
+                            let militiaFaction = row["militia_faction"] as? Int
+
+                            corporationInfos[corpId] = (name, enName, iconFileName, militiaFaction)
                         }
                     }
                 }
@@ -654,7 +741,9 @@ struct LPItemSuppliersView: View {
                         factionName: factionName,
                         corporationId: corpId,
                         corporationName: corpInfo.name,
-                        corporationIcon: corpInfo.icon
+                        corporationEnName: corpInfo.enName,
+                        corporationIcon: corpInfo.icon,
+                        militiaFaction: corpInfo.militiaFaction
                     )
                 }.sorted {
                     $0.corporationName.localizedStandardCompare($1.corporationName)
@@ -722,23 +811,19 @@ struct SpecificItemOfferView: View {
         }
         .navigationTitle(itemInfo.name)
         .navigationBarTitleDisplayMode(.large)
-        .refreshable {
-            await loadOffers(forceRefresh: true)
-        }
         .task {
             await loadOffers()
         }
     }
 
-    private func loadOffers(forceRefresh: Bool = false) async {
+    private func loadOffers() async {
         isLoading = true
         error = nil
 
         do {
             // 1. 获取军团的所有offers
             let allOffers = try await LPStoreAPI.shared.fetchCorporationLPStoreOffers(
-                corporationId: corporationId,
-                forceRefresh: forceRefresh
+                corporationId: corporationId
             )
 
             // 2. 筛选出目标物品的offers

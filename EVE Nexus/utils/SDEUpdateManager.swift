@@ -199,7 +199,7 @@ class SDEUpdateManager: ObservableObject {
         try? FileManager.default.removeItem(at: localIconsURL)
         Logger.info("已删除 CloudKit 缓存中的 icons.zip")
 
-        // 下载并保存 metadata.json 到 icons 目录
+        // 下载并保存 metadata.json 到 icons 目录（从 CloudKit 的 metadata_file 资产字段下载）
         await addLog(NSLocalizedString("SDE_Log_Downloading_Metadata", comment: ""), type: .info)
         do {
             let metadataURL = try await SDECloudKitManager.shared.fetchMetadataFileForSaving(recordID: recordID)
@@ -207,7 +207,7 @@ class SDEUpdateManager: ObservableObject {
 
             // [+] 保存完成后删除 CloudKit 缓存中的 metadata
             try? FileManager.default.removeItem(at: metadataURL)
-            Logger.info("已删除 CloudKit 缓存中的 metadata.json")
+            Logger.info("已删除 CloudKit 缓存中的 metadata 临时文件")
 
             await addLog(NSLocalizedString("SDE_Log_Metadata_Saved", comment: ""), type: .success)
         } catch {

@@ -384,6 +384,12 @@
 "Main_Setting_Static_Resource_Incursions" = "Incursions Data";
 "Main_Setting_Static_Resource_Faction_Icons" = "Faction Icons";
 "Main_Setting_Static_Resource_Incursions_num" = "incursion(s) found";
+"Incursions_Export_Success" = "Successfully exported summary to clipboard";
+"Incursions_Export_Failed" = "Export failed";
+"Incursions_Export_Failed_Title" = "Export Failed";
+"Incursions_Export_Empty" = "No incursion data available for export";
+"Incursions_Export_Title" = "Sansha's Nation Incursion";
+"Incursions_Export_Constellation_Label" = "Constellation: ";
 
 // Time Display
 "Time_Days_Ago" = "%d days ago";
@@ -767,6 +773,7 @@
 "Mining_Pull_to_Refresh" = "Pull to Refresh";
 "Mining_Monthly_Summary" = "Mining Summary for %@";
 "Mining_Total_Volume" = "Total Volume";
+"Mining_Unknown_Ore" = "Unknown Ore: %d";
 
 "Common_info" = "Basic info";
 "Timer" = "Timer";
@@ -895,7 +902,7 @@
 "Main_LP_Available_Items" = "Available Items";
 "Main_LP_Store_Items" = "Items";
 "Main_LP_Unknown_Faction" = "Unknown Faction";
-"LP_Store_Loading_Progress" = "Loading LP Store (%d/%d)";
+"Main_LP_Militia" = "FW";
 
 "Main_EVE_Mail_Title" = "EVE Mail";
 "Main_EVE_Mail_All" = "All Mails";
@@ -1166,6 +1173,7 @@
 "Unknown" = "Unknown";
 "Executor" = "Executor";
 "View" = "View";
+"View Character" = "View Character";
 "View Corporation" = "View Corporation";
 "View Alliance" = "View Alliance";
 "View CEO" = "View CEO";
@@ -2599,9 +2607,9 @@
 "SDE_Log_SHA_Verified" = "SHA256 verified";
 "SDE_Log_Extracting_Icons" = "Extracting icons.zip...";
 "SDE_Log_Extract_Icons_Success" = "icons.zip extracted successfully!";
-"SDE_Log_Downloading_Metadata" = "Downloading metadata.json...";
-"SDE_Log_Metadata_Saved" = "metadata.json saved to icons directory";
-"SDE_Log_Metadata_Failed" = "Failed to save metadata.json: %@";
+"SDE_Log_Downloading_Metadata" = "Downloading metadata_file.json...";
+"SDE_Log_Metadata_Saved" = "metadata_file.json saved to icons directory";
+"SDE_Log_Metadata_Failed" = "Failed to save metadata_file.json: %@";
 "SDE_Log_Downloading_SDE" = "Downloading sde.zip from CloudKit...";
 "SDE_Log_Preparing_SDE" = "Preparing sde.zip...";
 "SDE_Log_Verifying_SDE_SHA" = "Verifying sde.zip SHA256...";

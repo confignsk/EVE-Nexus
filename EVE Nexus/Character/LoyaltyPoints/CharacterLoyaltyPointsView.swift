@@ -91,7 +91,39 @@ struct CharacterLoyaltyPointsView: View {
                                     )
 
                                     VStack(alignment: .leading) {
-                                        Text(loyalty.corporationName)
+                                        HStack {
+                                            Text(loyalty.corporationName)
+                                                .contextMenu {
+                                                    Button {
+                                                        UIPasteboard.general.string = loyalty.corporationName
+                                                    } label: {
+                                                        Label(
+                                                            NSLocalizedString("Misc_Copy_Name", comment: ""),
+                                                            systemImage: "doc.on.doc"
+                                                        )
+                                                    }
+                                                    if !loyalty.enName.isEmpty && loyalty.enName != loyalty.corporationName {
+                                                        Button {
+                                                            UIPasteboard.general.string = loyalty.enName
+                                                        } label: {
+                                                            Label(
+                                                                NSLocalizedString("Misc_Copy_Trans", comment: ""),
+                                                                systemImage: "translate"
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            if loyalty.isMilitia {
+                                                Spacer()
+                                                Text(NSLocalizedString("Main_LP_Militia", comment: ""))
+                                                    .font(.caption)
+                                                    .padding(.horizontal, 6)
+                                                    .padding(.vertical, 2)
+                                                    .background(Color.purple.opacity(0.8))
+                                                    .foregroundColor(.white)
+                                                    .cornerRadius(4)
+                                            }
+                                        }
                                         Text("\(loyalty.loyaltyPoints) LP")
                                             .font(.caption)
                                             .foregroundColor(.secondary)

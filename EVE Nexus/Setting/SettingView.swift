@@ -1,5 +1,4 @@
 import CommonCrypto
-import Kingfisher
 import SwiftUI
 import UIKit
 
@@ -81,6 +80,7 @@ class CacheManager {
         "IncursionsCache", // 萨沙入侵缓存
         "CharWallet", // 个人钱包
         "CorpWallet", // 军团钱包
+        "image_cache", // 图片缓存（ImageCacheManager）
     ]
 
     // 获取缓存目录列表
@@ -156,13 +156,11 @@ class CacheManager {
         Logger.info("目录缓存清理完成，共删除 \(totalFilesRemoved) 个文件")
     }
 
-    // 清理头像加载器缓存
-    private func clearPortraitLoaderCaches() {
-        // 清理 Kingfisher 的内存缓存和磁盘缓存
-        KingfisherManager.shared.cache.clearMemoryCache()
-        KingfisherManager.shared.cache.clearDiskCache()
-
-        Logger.info("头像加载器缓存清理完成")
+    // 清理图片缓存
+    private func clearImageCaches() async {
+        // 清理自定义图片缓存管理器
+        await ImageCacheManager.shared.clearAllCache()
+        Logger.info("图片缓存清理完成")
     }
 
     // 清理所有缓存
@@ -214,10 +212,8 @@ class CacheManager {
         // 8. 清理建筑物缓存
         await UniverseStructureAPI.shared.clearCache()
 
-        // 9. 清理头像加载器缓存
-        await MainActor.run {
-            clearPortraitLoaderCaches()
-        }
+        // 9. 清理图片缓存
+        await clearImageCaches()
 
         // 10. 清理 Swift URLCache
         await MainActor.run {

@@ -284,4 +284,9 @@ Fixes & Improvements:
 6. Add insurance data for ships in database function. 
 7. Fixed a bug in the "Skill Plans" feature that caused certain queues to be unremovable.
 
+# v1.8.3 Nov 7, 2025
 
+1. Switch LP Store data to local storage; online loading is no longer required.
+2. Highlight the "Militia corp" in the LP Store list.
+3. Design a more native "image downloader" to reduce third-party dependencies.
+4. Fix a bug when update sde.

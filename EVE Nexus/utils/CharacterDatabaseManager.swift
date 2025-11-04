@@ -372,46 +372,6 @@ class CharacterDatabaseManager: ObservableObject, @unchecked Sendable {
             CREATE INDEX IF NOT EXISTS idx_alliance_contracts_date ON alliance_contracts(date_issued);
             CREATE INDEX IF NOT EXISTS idx_alliance_contracts_alliance ON alliance_contracts(alliance_id);
 
-            -- LP商店数据表
-            CREATE TABLE IF NOT EXISTS LPStoreOffers (
-                corporation_id INTEGER NOT NULL,
-                offer_id INTEGER NOT NULL,
-                type_id INTEGER NOT NULL,
-                offers_data TEXT NOT NULL,
-                last_updated INTEGER DEFAULT (strftime('%s', 'now')),
-                PRIMARY KEY (corporation_id, offer_id)
-            );
-            CREATE INDEX IF NOT EXISTS idx_lpstore_offers_last_updated ON LPStoreOffers(last_updated);
-            CREATE INDEX IF NOT EXISTS idx_lpstore_offers_corporation ON LPStoreOffers(corporation_id);
-            CREATE INDEX IF NOT EXISTS idx_lpstore_offers_type ON LPStoreOffers(type_id);
-
-            -- LP商店数据表 v2 (新版本，去掉last_updated字段)
-            CREATE TABLE IF NOT EXISTS LPStoreOffers_v2 (
-                corporation_id INTEGER NOT NULL,
-                offer_id INTEGER NOT NULL,
-                type_id INTEGER NOT NULL,
-                offers_data TEXT NOT NULL,
-                PRIMARY KEY (corporation_id, offer_id)
-            );
-            CREATE INDEX IF NOT EXISTS idx_lpstore_offers_v2_corporation ON LPStoreOffers_v2(corporation_id);
-            CREATE INDEX IF NOT EXISTS idx_lpstore_offers_v2_type ON LPStoreOffers_v2(type_id);
-
-            -- LP商店物品索引表
-            CREATE TABLE IF NOT EXISTS LPStoreItemIndex (
-                type_id INTEGER NOT NULL,
-                type_name_zh TEXT,
-                type_name_en TEXT,
-                offer_id INTEGER NOT NULL,
-                faction_id INTEGER,
-                corporation_id INTEGER NOT NULL,
-                PRIMARY KEY (corporation_id, offer_id, type_id)
-            );
-            CREATE INDEX IF NOT EXISTS idx_lpstore_itemindex_type_id ON LPStoreItemIndex(type_id);
-            CREATE INDEX IF NOT EXISTS idx_lpstore_itemindex_type_name_zh ON LPStoreItemIndex(type_name_zh);
-            CREATE INDEX IF NOT EXISTS idx_lpstore_itemindex_type_name_en ON LPStoreItemIndex(type_name_en);
-            CREATE INDEX IF NOT EXISTS idx_lpstore_itemindex_faction ON LPStoreItemIndex(faction_id);
-            CREATE INDEX IF NOT EXISTS idx_lpstore_itemindex_corporation ON LPStoreItemIndex(corporation_id);
-
             -- 创建索引以提高查询性能
             CREATE INDEX IF NOT EXISTS idx_wallet_journal_character_date ON wallet_journal(character_id, date);
             CREATE INDEX IF NOT EXISTS idx_wallet_transactions_character_date ON wallet_transactions(character_id, date);

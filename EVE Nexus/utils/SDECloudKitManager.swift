@@ -324,7 +324,7 @@ class SDECloudKitManager: ObservableObject {
 
         return try await fetchSingleAsset(
             recordID: recordID,
-            assetFieldName: "metadata",
+            assetFieldName: "metadata_file",
             progressHandler: { _ in
                 // metadata 文件很小，不需要显示进度
             }

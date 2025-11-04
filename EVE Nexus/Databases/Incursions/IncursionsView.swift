@@ -63,6 +63,11 @@ final class IncursionsViewModel: ObservableObject {
     @Published var isLoading = true
     @Published var errorMessage: String?
 
+    // 导出状态
+    @Published var showExportAlert = false
+    @Published var exportSuccess = false
+    @Published var exportMessage = ""
+
     let databaseManager: DatabaseManager
     private var loadingTask: Task<Void, Never>?
     private var lastFetchTime: Date?
@@ -337,6 +342,110 @@ final class IncursionsViewModel: ObservableObject {
             }
             .sorted()
     }
+
+    // 导出入侵信息到剪贴板
+    func exportIncursionsToClipboard() async {
+        guard !preparedIncursions.isEmpty else {
+            Logger.warning("没有可导出的入侵数据")
+            exportSuccess = false
+            exportMessage = NSLocalizedString("Incursions_Export_Empty", comment: "")
+            showExportAlert = true
+            return
+        }
+
+        do {
+            // 收集所有需要获取名称的ID（联盟和派系）
+            var allianceIds: Set<Int> = []
+            var factionIds: Set<Int> = []
+
+            for incursion in preparedIncursions {
+                if let sovereignty = incursion.sovereignty {
+                    if sovereignty.isAlliance {
+                        allianceIds.insert(sovereignty.id)
+                    } else {
+                        factionIds.insert(sovereignty.id)
+                    }
+                }
+            }
+
+            // 批量获取联盟和派系名称
+            var sovereigntyNames: [Int: String] = [:]
+
+            // 获取联盟名称
+            if !allianceIds.isEmpty {
+                do {
+                    let namesMap = try await UniverseAPI.shared.getNamesWithFallback(ids: Array(allianceIds))
+                    for (id, info) in namesMap {
+                        sovereigntyNames[id] = info.name
+                    }
+                } catch {
+                    Logger.error("获取联盟名称失败: \(error)")
+                }
+            }
+
+            // 获取派系名称（从数据库）
+            if !factionIds.isEmpty {
+                let placeholders = String(repeating: "?,", count: factionIds.count).dropLast()
+                let query = "SELECT id, name FROM factions WHERE id IN (\(placeholders))"
+                if case let .success(rows) = databaseManager.executeQuery(query, parameters: Array(factionIds)) {
+                    for row in rows {
+                        if let id = row["id"] as? Int,
+                           let name = row["name"] as? String
+                        {
+                            sovereigntyNames[Int(id)] = name
+                        }
+                    }
+                }
+            }
+
+            // 格式化日期
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+            dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+            let dateString = dateFormatter.string(from: Date())
+
+            // 构建输出文本
+            let incursionTitle = NSLocalizedString("Incursions_Export_Title", comment: "")
+            var output = "\(dateString) - \(incursionTitle)\n\n"
+
+            // 按星座分组（使用UI的排序顺序）
+            for incursion in preparedIncursions {
+                // 获取势力名称
+                var sovereigntyName = ""
+                if let sovereignty = incursion.sovereignty {
+                    sovereigntyName = sovereigntyNames[sovereignty.id] ?? NSLocalizedString("Unknown", comment: "")
+                } else {
+                    sovereigntyName = NSLocalizedString("Structure_Info_No_Sovereignty", comment: "")
+                }
+
+                // 获取受影响的星系名称（已排序）
+                let systemNames = getInfestedSystemNames(for: incursion)
+
+                // 格式化影响度百分比（整数）
+                let influencePercent = Int(round(incursion.incursion.influence * 100))
+
+                // 添加星座信息（包含影响度百分比）
+                let constellationLabel = NSLocalizedString("Incursions_Export_Constellation_Label", comment: "")
+                output += "\(constellationLabel)\(incursion.location.constellationName) (\(influencePercent)%) - \(sovereigntyName)\n"
+
+                // 添加星系列表
+                for systemName in systemNames {
+                    output += " - \(systemName)\n"
+                }
+
+                output += "\n"
+            }
+
+            // 复制到剪贴板
+            UIPasteboard.general.string = output
+            Logger.info("入侵信息已复制到剪贴板")
+
+            // 显示成功消息
+            exportSuccess = true
+            exportMessage = NSLocalizedString("Incursions_Export_Success", comment: "")
+            showExportAlert = true
+        }
+    }
 }
 
 // MARK: - Views
@@ -377,7 +486,7 @@ struct IncursionCell: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 4) {
-                        Text(incursion.faction.name)
+                        Text(incursion.faction.name).lineLimit(1)
                         Text("[\(String(format: "%.1f", incursion.incursion.influence * 100))%]")
                             .foregroundColor(.secondary)
                             .font(.subheadline)
@@ -522,5 +631,27 @@ struct IncursionsView: View {
             await viewModel.fetchIncursionsData(forceRefresh: true)
         }
         .navigationTitle(NSLocalizedString("Main_Incursions", comment: ""))
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    Task {
+                        await viewModel.exportIncursionsToClipboard()
+                    }
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                }
+                .disabled(viewModel.isLoading || viewModel.preparedIncursions.isEmpty)
+            }
+        }
+        .alert(
+            viewModel.exportSuccess
+                ? NSLocalizedString("Operation_Success", comment: "")
+                : NSLocalizedString("Incursions_Export_Failed_Title", comment: ""),
+            isPresented: $viewModel.showExportAlert
+        ) {
+            Button(NSLocalizedString("Common_OK", comment: ""), role: .cancel) {}
+        } message: {
+            Text(viewModel.exportMessage)
+        }
     }
 }

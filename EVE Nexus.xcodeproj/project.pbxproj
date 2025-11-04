@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		C61378522D1A686600B9FB6B /* AppAuth in Frameworks */ = {isa = PBXBuildFile; productRef = C61378512D1A686600B9FB6B /* AppAuth */; };
-		C61378552D1A772100B9FB6B /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = C61378542D1A772100B9FB6B /* Kingfisher */; };
 		C68E07512D047AD2007DA6D8 /* Zip in Frameworks */ = {isa = PBXBuildFile; productRef = C68E07502D047AD2007DA6D8 /* Zip */; };
 		C6FDBFED2DC9DD17007A9F7D /* JWTDecode in Frameworks */ = {isa = PBXBuildFile; productRef = C6FDBFEC2DC9DD17007A9F7D /* JWTDecode */; };
 /* End PBXBuildFile section */
@@ -72,7 +71,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C61378552D1A772100B9FB6B /* Kingfisher in Frameworks */,
 				C61378522D1A686600B9FB6B /* AppAuth in Frameworks */,
 				C6FDBFED2DC9DD17007A9F7D /* JWTDecode in Frameworks */,
 				C68E07512D047AD2007DA6D8 /* Zip in Frameworks */,
@@ -138,7 +136,6 @@
 			packageProductDependencies = (
 				C68E07502D047AD2007DA6D8 /* Zip */,
 				C61378512D1A686600B9FB6B /* AppAuth */,
-				C61378542D1A772100B9FB6B /* Kingfisher */,
 				C6FDBFEC2DC9DD17007A9F7D /* JWTDecode */,
 			);
 			productName = "EVE Nexus";
@@ -227,7 +224,6 @@
 			packageReferences = (
 				C68E074F2D047AD2007DA6D8 /* XCLocalSwiftPackageReference "Thirdparty/Zip" */,
 				C61378502D1A686600B9FB6B /* XCLocalSwiftPackageReference "Thirdparty/AppAuth-iOS" */,
-				C61378532D1A772100B9FB6B /* XCLocalSwiftPackageReference "Thirdparty/Kingfisher" */,
 				C6FDBFEB2DC9DD17007A9F7D /* XCLocalSwiftPackageReference "Thirdparty/JWTDecode" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -460,7 +456,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.8.2;
+				MARKETING_VERSION = 1.8.3;
 				PRODUCT_BUNDLE_IDENTIFIER = "secgg.EVE-Nexus";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -508,7 +504,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.8.2;
+				MARKETING_VERSION = 1.8.3;
 				PRODUCT_BUNDLE_IDENTIFIER = "secgg.EVE-Nexus";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -658,10 +654,6 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = "Thirdparty/AppAuth-iOS";
 		};
-		C61378532D1A772100B9FB6B /* XCLocalSwiftPackageReference "Thirdparty/Kingfisher" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = Thirdparty/Kingfisher;
-		};
 		C68E074F2D047AD2007DA6D8 /* XCLocalSwiftPackageReference "Thirdparty/Zip" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Thirdparty/Zip;
@@ -676,10 +668,6 @@
 		C61378512D1A686600B9FB6B /* AppAuth */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = AppAuth;
-		};
-		C61378542D1A772100B9FB6B /* Kingfisher */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = Kingfisher;
 		};
 		C68E07502D047AD2007DA6D8 /* Zip */ = {
 			isa = XCSwiftPackageProductDependency;
