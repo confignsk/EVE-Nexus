@@ -646,7 +646,7 @@ struct WalletJournalEntryRow: View {
                     language: selectedLanguage == "zh-Hans" ? "zh" : "en"
                 )
                 let sign = entry.amount >= 0 ? "+" : ""
-                let detailText = "[\(FormatUtil.formatUTCToLocalTime(entry.date))] \(processedDescription): \(sign)\(FormatUtil.format(entry.amount)) ISK"
+                let detailText = "[\(FormatUtil.formatUTCToLocalTime(entry.date))] \(processedDescription): \(sign)\(FormatUtil.format(entry.amount)) ISK, \(String(format: NSLocalizedString("Reason", comment: ""), entry.reason))"
                 UIPasteboard.general.string = detailText
             } label: {
                 Label(

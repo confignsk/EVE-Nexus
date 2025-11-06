@@ -797,20 +797,13 @@ struct NPCCorporationDetailView: View {
         // 使用Task来在后台线程执行
         let result = await Task {
             do {
-                // 首先检查数据库是否有缓存数据
-                let hasCache = checkLPStoreCache()
-                if hasCache {
-                    return true
-                }
-
-                // 如果没有缓存，尝试从API获取
+                // 直接从 SDE 数据库获取 LP 商店数据
                 let offers = try await LPStoreAPI.shared.fetchCorporationLPStoreOffers(
-                    corporationId: corporation.id,
-                    forceRefresh: false
+                    corporationId: corporation.id
                 )
                 return !offers.isEmpty
             } catch {
-                // 如果API调用失败，设置错误但不影响UI状态
+                // 如果查询失败，设置错误但不影响UI状态
                 lpStoreError = error
                 return false
             }
@@ -818,23 +811,5 @@ struct NPCCorporationDetailView: View {
 
         hasLPStoreData = result
         isLoadingLPStore = false
-    }
-
-    // 检查数据库中是否有LP商店缓存数据
-    private func checkLPStoreCache() -> Bool {
-        let query = """
-            SELECT COUNT(*) as count
-            FROM LPStoreOffers
-            WHERE corporation_id = ?
-            LIMIT 1
-        """
-
-        if case let .success(rows) = CharacterDatabaseManager.shared.executeQuery(
-            query, parameters: [corporation.id]
-        ), let row = rows.first, let count = row["count"] as? Int {
-            return count > 0
-        }
-
-        return false
     }
 }

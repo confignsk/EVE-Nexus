@@ -42,9 +42,12 @@ struct StorageFacilityView: View {
             }
         }
 
-        // 存储的内容物，每个内容物单独一行
+        // 存储的内容物，每个内容物单独一行，按 typeid 排序
         if let simPin = simulatedPin {
-            ForEach(Array(simPin.contents), id: \.key.id) { type, amount in
+            ForEach(
+                Array(simPin.contents).sorted(by: { $0.key.id < $1.key.id }),
+                id: \.key.id
+            ) { type, amount in
                 if amount > 0 {
                     NavigationLink(
                         destination: ShowPlanetaryInfo(

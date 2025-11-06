@@ -6,7 +6,17 @@ struct CorporationLoyaltyInfo: Identifiable {
     let corporationId: Int
     let loyaltyPoints: Int
     let corporationName: String
+    let enName: String
+    let zhName: String
     let iconFileName: String
+    let militiaFaction: Int?
+
+    var isMilitia: Bool {
+        if let militia = militiaFaction, militia > 0 {
+            return true
+        }
+        return false
+    }
 }
 
 @MainActor
@@ -51,7 +61,10 @@ class CharacterLoyaltyPointsViewModel: ObservableObject {
                             corporationId: point.corporation_id,
                             loyaltyPoints: point.loyalty_points,
                             corporationName: corpInfo.name,
-                            iconFileName: corpInfo.iconFileName
+                            enName: corpInfo.enName,
+                            zhName: corpInfo.zhName,
+                            iconFileName: corpInfo.iconFileName,
+                            militiaFaction: corpInfo.militiaFaction
                         ))
                 }
             }
@@ -66,19 +79,22 @@ class CharacterLoyaltyPointsViewModel: ObservableObject {
     }
 
     private func getCorporationInfo(corporationId: Int) async throws -> (
-        name: String, iconFileName: String
+        name: String, enName: String, zhName: String, iconFileName: String, militiaFaction: Int?
     )? {
         let query = """
-            SELECT name, icon_filename FROM npcCorporations WHERE corporation_id = \(corporationId)
+            SELECT name, en_name, zh_name, icon_filename, militia_faction FROM npcCorporations WHERE corporation_id = \(corporationId)
         """
 
         guard case let .success(rows) = SQLiteManager.shared.executeQuery(query),
               let result = rows.first,
               let name = result["name"] as? String,
+              let enName = result["en_name"] as? String,
+              let zhName = result["zh_name"] as? String,
               let iconFileName = result["icon_filename"] as? String
         else {
             return nil
         }
-        return (name, iconFileName)
+        let militiaFaction = result["militia_faction"] as? Int
+        return (name, enName, zhName, iconFileName, militiaFaction)
     }
 }

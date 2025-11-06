@@ -1270,33 +1270,38 @@ class ColonySimulation {
             }
             return canActivate
         } else if let factory = pin as? Pin.Factory {
+            // [!] 关键修复：与Kotlin版本逻辑完全一致
             // 工厂需要有配方
             if factory.schematic == nil {
                 Logger.debug("工厂(\(pin.id)) 没有配方，不能激活")
                 return false
             }
 
-            // 如果已经激活，直接返回true
+            // 如果已经激活，返回true
             if isActive(pin: factory) {
                 Logger.debug("工厂(\(pin.id)) 已经处于激活状态")
                 return true
             }
 
-            // 修改这里：只有当工厂收到了输入且有足够的输入材料时才返回true
-            if (factory.hasReceivedInputs || factory.receivedInputsLastCycle)
-                && hasEnoughInputs(factory: factory)
-            {
-                Logger.debug("工厂(\(pin.id)) 收到了输入且有足够的输入材料，可以激活")
+            // 如果工厂收到了输入（不管材料是否足够），返回true
+            if factory.hasReceivedInputs || factory.receivedInputsLastCycle {
+                Logger.debug("工厂(\(pin.id)) 收到了输入，可以激活")
                 return true
             }
 
-            Logger.debug("工厂(\(pin.id)) 未收到输入或没有足够的输入材料，不能激活")
-            return false // 简化逻辑，其他情况都返回false
+            // [!] 关键：如果工厂有足够材料，返回false
+            // 这看起来反直觉，但配合getNextRunTime是正确的：
+            // getNextRunTime会对有足够材料的未激活工厂返回nil（立即运行）
+            if hasEnoughInputs(factory: factory) {
+                Logger.debug("工厂(\(pin.id)) 有足够材料但未收到输入标记，返回false（将通过getNextRunTime立即运行）")
+                return false
+            }
         }
 
-        // 存储类设施不需要激活
-        Logger.debug("存储类设施(\(pin.id)) 不需要激活")
-        return false
+        // [!] 关键修复：默认返回true（与Kotlin版本一致）
+        // 这对于刚初始化的工厂很重要
+        Logger.debug("设施(\(pin.id)) canActivate默认返回true")
+        return true
     }
 
     /// 检查设施是否处于激活状态

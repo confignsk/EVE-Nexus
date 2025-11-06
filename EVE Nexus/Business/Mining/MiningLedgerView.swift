@@ -89,8 +89,11 @@ final class MiningLedgerViewModel: ObservableObject {
         // 检查是否有未找到的物品ID，为它们设置默认值
         for typeId in idsToLoad {
             if itemInfoCache[typeId] == nil {
+                let unknownName = String(
+                    format: NSLocalizedString("Mining_Unknown_Ore", comment: ""), typeId
+                )
                 itemInfoCache[typeId] = (
-                    name: "Unknown Item", iconFileName: DatabaseConfig.defaultItemIcon
+                    name: unknownName, iconFileName: DatabaseConfig.defaultItemIcon
                 )
             }
         }
@@ -160,7 +163,11 @@ final class MiningLedgerViewModel: ObservableObject {
                         // 直接从缓存中获取物品信息，因为我们已经预加载了所有物品
                         let info =
                             itemInfoCache[typeId] ?? (
-                                name: "Unknown Item", iconFileName: DatabaseConfig.defaultItemIcon
+                                name: String(
+                                    format: NSLocalizedString("Mining_Unknown_Ore", comment: ""),
+                                    typeId
+                                ),
+                                iconFileName: DatabaseConfig.defaultItemIcon
                             )
                         return MiningItemSummary(
                             id: typeId,

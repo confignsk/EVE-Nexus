@@ -19,6 +19,26 @@ struct LPSearchResultsView: View {
                                     .frame(width: 36)
                                 Text(faction.name)
                                     .padding(.leading, 8)
+                                    .contextMenu {
+                                        Button {
+                                            UIPasteboard.general.string = faction.name
+                                        } label: {
+                                            Label(
+                                                NSLocalizedString("Misc_Copy_Name", comment: ""),
+                                                systemImage: "doc.on.doc"
+                                            )
+                                        }
+                                        if !faction.enName.isEmpty && faction.enName != faction.name {
+                                            Button {
+                                                UIPasteboard.general.string = faction.enName
+                                            } label: {
+                                                Label(
+                                                    NSLocalizedString("Misc_Copy_Trans", comment: ""),
+                                                    systemImage: "translate"
+                                                )
+                                            }
+                                        }
+                                    }
                             }
                             .padding(.vertical, 2)
                         }
@@ -44,6 +64,37 @@ struct LPSearchResultsView: View {
                                 )
                                 Text(corporation.name)
                                     .padding(.leading, 8)
+                                    .contextMenu {
+                                        Button {
+                                            UIPasteboard.general.string = corporation.name
+                                        } label: {
+                                            Label(
+                                                NSLocalizedString("Misc_Copy_Name", comment: ""),
+                                                systemImage: "doc.on.doc"
+                                            )
+                                        }
+                                        if !corporation.enName.isEmpty && corporation.enName != corporation.name {
+                                            Button {
+                                                UIPasteboard.general.string = corporation.enName
+                                            } label: {
+                                                Label(
+                                                    NSLocalizedString("Misc_Copy_Trans", comment: ""),
+                                                    systemImage: "translate"
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                if corporation.isMilitia {
+                                    Spacer()
+                                    Text(NSLocalizedString("Main_LP_Militia", comment: ""))
+                                        .font(.caption)
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 2)
+                                        .background(Color.purple.opacity(0.8))
+                                        .foregroundColor(.white)
+                                        .cornerRadius(4)
+                                }
                             }
                             .padding(.vertical, 2)
                         }

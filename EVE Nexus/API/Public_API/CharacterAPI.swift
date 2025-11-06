@@ -1,5 +1,4 @@
 import Foundation
-import Kingfisher
 import SwiftUI
 
 // 角色公开信息数据模型
@@ -40,15 +39,7 @@ struct CharacterEmploymentHistory: Codable {
 final class CharacterAPI: @unchecked Sendable {
     static let shared = CharacterAPI()
     private init() {
-        // 配置 Kingfisher 的全局设置
-        let cache = ImageCache.default
-        cache.memoryStorage.config.totalCostLimit = 300 * 1024 * 1024 // 300MB
-        cache.diskStorage.config.sizeLimit = 1000 * 1024 * 1024 // 1GB
-        cache.diskStorage.config.expiration = .days(7) // 7天过期
-
-        // 配置下载器
-        let downloader = ImageDownloader.default
-        downloader.downloadTimeout = 15.0 // 15秒超时
+        // 使用 ImageCacheManager，无需初始化配置
     }
 
     // 保存角色信息到数据库
@@ -214,86 +205,25 @@ final class CharacterAPI: @unchecked Sendable {
 
     // 获取角色头像
     func fetchCharacterPortrait(
-        characterId: Int, size: Int = 128, forceRefresh: Bool = false, catchImage: Bool = true
+        characterId: Int, size: Int = 128, forceRefresh: Bool = false, catchImage _: Bool = true
     ) async throws -> UIImage {
         let portraitURL = getPortraitURL(characterId: characterId, size: size)
-        let cacheKey = "character_portrait_\(characterId)_\(size)"
 
-        // 1. 首先尝试从 UserDefaults 读取
-        if !forceRefresh, let cachedData = UserDefaults.standard.data(forKey: cacheKey),
-           let cachedImage = UIImage(data: cachedData)
-        {
-            Logger.info(
-                "从 UserDefaults 加载角色头像成功 - 角色ID: \(characterId), 数据大小: \(cachedData.count) bytes")
-            return cachedImage
-        }
+        do {
+            // 使用 ImageCacheManager
+            // backgroundUpdate: true 表示先返回缓存，后台验证ETag并更新
+            let image = try await ImageCacheManager.shared.fetchImage(
+                from: portraitURL,
+                forceRefresh: forceRefresh,
+                backgroundUpdate: true
+            )
 
-        var options: KingfisherOptionsInfo = [
-            .cacheOriginalImage,
-            .diskCacheExpiration(.days(30)), // 磁盘缓存30天
-            .memoryCacheExpiration(.days(7)), // 内存缓存7天
-        ]
+            Logger.info("[CharacterAPI] 成功获取角色头像 - 角色ID: \(characterId), 大小: \(size)")
+            return image
 
-        // 如果需要强制刷新，添加相应的选项
-        if forceRefresh {
-            options.append(.forceRefresh)
-            options.append(.fromMemoryCacheOrRefresh)
-        }
-
-        return try await withCheckedThrowingContinuation { continuation in
-            _ = DispatchQueue(label: "com.eve-nexus.portrait-download")
-            let taskLock = NSLock()
-            var downloadTask: DownloadTask?
-
-            let setTask: (DownloadTask?) -> Void = { task in
-                taskLock.lock()
-                downloadTask = task
-                taskLock.unlock()
-            }
-
-            let getAndCancelTask: () -> Void = {
-                taskLock.lock()
-                downloadTask?.cancel()
-                downloadTask = nil
-                taskLock.unlock()
-            }
-
-            let task = KingfisherManager.shared.retrieveImage(with: portraitURL, options: options) {
-                result in
-                switch result {
-                case let .success(imageResult):
-                    // 保存到 UserDefaults
-                    if let imageData = imageResult.image.jpegData(compressionQuality: 0.8) {
-                        if catchImage {
-                            UserDefaults.standard.set(imageData, forKey: cacheKey)
-                            Logger.info(
-                                "成功获取并缓存角色头像 - 角色ID: \(characterId), 大小: \(size), 数据大小: \(imageData.count) bytes"
-                            )
-                        } else {
-                            Logger.info(
-                                "成功获取角色头像 - 角色ID: \(characterId), 大小: \(size), 数据大小: \(imageData.count) bytes"
-                            )
-                        }
-                    }
-                    setTask(nil)
-                    continuation.resume(returning: imageResult.image)
-                case let .failure(error):
-                    Logger.error("获取角色头像失败 - 角色ID: \(characterId), 错误: \(error)")
-                    setTask(nil)
-                    continuation.resume(throwing: NetworkError.invalidImageData)
-                }
-            }
-
-            setTask(task)
-
-            // 设置任务取消处理
-            Task {
-                try? await Task.sleep(nanoseconds: 1) // 给予足够的时间让任务开始
-                if Task.isCancelled {
-                    getAndCancelTask()
-                    continuation.resume(throwing: CancellationError())
-                }
-            }
+        } catch {
+            Logger.error("[CharacterAPI] 获取角色头像失败 - 角色ID: \(characterId), 错误: \(error)")
+            throw error
         }
     }
 

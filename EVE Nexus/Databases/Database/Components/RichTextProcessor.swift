@@ -124,7 +124,7 @@ struct RichTextView: View {
                 )
             ) { item in
                 NavigationStack {
-                    BRKillMailDetailView(killmail: ["_id": item.killId])
+                    BRKillMailDetailView(killmail: ["_id": item.killId], character: nil)
                         .toolbar {
                             ToolbarItem(placement: .navigationBarLeading) {
                                 Button(NSLocalizedString("Misc_back", comment: "")) {

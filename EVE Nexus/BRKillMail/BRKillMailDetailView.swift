@@ -2,6 +2,7 @@ import SwiftUI
 
 struct BRKillMailDetailView: View {
     let killmail: [String: Any] // 这个现在只用来获取ID
+    let character: EVECharacterInfo? // 可选的当前角色信息
     let kbAPI = KbEvetoolAPI.shared
     @State private var victimCharacterIcon: UIImage?
     @State private var victimCorporationIcon: UIImage?
@@ -29,6 +30,25 @@ struct BRKillMailDetailView: View {
         DeviceUtils.shouldUseCompactLayout
     }
 
+    // 导航辅助方法
+    @ViewBuilder
+    private func navigationDestination(for id: Int, type: String) -> some View {
+        if let character = character {
+            switch type {
+            case "character":
+                CharacterDetailView(characterId: id, character: character)
+            case "corporation":
+                CorporationDetailView(corporationId: id, character: character)
+            case "alliance":
+                AllianceDetailView(allianceId: id, character: character)
+            default:
+                EmptyView()
+            }
+        } else {
+            EmptyView()
+        }
+    }
+
     var body: some View {
         List {
             if let error = errorMessage {
@@ -42,21 +62,45 @@ struct BRKillMailDetailView: View {
                     // 横屏或iPad布局
                     compactLayout(detail: detail)
                         .contextMenu {
-                            // 复制受害者名称
+                            // 查看受害者详情
                             if let victInfo = detail["vict"] as? [String: Any],
                                let charId = victInfo["char"] as? Int,
-                               let names = detail["names"] as? [String: [String: String]],
-                               let chars = names["chars"],
-                               let charName = chars[String(charId)]
+                               character != nil
                             {
-                                Button {
-                                    UIPasteboard.general.string = charName
+                                NavigationLink {
+                                    navigationDestination(for: charId, type: "character")
                                 } label: {
                                     Label(
-                                        NSLocalizedString("Misc_Copy_Victim_Name", comment: ""),
-                                        systemImage: "doc.on.doc"
+                                        NSLocalizedString("View Character", comment: ""),
+                                        systemImage: "info.circle"
                                     )
                                 }
+
+                                // 查看军团详情
+                                if let corpId = victInfo["corp"] as? Int {
+                                    NavigationLink {
+                                        navigationDestination(for: corpId, type: "corporation")
+                                    } label: {
+                                        Label(
+                                            NSLocalizedString("View Corporation", comment: ""),
+                                            systemImage: "info.circle"
+                                        )
+                                    }
+                                }
+
+                                // 查看联盟详情
+                                if let allyId = victInfo["ally"] as? Int, allyId > 0 {
+                                    NavigationLink {
+                                        navigationDestination(for: allyId, type: "alliance")
+                                    } label: {
+                                        Label(
+                                            NSLocalizedString("View Alliance", comment: ""),
+                                            systemImage: "info.circle"
+                                        )
+                                    }
+                                }
+
+                                Divider()
                             }
 
                             // 复制地点
@@ -298,20 +342,42 @@ struct BRKillMailDetailView: View {
                 }
             }
             .contextMenu {
-                // 复制受害者名称
+                // 查看受害者详情
                 if let victInfo = detail["vict"] as? [String: Any],
                    let charId = victInfo["char"] as? Int,
-                   let names = detail["names"] as? [String: [String: String]],
-                   let chars = names["chars"],
-                   let charName = chars[String(charId)]
+                   character != nil
                 {
-                    Button {
-                        UIPasteboard.general.string = charName
+                    NavigationLink {
+                        navigationDestination(for: charId, type: "character")
                     } label: {
                         Label(
-                            NSLocalizedString("Misc_Copy_Name", comment: ""),
-                            systemImage: "doc.on.doc"
+                            NSLocalizedString("View Character", comment: ""),
+                            systemImage: "info.circle"
                         )
+                    }
+
+                    // 查看军团详情
+                    if let corpId = victInfo["corp"] as? Int {
+                        NavigationLink {
+                            navigationDestination(for: corpId, type: "corporation")
+                        } label: {
+                            Label(
+                                NSLocalizedString("View Corporation", comment: ""),
+                                systemImage: "info.circle"
+                            )
+                        }
+                    }
+
+                    // 查看联盟详情
+                    if let allyId = victInfo["ally"] as? Int, allyId > 0 {
+                        NavigationLink {
+                            navigationDestination(for: allyId, type: "alliance")
+                        } label: {
+                            Label(
+                                NSLocalizedString("View Alliance", comment: ""),
+                                systemImage: "info.circle"
+                            )
+                        }
                     }
                 }
             }
@@ -570,20 +636,42 @@ struct BRKillMailDetailView: View {
                 }
             }
             .contextMenu {
-                // 复制受害者名称
+                // 查看受害者详情
                 if let victInfo = detail["vict"] as? [String: Any],
                    let charId = victInfo["char"] as? Int,
-                   let names = detail["names"] as? [String: [String: String]],
-                   let chars = names["chars"],
-                   let charName = chars[String(charId)]
+                   character != nil
                 {
-                    Button {
-                        UIPasteboard.general.string = charName
+                    NavigationLink {
+                        navigationDestination(for: charId, type: "character")
                     } label: {
                         Label(
-                            NSLocalizedString("Misc_Copy_Victim_Name", comment: ""),
-                            systemImage: "doc.on.doc"
+                            NSLocalizedString("View Character", comment: ""),
+                            systemImage: "info.circle"
                         )
+                    }
+
+                    // 查看军团详情
+                    if let corpId = victInfo["corp"] as? Int {
+                        NavigationLink {
+                            navigationDestination(for: corpId, type: "corporation")
+                        } label: {
+                            Label(
+                                NSLocalizedString("View Corporation", comment: ""),
+                                systemImage: "info.circle"
+                            )
+                        }
+                    }
+
+                    // 查看联盟详情
+                    if let allyId = victInfo["ally"] as? Int, allyId > 0 {
+                        NavigationLink {
+                            navigationDestination(for: allyId, type: "alliance")
+                        } label: {
+                            Label(
+                                NSLocalizedString("View Alliance", comment: ""),
+                                systemImage: "info.circle"
+                            )
+                        }
                     }
                 }
             }

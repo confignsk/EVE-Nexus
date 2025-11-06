@@ -509,6 +509,11 @@ struct BRKillMailView: View {
     @State private var isLoading = false
     @State private var hasInitialized = false // 跟踪是否已执行初始加载
 
+    // 获取当前角色信息
+    private var character: EVECharacterInfo? {
+        EVELogin.shared.getCharacterByID(characterId)?.character
+    }
+
     init(characterId: Int) {
         self.characterId = characterId
         _viewModel = StateObject(wrappedValue: KillMailViewModel(characterId: characterId))
@@ -631,7 +636,8 @@ struct BRKillMailView: View {
                                     viewModel.corporationIconMap[$0]
                                 },
                                 characterId: characterId,
-                                searchResult: nil
+                                searchResult: nil,
+                                character: character
                             )
                         }
                     }
@@ -681,6 +687,7 @@ struct BRKillMailCell: View {
     let corporationIcon: UIImage?
     let characterId: Int
     let searchResult: SearchResult?
+    let character: EVECharacterInfo? // 添加角色信息参数
 
     private var isLoss: Bool {
         guard let victInfo = killmail["vict"] as? [String: Any] else { return false }
@@ -793,7 +800,7 @@ struct BRKillMailCell: View {
     }
 
     var body: some View {
-        NavigationLink(destination: BRKillMailDetailView(killmail: killmail)) {
+        NavigationLink(destination: BRKillMailDetailView(killmail: killmail, character: character)) {
             VStack(alignment: .leading, spacing: 8) {
                 // 第一行：图标和信息
                 HStack(spacing: 12) {

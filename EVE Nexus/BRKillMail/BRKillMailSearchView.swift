@@ -14,6 +14,11 @@ struct BRKillMailSearchView: View {
     @State private var corporationIconMap: [Int: UIImage] = [:]
     @State private var selectedFilter: KillMailFilter = .all
 
+    // 获取当前角色信息
+    private var character: EVECharacterInfo? {
+        EVELogin.shared.getCharacterByID(characterId)?.character
+    }
+
     var body: some View {
         List {
             // 搜索对象选择区域
@@ -112,7 +117,8 @@ struct BRKillMailSearchView: View {
                                     allianceIcon: allianceIconMap[allyId ?? 0],
                                     corporationIcon: corporationIconMap[corpId ?? 0],
                                     characterId: characterId,
-                                    searchResult: viewModel.selectedResult
+                                    searchResult: viewModel.selectedResult,
+                                    character: character
                                 )
                             }
                         }

@@ -148,6 +148,13 @@ struct PlanetDetailView: View {
             if shouldUpdate {
                 currentTime = newTime
             }
+
+            // [!] 检查是否有工厂周期完成，需要重新模拟
+            if shouldResimulate(newTime: newTime) {
+                Task {
+                    await resimulateColony()
+                }
+            }
         }
         .onAppear {
             // 视图出现时立即更新当前时间
@@ -189,6 +196,47 @@ struct PlanetDetailView: View {
 
         // 如果没有周期变化，只在整秒时更新（用于更新倒计时显示）
         return floor(newTime.timeIntervalSince1970) != floor(currentTime.timeIntervalSince1970)
+    }
+
+    /// 检查是否有工厂或提取器周期完成需要重新模拟
+    /// - Parameter newTime: 新时间
+    /// - Returns: 是否需要重新模拟
+    private func shouldResimulate(newTime: Date) -> Bool {
+        guard let colony = simulatedColony else { return false }
+
+        // 检查所有工厂
+        for pin in colony.pins {
+            if let factory = pin as? Pin.Factory,
+               factory.isActive,
+               let lastCycleStartTime = factory.lastCycleStartTime,
+               let schematic = factory.schematic
+            {
+                let cycleEndTime = lastCycleStartTime.addingTimeInterval(schematic.cycleTime)
+
+                // 如果工厂周期已完成且超过了模拟时间，需要重新模拟
+                if newTime >= cycleEndTime && cycleEndTime > colony.currentSimTime {
+                    Logger.info("检测到工厂(\(factory.id))周期完成，触发重新模拟")
+                    return true
+                }
+            }
+
+            // 检查提取器周期
+            if let extractor = pin as? Pin.Extractor,
+               extractor.isActive,
+               let lastRunTime = extractor.lastRunTime,
+               let cycleTime = extractor.cycleTime
+            {
+                let cycleEndTime = lastRunTime.addingTimeInterval(cycleTime)
+
+                // 如果提取器周期已完成且超过了模拟时间，需要重新模拟
+                if newTime >= cycleEndTime && cycleEndTime > colony.currentSimTime {
+                    Logger.info("检测到提取器(\(extractor.id))周期完成，触发重新模拟")
+                    return true
+                }
+            }
+        }
+
+        return false
     }
 
     private func loadPlanetDetail(forceRefresh: Bool = false) async {
@@ -367,6 +415,35 @@ struct PlanetDetailView: View {
         }
 
         await task.value
+    }
+
+    /// 重新模拟殖民地到当前时间
+    private func resimulateColony() async {
+        guard let colony = simulatedColony else { return }
+
+        // 立即更新当前时间
+        let now = Date()
+        currentTime = now
+
+        // 如果当前时间早于或等于模拟时间，不需要重新模拟
+        if now <= colony.currentSimTime {
+            return
+        }
+
+        Logger.info("重新模拟殖民地到当前时间: \(now)")
+
+        // 使用ColonySimulationManager执行模拟
+        let newSimulatedColony = await Task.detached(priority: .userInitiated) {
+            ColonySimulationManager.shared.simulateColony(
+                colony: colony,
+                targetTime: now
+            )
+        }.value
+
+        // 更新模拟结果
+        await MainActor.run {
+            self.simulatedColony = newSimulatedColony
+        }
     }
 
     /// 获取恒星系名称

@@ -1,5 +1,4 @@
 import Foundation
-import Kingfisher
 import SwiftUI
 
 // 联盟信息数据模型
@@ -22,15 +21,7 @@ class AllianceAPI {
     static let shared = AllianceAPI()
 
     private init() {
-        // 配置 Kingfisher 的全局设置
-        let cache = ImageCache.default
-        cache.memoryStorage.config.totalCostLimit = 300 * 1024 * 1024 // 300MB
-        cache.diskStorage.config.sizeLimit = 1000 * 1024 * 1024 // 1GB
-        cache.diskStorage.config.expiration = .days(7) // 7天过期
-
-        // 配置下载器
-        let downloader = ImageDownloader.default
-        downloader.downloadTimeout = 15.0 // 15秒超时
+        // 使用 ImageCacheManager，无需初始化配置
     }
 
     // 获取联盟图标URL
@@ -44,43 +35,27 @@ class AllianceAPI {
     {
         let logoURL = getLogoURL(allianceId: allianceID, size: size)
 
-        var options: KingfisherOptionsInfo = [
-            .cacheOriginalImage,
-            .diskCacheExpiration(.days(30)), // 磁盘缓存30天
-            .memoryCacheExpiration(.days(7)), // 内存缓存7天
-        ]
-
-        // 如果需要强制刷新，添加相应的选项
-        if forceRefresh {
-            options.append(.forceRefresh)
-            options.append(.fromMemoryCacheOrRefresh)
-        }
-
         do {
-            return try await withCheckedThrowingContinuation { continuation in
-                KingfisherManager.shared.retrieveImage(with: logoURL, options: options) { result in
-                    switch result {
-                    case let .success(imageResult):
-                        Logger.info("成功获取联盟图标 - 联盟ID: \(allianceID), 大小: \(size)")
-                        continuation.resume(returning: imageResult.image)
-                    case let .failure(error):
-                        Logger.error("获取联盟图标失败 - 联盟ID: \(allianceID), 错误: \(error)")
-                        // 尝试获取默认图标
-                        if let defaultImage = UIImage(named: "not_found") {
-                            Logger.info("使用默认图标替代 - 联盟ID: \(allianceID)")
-                            continuation.resume(returning: defaultImage)
-                        } else {
-                            continuation.resume(throwing: NetworkError.invalidImageData)
-                        }
-                    }
-                }
-            }
+            // 使用 ImageCacheManager
+            // backgroundUpdate: true 表示先返回缓存，后台验证ETag并更新
+            let image = try await ImageCacheManager.shared.fetchImage(
+                from: logoURL,
+                forceRefresh: forceRefresh,
+                backgroundUpdate: true
+            )
+
+            Logger.info("[AllianceAPI] 成功获取联盟图标 - 联盟ID: \(allianceID), 大小: \(size)")
+            return image
+
         } catch {
-            Logger.error("获取联盟图标发生异常 - 联盟ID: \(allianceID), 错误: \(error)")
-            // 再次尝试获取默认图标
+            Logger.error("[AllianceAPI] 获取联盟图标失败 - 联盟ID: \(allianceID) - URL: \(logoURL), 错误: \(error)")
+
+            // 尝试获取默认图标
             if let defaultImage = UIImage(named: "not_found") {
+                Logger.info("[AllianceAPI] 使用默认图标替代 - 联盟ID: \(allianceID)")
                 return defaultImage
             }
+
             throw error
         }
     }
