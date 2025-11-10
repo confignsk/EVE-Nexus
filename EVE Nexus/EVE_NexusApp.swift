@@ -17,6 +17,9 @@ struct EVE_NexusApp: App {
     }
 
     init() {
+        // 配置 Pulse 日志系统（必须在其他初始化之前）
+        Logger.configure()
+
         configureLanguage()
         setupNotifications()
         initializeLanguageMapSettings()
@@ -73,6 +76,11 @@ struct EVE_NexusApp: App {
         // 加载本地化账单信息的文本数据
         LocalizationManager.shared.loadAccountingEntryTypes()
         validateRefreshTokens()
+
+        // 安排后台任务
+        Task { @MainActor in
+            BackgroundTaskManager.shared.scheduleBackgroundTasks()
+        }
     }
 
     private func setupNotifications() {
@@ -276,6 +284,10 @@ struct EVE_NexusApp: App {
             ZStack {
                 if isInitialized {
                     ContentView(databaseManager: databaseManager)
+                        .onAppear {
+                            // 应用进入前台时重新安排后台任务
+                            BackgroundTaskManager.shared.scheduleBackgroundTasks()
+                        }
                 } else if needsUnzip {
                     LoadingView(loadingState: $loadingState, progress: unzipProgress) {
                         Task {

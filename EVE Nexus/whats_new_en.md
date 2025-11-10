@@ -290,3 +290,10 @@ Fixes & Improvements:
 2. Highlight the "Militia corp" in the LP Store list.
 3. Design a more native "image downloader" to reduce third-party dependencies.
 4. Fix a bug when update sde.
+
+# v1.8.4 Nov 11, 2025
+
+1. Support the latest ESI health data interface.
+2. Optimize planetary industry calculation logic and parts of the UI design.
+3. Provide future-time data simulation for planetary industry, and enable viewing of storage facility inventory change charts.
+4. Allow renaming of the skill list, market watchlist, and attribute comparison list (how did I only think of this now?).

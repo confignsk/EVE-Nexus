@@ -23,6 +23,10 @@ struct ESIStatusView: View {
         esiStatus.filter { $0.isGreen }.count
     }
 
+    private var orangeCount: Int {
+        esiStatus.filter { $0.isOrange }.count
+    }
+
     private var filteredStatus: [ESIStatus] {
         if selectedFilter == nil {
             return esiStatus
@@ -32,6 +36,8 @@ struct ESIStatusView: View {
             return esiStatus.filter { $0.isYellow }
         } else if selectedFilter == "green" {
             return esiStatus.filter { $0.isGreen }
+        } else if selectedFilter == "orange" {
+            return esiStatus.filter { $0.isOrange }
         }
         return esiStatus
     }
@@ -50,7 +56,7 @@ struct ESIStatusView: View {
                     StatusCountView(
                         count: redCount,
                         color: .red,
-                        label: NSLocalizedString("ESI_Status_Poor", comment: ""),
+                        label: NSLocalizedString("ESI_Status_Down", comment: ""),
                         isSelected: selectedFilter == "red",
                         action: {
                             selectedFilter = selectedFilter == "red" ? nil : "red"
@@ -59,16 +65,25 @@ struct ESIStatusView: View {
                     StatusCountView(
                         count: yellowCount,
                         color: .yellow,
-                        label: NSLocalizedString("ESI_Status_Fair", comment: ""),
+                        label: NSLocalizedString("ESI_Status_Degraded", comment: ""),
                         isSelected: selectedFilter == "yellow",
                         action: {
                             selectedFilter = selectedFilter == "yellow" ? nil : "yellow"
                         }
                     )
                     StatusCountView(
+                        count: orangeCount,
+                        color: .orange,
+                        label: NSLocalizedString("ESI_Status_Recovering", comment: ""),
+                        isSelected: selectedFilter == "orange",
+                        action: {
+                            selectedFilter = selectedFilter == "orange" ? nil : "orange"
+                        }
+                    )
+                    StatusCountView(
                         count: greenCount,
                         color: .green,
-                        label: NSLocalizedString("ESI_Status_Good", comment: ""),
+                        label: NSLocalizedString("ESI_Status_OK", comment: ""),
                         isSelected: selectedFilter == "green",
                         action: {
                             selectedFilter = selectedFilter == "green" ? nil : "green"
@@ -127,7 +142,7 @@ struct ESIStatusView: View {
             NSLocalizedString("ESI_Status_Load_Failed", comment: ""),
             isPresented: .init(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
         ) {
-            Button(NSLocalizedString("ESI_Status_OK", comment: ""), role: .cancel) {
+            Button(NSLocalizedString("ESI_Status_Button_OK", comment: ""), role: .cancel) {
                 errorMessage = nil
             }
             Button(NSLocalizedString("ESI_Status_Retry", comment: "")) { refreshStatus() }
@@ -179,17 +194,17 @@ struct ESIStatusView: View {
 
     private func localizedTagName(_ tag: String) -> String {
         switch tag {
-        case "Alliance": return NSLocalizedString("ESI_Tag_Alliance", comment: "")
+        case "Alliances": return NSLocalizedString("ESI_Tag_Alliance", comment: "")
         case "Assets": return NSLocalizedString("ESI_Tag_Assets", comment: "")
         case "Bookmarks": return NSLocalizedString("ESI_Tag_Bookmarks", comment: "")
         case "Calendar": return NSLocalizedString("ESI_Tag_Calendar", comment: "")
-        case "Character": return NSLocalizedString("ESI_Tag_Character", comment: "")
+        case "Characters": return NSLocalizedString("ESI_Tag_Character", comment: "")
         case "Clones": return NSLocalizedString("ESI_Tag_Clones", comment: "")
         case "Contacts": return NSLocalizedString("ESI_Tag_Contacts", comment: "")
         case "Contracts": return NSLocalizedString("ESI_Tag_Contracts", comment: "")
-        case "Corporation": return NSLocalizedString("ESI_Tag_Corporation", comment: "")
+        case "Corporations": return NSLocalizedString("ESI_Tag_Corporation", comment: "")
         case "Dogma": return NSLocalizedString("ESI_Tag_Dogma", comment: "")
-        case "FactionWarfare": return NSLocalizedString("ESI_Tag_FactionWarfare", comment: "")
+        case "Fw": return NSLocalizedString("ESI_Tag_FactionWarfare", comment: "")
         case "Fittings": return NSLocalizedString("ESI_Tag_Fittings", comment: "")
         case "Fleets": return NSLocalizedString("ESI_Tag_Fleets", comment: "")
         case "Incursions": return NSLocalizedString("ESI_Tag_Incursions", comment: "")
@@ -199,17 +214,17 @@ struct ESIStatusView: View {
         case "Location": return NSLocalizedString("ESI_Tag_Location", comment: "")
         case "Loyalty": return NSLocalizedString("ESI_Tag_Loyalty", comment: "")
         case "Mail": return NSLocalizedString("ESI_Tag_Mail", comment: "")
-        case "Market": return NSLocalizedString("ESI_Tag_Market", comment: "")
+        case "Markets": return NSLocalizedString("ESI_Tag_Market", comment: "")
         case "Opportunities": return NSLocalizedString("ESI_Tag_Opportunities", comment: "")
         case "PlanetaryInteraction":
             return NSLocalizedString("ESI_Tag_PlanetaryInteraction", comment: "")
-        case "Routes": return NSLocalizedString("ESI_Tag_Routes", comment: "")
+        case "Route": return NSLocalizedString("ESI_Tag_Routes", comment: "")
         case "Search": return NSLocalizedString("ESI_Tag_Search", comment: "")
         case "Skills": return NSLocalizedString("ESI_Tag_Skills", comment: "")
         case "Sovereignty": return NSLocalizedString("ESI_Tag_Sovereignty", comment: "")
         case "Status": return NSLocalizedString("ESI_Tag_Status", comment: "")
         case "Universe": return NSLocalizedString("ESI_Tag_Universe", comment: "")
-        case "UserInterface": return NSLocalizedString("ESI_Tag_UserInterface", comment: "")
+        case "Ui": return NSLocalizedString("ESI_Tag_UserInterface", comment: "")
         case "Wallet": return NSLocalizedString("ESI_Tag_Wallet", comment: "")
         case "Wars": return NSLocalizedString("ESI_Tag_Wars", comment: "")
         default: return NSLocalizedString("ESI_Tag_Other", comment: "")
@@ -324,13 +339,7 @@ struct EndpointStatusRow: View {
     }
 
     private var statusColor: Color {
-        if status.isRed {
-            return .red
-        } else if status.isYellow {
-            return .yellow
-        } else {
-            return .green
-        }
+        return status.statusColor
     }
 
     private var endpointDisplayName: String {

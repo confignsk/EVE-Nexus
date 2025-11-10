@@ -38,7 +38,7 @@
 	<dict/>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
-		<string>com.evenexus.tokenrefresh</string>
+		<string>com.evenexus.datarefresh</string>
 	</array>
 	<key>UIBackgroundModes</key>
 	<array>

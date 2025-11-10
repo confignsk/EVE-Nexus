@@ -144,9 +144,9 @@ enum ItemInfoMap {
         let categoryID = itemCategory.categoryID
         let groupID = itemCategory.groupID
 
-        Logger.debug(
-            "ItemInfoMap - 选择视图类型，itemID: \(itemID), categoryID: \(String(describing: categoryID)), groupID: \(String(describing: groupID))"
-        )
+//        Logger.debug(
+//            "ItemInfoMap - 选择视图类型，itemID: \(itemID), categoryID: \(String(describing: categoryID)), groupID: \(String(describing: groupID))"
+//        )
 
         // 首先检查特定的categoryID和groupID组合
         if categoryID == 17 && groupID == 1964 { // 突变质体

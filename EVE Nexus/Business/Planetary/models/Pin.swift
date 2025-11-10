@@ -130,21 +130,6 @@ class Pin {
             )
         }
 
-        /// 获取输入缓冲区状态
-        func getInputBufferState() -> Double {
-            guard let schematic = schematic, !schematic.inputs.isEmpty else {
-                return 0.0
-            }
-
-            var productsRatio = 0.0
-            for (inputType, requiredQuantity) in schematic.inputs {
-                let availableQuantity = contents[inputType] ?? 0
-                productsRatio += Double(availableQuantity) / Double(requiredQuantity)
-            }
-
-            return 1.0 - productsRatio / Double(schematic.inputs.count)
-        }
-
         /// 检查是否有足够的输入材料
         func hasEnoughInputs() -> Bool {
             guard let schematic = schematic else { return false }

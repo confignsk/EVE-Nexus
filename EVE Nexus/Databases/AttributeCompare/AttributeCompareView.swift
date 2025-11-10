@@ -150,6 +150,9 @@ struct AttributeCompareView: View {
     @State private var isShowingAddAlert = false
     @State private var tempCompareName = "" // 临时变量，用于接收用户输入
     @State private var searchText = ""
+    @State private var isShowingRenameAlert = false
+    @State private var renameCompare: AttributeCompare?
+    @State private var renameCompareName = ""
 
     private var filteredCompares: [AttributeCompare] {
         if searchText.isEmpty {
@@ -183,7 +186,33 @@ struct AttributeCompareView: View {
                     } label: {
                         compareRowView(compare)
                     }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button(role: .destructive) {
+                            if let index = compares.firstIndex(where: { $0.id == compare.id }) {
+                                deleteCompare(at: IndexSet(integer: index))
+                            }
+                        } label: {
+                            Label(NSLocalizedString("Misc_Delete", comment: ""), systemImage: "trash")
+                        }
+
+                        Button {
+                            renameCompare = compare
+                            renameCompareName = compare.name
+                            isShowingRenameAlert = true
+                        } label: {
+                            Label(NSLocalizedString("Misc_Rename", comment: ""), systemImage: "pencil")
+                        }
+                        .tint(.blue)
+                    }
                     .contextMenu {
+                        Button {
+                            renameCompare = compare
+                            renameCompareName = compare.name
+                            isShowingRenameAlert = true
+                        } label: {
+                            Label(NSLocalizedString("Misc_Rename", comment: ""), systemImage: "pencil")
+                        }
+
                         Button(role: .destructive) {
                             if let index = compares.firstIndex(where: { $0.id == compare.id }) {
                                 deleteCompare(at: IndexSet(integer: index))
@@ -193,7 +222,6 @@ struct AttributeCompareView: View {
                         }
                     }
                 }
-                .onDelete(perform: deleteCompare)
                 .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
             }
         }
@@ -238,6 +266,26 @@ struct AttributeCompareView: View {
 
             Button(NSLocalizedString("Main_EVE_Mail_Cancel", comment: ""), role: .cancel) {
                 tempCompareName = "" // 取消时清空临时变量
+            }
+        }
+        .alert(NSLocalizedString("Misc_Rename", comment: ""), isPresented: $isShowingRenameAlert) {
+            TextField(NSLocalizedString("Misc_Name", comment: ""), text: $renameCompareName)
+
+            Button(NSLocalizedString("Misc_Done", comment: "")) {
+                if let compare = renameCompare, !renameCompareName.isEmpty {
+                    if let index = compares.firstIndex(where: { $0.id == compare.id }) {
+                        compares[index].name = renameCompareName
+                        AttributeCompareManager.shared.saveCompare(compares[index])
+                    }
+                }
+                renameCompare = nil
+                renameCompareName = ""
+            }
+            .disabled(renameCompareName.isEmpty)
+
+            Button(NSLocalizedString("Main_EVE_Mail_Cancel", comment: ""), role: .cancel) {
+                renameCompare = nil
+                renameCompareName = ""
             }
         }
         .task {

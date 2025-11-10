@@ -718,6 +718,9 @@ struct MarketQuickbarView: View {
     @State private var isShowingAddAlert = false
     @State private var newQuickbarName = ""
     @State private var searchText = ""
+    @State private var isShowingRenameAlert = false
+    @State private var renameQuickbar: MarketQuickbar?
+    @State private var renameQuickbarName = ""
 
     private var filteredQuickbars: [MarketQuickbar] {
         if searchText.isEmpty {
@@ -751,7 +754,33 @@ struct MarketQuickbarView: View {
                     } label: {
                         quickbarRowView(quickbar)
                     }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button(role: .destructive) {
+                            if let index = quickbars.firstIndex(where: { $0.id == quickbar.id }) {
+                                deleteQuickbar(at: IndexSet(integer: index))
+                            }
+                        } label: {
+                            Label(NSLocalizedString("Misc_Delete", comment: ""), systemImage: "trash")
+                        }
+
+                        Button {
+                            renameQuickbar = quickbar
+                            renameQuickbarName = quickbar.name
+                            isShowingRenameAlert = true
+                        } label: {
+                            Label(NSLocalizedString("Misc_Rename", comment: ""), systemImage: "pencil")
+                        }
+                        .tint(.blue)
+                    }
                     .contextMenu {
+                        Button {
+                            renameQuickbar = quickbar
+                            renameQuickbarName = quickbar.name
+                            isShowingRenameAlert = true
+                        } label: {
+                            Label(NSLocalizedString("Misc_Rename", comment: ""), systemImage: "pencil")
+                        }
+
                         Button(role: .destructive) {
                             if let index = quickbars.firstIndex(where: { $0.id == quickbar.id }) {
                                 deleteQuickbar(at: IndexSet(integer: index))
@@ -762,7 +791,6 @@ struct MarketQuickbarView: View {
                     }
                     .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                 }
-                .onDelete(perform: deleteQuickbar)
             }
         }
         .navigationTitle(NSLocalizedString("Main_Market_Watch_List", comment: ""))
@@ -805,6 +833,26 @@ struct MarketQuickbarView: View {
 
             Button(NSLocalizedString("Main_EVE_Mail_Cancel", comment: ""), role: .cancel) {
                 newQuickbarName = ""
+            }
+        }
+        .alert(NSLocalizedString("Misc_Rename", comment: ""), isPresented: $isShowingRenameAlert) {
+            TextField(NSLocalizedString("Misc_Name", comment: ""), text: $renameQuickbarName)
+
+            Button(NSLocalizedString("Misc_Done", comment: "")) {
+                if let quickbar = renameQuickbar, !renameQuickbarName.isEmpty {
+                    if let index = quickbars.firstIndex(where: { $0.id == quickbar.id }) {
+                        quickbars[index].name = renameQuickbarName
+                        MarketQuickbarManager.shared.saveQuickbar(quickbars[index])
+                    }
+                }
+                renameQuickbar = nil
+                renameQuickbarName = ""
+            }
+            .disabled(renameQuickbarName.isEmpty)
+
+            Button(NSLocalizedString("Main_EVE_Mail_Cancel", comment: ""), role: .cancel) {
+                renameQuickbar = nil
+                renameQuickbarName = ""
             }
         }
         .task {

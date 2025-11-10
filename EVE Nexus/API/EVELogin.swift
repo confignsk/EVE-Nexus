@@ -661,7 +661,7 @@ class EVELogin {
     }
 
     // 获取角色详细信息
-    private func fetchCharacterDetails(characterId: Int) async throws -> (
+    func fetchCharacterDetails(characterId: Int) async throws -> (
         skills: CharacterSkillsResponse, balance: Double, location: CharacterLocation,
         skillQueue: [SkillQueueItem]
     ) {

@@ -1,4 +1,5 @@
 import Foundation
+import Pulse
 import SwiftUI
 
 // 修改缓存包装类为泛型
@@ -51,7 +52,7 @@ class NetworkManager: NSObject, @unchecked Sendable {
     static let shared = NetworkManager()
     private let retrier: RequestRetrier
     private let rateLimiter: RateLimiter
-    private let session: URLSession
+    private let session: any URLSessionProtocol
 
     // 通用缓存（用于JSON数据）
     private let dataCache = NSCache<NSString, CachedData<Any>>()
@@ -67,7 +68,25 @@ class NetworkManager: NSObject, @unchecked Sendable {
     override private init() {
         retrier = RequestRetrier()
         rateLimiter = RateLimiter()
-        session = URLSession.shared
+
+        // 总是使用 URLSessionProxy 来记录网络请求日志
+        // 这样网络日志总是被记录，只是用户界面上的查看按钮受 enableLogging 控制
+        // 配置 NetworkLogger，使用与 Logger 相同的 LoggerStore
+        var configuration = NetworkLogger.Configuration()
+        // 配置敏感信息过滤（自动将敏感头信息替换为 <private>）
+        configuration.sensitiveHeaders = ["Authorization", "Access-Token", "X-Auth-Token"]
+        configuration.sensitiveQueryItems = ["token", "key", "password"]
+
+        // 创建 NetworkLogger，使用与 Logger 相同的 LoggerStore
+        // 这样所有日志（文本日志和网络日志）都会存储在同一个地方
+        let loggerStore = Logger.shared.loggerStore
+        let networkLogger = NetworkLogger(store: loggerStore, configuration: configuration)
+
+        // 使用 URLSessionProxy 包装 URLSession
+        // URLSessionProxy 会自动记录所有网络请求到 Pulse
+        // 直接使用 URLSessionProxy 而不是它的 session 属性，这样才能正确拦截 async/await 方法
+        session = URLSessionProxy(configuration: .default, logger: networkLogger)
+
         super.init()
 
         // 设置缓存限制

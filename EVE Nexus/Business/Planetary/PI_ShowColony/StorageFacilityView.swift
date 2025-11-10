@@ -1,0 +1,184 @@
+import SwiftUI
+
+/// 存储设施视图
+struct StorageFacilityView: View {
+    let pin: PlanetaryPin
+    let simulatedPin: Pin?
+    let typeNames: [Int: String]
+    let typeIcons: [Int: String]
+    let typeVolumes: [Int: Double]
+    let typeGroupIds: [Int: Int] // 添加 typeGroupIds 用于排序
+    let capacity: Double
+    let hourlySnapshots: [Int: Colony] // 快照数据 [分钟数: 殖民地状态]
+    let selectedMinutes: Int // 当前选中的分钟数（0 = 当前时间）
+    let realtimeColony: Colony? // 实时模拟的殖民地数据
+    let isSnapshotsReady: Bool // 快照是否已计算完成
+    let storageVolumeCache: [Int64: [Int: Double]] // 存储设施体积缓存 [pinId: [小时数: 体积]]
+    @State private var isChartExpanded = false // 图表是否展开
+
+    // 检查该仓储是否有传入路由
+    private var hasIncomingRoutes: Bool {
+        // 优先从实时殖民地检查，如果没有则从快照检查
+        if let realtimeColony = realtimeColony {
+            return realtimeColony.routes.contains { $0.destinationPinId == pin.pinId }
+        }
+        // 如果实时殖民地不存在，从快照中检查（使用第一个可用的快照）
+        if let firstSnapshot = hourlySnapshots.values.first {
+            return firstSnapshot.routes.contains { $0.destinationPinId == pin.pinId }
+        }
+        return false
+    }
+
+    var body: some View {
+        // 设施名称和图标
+        HStack(alignment: .center, spacing: 12) {
+            if let iconName = typeIcons[pin.typeId] {
+                Image(uiImage: IconManager.shared.loadUIImage(for: iconName))
+                    .resizable()
+                    .frame(width: 40, height: 40)
+                    .cornerRadius(6)
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text(
+                        typeNames[pin.typeId] ?? NSLocalizedString("Planet_Detail_Unknown_Type", comment: "")
+                    )
+                    .lineLimit(1)
+                }
+
+                // 容量进度条
+                let total = calculateStorageVolume()
+                VStack(alignment: .leading, spacing: 2) {
+                    ProgressView(value: total, total: capacity)
+                        .progressViewStyle(.linear)
+                        .frame(height: 6)
+                        .tint(capacity > 0 ? (total / capacity >= 0.9 ? PlanetaryFacilityColors.storageProgressFull : PlanetaryFacilityColors.storageProgressNormal) : PlanetaryFacilityColors.storageProgressNormal) // 容量快满时标红提示
+
+                    Text("\(Int(total.rounded()))m³ / \(Int(capacity))m³")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+
+        // 仓储变化图表按钮（仅当有传入路由时显示）
+        if hasIncomingRoutes {
+            if isSnapshotsReady {
+                Button(action: {
+                    withAnimation {
+                        isChartExpanded.toggle()
+                    }
+                }) {
+                    HStack(alignment: .center, spacing: 12) {
+                        Image(systemName: isChartExpanded ? "chart.bar.fill" : "chart.bar")
+                            .foregroundColor(.blue)
+                            .frame(width: 32, height: 32)
+                        Text(NSLocalizedString("Storage_Change_Chart", comment: "仓储变化图表"))
+                            .font(.subheadline)
+                            .foregroundColor(.blue)
+                        Spacer()
+                        Image(systemName: isChartExpanded ? "chevron.up" : "chevron.down")
+                            .foregroundColor(.secondary)
+                            .font(.caption)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+            } else {
+                // 快照未完成时，显示加载指示器
+                HStack(alignment: .center, spacing: 12) {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                        .frame(width: 32, height: 32)
+                        .tint(.gray)
+                    Text(NSLocalizedString("Storage_Change_Chart", comment: "仓储变化图表"))
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                    Spacer()
+                }
+                .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+            }
+        }
+
+        // 展开的图表
+        if isChartExpanded && isSnapshotsReady {
+            StorageChangeChartView(
+                pinId: pin.pinId,
+                selectedMinutes: selectedMinutes,
+                capacity: capacity,
+                storageVolumeCache: storageVolumeCache
+            )
+            .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+        }
+
+        // 存储的内容物，每个内容物单独一行
+        // 按 group_id 从大到小排序，typeid 为次要排序
+        if let simPin = simulatedPin {
+            ForEach(
+                Array(simPin.contents).sorted(by: { item1, item2 in
+                    let groupId1 = typeGroupIds[item1.key.id] ?? 0
+                    let groupId2 = typeGroupIds[item2.key.id] ?? 0
+                    if groupId1 != groupId2 {
+                        return groupId1 > groupId2 // group_id 从大到小
+                    }
+                    return item1.key.id < item2.key.id // typeid 从小到大作为次要排序
+                }),
+                id: \.key.id
+            ) { type, amount in
+                if amount > 0 {
+                    NavigationLink(
+                        destination: ShowPlanetaryInfo(
+                            itemID: type.id, databaseManager: DatabaseManager.shared
+                        )
+                    ) {
+                        HStack(alignment: .center, spacing: 12) {
+                            if let iconName = typeIcons[type.id] {
+                                Image(uiImage: IconManager.shared.loadUIImage(for: iconName))
+                                    .resizable()
+                                    .frame(width: 32, height: 32)
+                                    .cornerRadius(4)
+                            }
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(typeNames[type.id] ?? type.name)
+                                    .font(.subheadline)
+                                HStack {
+                                    Text("\(amount)")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    let volume = typeVolumes[type.id] ?? type.volume
+                                    Text("(\(Int(Double(amount) * volume))m³)")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            Spacer()
+                        }
+                    }
+                }
+            }
+            .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+        }
+    }
+
+    // 计算存储设施的总体积
+    private func calculateStorageVolume() -> Double {
+        if let simPin = simulatedPin {
+            let simContents = simPin.contents.map {
+                PlanetaryContent(amount: $0.value, typeId: $0.key.id)
+            }
+            return calculateTotalVolume(contents: simContents)
+        }
+        return calculateTotalVolume(contents: pin.contents)
+    }
+
+    // 计算内容物的总体积
+    private func calculateTotalVolume(contents: [PlanetaryContent]?) -> Double {
+        guard let contents = contents else { return 0 }
+        return contents.reduce(0) { sum, content in
+            sum + (Double(content.amount) * (typeVolumes[content.typeId] ?? 0))
+        }
+    }
+}
