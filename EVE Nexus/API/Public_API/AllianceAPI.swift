@@ -44,15 +44,15 @@ class AllianceAPI {
                 backgroundUpdate: true
             )
 
-            Logger.info("[AllianceAPI] 成功获取联盟图标 - 联盟ID: \(allianceID), 大小: \(size)")
+            Logger.info("成功获取联盟图标 - 联盟ID: \(allianceID), 大小: \(size)")
             return image
 
         } catch {
-            Logger.error("[AllianceAPI] 获取联盟图标失败 - 联盟ID: \(allianceID) - URL: \(logoURL), 错误: \(error)")
+            Logger.error("获取联盟图标失败 - 联盟ID: \(allianceID) - URL: \(logoURL), 错误: \(error)")
 
             // 尝试获取默认图标
             if let defaultImage = UIImage(named: "not_found") {
-                Logger.info("[AllianceAPI] 使用默认图标替代 - 联盟ID: \(allianceID)")
+                Logger.info("使用默认图标替代 - 联盟ID: \(allianceID)")
                 return defaultImage
             }
 
@@ -73,9 +73,9 @@ class AllianceAPI {
                 try FileManager.default.createDirectory(
                     at: cacheDirectory, withIntermediateDirectories: true
                 )
-                Logger.info("[AllianceAPI]创建联盟缓存目录: \(cacheDirectory.path)")
+                Logger.info("创建联盟缓存目录: \(cacheDirectory.path)")
             } catch {
-                Logger.error("[AllianceAPI]创建联盟缓存目录失败: \(error)")
+                Logger.error("创建联盟缓存目录失败: \(error)")
             }
         }
 
@@ -94,22 +94,22 @@ class AllianceAPI {
             if let modificationDate = attributes[.modificationDate] as? Date {
                 let daysSinceModification = Date().timeIntervalSince(modificationDate) / (24 * 3600)
                 if daysSinceModification > 7 {
-                    Logger.info("[AllianceAPI]联盟缓存文件已过期 - 联盟ID: \(filePath.lastPathComponent)")
+                    Logger.info("联盟缓存文件已过期 - 联盟ID: \(filePath.lastPathComponent)")
                     return nil
                 } else {
                     let remainingDays = 7 - daysSinceModification
                     Logger.info(
-                        "[AllianceAPI]联盟缓存文件有效 - 联盟ID: \(filePath.lastPathComponent), 剩余时间: \(String(format: "%.1f", remainingDays))天"
+                        "联盟缓存文件有效 - 联盟ID: \(filePath.lastPathComponent), 剩余时间: \(String(format: "%.1f", remainingDays))天"
                     )
                 }
             }
 
             let data = try Data(contentsOf: filePath)
             let info = try JSONDecoder().decode(AllianceInfo.self, from: data)
-            Logger.info("[AllianceAPI]成功从文件加载联盟信息 - 文件: \(filePath.lastPathComponent)")
+            Logger.info("成功从文件加载联盟信息 - 文件: \(filePath.lastPathComponent)")
             return info
         } catch {
-            Logger.error("[AllianceAPI]加载联盟缓存文件失败: \(error) - 文件: \(filePath.lastPathComponent)")
+            Logger.error("加载联盟缓存文件失败: \(error) - 文件: \(filePath.lastPathComponent)")
             return nil
         }
     }
@@ -120,11 +120,11 @@ class AllianceAPI {
             let data = try JSONEncoder().encode(info)
             try data.write(to: filePath)
             Logger.info(
-                "[AllianceAPI]成功保存联盟信息到文件 - 文件: \(filePath.lastPathComponent), 大小: \(data.count) bytes"
+                "成功保存联盟信息到文件 - 文件: \(filePath.lastPathComponent), 大小: \(data.count) bytes"
             )
         } catch {
             Logger.error(
-                "[AllianceAPI]保存联盟信息到文件失败: \(error) - 文件: \(filePath.lastPathComponent)")
+                "保存联盟信息到文件失败: \(error) - 文件: \(filePath.lastPathComponent)")
         }
     }
 
@@ -135,7 +135,7 @@ class AllianceAPI {
 
         // 检查文件缓存
         if !forceRefresh, let cachedInfo = loadAllianceInfoFromFile(filePath: cacheFilePath) {
-            Logger.info("[AllianceAPI]使用文件缓存的联盟信息 - 联盟ID: \(allianceId)")
+            Logger.info("使用文件缓存的联盟信息 - 联盟ID: \(allianceId)")
             return cachedInfo
         }
 
@@ -152,7 +152,7 @@ class AllianceAPI {
         // 保存到文件缓存
         saveAllianceInfoToFile(info: info, filePath: cacheFilePath)
 
-        Logger.info("[AllianceAPI]成功获取联盟信息 - 联盟ID: \(allianceId)")
+        Logger.info("成功获取联盟信息 - 联盟ID: \(allianceId)")
         return info
     }
 }

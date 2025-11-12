@@ -24,7 +24,7 @@ class SDEDownloader {
         }
         try fileManager.createDirectory(at: downloadDir, withIntermediateDirectories: true)
 
-        // [!] 不清理 CloudKit 缓存 - CloudKit 需要在下载过程中使用缓存目录
+        // 不清理 CloudKit 缓存 - CloudKit 需要在下载过程中使用缓存目录
         // 如果清理了缓存目录，CloudKit 下载完成后无处存放文件，会导致 "Moving downloaded asset failed"
     }
 
@@ -46,7 +46,7 @@ class SDEDownloader {
         if !fileManager.fileExists(atPath: sdeDownloadCache.path) {
             do {
                 try fileManager.createDirectory(at: sdeDownloadCache, withIntermediateDirectories: true)
-                Logger.info("[+] SDEDownloadCache 目录已创建")
+                Logger.info(" SDEDownloadCache 目录已创建")
             } catch {
                 Logger.error("创建 SDEDownloadCache 目录失败: \(error.localizedDescription)")
             }
@@ -130,7 +130,7 @@ class SDEDownloader {
         let fileManager = FileManager.default
 
         guard let cachesDir = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first else {
-            Logger.info("[CloudKit Assets] 无法获取 Caches 目录")
+            Logger.info("无法获取 Caches 目录")
             return
         }
 
@@ -138,13 +138,13 @@ class SDEDownloader {
 
         // 检查 CloudKit 目录是否存在
         guard fileManager.fileExists(atPath: cloudKitCacheDir.path) else {
-            Logger.info("[CloudKit Assets] CloudKit 缓存目录不存在")
+            Logger.info("CloudKit 缓存目录不存在")
             return
         }
 
         // 输出我们正在查找的容器 ID
         if let containerID = containerIdentifier {
-            Logger.info("[CloudKit Assets] 查找容器: \(containerID)")
+            Logger.info("查找容器: \(containerID)")
         }
 
         do {
@@ -153,7 +153,7 @@ class SDEDownloader {
             // 过滤掉系统文件（如 .DS_Store）
             let validContainers = containers.filter { !$0.lastPathComponent.hasPrefix(".") }
 
-            Logger.info("[CloudKit Assets] 找到 \(validContainers.count) 个有效容器")
+            Logger.info("找到 \(validContainers.count) 个有效容器")
 
             for containerDir in validContainers {
                 let containerName = containerDir.lastPathComponent
@@ -164,9 +164,9 @@ class SDEDownloader {
                     let assetFiles = try fileManager.contentsOfDirectory(at: assetsDir, includingPropertiesForKeys: [.fileSizeKey, .creationDateKey])
 
                     if assetFiles.isEmpty {
-                        Logger.info("[CloudKit Assets] \(containerName)/Assets: 空目录")
+                        Logger.info("\(containerName)/Assets: 空目录")
                     } else {
-                        Logger.info("[CloudKit Assets] \(containerName)/Assets: \(assetFiles.count) 个文件")
+                        Logger.info("\(containerName)/Assets: \(assetFiles.count) 个文件")
 
                         var totalSize: Int64 = 0
                         for file in assetFiles {
@@ -184,7 +184,7 @@ class SDEDownloader {
                 }
             }
         } catch {
-            Logger.warning("[CloudKit Assets] 扫描失败: \(error.localizedDescription)")
+            Logger.warning("扫描失败: \(error.localizedDescription)")
         }
     }
 
@@ -375,7 +375,7 @@ class SDEDownloader {
 
     // 更新SDE版本信息到UserDefaults
     private func updateSDEVersionInfo() {
-        Logger.info("[+] SDE 数据已成功更新，新的数据库现在可用")
+        Logger.info(" SDE 数据已成功更新，新的数据库现在可用")
 
         // 清理下载的临时文件
         StaticResourceManager.shared.cleanupDownloadFiles()

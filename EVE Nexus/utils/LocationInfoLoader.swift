@@ -66,7 +66,7 @@ class LocationInfoLoader {
                             solarSystemName: systemName,
                             security: security
                         )
-                        Logger.debug("成功加载星系信息 - ID: \(systemId), 名称: \(systemName)")
+                        Logger.success("成功加载星系信息 - ID: \(systemId), 名称: \(systemName)")
                     }
                 }
             }
@@ -100,7 +100,7 @@ class LocationInfoLoader {
                             solarSystemName: systemName,
                             security: security
                         )
-                        Logger.debug("成功加载空间站信息 - ID: \(stationIdInt64), 名称: \(stationName)")
+                        Logger.success("成功加载空间站信息 - ID: \(stationIdInt64), 名称: \(stationName)")
                     } else {
                         Logger.error("空间站数据类型转换失败 - Row: \(row)")
                         Logger.error(
@@ -144,7 +144,7 @@ class LocationInfoLoader {
                             solarSystemName: systemName,
                             security: security
                         )
-                        Logger.debug("成功加载建筑物信息 - ID: \(structureId), 名称: \(structureInfo.name)")
+                        Logger.success("成功加载建筑物信息 - ID: \(structureId), 名称: \(structureInfo.name)")
                     }
                 } catch let error as NetworkError {
                     if case let .httpError(statusCode, _) = error, statusCode == 403 {

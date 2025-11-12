@@ -131,7 +131,7 @@ public class CharacterSkillsAPI {
             let filePath = getSkillsCacheFilePath(characterId: characterId)
             try jsonData.write(to: filePath)
 
-            Logger.debug("成功缓存技能数据到文件 - 角色ID: \(characterId), 路径: \(filePath.path)")
+            Logger.success("成功缓存技能数据到文件 - 角色ID: \(characterId), 路径: \(filePath.path)")
             return true
         } catch {
             Logger.error("保存技能数据到文件失败: \(error)")
@@ -203,7 +203,7 @@ public class CharacterSkillsAPI {
 
             // 保存到本地文件
             if saveSkillsToCache(characterId: characterId, skills: skills) {
-                Logger.debug("成功缓存技能数据到文件")
+                Logger.success("成功缓存技能数据到文件")
             }
 
             return skills
@@ -319,7 +319,7 @@ public class CharacterSkillsAPI {
 
         // 保存到本地文件
         if saveSkillQueue(characterId: characterId, queue: queue) {
-            Logger.debug("成功缓存技能队列到文件")
+            Logger.success("成功缓存技能队列到文件")
         }
 
         return queue
@@ -348,7 +348,7 @@ public class CharacterSkillsAPI {
             let filePath = getAttributesCacheFilePath(characterId: characterId)
             try jsonData.write(to: filePath)
 
-            Logger.debug("成功缓存角色属性到文件 - 角色ID: \(characterId), 路径: \(filePath.path)")
+            Logger.success("成功缓存角色属性到文件 - 角色ID: \(characterId), 路径: \(filePath.path)")
             return true
         } catch {
             Logger.error("保存角色属性到文件失败: \(error)")
@@ -426,7 +426,7 @@ public class CharacterSkillsAPI {
 
             // 保存到本地文件
             if saveAttributesToCache(characterId: characterId, attributes: response) {
-                Logger.debug("成功缓存角色属性到文件")
+                Logger.success("成功缓存角色属性到文件")
             }
 
             return response

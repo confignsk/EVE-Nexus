@@ -332,7 +332,7 @@ struct CorporationDetailView: View {
             let (info, logo, history) = try await (
                 corporationInfoTask, logoTask, allianceHistoryTask
             )
-            Logger.info("成功加载军团基本信息")
+            Logger.success("成功加载军团基本信息")
 
             // 更新状态
             corporationInfo = info
@@ -343,7 +343,7 @@ struct CorporationDetailView: View {
             if let ceoInfo = try? await CharacterAPI.shared.fetchCharacterPublicInfo(
                 characterId: info.ceo_id)
             {
-                Logger.info("成功加载CEO信息: \(ceoInfo.name)")
+                Logger.success("成功加载CEO信息: \(ceoInfo.name)")
                 let ceoPortrait = try? await CharacterAPI.shared.fetchCharacterPortrait(
                     characterId: info.ceo_id, catchImage: false
                 )
@@ -357,7 +357,7 @@ struct CorporationDetailView: View {
                     allianceId,
                 ])
                 if let allianceName = allianceNames?[allianceId]?.name {
-                    Logger.info("成功加载联盟信息: \(allianceName)")
+                    Logger.success("成功加载联盟信息: \(allianceName)")
                     let allianceIcon = try? await AllianceAPI.shared.fetchAllianceLogo(
                         allianceID: allianceId)
                     allianceInfo = (name: allianceName, icon: allianceIcon)
@@ -374,7 +374,7 @@ struct CorporationDetailView: View {
                     let name = row["name"] as? String,
                     let iconName = row["iconName"] as? String
                 {
-                    Logger.info("成功加载势力信息: \(name)")
+                    Logger.success("成功加载势力信息: \(name)")
                     factionInfo = (name: name, iconName: iconName)
                 }
             }
@@ -404,11 +404,11 @@ struct CorporationDetailView: View {
             isLoadingAllianceNames = true
         }
 
-        Logger.info("[+] 开始 loadAllianceHistoryNames")
+        Logger.info(" 开始 loadAllianceHistoryNames")
 
         // 收集所有联盟历史中的联盟ID（已去重）
         let allianceIds = Array(Set(allianceHistory.compactMap { $0.alliance_id }))
-        Logger.info("[+] 开始批量加载 \(allianceIds.count) 个联盟的名称")
+        Logger.info(" 开始批量加载 \(allianceIds.count) 个联盟的名称")
 
         // 如果没有联盟，直接返回
         if allianceIds.isEmpty {
@@ -426,15 +426,15 @@ struct CorporationDetailView: View {
                 for (allianceId, info) in namesMap {
                     allianceNamesCache[allianceId] = info.name
                 }
-                Logger.info("[+] 批量加载联盟历史名称成功，数量: \(namesMap.count)")
+                Logger.info(" 批量加载联盟历史名称成功，数量: \(namesMap.count)")
             }
         } catch {
-            Logger.error("[x] 批量获取联盟名称失败: \(error)")
+            Logger.error("批量获取联盟名称失败: \(error)")
         }
 
         await MainActor.run {
             isLoadingAllianceNames = false
-            Logger.info("[+] loadAllianceHistoryNames 完成")
+            Logger.info(" loadAllianceHistoryNames 完成")
         }
     }
 

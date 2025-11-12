@@ -64,9 +64,9 @@ class ImageCacheManager {
         if !fileManager.fileExists(atPath: cacheDir.path) {
             do {
                 try fileManager.createDirectory(at: cacheDir, withIntermediateDirectories: true)
-                Logger.info("[ImageCache] 创建缓存目录: \(cacheDir.path)")
+                Logger.info("创建缓存目录: \(cacheDir.path)")
             } catch {
-                Logger.error("[ImageCache] 创建缓存目录失败: \(error)")
+                Logger.error("创建缓存目录失败: \(error)")
             }
         }
     }
@@ -78,7 +78,7 @@ class ImageCacheManager {
            let decoded = try? JSONDecoder().decode([String: ImageCacheMetadata].self, from: data)
         {
             metadataMap = decoded
-            Logger.info("[ImageCache] 加载元数据: \(metadataMap.count) 条记录")
+            Logger.info("加载元数据: \(metadataMap.count) 条记录")
         }
     }
 
@@ -86,9 +86,9 @@ class ImageCacheManager {
         do {
             let data = try JSONEncoder().encode(metadataMap)
             UserDefaults.standard.set(data, forKey: metadataKey)
-            Logger.debug("[ImageCache] 保存元数据: \(metadataMap.count) 条记录")
+            Logger.debug("保存元数据: \(metadataMap.count) 条记录")
         } catch {
-            Logger.error("[ImageCache] 保存元数据失败: \(error)")
+            Logger.error("保存元数据失败: \(error)")
         }
     }
 
@@ -105,7 +105,7 @@ class ImageCacheManager {
 
         // 检查是否已有正在进行的下载任务
         if let existingTask = downloadTasks[urlString] {
-            Logger.debug("[ImageCache] 复用现有下载任务: \(urlString)")
+            Logger.debug("复用现有下载任务: \(urlString)")
             return try await existingTask.value
         }
 
@@ -113,14 +113,14 @@ class ImageCacheManager {
         if backgroundUpdate && !forceRefresh {
             // 先尝试从缓存加载
             if let cachedImage = try await loadImageFromCacheWithoutValidation(url: url) {
-                Logger.info("[ImageCache] 返回缓存图片，后台验证更新: \(urlString)")
+                Logger.info("返回缓存图片，后台验证更新: \(urlString)")
 
                 // 在后台验证并更新
                 Task { @ImageCacheManagerActor in
                     do {
                         try await validateAndUpdateCache(url: url)
                     } catch {
-                        Logger.debug("[ImageCache] 后台更新失败: \(error)")
+                        Logger.debug("后台更新失败: \(error)")
                     }
                 }
 
@@ -139,7 +139,7 @@ class ImageCacheManager {
 
             // 如果不是强制刷新，先尝试从缓存加载（带验证）
             if !forceRefresh, let cachedImage = try await loadImageFromCache(url: url) {
-                Logger.info("[ImageCache] 从缓存加载图片: \(urlString)")
+                Logger.info("从缓存加载图片: \(urlString)")
                 return cachedImage
             }
 
@@ -156,14 +156,14 @@ class ImageCacheManager {
         let urlString = url.absoluteString
 
         guard let metadata = metadataMap[urlString] else {
-            Logger.debug("[ImageCache] 缓存未命中: \(urlString)")
+            Logger.debug("缓存未命中: \(urlString)")
             return nil
         }
 
         // 对于无 ETag 的图片，检查是否过期（8小时）
         if metadata.etag == nil || metadata.etag?.isEmpty == true {
             if metadata.isExpired(timeoutHours: 8) {
-                Logger.debug("[ImageCache] 无 ETag 缓存已过期（8小时）: \(urlString)")
+                Logger.debug("无 ETag 缓存已过期（8小时）: \(urlString)")
                 return nil
             }
         }
@@ -172,7 +172,7 @@ class ImageCacheManager {
         let imagePath = cacheDir.appendingPathComponent(metadata.path)
 
         guard fileManager.fileExists(atPath: imagePath.path) else {
-            Logger.warning("[ImageCache] 缓存文件不存在: \(imagePath.path)")
+            Logger.warning("缓存文件不存在: \(imagePath.path)")
             metadataMap.removeValue(forKey: urlString)
             saveMetadata()
             return nil
@@ -182,7 +182,7 @@ class ImageCacheManager {
         guard let data = try? Data(contentsOf: imagePath),
               let image = UIImage(data: data)
         else {
-            Logger.error("[ImageCache] 加载图片数据失败: \(imagePath.path)")
+            Logger.error("加载图片数据失败: \(imagePath.path)")
             try? fileManager.removeItem(at: imagePath)
             metadataMap.removeValue(forKey: urlString)
             saveMetadata()
@@ -197,7 +197,7 @@ class ImageCacheManager {
         let urlString = url.absoluteString
 
         guard let metadata = metadataMap[urlString] else {
-            Logger.debug("[ImageCache] 缓存未命中: \(urlString)")
+            Logger.debug("缓存未命中: \(urlString)")
             return nil
         }
 
@@ -205,7 +205,7 @@ class ImageCacheManager {
         let imagePath = cacheDir.appendingPathComponent(metadata.path)
 
         guard fileManager.fileExists(atPath: imagePath.path) else {
-            Logger.warning("[ImageCache] 缓存文件不存在: \(imagePath.path)")
+            Logger.warning("缓存文件不存在: \(imagePath.path)")
             // 清理无效的元数据
             metadataMap.removeValue(forKey: urlString)
             saveMetadata()
@@ -216,13 +216,13 @@ class ImageCacheManager {
         if let etag = metadata.etag, !etag.isEmpty {
             let isValid = try await validateETag(url: url, cachedETag: etag)
             if !isValid {
-                Logger.info("[ImageCache] ETag 验证失败，需要重新下载: \(urlString)")
+                Logger.info("ETag 验证失败，需要重新下载: \(urlString)")
                 return nil
             }
         } else {
             // 无 ETag 的情况，检查时间是否过期（8小时）
             if metadata.isExpired(timeoutHours: 8) {
-                Logger.info("[ImageCache] 无 ETag 缓存已过期（8小时），需要重新下载: \(urlString)")
+                Logger.info("无 ETag 缓存已过期（8小时），需要重新下载: \(urlString)")
                 return nil
             }
         }
@@ -231,7 +231,7 @@ class ImageCacheManager {
         guard let data = try? Data(contentsOf: imagePath),
               let image = UIImage(data: data)
         else {
-            Logger.error("[ImageCache] 加载图片数据失败: \(imagePath.path)")
+            Logger.error("加载图片数据失败: \(imagePath.path)")
             // 清理损坏的缓存
             try? fileManager.removeItem(at: imagePath)
             metadataMap.removeValue(forKey: urlString)
@@ -254,15 +254,15 @@ class ImageCacheManager {
         if let etag = metadata.etag, !etag.isEmpty {
             let isValid = try await validateETag(url: url, cachedETag: etag)
             if !isValid {
-                Logger.info("[ImageCache] 后台检测到更新，重新下载: \(urlString)")
+                Logger.info("后台检测到更新，重新下载: \(urlString)")
                 _ = try await downloadAndCacheImage(url: url)
             } else {
-                Logger.debug("[ImageCache] ETag 验证通过，无需更新: \(urlString)")
+                Logger.debug("ETag 验证通过，无需更新: \(urlString)")
             }
         } else {
             // 无 ETag 的情况，检查是否过期（8小时）
             if metadata.isExpired(timeoutHours: 8) {
-                Logger.info("[ImageCache] 后台检测到缓存过期，重新下载: \(urlString)")
+                Logger.info("后台检测到缓存过期，重新下载: \(urlString)")
                 _ = try await downloadAndCacheImage(url: url)
             }
         }
@@ -281,16 +281,16 @@ class ImageCacheManager {
                let serverETag = httpResponse.value(forHTTPHeaderField: "ETag")
             {
                 let isValid = serverETag == cachedETag
-                Logger.debug("[ImageCache] ETag 验证: 缓存=\(cachedETag), 服务器=\(serverETag), 有效=\(isValid)")
+                Logger.debug("ETag 验证: 缓存=\(cachedETag), 服务器=\(serverETag), 有效=\(isValid)")
                 return isValid
             }
 
             // 如果服务器不返回 ETag，认为缓存有效
-            Logger.debug("[ImageCache] 服务器未返回 ETag，使用缓存")
+            Logger.debug("服务器未返回 ETag，使用缓存")
             return true
         } catch {
             // 网络错误时使用缓存
-            Logger.warning("[ImageCache] ETag 验证失败，使用缓存: \(error)")
+            Logger.warning("ETag 验证失败，使用缓存: \(error)")
             return true
         }
     }
@@ -302,7 +302,7 @@ class ImageCacheManager {
         var request = URLRequest(url: url)
         request.timeoutInterval = 30
 
-        Logger.info("[ImageCache] 开始下载: \(urlString)")
+        Logger.info("开始下载: \(urlString)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -311,12 +311,12 @@ class ImageCacheManager {
         }
 
         guard httpResponse.statusCode == 200 else {
-            Logger.error("[ImageCache] 下载失败，状态码: \(httpResponse.statusCode)")
+            Logger.error("下载失败，状态码: \(httpResponse.statusCode)")
             throw ImageCacheError.httpError(statusCode: httpResponse.statusCode)
         }
 
         guard let image = UIImage(data: data) else {
-            Logger.error("[ImageCache] 图片数据无效")
+            Logger.error("图片数据无效")
             throw ImageCacheError.invalidImageData
         }
 
@@ -326,7 +326,7 @@ class ImageCacheManager {
         // 保存原始图片数据到磁盘（不进行格式转换）
         try await saveImageToCache(imageData: data, url: url, etag: etag)
 
-        Logger.info("[ImageCache] 下载完成: \(urlString), 大小: \(data.count) bytes, ETag: \(etag ?? "无")")
+        Logger.info("下载完成: \(urlString), 大小: \(data.count) bytes, ETag: \(etag ?? "无")")
 
         return image
     }
@@ -344,7 +344,7 @@ class ImageCacheManager {
         if let oldMetadata = metadataMap[urlString] {
             let oldPath = cacheDir.appendingPathComponent(oldMetadata.path)
             try? fileManager.removeItem(at: oldPath)
-            Logger.debug("[ImageCache] 删除旧缓存: \(oldPath.path)")
+            Logger.debug("删除旧缓存: \(oldPath.path)")
         }
 
         // 直接写入原始数据
@@ -355,7 +355,7 @@ class ImageCacheManager {
         metadataMap[urlString] = metadata
         saveMetadata()
 
-        Logger.info("[ImageCache] 保存图片: \(fileName), 大小: \(imageData.count) bytes")
+        Logger.info("保存图片: \(fileName), 大小: \(imageData.count) bytes")
 
         // 检查缓存大小
         await checkCacheSizeAndCleanup()
@@ -388,15 +388,15 @@ class ImageCacheManager {
                     files.append((fileURL, Int64(size), modifiedDate))
                 }
             } catch {
-                Logger.error("[ImageCache] 获取文件信息失败: \(error)")
+                Logger.error("获取文件信息失败: \(error)")
             }
         }
 
-        Logger.debug("[ImageCache] 当前缓存大小: \(FormatUtil.formatFileSize(totalSize))")
+        Logger.debug("当前缓存大小: \(FormatUtil.formatFileSize(totalSize))")
 
         // 如果超过限制，清理最旧的文件
         if totalSize > maxCacheSize {
-            Logger.info("[ImageCache] 缓存超过限制，开始清理")
+            Logger.warning("缓存超过限制，开始清理")
 
             // 按修改时间排序（最旧的在前）
             files.sort { $0.modifiedDate < $1.modifiedDate }
@@ -413,14 +413,14 @@ class ImageCacheManager {
                 let fileName = file.url.lastPathComponent
                 if let entry = metadataMap.first(where: { $0.value.path == fileName }) {
                     metadataMap.removeValue(forKey: entry.key)
-                    Logger.debug("[ImageCache] 清理缓存: \(fileName)")
+                    Logger.debug("清理缓存: \(fileName)")
                 }
 
                 sizeToFree -= file.size
             }
 
             saveMetadata()
-            Logger.info("[ImageCache] 缓存清理完成")
+            Logger.success("缓存清理完成")
         }
     }
 
@@ -437,9 +437,9 @@ class ImageCacheManager {
             metadataMap.removeAll()
             saveMetadata()
 
-            Logger.info("[ImageCache] 清空所有缓存")
+            Logger.info("清空所有缓存")
         } catch {
-            Logger.error("[ImageCache] 清空缓存失败: \(error)")
+            Logger.error("清空缓存失败: \(error)")
         }
     }
 }

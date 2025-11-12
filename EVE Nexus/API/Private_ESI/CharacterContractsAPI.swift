@@ -267,7 +267,7 @@ class CharacterContractsAPI {
         if !saveContractItemsToCache(contractId: contractId, items: items) {
             Logger.error("保存合同物品到缓存文件失败")
         } else {
-            Logger.debug("成功保存合同物品到缓存文件")
+            Logger.success("成功保存合同物品到缓存文件")
         }
 
         return items
@@ -311,7 +311,7 @@ class CharacterContractsAPI {
             }
         }
 
-        Logger.debug("成功从服务器获取合同数据 - 角色ID: \(characterId), 合同数量: \(contracts.count)")
+        Logger.success("成功从服务器获取合同数据 - 角色ID: \(characterId), 合同数量: \(contracts.count)")
 
         return contracts
     }
@@ -347,7 +347,7 @@ class CharacterContractsAPI {
 
             let decoder = JSONDecoder()
             let items = try decoder.decode([ContractItemInfo].self, from: data)
-            Logger.debug("成功从服务器获取合同物品 - 合同ID: \(contractId), 物品数量: \(items.count)")
+            Logger.success("成功从服务器获取合同物品 - 合同ID: \(contractId), 物品数量: \(items.count)")
 
             // 打印每个物品的详细信息
             //            for item in items {

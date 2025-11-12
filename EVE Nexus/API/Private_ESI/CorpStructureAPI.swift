@@ -93,7 +93,7 @@ public class CorpStructureAPI {
         // 保存到缓存
         saveStructuresToCache(allStructures, corporationId: corporationId)
 
-        Logger.info("成功获取所有建筑物信息 - 军团ID: \(corporationId), 总条数: \(allStructures.count)")
+        Logger.success("成功获取所有建筑物信息 - 军团ID: \(corporationId), 总条数: \(allStructures.count)")
         return allStructures
     }
 
@@ -145,7 +145,7 @@ public class CorpStructureAPI {
                 return nil
             }
 
-            Logger.info("成功从缓存加载建筑物信息 - 军团ID: \(corporationId)")
+            Logger.success("成功从缓存加载建筑物信息 - 军团ID: \(corporationId)")
             return cached.data
         } catch {
             Logger.error("读取缓存文件失败 - 军团ID: \(corporationId), 错误: \(error)")

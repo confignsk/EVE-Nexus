@@ -552,7 +552,7 @@ struct JumpNavigationView: View {
                     for incursion in incursions {
                         incursionSystems.append(contentsOf: incursion.infestedSolarSystems)
                     }
-                    Logger.info("成功获取入侵星系数据，共 \(incursionSystems.count) 个受影响星系")
+                    Logger.success("成功获取入侵星系数据，共 \(incursionSystems.count) 个受影响星系")
 
                     // 检查起点和终点是否在入侵区域内
                     var routePointsInIncursion: [Int] = []

@@ -46,7 +46,7 @@ class UniverseAPI {
 
         // 解析响应数据
         let responses = try JSONDecoder().decode([UniverseNameResponse].self, from: data)
-        Logger.info("成功获取 \(responses.count) 个实体的名称信息")
+        Logger.success("成功获取 \(responses.count) 个实体的名称信息")
 
         // 准备批量插入的SQL语句
         let insertSQL = """
@@ -74,7 +74,7 @@ class UniverseAPI {
 
         switch result {
         case .success:
-            Logger.info("成功批量保存 \(responses.count) 个实体的名称信息到数据库")
+            Logger.success("成功批量保存 \(responses.count) 个实体的名称信息到数据库")
             return responses.count
         case let .error(error):
             Logger.error("批量保存实体信息失败 - 错误: \(error)")

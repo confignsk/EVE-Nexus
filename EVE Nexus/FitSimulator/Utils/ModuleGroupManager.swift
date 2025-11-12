@@ -67,7 +67,7 @@ class ModuleGroupManager {
 
         Logger.info(
             """
-            [ModuleGroupManager]状态验证:
+            状态验证:
             - 组ID: \(groupID)
             - 目标状态: \(targetStatus)
             - maxGroupOnline: \(maxGroupOnline)
@@ -80,7 +80,7 @@ class ModuleGroupManager {
         if maxGroupActive > 0 && adjustedStatus >= 2 {
             if statusCount.activeCount >= maxGroupActive {
                 adjustedStatus = 1 // 降级到在线状态
-                Logger.info("[ModuleGroupManager]达到maxGroupActive限制，状态降级到在线(1)")
+                Logger.warning("达到maxGroupActive限制，状态降级到在线(1)")
             }
         }
 
@@ -88,11 +88,11 @@ class ModuleGroupManager {
         if maxGroupOnline > 0 && adjustedStatus >= 1 {
             if statusCount.onlineCount >= maxGroupOnline {
                 adjustedStatus = 0 // 降级到离线状态
-                Logger.info("[ModuleGroupManager]达到maxGroupOnline限制，状态降级到离线(0)")
+                Logger.warning("达到maxGroupOnline限制，状态降级到离线(0)")
             }
         }
 
-        Logger.info("[ModuleGroupManager]最终状态: \(adjustedStatus)")
+        Logger.info("最终状态: \(adjustedStatus)")
         return adjustedStatus
     }
 
@@ -123,7 +123,7 @@ class ModuleGroupManager {
 
         Logger.info(
             """
-            [ModuleGroupManager]处理同组降级:
+            处理同组降级:
             - 组ID: \(groupID)
             - maxGroupOnline: \(maxGroupOnline)
             - maxGroupActive: \(maxGroupActive)
@@ -163,7 +163,7 @@ class ModuleGroupManager {
                     modules[moduleIndex] = updatedModule
                     modifiedIndices.append(moduleIndex)
                     Logger.info(
-                        "[ModuleGroupManager]将同组装备[\(module.name)]从状态\(module.status)降级到离线(0)")
+                        "将同组装备[\(module.name)]从状态\(module.status)降级到离线(0)")
                     downgraded += 1
                 }
             }
@@ -203,7 +203,7 @@ class ModuleGroupManager {
                     modules[moduleIndex] = updatedModule
                     modifiedIndices.append(moduleIndex)
                     Logger.info(
-                        "[ModuleGroupManager]将同组装备[\(module.name)]从状态\(module.status)降级到在线(1)")
+                        "将同组装备[\(module.name)]从状态\(module.status)降级到在线(1)")
                     downgraded += 1
                 }
             }

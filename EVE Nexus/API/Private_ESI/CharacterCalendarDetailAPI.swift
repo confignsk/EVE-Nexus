@@ -67,7 +67,7 @@ class CharacterCalendarDetailAPI {
         )
 
         let eventDetail = try JSONDecoder().decode(CalendarEventDetail.self, from: data)
-        Logger.info("成功获取事件详情 - 角色ID: \(characterId), 事件ID: \(eventId)")
+        Logger.success("成功获取事件详情 - 角色ID: \(characterId), 事件ID: \(eventId)")
         return eventDetail
     }
 }

@@ -156,7 +156,7 @@ public class UniverseStructureAPI {
 
         switch result {
         case .success:
-            Logger.info("成功批量保存 \(structures.count) 个建筑物信息到缓存")
+            Logger.success("成功批量保存 \(structures.count) 个建筑物信息到缓存")
         case let .error(error):
             Logger.error("批量保存建筑物缓存失败: \(error)")
         }

@@ -176,7 +176,7 @@ class EVEStatusRSSManager: ObservableObject {
                 self.isLoading = false
             }
 
-            Logger.info("成功获取 \(incidents.count) 条EVE状态事件")
+            Logger.success("成功获取 \(incidents.count) 条EVE状态事件")
 
         } catch {
             Logger.error("获取EVE状态RSS失败: \(error.localizedDescription)")

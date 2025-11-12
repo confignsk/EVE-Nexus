@@ -328,7 +328,7 @@ struct ModuleSettingsView: View {
                                                     selectedModuleState = newState
                                                 }
                                             } else {
-                                                Logger.warning("[ModuleSettingsView] 批量替换后未找到更新的模块")
+                                                Logger.warning("批量替换后未找到更新的模块")
                                             }
                                         } else {
                                             // 单个模式下，直接替换
@@ -512,12 +512,12 @@ struct ModuleSettingsView: View {
                 }
             }
             .onAppear {
-                Logger.info("[ModuleSettingsView] selectedSlotFlag: \(slotFlag)")
+                Logger.info("selectedSlotFlag: \(slotFlag)")
                 Logger.info(
-                    "[ModuleSettingsView] 模块名称: \(module.name), 模块ID: \(module.typeId), 槽位: \(slotFlag.rawValue)"
+                    "模块名称: \(module.name), 模块ID: \(module.typeId), 槽位: \(slotFlag.rawValue)"
                 )
                 if isBatchMode {
-                    Logger.info("[ModuleSettingsView] 批量模式: \(relatedModules.count) 个相关模块")
+                    Logger.info("批量模式: \(relatedModules.count) 个相关模块")
                 }
                 currentModuleID = module.typeId
                 selectedModuleState = module.status

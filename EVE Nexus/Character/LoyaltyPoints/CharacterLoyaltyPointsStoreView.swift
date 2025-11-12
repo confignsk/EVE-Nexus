@@ -255,7 +255,7 @@ struct CharacterLoyaltyPointsStoreView: View {
                     hasLoadedData = true
                 }
 
-                Logger.info("[+] 成功加载LP商店数据 - 势力数量: \(loadedFactions.count)")
+                Logger.info(" 成功加载LP商店数据 - 势力数量: \(loadedFactions.count)")
             }
         }
     }

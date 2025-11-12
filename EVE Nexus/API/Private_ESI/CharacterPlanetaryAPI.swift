@@ -220,7 +220,7 @@ class CharacterPlanetaryAPI {
         else {
             return nil
         }
-        Logger.info("[CharacterPlanetaryAPI] Read data from cache: \(cacheFile.path())")
+        Logger.info("Read data from cache: \(cacheFile.path())")
         return planetaryInfo
     }
 
@@ -307,11 +307,11 @@ class CharacterPlanetaryAPI {
             for file in files {
                 if file.lastPathComponent.hasPrefix(prefix) {
                     try fileManager.removeItem(at: file)
-                    Logger.info("[CharacterPlanetaryAPI] 已清理星球详情缓存: \(file.lastPathComponent)")
+                    Logger.info("已清理星球详情缓存: \(file.lastPathComponent)")
                 }
             }
         } catch {
-            Logger.error("[CharacterPlanetaryAPI] 清理星球详情缓存失败: \(error.localizedDescription)")
+            Logger.error("清理星球详情缓存失败: \(error.localizedDescription)")
         }
     }
 }

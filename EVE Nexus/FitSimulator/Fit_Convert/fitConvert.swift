@@ -1552,7 +1552,7 @@ class FitConvert {
         let nameToTypeIdMap = try batchQueryTypeIds(
             itemNames: allItemNames, databaseManager: databaseManager
         )
-        Logger.info("成功查询到 \(nameToTypeIdMap.count) 个物品的typeId")
+        Logger.success("成功查询到 \(nameToTypeIdMap.count) 个物品的typeId")
 
         // 查找飞船ID（初始查找，后续会通过验证查询确认）
         guard let initialShipTypeId = nameToTypeIdMap[shipName] else {

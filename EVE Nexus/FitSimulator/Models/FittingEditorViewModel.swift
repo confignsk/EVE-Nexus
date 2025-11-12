@@ -346,7 +346,7 @@ class FittingEditorViewModel: ObservableObject {
             if let localFittings = try? FitConvert.online2local(jsonData: jsonData),
                let localFitting = localFittings.first
             {
-                Logger.info("成功转换为本地配置: 舰载机数量=\(localFitting.fighters?.count ?? 0)")
+                Logger.success("成功转换为本地配置: 舰载机数量=\(localFitting.fighters?.count ?? 0)")
                 // 获取已保存的技能设置
                 let characterSkills = FittingEditorViewModel.getSkillsFromPreferences()
 
@@ -1277,7 +1277,7 @@ class FittingEditorViewModel: ObservableObject {
         // 如果不能安装，设置错误消息并返回
         if !canInstall {
             errorMessage = "无法安装装备: \(model_name)。该装备不适合当前飞船。"
-            Logger.error("[canFit]装备安装失败: \(model_name) - 无法安装到当前飞船")
+            Logger.error("装备安装失败: \(model_name) - 无法安装到当前飞船")
             return
         }
 
@@ -1496,12 +1496,12 @@ class FittingEditorViewModel: ObservableObject {
         // 如果不能安装，恢复旧模块并返回失败
         if !canInstall {
             errorMessage = "无法安装装备: \(model_name)。该装备不适合当前飞船。"
-            Logger.error("[canFit]装备替换失败: \(model_name) - 无法安装到当前飞船")
+            Logger.error("装备替换失败: \(model_name) - 无法安装到当前飞船")
 
             // 恢复旧模块
             if let oldModule = oldModule {
                 simulationInput.modules.append(oldModule)
-                Logger.info("[canFit]撤回装备替换，重新计算属性")
+                Logger.info("撤回装备替换，重新计算属性")
                 calculateAttributes()
                 objectWillChange.send()
             }

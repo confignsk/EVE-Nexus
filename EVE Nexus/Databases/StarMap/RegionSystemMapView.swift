@@ -456,7 +456,7 @@ struct RegionSystemMapView: View {
             return nil
         }
 
-        Logger.info("成功加载星域 \(regionId) 的地图数据")
+        Logger.success("成功加载星域 \(regionId) 的地图数据")
         return mapData
     }
 

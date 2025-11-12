@@ -369,7 +369,7 @@ struct PlanetDetailView: View {
                 currentTime = newTime
             }
 
-            // [!] 检查是否有工厂周期完成，需要重新模拟
+            // 检查是否有工厂周期完成，需要重新模拟
             // 防抖机制：如果正在模拟中，或者距离上次模拟时间太近（1秒内），则跳过
             if !isSimulating, shouldResimulate(newTime: newTime) {
                 // 检查距离上次模拟的时间

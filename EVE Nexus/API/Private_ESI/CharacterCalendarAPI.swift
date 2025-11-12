@@ -50,7 +50,7 @@ class CharacterCalendarAPI {
                 return false
             }
 
-            Logger.info("成功保存日历缓存到数据库 - 角色ID: \(characterId)")
+            Logger.success("成功保存日历缓存到数据库 - 角色ID: \(characterId)")
             return true
         } catch {
             Logger.error("保存日历缓存失败: \(error)")
@@ -74,7 +74,7 @@ class CharacterCalendarAPI {
             do {
                 let decoder = JSONDecoder()
                 let events = try decoder.decode([CalendarEvent].self, from: jsonData)
-                Logger.info("成功从缓存加载日历数据 - 角色ID: \(characterId)")
+                Logger.success("成功从缓存加载日历数据 - 角色ID: \(characterId)")
                 return events
             } catch {
                 Logger.error("解析日历缓存数据失败: \(error)")
@@ -110,7 +110,7 @@ class CharacterCalendarAPI {
             // 只有在获取第一页数据时才覆盖缓存，分页数据需要追加
             if fromEventId == nil {
                 if saveCalendarToDatabase(characterId: characterId, events: events) {
-                    Logger.info("成功缓存日历数据 - 角色ID: \(characterId)")
+                    Logger.success("成功缓存日历数据 - 角色ID: \(characterId)")
                 }
             }
 

@@ -34,7 +34,7 @@ class CharacterPortraitLoader: ObservableObject {
                     self.isCorporation[key] = false
                 }
 
-                Logger.info("成功加载角色头像 - ID: \(characterId), 大小: \(size)")
+                Logger.success("成功加载角色头像 - ID: \(characterId), 大小: \(size)")
             } catch {
                 // 如果获取角色头像失败，尝试获取军团头像
                 do {
@@ -48,7 +48,7 @@ class CharacterPortraitLoader: ObservableObject {
                         self.isCorporation[key] = true
                     }
 
-                    Logger.info("成功加载军团头像 - ID: \(characterId), 大小: \(size)")
+                    Logger.success("成功加载军团头像 - ID: \(characterId), 大小: \(size)")
                 } catch {
                     Logger.error("加载头像失败（角色和军团都失败）: \(error)")
                 }
@@ -199,7 +199,7 @@ class CharacterMailListViewModel: ObservableObject {
                     // 然后一次性更新UI数据
                     mails.append(contentsOf: filteredMails)
                     hasMoreMails = true
-                    Logger.info("成功加载 \(filteredMails.count) 封更老的邮件")
+                    Logger.success("成功加载 \(filteredMails.count) 封更老的邮件")
                 } else {
                     hasMoreMails = false
                     Logger.info("没有更多邮件了")
@@ -218,7 +218,7 @@ class CharacterMailListViewModel: ObservableObject {
                     // 然后一次性更新UI数据
                     mails.append(contentsOf: olderMails)
                     hasMoreMails = true
-                    Logger.info("成功加载 \(olderMails.count) 封更老的邮件")
+                    Logger.success("成功加载 \(olderMails.count) 封更老的邮件")
                 } else {
                     hasMoreMails = false
                     Logger.info("没有更多邮件了")
@@ -255,7 +255,7 @@ class CharacterMailListViewModel: ObservableObject {
                 senderCategories[id] = info.category
             }
 
-            Logger.debug("成功获取 \(names.count) 个发件人的信息")
+            Logger.success("成功获取 \(names.count) 个发件人的信息")
         } catch {
             Logger.error("获取发件人信息失败: \(error)")
         }

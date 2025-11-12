@@ -1004,7 +1004,7 @@ struct OreRefineryCalculatorView: View {
                         progressCallback: progressCallback
                     )
 
-                Logger.info("成功加载建筑订单，获得 \(batchOrders.count) 个物品的订单数据")
+                Logger.success("成功加载建筑订单，获得 \(batchOrders.count) 个物品的订单数据")
                 return batchOrders
             } catch {
                 Logger.error("批量加载建筑订单失败: \(error)")
@@ -1993,7 +1993,7 @@ struct OreRefineryCalculatorView: View {
         )
         isShowingExportAlert = true
 
-        Logger.info("成功导出 \(exportLines.count) 个物品到剪贴板")
+        Logger.success("成功导出 \(exportLines.count) 个物品到剪贴板")
     }
 }
 

@@ -200,117 +200,68 @@ class Logger {
         return 0
     }
 
-    // 公共日志方法 - 保持接口兼容性
-    // 使用 #function, #file, #line 来捕获实际调用位置
-    static func debug(_ message: String, functionName: String = #function, file: String = #file, line: UInt = #line) {
-        let truncatedMessage = truncateMessage(message, maxLength: maxDebugLogLength)
+    // 格式化调用位置信息
+    private static func formatLocation(file: String, function: String, line: UInt) -> String {
+        let fileName = (file as NSString).lastPathComponent
+        return "[\(fileName):\(line)] \(function): "
+    }
 
-        // 只在 Debug 构建时输出到 os_log（Xcode 控制台）
+    // 内部辅助函数，用于处理日志消息和位置信息
+    private static func _log(
+        message: String,
+        level: LoggerStore.Level,
+        maxLength: Int,
+        osLogType: OSLogType,
+        file: String = #file,
+        function: String = #function,
+        line: UInt = #line
+    ) {
+        // 将调用位置信息附加到消息前面，用换行分隔
+        // 注意：由于 Swift 的限制，file/function/line 会在 Logger 方法定义处评估
+        // 但至少我们可以在消息中包含这些信息
+        let locationPrefix = formatLocation(file: file, function: function, line: line)
+        let finalMessage = locationPrefix + "\n" + message
+        let truncatedMessage = truncateMessage(finalMessage, maxLength: maxLength)
+
         #if DEBUG
-            os_log("%{private}@", type: .debug, truncatedMessage)
+            os_log("%{private}@", type: osLogType, truncatedMessage)
         #endif
 
-        // 记录到 Pulse
         shared.loggerStore.storeMessage(
             label: "com.eve.nexus.logger",
-            level: .debug,
-            message: truncatedMessage,
-            metadata: [
-                "function": .string(functionName),
-                "file": .string((file as NSString).lastPathComponent),
-            ],
-            file: file,
-            function: functionName,
-            line: line
+            level: level,
+            message: truncatedMessage
         )
     }
 
-    static func info(_ message: String, functionName: String = #function, file: String = #file, line: UInt = #line) {
-        let truncatedMessage = truncateMessage(message, maxLength: maxInfoLogLength)
-
-        // 只在 Debug 构建时输出到 os_log（Xcode 控制台）
-        #if DEBUG
-            os_log("%{private}@", type: .info, truncatedMessage)
-        #endif
-
-        // 记录到 Pulse
-        shared.loggerStore.storeMessage(
-            label: "com.eve.nexus.logger",
-            level: .info,
-            message: truncatedMessage,
-            metadata: [
-                "function": .string(functionName),
-                "file": .string((file as NSString).lastPathComponent),
-            ],
-            file: file,
-            function: functionName,
-            line: line
-        )
+    // 公共日志方法 - 使用默认参数自动捕获调用位置（虽然会显示 Logger 的位置，但会在消息中包含）
+    static func debug(_ message: String, file: String = #file, function: String = #function, line: UInt = #line) {
+        _log(message: message, level: .debug, maxLength: maxDebugLogLength, osLogType: .debug, file: file, function: function, line: line)
     }
 
-    static func warning(_ message: String, functionName: String = #function, file: String = #file, line: UInt = #line) {
-        // 只在 Debug 构建时输出到 os_log（Xcode 控制台）
-        #if DEBUG
-            os_log("%{private}@", type: .default, message)
-        #endif
-
-        // 记录到 Pulse
-        shared.loggerStore.storeMessage(
-            label: "com.eve.nexus.logger",
-            level: .warning,
-            message: message,
-            metadata: [
-                "function": .string(functionName),
-                "file": .string((file as NSString).lastPathComponent),
-            ],
-            file: file,
-            function: functionName,
-            line: line
-        )
+    static func info(_ message: String, file: String = #file, function: String = #function, line: UInt = #line) {
+        _log(message: message, level: .info, maxLength: maxInfoLogLength, osLogType: .info, file: file, function: function, line: line)
     }
 
-    static func error(_ message: String, error: Error? = nil, showAlert _: Bool = true, functionName: String = #function, file: String = #file, line: UInt = #line) {
+    static func notice(_ message: String, file: String = #file, function: String = #function, line: UInt = #line) {
+        _log(message: message, level: .notice, maxLength: maxInfoLogLength, osLogType: .info, file: file, function: function, line: line)
+    }
+
+    static func success(_ message: String, file: String = #file, function: String = #function, line: UInt = #line) {
+        _log(message: message, level: .success, maxLength: maxInfoLogLength, osLogType: .info, file: file, function: function, line: line)
+    }
+
+    static func warning(_ message: String, file: String = #file, function: String = #function, line: UInt = #line) {
+        _log(message: message, level: .warning, maxLength: maxInfoLogLength, osLogType: .default, file: file, function: function, line: line)
+    }
+
+    static func error(_ message: String, error: Error? = nil, showAlert _: Bool = true, file: String = #file, function: String = #function, line: UInt = #line) {
         let errorMessage = error != nil ? "\(message) \(error!.localizedDescription)" : message
-
-        // 只在 Debug 构建时输出到 os_log（Xcode 控制台）
-        #if DEBUG
-            os_log("%{private}@", type: .error, errorMessage)
-        #endif
-
-        // 记录到 Pulse
-        shared.loggerStore.storeMessage(
-            label: "com.eve.nexus.logger",
-            level: .error,
-            message: errorMessage,
-            metadata: [
-                "function": .string(functionName),
-                "file": .string((file as NSString).lastPathComponent),
-            ],
-            file: file,
-            function: functionName,
-            line: line
-        )
+        _log(message: errorMessage, level: .error, maxLength: maxInfoLogLength, osLogType: .error, file: file, function: function, line: line)
     }
 
-    static func fault(_ message: String, functionName: String = #function, file: String = #file, line: UInt = #line) {
-        // 只在 Debug 构建时输出到 os_log（Xcode 控制台）
-        #if DEBUG
-            os_log("%{private}@", type: .fault, message)
-        #endif
-
-        // 记录到 Pulse
-        shared.loggerStore.storeMessage(
-            label: "com.eve.nexus.logger",
-            level: .critical,
-            message: message,
-            metadata: [
-                "function": .string(functionName),
-                "file": .string((file as NSString).lastPathComponent),
-            ],
-            file: file,
-            function: functionName,
-            line: line
-        )
+    static func fault(_ message: String, file: String = #file, function: String = #function, line: UInt = #line) {
+        _log(message: message, level: .critical, maxLength: maxInfoLogLength, osLogType: .fault, file: file, function: function, line: line)
     }
 
     // 截断消息到指定长度

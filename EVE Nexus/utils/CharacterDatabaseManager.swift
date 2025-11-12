@@ -35,7 +35,7 @@ class CharacterDatabaseManager: ObservableObject, @unchecked Sendable {
                 Logger.error("角色数据库打开失败: 未知错误")
             }
         }
-        Logger.info("角色数据库初始化完成")
+        Logger.success("角色数据库初始化完成")
     }
 
     deinit {
@@ -54,7 +54,7 @@ class CharacterDatabaseManager: ObservableObject, @unchecked Sendable {
             var statement: OpaquePointer?
             let query = "SELECT name FROM sqlite_master WHERE type='table' LIMIT 1"
             if sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK {
-                Logger.info("角色数据库连接验证成功")
+                Logger.success("角色数据库连接验证成功")
                 sqlite3_finalize(statement)
                 DispatchQueue.main.async {
                     self.databaseUpdated.toggle()
@@ -556,7 +556,7 @@ class CharacterDatabaseManager: ObservableObject, @unchecked Sendable {
             } else {
                 result = .success(results)
             }
-            // Logger.debug("成功执行: \(query)")
+            // Logger.success("成功执行: \(query)")
         }
 
         return result
@@ -647,7 +647,7 @@ class CharacterDatabaseManager: ObservableObject, @unchecked Sendable {
             let result = executeQuery(statement, parameters: [characterId])
             switch result {
             case .success:
-                Logger.debug("成功执行删除语句: \(statement)")
+                Logger.success("成功执行删除语句: \(statement)")
             case let .error(error):
                 Logger.error("执行删除语句失败: \(statement), 错误: \(error)")
             }

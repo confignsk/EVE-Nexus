@@ -214,7 +214,7 @@ class CharacterWalletAPI {
             return nil
         }
 
-        Logger.info("成功读取钱包磁盘缓存 - Key: \(key), 缓存时间: \(cache.timestamp), 值: \(cache.value)")
+        Logger.success("成功读取钱包磁盘缓存 - Key: \(key), 缓存时间: \(cache.timestamp), 值: \(cache.value)")
         return cache
     }
 
@@ -544,7 +544,7 @@ class CharacterWalletAPI {
             throw NetworkError.invalidResponse
         }
 
-        Logger.info("成功获取钱包交易记录，共\(transactions.count)条记录")
+        Logger.success("成功获取钱包交易记录，共\(transactions.count)条记录")
         return transactions
     }
 }

@@ -27,7 +27,7 @@ public class CharacterFittingAPI {
     {
         // 如果不是强制刷新，尝试从缓存获取数据
         if !forceRefresh, let cachedData = try? loadFromCache(characterID: characterID) {
-            Logger.info("成功从缓存获取装配数据，数量: \(cachedData.count)")
+            Logger.success("成功从缓存获取装配数据，数量: \(cachedData.count)")
             return cachedData
         }
 
@@ -47,7 +47,7 @@ public class CharacterFittingAPI {
             )
 
             let fittings = try JSONDecoder().decode([CharacterFitting].self, from: data)
-            Logger.info("成功从API获取装配数据，数量: \(fittings.count)")
+            Logger.success("成功从API获取装配数据，数量: \(fittings.count)")
 
             // 保存到缓存
             try saveToCache(characterID: characterID, fittings: fittings)
@@ -111,7 +111,7 @@ public class CharacterFittingAPI {
             }
 
             let response = try JSONDecoder().decode(FittingUploadResponse.self, from: responseData)
-            Logger.info("成功上传装配配置 - 装配ID: \(response.fitting_id)")
+            Logger.success("成功上传装配配置 - 装配ID: \(response.fitting_id)")
 
             return response.fitting_id
         } catch {
@@ -143,7 +143,7 @@ public class CharacterFittingAPI {
                 noRetryKeywords: ["Unhandled internal error encountered"] // 说明已经删除了
             )
 
-            Logger.info("成功删除装配配置 - 角色ID: \(characterID), 装配ID: \(fittingID)")
+            Logger.success("成功删除装配配置 - 角色ID: \(characterID), 装配ID: \(fittingID)")
         } catch {
             Logger.error("删除装配配置失败: \(error)")
             throw error
@@ -204,7 +204,7 @@ public class CharacterFittingAPI {
 
         let fileURL = getCacheFilePath(characterID: characterID)
         try data.write(to: fileURL)
-        Logger.info("成功保存装配数据到缓存 - 角色ID: \(characterID), 数据数量: \(fittings.count)")
+        Logger.success("成功保存装配数据到缓存 - 角色ID: \(characterID), 数据数量: \(fittings.count)")
     }
 }
 

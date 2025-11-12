@@ -110,7 +110,7 @@ class CharacterMailAPI {
             Task.detached {
                 do {
                     try await self.saveMails(mails, for: characterId)
-                    Logger.info("成功在后台处理 \(mails.count) 封邮件到数据库")
+                    Logger.success("成功在后台处理 \(mails.count) 封邮件到数据库")
                 } catch {
                     Logger.error("后台保存邮件失败: \(error)")
                 }
@@ -159,7 +159,7 @@ class CharacterMailAPI {
             cachedLabels[characterId] = response
             labelsCacheTime[characterId] = Date()
 
-            Logger.info("成功获取邮件标签数据")
+            Logger.success("成功获取邮件标签数据")
             return response
         } catch {
             Logger.error("获取邮件标签失败: \(error)")
@@ -282,7 +282,7 @@ class CharacterMailAPI {
         let result = databaseManager.executeQuery(insertMailSQL, parameters: insertParameters)
         switch result {
         case .success:
-            Logger.info("成功批量插入 \(newMails.count) 封新邮件")
+            Logger.success("成功批量插入 \(newMails.count) 封新邮件")
 
             // 批量处理标签
             if !mailLabels.isEmpty {
@@ -318,7 +318,7 @@ class CharacterMailAPI {
                 if case let .error(error) = labelResult {
                     Logger.error("批量保存邮件标签失败: \(error)")
                 } else {
-                    Logger.info("成功批量保存邮件标签")
+                    Logger.success("成功批量保存邮件标签")
                 }
             }
 
@@ -361,7 +361,7 @@ class CharacterMailAPI {
 
         let data = try await networkManager.fetchDataWithToken(from: url, characterId: characterId)
         let content = try JSONDecoder().decode(EVEMailContent.self, from: data)
-        Logger.info("成功从API获取邮件内容 - 邮件ID: \(mailId)")
+        Logger.success("成功从API获取邮件内容 - 邮件ID: \(mailId)")
 
         // 4. 保存到缓存和数据库
         mailContentCache.setObject(CachedMailContent(content), forKey: NSNumber(value: mailId))
@@ -458,7 +458,7 @@ class CharacterMailAPI {
             throw DatabaseError.insertError(error)
         }
 
-        Logger.info("成功保存邮件内容到数据库 - 邮件ID: \(content.from)")
+        Logger.success("成功保存邮件内容到数据库 - 邮件ID: \(content.from)")
     }
 
     func fetchMailLists(characterId: Int) async throws -> [EVEMailList] {
@@ -476,14 +476,14 @@ class CharacterMailAPI {
 
         // 解析响应数据
         let mailLists = try JSONDecoder().decode([EVEMailList].self, from: data)
-        Logger.info("成功获取 \(mailLists.count) 个邮件订阅列表")
+        Logger.success("成功获取 \(mailLists.count) 个邮件订阅列表")
 
         // 在后台保存到数据库
         if !mailLists.isEmpty {
             Task.detached {
                 do {
                     try await self.saveMailLists(mailLists, for: characterId)
-                    Logger.info("成功保存邮件订阅列表到数据库")
+                    Logger.success("成功保存邮件订阅列表到数据库")
                 } catch {
                     Logger.error("保存邮件订阅列表失败: \(error)")
                 }
@@ -533,7 +533,7 @@ class CharacterMailAPI {
             }
         }
 
-        Logger.info("成功保存 \(mailLists.count) 个邮件订阅列表到数据库")
+        Logger.success("成功保存 \(mailLists.count) 个邮件订阅列表到数据库")
     }
 
     /// 从数据库获取邮件订阅列表

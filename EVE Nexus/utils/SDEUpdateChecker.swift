@@ -116,19 +116,19 @@ class SDEUpdateChecker: ObservableObject {
 
         Logger.info("开始检查SDE更新...")
 
-        // [+] 输出 CloudKit 容器信息
+        //  输出 CloudKit 容器信息
         let containerID = SDECloudKitManager.shared.getContainerIdentifier()
         Logger.info("CloudKit 容器 ID: \(containerID ?? "未知")")
 
-        // [+] 检查更新前先列出当前缓存
+        //  检查更新前先列出当前缓存
         Logger.info("=== 检查更新前的缓存状态 ===")
         SDEDownloader().listCloudKitAssets(containerIdentifier: containerID)
 
-        // [+] 清理容器的 Assets 目录
+        //  清理容器的 Assets 目录
         Logger.info("=== 清理旧缓存 ===")
         SDEDownloader().clearContainerAssets(containerIdentifier: containerID)
 
-        // [+] 清理后再次列出（应该为空）
+        //  清理后再次列出（应该为空）
         Logger.info("=== 清理后的缓存状态 ===")
         SDEDownloader().listCloudKitAssets(containerIdentifier: containerID)
 

@@ -235,7 +235,7 @@ class SkillPlanFileManager {
                         lastUpdated: planData.lastUpdated
                     )
 
-                    Logger.debug("成功创建技能计划对象: \(plan.name)")
+                    Logger.success("成功创建技能计划对象: \(plan.name)")
                     return plan
 
                 } catch {
@@ -260,7 +260,7 @@ class SkillPlanFileManager {
             }
             .sorted { $0.lastUpdated > $1.lastUpdated }
 
-            Logger.debug("成功加载技能计划数量: \(plans.count)")
+            Logger.success("成功加载技能计划数量: \(plans.count)")
             return plans
 
         } catch {
@@ -306,16 +306,16 @@ class SkillPlanFileManager {
 
                 if planData.id != nil {
                     // 新格式文件，跳过
-                    Logger.debug("[预处理] ✅ 新格式文件: \(url.lastPathComponent)")
+                    Logger.success("[预处理] 新格式文件: \(url.lastPathComponent)")
                 } else {
                     // 文件可以解析，但没有 UUID，需要迁移
                     filesToMigrate.append(url)
-                    Logger.debug("[预处理] 🔄 需要迁移: \(url.lastPathComponent)")
+                    Logger.debug("[预处理] 需要迁移: \(url.lastPathComponent)")
                 }
             } catch {
                 // 无法解析为新格式，可能是旧格式或损坏的文件
                 filesToMigrate.append(url)
-                Logger.debug("[预处理] 🔄 需要尝试迁移: \(url.lastPathComponent)")
+                Logger.debug("[预处理] 需要尝试迁移: \(url.lastPathComponent)")
             }
         }
 
@@ -353,16 +353,16 @@ class SkillPlanFileManager {
                 let newData = try encoder.encode(newPlanData)
                 try newData.write(to: newFileURL)
 
-                Logger.debug("[预处理] ✅ 迁移成功: \(url.lastPathComponent) → \(newFileName)")
+                Logger.success("[预处理] 迁移成功: \(url.lastPathComponent) → \(newFileName)")
 
                 // 删除旧文件
                 try FileManager.default.removeItem(at: url)
-                Logger.debug("[预处理] 🗑️ 删除旧文件: \(url.lastPathComponent)")
+                Logger.debug("[预处理] 删除旧文件: \(url.lastPathComponent)")
 
             } catch {
                 // 无法解析，删除损坏的文件
                 filesToDelete.append(url)
-                Logger.error("[预处理] ❌ 无法解析，将删除: \(url.lastPathComponent) - \(error)")
+                Logger.error("[预处理] 无法解析，将删除: \(url.lastPathComponent) - \(error)")
             }
         }
 
@@ -370,14 +370,14 @@ class SkillPlanFileManager {
         for url in filesToDelete {
             do {
                 try FileManager.default.removeItem(at: url)
-                Logger.debug("[预处理] 🗑️ 删除无效文件: \(url.lastPathComponent)")
+                Logger.debug("[预处理] 删除无效文件: \(url.lastPathComponent)")
             } catch {
-                Logger.error("[预处理] ❌ 删除失败: \(url.lastPathComponent) - \(error)")
+                Logger.error("[预处理] 删除失败: \(url.lastPathComponent) - \(error)")
             }
         }
 
         if !filesToMigrate.isEmpty || !filesToDelete.isEmpty {
-            Logger.debug("[预处理] 完成 - 迁移: \(filesToMigrate.count - filesToDelete.count), 删除: \(filesToDelete.count)")
+            Logger.success("[预处理] 完成 - 迁移: \(filesToMigrate.count - filesToDelete.count), 删除: \(filesToDelete.count)")
         } else {
             Logger.debug("[预处理] 无需处理的文件")
         }
@@ -628,7 +628,7 @@ struct SkillPlanView: View {
             // 创建技能ID到技能信息的映射
             learnedSkills = Dictionary(
                 uniqueKeysWithValues: skillsResponse.skills.map { ($0.skill_id, $0) })
-            Logger.debug("成功加载角色技能数量: \(learnedSkills.count)")
+            Logger.success("成功加载角色技能数量: \(learnedSkills.count)")
         } catch {
             Logger.error("获取技能数据失败: \(error)")
         }

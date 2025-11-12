@@ -320,7 +320,7 @@ class CorpMemberListViewModel: ObservableObject {
                         stationName: nil
                     )
                     locationCache[systemId] = info
-                    // Logger.debug("成功缓存星系信息 - ID: \(systemId), 名称: \(systemName), 安全等级: \(security)")
+                    // Logger.success("成功缓存星系信息 - ID: \(systemId), 名称: \(systemName), 安全等级: \(security)")
                 }
             } else {
                 Logger.error("星系查询失败 - SQL: \(query)")
@@ -388,7 +388,7 @@ class CorpMemberListViewModel: ObservableObject {
                         stationName: stationName
                     )
                     locationCache[stationId] = info
-                    // Logger.debug("成功缓存空间站信息 - ID: \(stationId), 名称: \(stationNameLocal), 星系: \(systemName), 安全等级: \(security)")
+                    // Logger.success("成功缓存空间站信息 - ID: \(stationId), 名称: \(stationNameLocal), 星系: \(systemName), 安全等级: \(security)")
                 }
             } else {
                 Logger.error("空间站查询失败 - SQL: \(query)")

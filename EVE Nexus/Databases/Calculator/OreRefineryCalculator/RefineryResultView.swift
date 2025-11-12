@@ -889,6 +889,6 @@ struct RefineryResultView: View {
         // 复制到剪贴板
         UIPasteboard.general.string = exportContent
 
-        Logger.info("成功复制 \(exportLines.count) 个精炼输出物品到剪贴板")
+        Logger.success("成功复制 \(exportLines.count) 个精炼输出物品到剪贴板")
     }
 }

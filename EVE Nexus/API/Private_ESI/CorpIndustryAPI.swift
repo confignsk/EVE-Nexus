@@ -102,7 +102,7 @@ class CorpIndustryAPI {
             }
         )
 
-        Logger.info("成功获取所有军团工业项目信息 - 军团ID: \(corporationId), 总条数: \(allJobs.count)")
+        Logger.success("成功获取所有军团工业项目信息 - 军团ID: \(corporationId), 总条数: \(allJobs.count)")
 
         // 保存到文件缓存
         saveJobsToCache(allJobs, corporationId: corporationId)

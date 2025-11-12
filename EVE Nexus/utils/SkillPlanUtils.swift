@@ -12,7 +12,7 @@ class SkillPlanHelper {
         addedSkills: inout Set<Int>,
         skillLevels: inout [Int: Int]
     ) -> [(skillId: Int, skillName: String, level: Int)] {
-        Logger.debug("[+] 开始添加技能到计划 - 技能: \(skillName) (ID: \(skillId)), 等级: \(targetLevel)")
+        Logger.debug(" 开始添加技能到计划 - 技能: \(skillName) (ID: \(skillId)), 等级: \(targetLevel)")
 
         let currentTargetLevel = currentSkillLevels[skillId] ?? 0
 
@@ -21,7 +21,7 @@ class SkillPlanHelper {
 
         // 只在技能从0级添加时检查前置依赖
         if !addedSkills.contains(skillId) {
-            Logger.debug("[+] 技能未添加，检查前置技能依赖")
+            Logger.debug(" 技能未添加，检查前置技能依赖")
 
             // 获取所有前置技能
             let prerequisites = getAllPrerequisites(

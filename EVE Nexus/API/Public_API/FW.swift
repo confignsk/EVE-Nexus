@@ -129,7 +129,7 @@ class FWAPI {
             let data = try Data(contentsOf: url)
             let decoder = JSONDecoder()
             systemNeighbours = try decoder.decode(SystemNeighbours.self, from: data)
-            Logger.info("成功加载星系邻居数据，共\(systemNeighbours.count)个星系")
+            Logger.success("成功加载星系邻居数据，共\(systemNeighbours.count)个星系")
         } catch {
             Logger.error("加载星系邻居数据失败: \(error)")
         }
@@ -272,7 +272,7 @@ class FWAPI {
         // 保存到缓存
         saveInsurgencyToCache(campaigns)
 
-        Logger.info("成功获取叛乱数据，共\(campaigns.count)个战役")
+        Logger.success("成功获取叛乱数据，共\(campaigns.count)个战役")
 
         return campaigns
     }
@@ -302,7 +302,7 @@ class FWAPI {
         // 等待两个任务完成
         let (systems, wars) = try await (systemsTask, warsTask)
 
-        Logger.info("成功获取FW数据 - 星系: \(systems.count)个, 战争: \(wars.count)场")
+        Logger.success("成功获取FW数据 - 星系: \(systems.count)个, 战争: \(wars.count)场")
 
         return (systems, wars)
     }
@@ -331,7 +331,7 @@ class FWAPI {
         // 保存到缓存
         saveToCache(systems, type: "systems")
 
-        Logger.info("成功获取FW星系数据，共\(systems.count)个星系")
+        Logger.success("成功获取FW星系数据，共\(systems.count)个星系")
 
         return systems
     }
@@ -360,7 +360,7 @@ class FWAPI {
         // 保存到缓存
         saveToCache(wars, type: "wars")
 
-        Logger.info("成功获取FW战争数据，共\(wars.count)场战争")
+        Logger.success("成功获取FW战争数据，共\(wars.count)场战争")
 
         return wars
     }

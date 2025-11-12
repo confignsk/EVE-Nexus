@@ -67,7 +67,7 @@ package struct ConsoleMessageCell: View {
     }
 
     var titleColor: Color {
-        message.logLevel >= .warning ? .textColor(for: message.logLevel) : .secondary
+        message.logLevel >= .warning || message.logLevel == .success ? .textColor(for: message.logLevel) : .secondary
     }
 
     // MARK: - Helpers
@@ -104,7 +104,9 @@ extension UXColor {
         switch level {
         case .trace: return .secondaryLabel
         case .debug, .info: return .label
-        case .notice, .warning: return .systemOrange
+        case .notice: return .systemBlue
+        case .warning: return .systemOrange
+        case .success: return .systemGreen
         case .error, .critical: return .red
         }
     }
@@ -115,7 +117,9 @@ extension Color {
         switch level {
         case .trace: return .secondary
         case .debug, .info: return .primary
-        case .notice, .warning: return .orange
+        case .notice: return .blue
+        case .warning: return .orange
+        case .success: return .green
         case .error, .critical: return .red
         }
     }

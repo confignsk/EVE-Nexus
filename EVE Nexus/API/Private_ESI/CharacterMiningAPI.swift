@@ -112,7 +112,7 @@ class CharacterMiningAPI {
                 )
             }
 
-            Logger.debug("成功转换记录数：\(entries.count)")
+            Logger.success("成功转换记录数：\(entries.count)")
             return entries
 
         case let .error(message):
@@ -183,7 +183,7 @@ class CharacterMiningAPI {
             return entry
         }
 
-        Logger.info("成功获取挖矿记录，共\(convertedEntries.count)条记录")
+        Logger.success("成功获取挖矿记录，共\(convertedEntries.count)条记录")
         return convertedEntries
     }
 

@@ -79,12 +79,12 @@ public class CorpMembersAPI {
             )
 
             let members = try JSONDecoder().decode([MemberTrackingInfo].self, from: data)
-            Logger.debug("成功获取军团成员信息，共 \(members.count) 条记录")
+            Logger.success("成功获取军团成员信息，共 \(members.count) 条记录")
 
             // 保存到缓存
             saveMemberTrackingToCache(members, corporationId: corporationId)
 
-            Logger.info("成功获取所有成员信息 - 军团ID: \(corporationId), 总条数: \(members.count)")
+            Logger.success("成功获取所有成员信息 - 军团ID: \(corporationId), 总条数: \(members.count)")
             return members
 
         } catch {
@@ -141,7 +141,7 @@ public class CorpMembersAPI {
                 return nil
             }
 
-            Logger.info("成功从缓存加载成员信息 - 军团ID: \(corporationId)")
+            Logger.success("成功从缓存加载成员信息 - 军团ID: \(corporationId)")
             return cached.data
         } catch {
             Logger.error("读取缓存文件失败 - 军团ID: \(corporationId), 错误: \(error)")

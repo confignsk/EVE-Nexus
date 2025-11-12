@@ -56,7 +56,7 @@ class AllianceContractsAPI {
             }
         )
 
-        Logger.debug("成功从服务器获取联盟合同数据 - 军团ID: \(corporationId), 合同数量: \(contracts.count)")
+        Logger.success("成功从服务器获取联盟合同数据 - 军团ID: \(corporationId), 合同数量: \(contracts.count)")
 
         return contracts
     }
@@ -208,7 +208,7 @@ class AllianceContractsAPI {
                 )
             }
 
-            Logger.debug("成功转换\(contracts.count)个联盟合同数据")
+            Logger.success("成功转换\(contracts.count)个联盟合同数据")
             return contracts
         }
         Logger.error("数据库查询失败")
@@ -416,7 +416,7 @@ class AllianceContractsAPI {
         do {
             let data = try JSONEncoder().encode(items)
             try data.write(to: cacheFile)
-            Logger.debug("成功缓存联盟合同物品数据 - 合同ID: \(contractId), 物品数量: \(items.count)")
+            Logger.success("成功缓存联盟合同物品数据 - 合同ID: \(contractId), 物品数量: \(items.count)")
         } catch {
             Logger.warning("缓存联盟合同物品数据失败: \(error)")
         }

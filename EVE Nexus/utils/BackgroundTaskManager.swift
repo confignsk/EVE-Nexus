@@ -31,21 +31,21 @@ class BackgroundTaskManager: ObservableObject {
             forTaskWithIdentifier: BackgroundTaskIdentifier.dataRefresh.identifier,
             using: nil
         ) { task in
-            Logger.info("[BackgroundTask] 数据刷新任务被系统触发，标识符: \(BackgroundTaskIdentifier.dataRefresh.identifier)")
+            Logger.info("数据刷新任务被系统触发，标识符: \(BackgroundTaskIdentifier.dataRefresh.identifier)")
             self.handleDataRefreshTask(task: task as! BGAppRefreshTask)
         }
 
-        Logger.info("[BackgroundTask] 后台任务注册完成 - 数据刷新: \(dataRefreshRegistered)")
-        Logger.info("[BackgroundTask] 数据刷新任务标识符: \(BackgroundTaskIdentifier.dataRefresh.identifier)")
+        Logger.info("后台任务注册完成 - 数据刷新: \(dataRefreshRegistered)")
+        Logger.info("数据刷新任务标识符: \(BackgroundTaskIdentifier.dataRefresh.identifier)")
     }
 
     /// 处理数据刷新任务
     private func handleDataRefreshTask(task: BGAppRefreshTask) {
-        Logger.info("[BackgroundTask] 开始执行数据刷新任务")
+        Logger.info("开始执行数据刷新任务")
 
         // 设置任务过期处理
         task.expirationHandler = {
-            Logger.warning("[BackgroundTask] 数据刷新任务已过期")
+            Logger.warning("数据刷新任务已过期")
             task.setTaskCompleted(success: false)
         }
 
@@ -53,7 +53,7 @@ class BackgroundTaskManager: ObservableObject {
         Task {
             await performDataRefresh()
             task.setTaskCompleted(success: true)
-            Logger.info("[BackgroundTask] 数据刷新任务完成")
+            Logger.info("数据刷新任务完成")
 
             // 安排下一次刷新
             scheduleDataRefresh()
@@ -62,11 +62,11 @@ class BackgroundTaskManager: ObservableObject {
 
     /// 执行数据刷新
     private func performDataRefresh() async {
-        Logger.info("[BackgroundTask] 开始执行后台数据刷新")
+        Logger.info("开始执行后台数据刷新")
 
         let characters = EVELogin.shared.loadCharacters()
         guard !characters.isEmpty else {
-            Logger.info("[BackgroundTask] 没有需要刷新的角色")
+            Logger.info("没有需要刷新的角色")
             return
         }
 
@@ -76,23 +76,23 @@ class BackgroundTaskManager: ObservableObject {
 
             // 跳过token已过期的角色
             if characterAuth.character.refreshTokenExpired {
-                Logger.info("[BackgroundTask] 跳过token已过期的角色: \(characterId)")
+                Logger.warning("跳过token已过期的角色: \(characterId)")
                 continue
             }
 
             do {
                 // 刷新角色详细信息
                 try await refreshCharacterData(characterId: characterId)
-                Logger.info("[BackgroundTask] 成功刷新角色数据: \(characterId)")
+                Logger.success("成功刷新角色数据: \(characterId)")
             } catch {
-                Logger.error("[BackgroundTask] 刷新角色数据失败: \(characterId), 错误: \(error)")
+                Logger.error("刷新角色数据失败: \(characterId), 错误: \(error)")
             }
         }
 
         // 刷新公共数据
         await refreshPublicData()
 
-        Logger.info("[BackgroundTask] 后台数据刷新完成")
+        Logger.success("后台数据刷新完成")
     }
 
     /// 刷新单个角色的数据（仅钱包和位置信息）
@@ -130,17 +130,23 @@ class BackgroundTaskManager: ObservableObject {
         Task.detached(priority: .background) {
             do {
                 _ = try await SovereigntyDataAPI.shared.fetchSovereigntyData(forceRefresh: false)
-                Logger.info("[BackgroundTask] 主权数据刷新完成")
+                Logger.success("主权数据刷新完成")
             } catch {
-                Logger.error("[BackgroundTask] 主权数据刷新失败: \(error)")
+                Logger.error("主权数据刷新失败: \(error)")
             }
         }
     }
 
     /// 安排数据刷新任务
     func scheduleDataRefresh() {
+        let taskIdentifier = BackgroundTaskIdentifier.dataRefresh.identifier
+
+        // 先取消之前的任务，避免创建重复任务
+        BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: taskIdentifier)
+        Logger.notice("已移除旧的后台任务，标识符: \(taskIdentifier)")
+
         let request = BGAppRefreshTaskRequest(
-            identifier: BackgroundTaskIdentifier.dataRefresh.identifier
+            identifier: taskIdentifier
         )
 
         // 设置下次刷新时间
@@ -148,18 +154,27 @@ class BackgroundTaskManager: ObservableObject {
 
         do {
             try BGTaskScheduler.shared.submit(request)
-            Logger.info("[BackgroundTask] 数据刷新任务已安排: \(request.earliestBeginDate?.description ?? "未知")")
-            Logger.info("[BackgroundTask] 数据刷新任务标识符: \(BackgroundTaskIdentifier.dataRefresh.identifier)")
+
+            // 格式化日期为本地时区显示
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateStyle = .medium
+            dateFormatter.timeStyle = .medium
+            dateFormatter.timeZone = TimeZone.current
+            dateFormatter.locale = Locale.current
+
+            let formattedDate = request.earliestBeginDate.map { dateFormatter.string(from: $0) } ?? "未知"
+            Logger.success("数据刷新任务已安排: \(formattedDate)")
+            Logger.info("数据刷新任务标识符: \(taskIdentifier)")
         } catch {
-            Logger.error("[BackgroundTask] 安排数据刷新任务失败: \(error)")
-            Logger.error("[BackgroundTask] 错误详情: \(error.localizedDescription)")
+            Logger.error("安排数据刷新任务失败: \(error)")
+            Logger.error("错误详情: \(error.localizedDescription)")
         }
     }
 
     /// 取消所有后台任务
     func cancelAllTasks() {
         BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: BackgroundTaskIdentifier.dataRefresh.identifier)
-        Logger.info("[BackgroundTask] 所有后台任务已取消")
+        Logger.warning("所有后台任务已取消")
     }
 
     /// 在应用启动时调用，安排后台任务

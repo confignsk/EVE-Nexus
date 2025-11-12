@@ -392,7 +392,7 @@ struct RegionMapView: View {
             return []
         }
 
-        Logger.info("成功加载 \(regions.count) 个星域数据")
+        Logger.success("成功加载 \(regions.count) 个星域数据")
         return regions
     }
 

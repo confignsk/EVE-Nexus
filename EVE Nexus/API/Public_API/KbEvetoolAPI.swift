@@ -311,7 +311,7 @@ class KbEvetoolAPI {
             Logger.debug("发现本地缓存,读取缓存文件: \(cacheFile.path)")
             let data = try Data(contentsOf: cacheFile)
             if let jsonData = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                Logger.debug("成功读取本地缓存")
+                Logger.success("成功读取本地缓存")
                 return jsonData
             }
         }

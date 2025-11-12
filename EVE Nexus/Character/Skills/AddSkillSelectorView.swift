@@ -139,7 +139,7 @@ struct AddSkillSelectorView: View {
         """
 
         if case let .success(skillRows) = databaseManager.executeQuery(skillsQuery) {
-            print("[+] AddSkillSelectorView: 查询到 \(skillRows.count) 个技能")
+            print("AddSkillSelectorView: 查询到 \(skillRows.count) 个技能")
 
             // 按技能组分组并统计
             var groupDict: [Int: (name: String, skillCount: Int)] = [:]
@@ -182,8 +182,8 @@ struct AddSkillSelectorView: View {
                 )
             }
 
-            print("[+] AddSkillSelectorView: 解析到 \(newSkillGroups.count) 个技能组")
-            print("[+] AddSkillSelectorView: 收集到 \(tempAllSkills.count) 个技能用于搜索")
+            print("AddSkillSelectorView: 解析到 \(newSkillGroups.count) 个技能组")
+            print("AddSkillSelectorView: 收集到 \(tempAllSkills.count) 个技能用于搜索")
 
             // 确保在主线程更新UI
             DispatchQueue.main.async {

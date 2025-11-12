@@ -79,7 +79,7 @@ public class CorpMoonExtractionAPI {
         // 保存到缓存
         saveExtractionsToCache(allExtractions, corporationId: corporationId)
 
-        Logger.info("成功获取所有月矿提取信息 - 军团ID: \(corporationId), 总条数: \(allExtractions.count)")
+        Logger.success("成功获取所有月矿提取信息 - 军团ID: \(corporationId), 总条数: \(allExtractions.count)")
         return allExtractions
     }
 
@@ -131,7 +131,7 @@ public class CorpMoonExtractionAPI {
                 return nil
             }
 
-            Logger.info("成功从缓存加载月矿提取信息 - 军团ID: \(corporationId)")
+            Logger.success("成功从缓存加载月矿提取信息 - 军团ID: \(corporationId)")
             return cached.data
         } catch {
             Logger.error("读取缓存文件失败 - 军团ID: \(corporationId), 错误: \(error)")

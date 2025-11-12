@@ -545,7 +545,7 @@ struct ContentView: View {
                 }
                 .navigationTitle(NSLocalizedString("Main_Home", comment: ""))
                 .task {
-                    Logger.info("[ContentView] Sidebar appeared, refreshing data...")
+                    Logger.info("Sidebar appeared, refreshing data...")
                     await viewModel.refreshAllBasicData()
                     updateTokenStatus()
                 }
@@ -847,7 +847,7 @@ struct ContentView: View {
             NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)
         ) { _ in
             // App 从后台返回前台时刷新数据
-            Logger.info("[ContentView] App entering foreground, refreshing data...")
+            Logger.info("App entering foreground, refreshing data...")
             Task {
                 await viewModel.refreshAllBasicData()
                 updateTokenStatus()
@@ -875,7 +875,7 @@ struct ContentView: View {
 
     private func logSelectedItem(_ item: String?) {
         guard let item = item else { return }
-        Logger.info("\n\n=== 用户访问功能: \(item) ===")
+        Logger.info("=== 用户访问功能: \(item) ===")
     }
 
     private func updateTokenStatus() {

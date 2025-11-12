@@ -72,7 +72,7 @@ package final class TextRenderer {
         }
         let detailsColor: UXColor
         switch message.logLevel {
-        case .critical, .error, .warning:
+        case .critical, .error, .warning, .notice, .success:
             detailsColor = textColor(for: message.logLevel)
         default:
             detailsColor = .secondaryLabel

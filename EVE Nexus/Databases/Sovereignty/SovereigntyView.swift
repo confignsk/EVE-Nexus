@@ -112,7 +112,7 @@ final class SovereigntyViewModel: ObservableObject {
         prepared.sort { $0.location.regionName < $1.location.regionName }
 
         if !prepared.isEmpty {
-            Logger.info("成功准备 \(prepared.count) 条数据")
+            Logger.success("成功准备 \(prepared.count) 条数据")
             preparedCampaigns = prepared
             // 加载所有联盟图标
             loadAllIcons()

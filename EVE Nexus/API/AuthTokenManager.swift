@@ -54,7 +54,7 @@ class SecureStorage {
     }
 
     func loadToken(for characterId: Int) throws -> String? {
-        Logger.info("SecureStorage: 开始尝试从 Keychain 加载 refresh token - 角色ID: \(characterId)")
+        // Logger.info("SecureStorage: 开始尝试从 Keychain 加载 refresh token - 角色ID: \(characterId)")
 
         let query: [String: Any] = [
             String(kSecClass): kSecClassGenericPassword,
@@ -63,7 +63,7 @@ class SecureStorage {
             String(kSecMatchLimit): kSecMatchLimitOne,
         ]
 
-        Logger.info("SecureStorage: 查询参数 - account: token_\(characterId)")
+        // Logger.info("SecureStorage: 查询参数 - account: token_\(characterId)")
 
         var result: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
@@ -91,9 +91,9 @@ class SecureStorage {
             return nil
         }
 
-        Logger.info(
-            "SecureStorage: 成功从 Keychain 加载 refresh token - 角色ID: \(characterId), token前缀: \(String(token.prefix(10)))..."
-        )
+//        Logger.info(
+//            "SecureStorage: 成功从 Keychain 加载 refresh token - 角色ID: \(characterId), token前缀: \(String(token.prefix(10)))..."
+//        )
         return token
     }
 
@@ -146,12 +146,12 @@ class SecureStorage {
                 // 检查 token 是否有效
                 if let token = try? loadToken(for: characterId), !token.isEmpty {
                     validCharacterIds.append(characterId)
-                    Logger.info("SecureStorage: 找到有效的 refresh token - 角色ID: \(characterId)")
+                    // Logger.info("SecureStorage: 找到有效的 refresh token - 角色ID: \(characterId)")
                 }
             }
         }
 
-        Logger.info("SecureStorage: 共找到 \(validCharacterIds.count) 个有效的 refresh token")
+        Logger.success("SecureStorage: 共找到 \(validCharacterIds.count) 个有效的 refresh token")
         return validCharacterIds
     }
 }
@@ -409,7 +409,7 @@ actor AuthTokenManager: NSObject {
                         }
                         continuation.resume(throwing: error)
                     } else if let response = response {
-                        Logger.info("Token 刷新请求成功 - 角色ID: \(characterId)")
+                        Logger.success("Token 刷新请求成功 - 角色ID: \(characterId)")
                         continuation.resume(returning: response)
                     } else {
                         Logger.error("Token 刷新请求返回空响应 - 角色ID: \(characterId)")
@@ -442,7 +442,7 @@ actor AuthTokenManager: NSObject {
             authState.stateChangeDelegate = self
 
             authStates[characterId] = authState
-            Logger.info("成功创建并保存认证状态 - 角色ID: \(characterId)")
+            Logger.success("成功创建并保存认证状态 - 角色ID: \(characterId)")
             return authState
         } catch {
             Logger.error("创建认证状态失败: \(error) - 角色ID: \(characterId)")

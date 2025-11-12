@@ -81,7 +81,7 @@ final class MiningLedgerViewModel: ObservableObject {
                 itemInfoCache[typeId] = info
             }
 
-            Logger.debug("成功加载了\(rows.count)个物品信息")
+            Logger.success("成功加载了\(rows.count)个物品信息")
         } else {
             Logger.error("批量加载物品信息失败")
         }

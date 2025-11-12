@@ -524,7 +524,7 @@ final class OnlineFittingViewModel: ObservableObject {
                 // 立即刷新界面显示
                 refreshDisplayedFittings()
 
-                Logger.info("成功删除在线装配配置 - ID: \(fitting.fittingId)，已添加到5分钟删除缓存")
+                Logger.success("成功删除在线装配配置 - ID: \(fitting.fittingId)，已添加到5分钟删除缓存")
             } catch {
                 Logger.error("删除在线装配配置失败: \(error)")
                 // 删除失败时不添加删除标记，保持界面状态不变
@@ -722,7 +722,7 @@ struct FittingMainView: View {
 
                 // 保存配置
                 try FitConvert.saveLocalFitting(localFitting)
-                Logger.info("成功重命名本地装配配置 - ID: \(fitting.fittingId)")
+                Logger.success("成功重命名本地装配配置 - ID: \(fitting.fittingId)")
 
                 // 刷新列表
                 await localViewModel.loadLocalFittings(forceRefresh: true)

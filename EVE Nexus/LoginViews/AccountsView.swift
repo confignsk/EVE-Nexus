@@ -227,7 +227,7 @@ struct AccountsView: View {
                                 characterId: character.CharacterID,
                                 forceRefresh: true
                             )
-                            Logger.info("成功获取并保存角色公开信息 - 角色: \(publicInfo.name)")
+                            Logger.success("成功获取并保存角色公开信息 - 角色: \(publicInfo.name)")
 
                             // UI 更新已经在 MainActor 上下文中
                             viewModel.characterInfo = character
@@ -298,7 +298,7 @@ struct AccountsView: View {
                                             characterId: character.CharacterID,
                                             forceRefresh: true
                                         )
-                                    Logger.info("成功获取并保存角色公开信息 - 角色: \(publicInfo.name)")
+                                    Logger.success("成功获取并保存角色公开信息 - 角色: \(publicInfo.name)")
 
                                     // UI 更新已经在 MainActor 上下文中
                                     viewModel.characterInfo = character
@@ -959,7 +959,7 @@ struct AccountsView: View {
                         characterId: character.CharacterID
                     )
 
-                    Logger.info("成功获取技能队列 - 角色: \(character.CharacterName), 队列长度: \(queue.count)")
+                    Logger.success("成功获取技能队列 - 角色: \(character.CharacterName), 队列长度: \(queue.count)")
 
                     // 查找正在训练的技能
                     if let currentSkill = queue.first(where: { $0.isCurrentlyTraining }) {
@@ -1148,7 +1148,7 @@ struct AccountsView: View {
                 }
             }
 
-            Logger.info("成功刷新角色数据 - \(character.CharacterName)")
+            Logger.success("成功刷新角色数据 - \(character.CharacterName)")
         } catch {
             Logger.error("刷新角色数据失败 - \(character.CharacterName): \(error)")
         }

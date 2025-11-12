@@ -211,7 +211,7 @@ class NotificationManager: ObservableObject {
 
         do {
             try await UNUserNotificationCenter.current().add(request)
-            Logger.info("成功创建EVE事件通知 - 事件ID: \(eventId), 通知时间: \(triggerDate), 策略: \(strategy)")
+            Logger.success("成功创建EVE事件通知 - 事件ID: \(eventId), 通知时间: \(triggerDate), 策略: \(strategy)")
             return true
         } catch {
             Logger.error("创建通知失败: \(error)")

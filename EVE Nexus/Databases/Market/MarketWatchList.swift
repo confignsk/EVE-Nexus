@@ -134,7 +134,7 @@ class MarketQuickbarManager {
             }
             .sorted { $0.lastUpdated < $1.lastUpdated }
 
-            Logger.debug("成功加载市场关注列表数量: \(quickbars.count)")
+            Logger.success("成功加载市场关注列表数量: \(quickbars.count)")
             return quickbars
 
         } catch {
@@ -2001,7 +2001,7 @@ extension MarketQuickbarDetailView {
         )
         isShowingExportAlert = true
 
-        Logger.info("成功导出 \(exportLines.count) 个物品到剪贴板")
+        Logger.success("成功导出 \(exportLines.count) 个物品到剪贴板")
     }
 }
 

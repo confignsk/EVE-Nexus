@@ -26,7 +26,7 @@ class ZKillMailsAPI {
 
         do {
             let stats = try JSONDecoder().decode(CharBattleIsk.self, from: data)
-            Logger.info("成功获取角色战斗统计信息")
+            Logger.success("成功获取角色战斗统计信息")
             return stats
         } catch {
             Logger.error("解析角色战斗统计信息失败: \(error)")

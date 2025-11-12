@@ -226,7 +226,7 @@ class ESIStatusAPI {
         cachedStatus = status
         lastFetchTime = Date()
 
-        Logger.info("成功获取ESI状态数据，共\(status.count)个端点")
+        Logger.success("成功获取ESI状态数据，共\(status.count)个端点")
 
         return status
     }

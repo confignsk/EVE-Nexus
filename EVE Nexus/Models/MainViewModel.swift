@@ -285,7 +285,7 @@ class MainViewModel: ObservableObject {
     // MARK: - Public Methods
 
     func refreshAllBasicData(forceRefresh: Bool = false) async {
-        Logger.info("[MainView Data Refresh] 正在刷新人物的全部基本数据")
+        Logger.info("正在刷新人物的全部基本数据")
         isRefreshing = true
         lastError = nil
         let service = CharacterDataService.shared
@@ -293,7 +293,7 @@ class MainViewModel: ObservableObject {
         // 创建一个独立的任务来处理服务器状态，但不等待它完成
         Task.detached(priority: .background) {
             do {
-                Logger.info("[MainView Data Refresh] 正在刷新服务器状态")
+                Logger.info("正在刷新服务器状态")
                 let status = try await service.getServerStatus(forceRefresh: forceRefresh)
                 await MainActor.run {
                     self.serverStatus = status
@@ -314,7 +314,7 @@ class MainViewModel: ObservableObject {
             // 优先加载头像
             if characterPortrait == nil {
                 Task {
-                    Logger.info("[MainView Data Refresh] 正在刷新人物头像")
+                    Logger.info("正在刷新人物头像")
                     loadingState = .loadingPortrait
                     if let portrait = try? await service.getCharacterPortrait(
                         id: character.CharacterID,
@@ -329,7 +329,7 @@ class MainViewModel: ObservableObject {
             // 加载角色公共信息
             Task {
                 do {
-                    Logger.info("[MainView Data Refresh] 正在刷新人物公共信息")
+                    Logger.info("正在刷新人物公共信息")
                     let publicInfo = try await retryOperation(named: "获取角色公共信息") {
                         try await CharacterAPI.shared.fetchCharacterPublicInfo(
                             characterId: character.CharacterID, forceRefresh: forceRefresh
@@ -399,7 +399,7 @@ class MainViewModel: ObservableObject {
             // 加载技能信息
             Task {
                 do {
-                    Logger.info("[MainView Data Refresh] 正在刷新人物技能数据")
+                    Logger.info("正在刷新人物技能数据")
                     let (skillsResponse, queue) = try await retryOperation(named: "获取技能信息") {
                         try await service.getSkillInfo(
                             id: character.CharacterID, forceRefresh: forceRefresh
@@ -414,7 +414,7 @@ class MainViewModel: ObservableObject {
             // 加载钱包余额
             Task {
                 do {
-                    Logger.info("[MainView Data Refresh] 正在刷新钱包余额")
+                    Logger.info("正在刷新钱包余额")
                     let balance = try await retryOperation(named: "获取钱包余额") {
                         try await service.getWalletBalance(
                             id: character.CharacterID, forceRefresh: forceRefresh
@@ -430,7 +430,7 @@ class MainViewModel: ObservableObject {
             // 加载位置信息
             Task {
                 do {
-                    Logger.info("[MainView Data Refresh] 正在刷新人物位置信息")
+                    Logger.info("正在刷新人物位置信息")
                     let location = try await retryOperation(named: "获取位置信息") {
                         try await service.getLocation(
                             id: character.CharacterID, forceRefresh: forceRefresh
@@ -445,7 +445,7 @@ class MainViewModel: ObservableObject {
             // 加载克隆状态
             Task {
                 do {
-                    Logger.info("[MainView Data Refresh] 正在刷新人物克隆信息")
+                    Logger.info("正在刷新人物克隆信息")
                     let cloneInfo = try await retryOperation(named: "获取克隆状态") {
                         try await service.getCloneStatus(
                             id: character.CharacterID, forceRefresh: forceRefresh
@@ -459,7 +459,7 @@ class MainViewModel: ObservableObject {
         }
 
         isRefreshing = false
-        Logger.info("[MainView Data Refresh] 刷新基本信息完成")
+        Logger.info("刷新基本信息完成")
         loadingState = .idle
     }
 
@@ -471,7 +471,7 @@ class MainViewModel: ObservableObject {
         if currentCharacterId != 0 {
             if let auth = EVELogin.shared.getCharacterByID(currentCharacterId) {
                 selectedCharacter = auth.character
-                Logger.info("成功加载保存的角色信息: \(auth.character.CharacterName)")
+                Logger.success("成功加载保存的角色信息: \(auth.character.CharacterName)")
             } else {
                 Logger.warning("找不到保存的角色（ID: \(currentCharacterId)），重置选择")
                 resetCharacterInfo()

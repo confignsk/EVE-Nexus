@@ -124,19 +124,19 @@ class StaticResourceManager {
     func shouldUseBundleSDE() -> Bool {
         // 如果本地没有SDE数据，使用Bundle数据
         guard isUsingSDEDataSource() else {
-            Logger.info("[+] 本地没有 SDE 数据，使用 Bundle")
+            Logger.info("本地没有 SDE 数据，使用 Bundle")
             return true // 使用 Bundle
         }
 
         // 获取 Bundle 数据库的版本
         guard let bundleVersion = getBundleSDEVersion() else {
-            Logger.warning("[!] 无法读取 Bundle SDE 版本，使用本地数据")
+            Logger.warning("无法读取 Bundle SDE 版本，使用本地数据")
             return false // 无法读取 Bundle 版本，使用本地
         }
 
         // 获取本地数据库的版本
         guard let localVersion = getDocumentsSDEVersion() else {
-            Logger.info("[!] 无法读取本地 SDE 版本，使用 Bundle")
+            Logger.info("无法读取本地 SDE 版本，使用 Bundle")
             // 本地版本无法读取，说明数据可能损坏，删除后使用 Bundle
             cleanupLocalSDEData()
             return true // 无法读取本地版本，使用 Bundle
@@ -145,7 +145,7 @@ class StaticResourceManager {
         // 比较版本号：选择版本更高的数据库
         let shouldUseBundle = compareSDEVersions(bundle: bundleVersion, local: localVersion)
 
-        Logger.info("[+] SDE 版本比较:")
+        Logger.info("SDE 版本比较:")
         Logger.info("    Bundle: \(bundleVersion.buildNumber).\(bundleVersion.patchNumber)")
         Logger.info("    Local:  \(localVersion.buildNumber).\(localVersion.patchNumber)")
         Logger.info("    使用: \(shouldUseBundle ? "Bundle" : "Documents")")
@@ -189,7 +189,7 @@ class StaticResourceManager {
     private func getBundleSDEVersion() -> SDEVersion? {
         // 使用英文数据库作为参考（中英文数据库版本应该一致）
         guard let bundlePath = Bundle.main.path(forResource: "item_db_en", ofType: "sqlite") else {
-            Logger.error("[x] Bundle 中未找到 item_db_en.sqlite")
+            Logger.error("Bundle 中未找到 item_db_en.sqlite")
             return nil
         }
 
@@ -202,7 +202,7 @@ class StaticResourceManager {
         let sdeDbPath = documentsPath.appendingPathComponent("sde/db/item_db_en.sqlite").path
 
         guard FileManager.default.fileExists(atPath: sdeDbPath) else {
-            Logger.warning("[!] Documents/sde 中未找到数据库文件")
+            Logger.warning("Documents/sde 中未找到数据库文件")
             return nil
         }
 
@@ -215,7 +215,7 @@ class StaticResourceManager {
 
         // 打开数据库
         guard sqlite3_open(path, &db) == SQLITE_OK else {
-            Logger.error("[x] 无法打开数据库: \(path)")
+            Logger.error("无法打开数据库: \(path)")
             if let db = db {
                 sqlite3_close(db)
             }
@@ -231,7 +231,7 @@ class StaticResourceManager {
         var statement: OpaquePointer?
 
         guard sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK else {
-            Logger.error("[x] 无法准备查询语句")
+            Logger.error("无法准备查询语句")
             return nil
         }
 
@@ -241,7 +241,7 @@ class StaticResourceManager {
 
         // 执行查询并读取结果
         guard sqlite3_step(statement) == SQLITE_ROW else {
-            Logger.error("[x] version_info 表中没有数据")
+            Logger.error("version_info 表中没有数据")
             return nil
         }
 
@@ -266,9 +266,9 @@ class StaticResourceManager {
         do {
             // 删除目录
             try fileManager.removeItem(at: sdePath)
-            Logger.info("[+] Bundle 版本较新，已删除本地旧 SDE 数据: \(sdePath.path)")
+            Logger.info("Bundle 版本较新，已删除本地旧 SDE 数据: \(sdePath.path)")
         } catch {
-            Logger.error("[x] 删除本地 SDE 数据失败: \(error.localizedDescription)")
+            Logger.error("删除本地 SDE 数据失败: \(error.localizedDescription)")
         }
     }
 

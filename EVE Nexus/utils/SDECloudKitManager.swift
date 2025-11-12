@@ -66,7 +66,7 @@ class SDECloudKitManager: ObservableObject {
         Logger.info("CloudKit 容器 ID: \(container.containerIdentifier ?? "未知")")
         Logger.info("查询记录类型: \(sdeUpdateRecordType)")
 
-        // [+] 确保缓存目录存在
+        //  确保缓存目录存在
         SDEDownloader().ensureCacheDirectoriesExist()
 
         // 获取最新记录的 RecordID（可能返回 nil，表示没有兼容的版本）
@@ -76,14 +76,14 @@ class SDECloudKitManager: ObservableObject {
 
         // 尝试从 metadata_json 字段获取（优先）
         if let metadata = try? await fetchMetadataFromJSONField(recordID: recordID) {
-            Logger.info("[+] 成功从 metadata_json 字段获取元数据")
+            Logger.info(" 成功从 metadata_json 字段获取元数据")
             var updateInfo = try buildUpdateInfo(from: metadata)
             updateInfo.recordID = recordID // 保存 recordID 供后续使用
             return updateInfo
         }
 
         // 降级：从 metadata asset 文件获取
-        Logger.info("[!] metadata_json 字段不可用，尝试从 metadata asset 文件获取...")
+        Logger.info("metadata_json 字段不可用，尝试从 metadata asset 文件获取...")
         do {
             let metadataURL = try await fetchMetadataFile(recordID: recordID)
             let metadata = try parseMetadataFile(at: metadataURL)
@@ -96,14 +96,14 @@ class SDECloudKitManager: ObservableObject {
             updateInfo.recordID = recordID // 保存 recordID 供后续使用
             return updateInfo
         } catch {
-            Logger.error("[x] 无法从 metadata asset 获取元数据: \(error)")
+            Logger.error("无法从 metadata asset 获取元数据: \(error)")
             throw SDECloudKitError.metadataUnavailable
         }
     }
 
     /// 构建更新信息对象
     private func buildUpdateInfo(from metadata: CloudKitMetadata) throws -> SDEUpdateInfo {
-        Logger.info("成功解析 metadata 文件:")
+        Logger.success("成功解析 metadata 文件:")
         Logger.info("  - 构建版本: \(metadata.buildNumber)")
         Logger.info("  - 补丁版本: \(metadata.patchNumber)")
         Logger.info("  - 图标版本: \(metadata.iconVersion)")
@@ -128,7 +128,7 @@ class SDECloudKitManager: ObservableObject {
             updatedAt: metadata.releaseDate
         )
 
-        Logger.info("成功从 CloudKit 获取 SDE 更新信息: 版本 \(updateInfo.sdeVersion).\(updateInfo.patchNumber), 标签: \(updateInfo.tag)")
+        Logger.success("成功从 CloudKit 获取 SDE 更新信息: 版本 \(updateInfo.sdeVersion).\(updateInfo.patchNumber), 标签: \(updateInfo.tag)")
 
         return updateInfo
     }
@@ -278,7 +278,7 @@ class SDECloudKitManager: ObservableObject {
 
         do {
             let metadata = try JSONDecoder().decode(CloudKitMetadata.self, from: jsonData)
-            Logger.info("成功解析 metadata_json 字段")
+            Logger.success("成功解析 metadata_json 字段")
             return metadata
         } catch let DecodingError.keyNotFound(key, context) {
             Logger.error("解析 metadata_json 失败: 缺少字段 '\(key.stringValue)'")

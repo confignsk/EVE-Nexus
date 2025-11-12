@@ -72,7 +72,7 @@ class LPStoreAPI {
         """
 
         guard case let .success(rows) = DatabaseManager.shared.executeQuery(query, parameters: [corporationId]) else {
-            Logger.error("[x] 从SDE数据库查询LP商店数据失败 - 军团ID: \(corporationId)")
+            Logger.error("从SDE数据库查询LP商店数据失败 - 军团ID: \(corporationId)")
             return []
         }
 

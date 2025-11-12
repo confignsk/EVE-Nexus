@@ -1077,7 +1077,7 @@ struct CharacterSheetView: View {
         do {
             // 等待位置和飞船信息
             let (location, shipInfo) = try await (locationTask, shipTask)
-            Logger.info("成功获取位置信息: \(location)")
+            Logger.success("成功获取位置信息: \(location)")
 
             // 先清除旧的位置信息
             await MainActor.run {

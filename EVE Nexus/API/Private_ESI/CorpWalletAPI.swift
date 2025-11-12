@@ -252,7 +252,7 @@ class CorpWalletAPI {
         UserDefaults.standard.set(data, forKey: cacheKey)
         UserDefaults.standard.set(Date(), forKey: cacheTimeKey)
 
-        Logger.info("成功获取军团钱包数据 - 军团ID: \(corporationId)")
+        Logger.success("成功获取军团钱包数据 - 军团ID: \(corporationId)")
         return wallets
     }
 
@@ -307,7 +307,7 @@ class CorpWalletAPI {
         UserDefaults.standard.set(data, forKey: cacheKey)
         UserDefaults.standard.set(Date(), forKey: cacheTimeKey)
 
-        Logger.info("成功获取军团部门数据 - 军团ID: \(corporationId)")
+        Logger.success("成功获取军团部门数据 - 军团ID: \(corporationId)")
         return divisions
     }
 
@@ -688,7 +688,7 @@ class CorpWalletAPI {
             throw NetworkError.invalidResponse
         }
 
-        Logger.info("成功获取军团钱包交易记录，共\(transactions.count)条记录")
+        Logger.success("成功获取军团钱包交易记录，共\(transactions.count)条记录")
         return transactions
     }
 }

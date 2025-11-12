@@ -48,7 +48,7 @@ class CharacterClonesAPI {
             let filePath = getClonesCacheFilePath(characterId: characterId)
             try jsonData.write(to: filePath)
 
-            Logger.debug("成功缓存克隆体数据到文件 - 角色ID: \(characterId), 路径: \(filePath.path)")
+            Logger.success("成功缓存克隆体数据到文件 - 角色ID: \(characterId), 路径: \(filePath.path)")
             return true
         } catch {
             Logger.error("保存克隆体数据到文件失败: \(error)")
@@ -120,7 +120,7 @@ class CharacterClonesAPI {
 
         // 保存到本地文件
         if saveClonesToCache(characterId: characterId, clones: clones) {
-            Logger.debug("成功缓存克隆体数据到文件 - 角色ID: \(characterId)")
+            Logger.success("成功缓存克隆体数据到文件 - 角色ID: \(characterId)")
         }
 
         return clones

@@ -149,12 +149,12 @@ struct ShipInsuranceView: View {
             }
 
             if insurance != nil {
-                Logger.info("[+] 成功加载飞船 \(typeName) 的保险数据")
+                Logger.info(" 成功加载飞船 \(typeName) 的保险数据")
             } else {
-                Logger.warning("[!] 飞船 \(typeName) 没有保险数据")
+                Logger.warning("飞船 \(typeName) 没有保险数据")
             }
         } catch {
-            Logger.error("[x] 加载飞船保险数据失败: \(error)")
+            Logger.error("加载飞船保险数据失败: \(error)")
 
             await MainActor.run {
                 self.errorMessage = error.localizedDescription

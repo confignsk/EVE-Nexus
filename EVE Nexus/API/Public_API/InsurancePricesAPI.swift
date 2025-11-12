@@ -71,21 +71,21 @@ actor InsurancePricesAPI {
         if !forceRefresh, let cached = cachedData, let lastFetch = lastFetchTime {
             let timeSinceLastFetch = Date().timeIntervalSince(lastFetch)
             if timeSinceLastFetch < cacheValidityDuration {
-                Logger.debug("[+] 使用内存缓存的保险价格数据")
+                Logger.debug("使用内存缓存的保险价格数据")
                 return cached
             }
         }
 
         // 尝试从文件缓存加载
         if !forceRefresh, let fileData = loadFromFileCache() {
-            Logger.debug("[+] 使用文件缓存的保险价格数据")
+            Logger.debug("使用文件缓存的保险价格数据")
             cachedData = fileData
             lastFetchTime = Date()
             return fileData
         }
 
         // 从网络获取
-        Logger.info("[+] 开始获取保险价格数据")
+        Logger.info("开始获取保险价格数据")
         let data = try await fetchFromNetwork()
 
         // 保存到内存和文件缓存
@@ -93,7 +93,7 @@ actor InsurancePricesAPI {
         lastFetchTime = Date()
         saveToFileCache(data)
 
-        Logger.info("[+] 保险价格数据获取完成，共\(data.count)种飞船")
+        Logger.success("保险价格数据获取完成，共\(data.count)种飞船")
         return data
     }
 
@@ -119,7 +119,7 @@ actor InsurancePricesAPI {
             let insurancePrices = try decoder.decode([InsurancePriceItem].self, from: data)
             return insurancePrices
         } catch {
-            Logger.error("[x] 解析保险价格数据失败: \(error)")
+            Logger.error("解析保险价格数据失败: \(error)")
             throw NetworkError.decodingError(error)
         }
     }
@@ -141,7 +141,7 @@ actor InsurancePricesAPI {
 
         let timeSinceModification = Date().timeIntervalSince(modificationDate)
         if timeSinceModification > cacheValidityDuration {
-            Logger.debug("[+] 保险价格文件缓存已过期")
+            Logger.debug("保险价格文件缓存已过期")
             return nil
         }
 
@@ -152,7 +152,7 @@ actor InsurancePricesAPI {
             let insurancePrices = try decoder.decode([InsurancePriceItem].self, from: data)
             return insurancePrices
         } catch {
-            Logger.error("[x] 读取保险价格缓存文件失败: \(error)")
+            Logger.error("读取保险价格缓存文件失败: \(error)")
             return nil
         }
     }
@@ -165,9 +165,9 @@ actor InsurancePricesAPI {
             encoder.outputFormatting = .prettyPrinted
             let jsonData = try encoder.encode(data)
             try jsonData.write(to: cacheFile)
-            Logger.debug("[+] 保险价格数据已保存到文件缓存")
+            Logger.debug("保险价格数据已保存到文件缓存")
         } catch {
-            Logger.error("[x] 保存保险价格缓存文件失败: \(error)")
+            Logger.error("保存保险价格缓存文件失败: \(error)")
         }
     }
 }

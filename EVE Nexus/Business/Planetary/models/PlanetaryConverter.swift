@@ -254,7 +254,7 @@ class PlanetaryConverter {
             }
 
             // 计算工厂活跃状态 - 与Kotlin版本保持一致
-            // [!] 关键修复：使用updateDate（模拟初始时间）而不是Date()（系统当前时间）
+            // 关键修复：使用updateDate（模拟初始时间）而不是Date()（系统当前时间）
             let cycleTime = schematic?.cycleTime ?? 0
             let lastCycleAgo =
                 lastCycleStart != nil ? updateDate.timeIntervalSince(lastCycleStart!) : Double.infinity
@@ -277,7 +277,7 @@ class PlanetaryConverter {
                 longitude: Double(planetaryPin.longitude),
                 status: .notSetup,
                 schematic: schematic,
-                // [!] 关键修复：与Kotlin版本保持一致，初始化为true
+                // 关键修复：与Kotlin版本保持一致，初始化为true
                 // 这样canActivate逻辑才能正确工作
                 hasReceivedInputs: true,
                 receivedInputsLastCycle: true,
@@ -461,7 +461,7 @@ class PlanetaryConverter {
                 Logger.warning("未找到配方数据，配方ID: \(schematicId)")
                 return nil
             }
-            Logger.info("成功查询到配方数据，配方ID: \(schematicId), 行数: \(rows.count)")
+            Logger.success("成功查询到配方数据，配方ID: \(schematicId), 行数: \(rows.count)")
 
             // 记录第一行数据的内容
             if let row = rows.first {

@@ -33,7 +33,7 @@ public class CharacterLoyaltyPointsAPI {
             let filePath = getLoyaltyPointsCacheFilePath(characterId: characterId)
             try jsonData.write(to: filePath)
 
-            Logger.debug("成功缓存忠诚点数据到文件 - 角色ID: \(characterId), 路径: \(filePath.path)")
+            Logger.success("成功缓存忠诚点数据到文件 - 角色ID: \(characterId), 路径: \(filePath.path)")
             return true
         } catch {
             Logger.error("保存忠诚点数据到文件失败: \(error)")
@@ -104,7 +104,7 @@ public class CharacterLoyaltyPointsAPI {
 
         // 保存到本地文件
         if saveLoyaltyPointsToCache(characterId: characterId, points: points) {
-            Logger.debug("成功缓存忠诚点数据到文件 - 角色ID: \(characterId)")
+            Logger.success("成功缓存忠诚点数据到文件 - 角色ID: \(characterId)")
         }
 
         return points

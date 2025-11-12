@@ -20,7 +20,7 @@ public class LocalizationManager {
             let data = try Data(contentsOf: URL(fileURLWithPath: path))
             if let json = try JSONSerialization.jsonObject(with: data) as? [String: [String: Any]] {
                 accountingEntryTypes = json
-                Logger.debug("成功加载账目类型本地化数据")
+                Logger.success("成功加载账目类型本地化数据")
             }
         } catch {
             Logger.error("解析账目类型本地化数据失败: \(error)")
@@ -170,10 +170,10 @@ public class LocalizationManager {
         let englishTemplates = getEntryJournalMessage(for: key, language: "en")
 
         if targetTemplates == nil {
-            Logger.debug("[JournalMessage] 获取目标语言模板失败: key=\(key), language=\(language)")
+            Logger.debug("获取目标语言模板失败: key=\(key), language=\(language)")
         }
         if englishTemplates == nil {
-            Logger.debug("[JournalMessage] 获取英文模板失败: key=\(key)")
+            Logger.debug("获取英文模板失败: key=\(key)")
         }
 
         if let targetTemplates = targetTemplates,
@@ -181,7 +181,7 @@ public class LocalizationManager {
         {
             // 确保两个数组长度相同
             guard targetTemplates.count == englishTemplates.count else {
-                Logger.error("[JournalMessage] 目标语言模板数量与英文模板数量不匹配")
+                Logger.error("目标语言模板数量与英文模板数量不匹配")
                 return esiText
             }
 
@@ -196,15 +196,15 @@ public class LocalizationManager {
 
                 // 如果结果与原文不同，说明匹配成功
                 if result != esiText {
-                    Logger.debug("[JournalMessage] 模板转换成功: \(esiText) -> \(result)")
+                    Logger.debug("模板转换成功: \(esiText) -> \(result)")
                     return result
                 }
             }
 
-            Logger.debug("[JournalMessage] 所有模板都未能匹配，返回原文")
+            Logger.debug("所有模板都未能匹配，返回原文")
         }
 
-        Logger.debug("[JournalMessage] 模板转换错误，原文输出. -2")
+        Logger.debug("模板转换错误，原文输出. -2")
         return esiText
     }
 
@@ -224,10 +224,10 @@ public class LocalizationManager {
         let englishTemplates = getEntryTypeName(for: key, language: "en")
 
         if targetTemplates == nil {
-            Logger.debug("[EntryTypeName] 获取目标语言模板失败: key=\(key), language=\(language)")
+            Logger.debug("获取目标语言模板失败: key=\(key), language=\(language)")
         }
         if englishTemplates == nil {
-            Logger.debug("[EntryTypeName] 获取英文模板失败: key=\(key)")
+            Logger.debug("获取英文模板失败: key=\(key)")
         }
 
         if let targetTemplates = targetTemplates,
@@ -235,7 +235,7 @@ public class LocalizationManager {
         {
             // 确保两个数组长度相同
             guard targetTemplates.count == englishTemplates.count else {
-                Logger.error("[EntryTypeName] 目标语言模板数量与英文模板数量不匹配")
+                Logger.error("目标语言模板数量与英文模板数量不匹配")
                 return esiText
             }
 
@@ -250,15 +250,15 @@ public class LocalizationManager {
 
                 // 如果结果与原文不同，说明匹配成功
                 if result != esiText {
-                    Logger.debug("[EntryTypeName] 模板转换成功: \(esiText) -> \(result)")
+                    Logger.debug("模板转换成功: \(esiText) -> \(result)")
                     return result
                 }
             }
 
-            Logger.debug("[EntryTypeName] 所有模板都未能匹配，返回原文")
+            Logger.debug("所有模板都未能匹配，返回原文")
         }
 
-        Logger.debug("[EntryTypeName] 模板转换错误，原文输出. -1")
+        Logger.debug("模板转换错误，原文输出. -1")
         return esiText
     }
 }

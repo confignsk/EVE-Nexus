@@ -495,7 +495,7 @@ struct AllianceDetailView: View {
                     let name = row["name"] as? String,
                     let iconName = row["iconName"] as? String
                 {
-                    Logger.info("成功加载势力信息: \(name)")
+                    Logger.success("成功加载势力信息: \(name)")
                     factionInfo = (name: name, iconName: iconName)
                 }
             }

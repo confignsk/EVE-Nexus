@@ -137,13 +137,13 @@ class EmploymentAllianceCache: ObservableObject {
         batchSize: Int = 5,
         onBatchComplete: (() -> Void)? = nil
     ) async {
-        Logger.info("[+] 开始预加载 \(corporationIds.count) 个军团的联盟历史")
+        Logger.info(" 开始预加载 \(corporationIds.count) 个军团的联盟历史")
 
         for batchStart in stride(from: 0, to: corporationIds.count, by: batchSize) {
             let batchEnd = min(batchStart + batchSize, corporationIds.count)
             let currentBatch = Array(corporationIds[batchStart ..< batchEnd])
 
-            Logger.info("[+] 加载批次 \(batchStart / batchSize + 1)，军团数: \(currentBatch.count)")
+            Logger.info(" 加载批次 \(batchStart / batchSize + 1)，军团数: \(currentBatch.count)")
 
             // 并发加载当前批次
             await withTaskGroup(of: Void.self) { group in
@@ -157,10 +157,10 @@ class EmploymentAllianceCache: ObservableObject {
             // 批次完成回调
             onBatchComplete?()
 
-            Logger.info("[+] 批次 \(batchStart / batchSize + 1) 加载完成")
+            Logger.info(" 批次 \(batchStart / batchSize + 1) 加载完成")
         }
 
-        Logger.info("[+] 所有军团联盟历史预加载完成")
+        Logger.info(" 所有军团联盟历史预加载完成")
     }
 }
 
@@ -515,7 +515,7 @@ struct CharacterDetailView: View {
 
             // 等待所有数据加载完成
             let (info, portrait, history) = try await (characterInfoTask, portraitTask, historyTask)
-            Logger.info("成功加载角色基本信息")
+            Logger.success("成功加载角色基本信息")
             Logger.info("雇佣历史记录数: \(history.count)")
 
             // 更新状态
@@ -527,7 +527,7 @@ struct CharacterDetailView: View {
             if let corpInfo = try? await CorporationAPI.shared.fetchCorporationInfo(
                 corporationId: info.corporation_id)
             {
-                Logger.info("成功加载军团信息: \(corpInfo.name)")
+                Logger.success("成功加载军团信息: \(corpInfo.name)")
                 let corpIcon = try? await CorporationAPI.shared.fetchCorporationLogo(
                     corporationId: info.corporation_id)
                 corporationInfo = (name: corpInfo.name, icon: corpIcon)
@@ -539,7 +539,7 @@ struct CharacterDetailView: View {
                     allianceId,
                 ])
                 if let allianceName = allianceNames?[allianceId]?.name {
-                    Logger.info("成功加载联盟信息: \(allianceName)")
+                    Logger.success("成功加载联盟信息: \(allianceName)")
                     let allianceIcon = try? await AllianceAPI.shared.fetchAllianceLogo(
                         allianceID: allianceId)
                     allianceInfo = (name: allianceName, icon: allianceIcon)
@@ -556,7 +556,7 @@ struct CharacterDetailView: View {
                     let name = row["name"] as? String,
                     let iconName = row["iconName"] as? String
                 {
-                    Logger.info("成功加载势力信息: \(name)")
+                    Logger.success("成功加载势力信息: \(name)")
                     factionInfo = (name: name, iconName: iconName)
                 }
             }
@@ -658,7 +658,7 @@ struct CharacterDetailView: View {
             }
         }
 
-        Logger.info("[+] 按雇佣顺序需要加载 \(orderedCorpIds.count) 个军团的联盟历史")
+        Logger.info(" 按雇佣顺序需要加载 \(orderedCorpIds.count) 个军团的联盟历史")
 
         // 渐进式预加载联盟历史（每批5个并发）
         await allianceCache.preloadCorpAllianceHistories(

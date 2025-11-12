@@ -53,7 +53,7 @@ class UpdateLogManager: ObservableObject {
         }
 
         let updateLogs = parseMarkdownContent(content)
-        Logger.info("成功从 \(path) 加载 \(updateLogs.count) 个版本的更新日志")
+        Logger.success("成功从 \(path) 加载 \(updateLogs.count) 个版本的更新日志")
         return updateLogs
     }
 

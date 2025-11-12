@@ -1164,7 +1164,7 @@ class BlueprintCalcUtil {
             )
         }
 
-        Logger.info("成功获取蓝图ID \(blueprintId) 的材料需求，共 \(materials.count) 种材料")
+        Logger.success("成功获取蓝图ID \(blueprintId) 的材料需求，共 \(materials.count) 种材料")
         return materials
     }
 

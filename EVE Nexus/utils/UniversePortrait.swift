@@ -42,7 +42,7 @@ class UniversePortraitLoader: ObservableObject {
                     self.portraits[key] = portrait
                 }
 
-                Logger.debug("成功加载\(type.rawValue)头像 - ID: \(id)")
+                Logger.success("成功加载\(type.rawValue)头像 - ID: \(id)")
             } catch {
                 Logger.error("加载\(type.rawValue)头像失败 - ID: \(id), 错误: \(error)")
             }

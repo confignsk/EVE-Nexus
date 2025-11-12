@@ -257,7 +257,7 @@ class StructureMarketManager {
         // 尝试加载缓存数据
         do {
             let orders = try await loadOrdersFromFile(structureId: structureId)
-            Logger.debug("成功读取建筑 \(structureId) 的有效本地缓存，共 \(orders.count) 条订单")
+            Logger.success("成功读取建筑 \(structureId) 的有效本地缓存，共 \(orders.count) 条订单")
             return orders
         } catch {
             Logger.error("读取建筑 \(structureId) 的本地缓存失败: \(error)")
@@ -331,7 +331,7 @@ class StructureMarketManager {
                 }
             )
 
-            Logger.info("成功获取建筑物市场订单 \(allOrders.count) 条")
+            Logger.success("成功获取建筑物市场订单 \(allOrders.count) 条")
 
             // 保存数据到文件
             try await saveOrdersToFile(orders: allOrders, structureId: structureId)

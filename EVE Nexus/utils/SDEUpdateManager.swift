@@ -6,7 +6,7 @@ import SwiftUI
 
 enum LogMessageType {
     case info // [*] 白色
-    case warning // [!] 橘黄色
+    case warning // 橘黄色
     case error // [×] 红色
     case success // [✓] 绿色
 
@@ -96,11 +96,11 @@ class SDEUpdateManager: ObservableObject {
     /// 执行更新流程
     private func performUpdate() async {
         do {
-            // [+] 清空下载目录
+            //  清空下载目录
             await addLog(NSLocalizedString("SDE_Log_Clearing_Directory", comment: ""), type: .info)
             try downloader.clearDownloadDirectory()
 
-            // [+] 检查哪些组件需要更新
+            //  检查哪些组件需要更新
             let needsSDEUpdate = updateChecker.currentSDEVersion != updateChecker.latestSDEVersion
             let needsIconsUpdate = updateChecker.currentIconVersion < updateChecker.latestIconVersion
 
@@ -114,21 +114,21 @@ class SDEUpdateManager: ObservableObject {
                                 updateChecker.currentIconVersion,
                                 updateChecker.latestIconVersion), type: .info)
 
-            // [+] 下载 icons.zip（如果需要）
+            //  下载 icons.zip（如果需要）
             if needsIconsUpdate {
                 try await downloadAndInstallIcons()
             } else {
                 await addLog(NSLocalizedString("SDE_Log_Icons_Up_To_Date", comment: ""), type: .success)
             }
 
-            // [+] 下载 sde.zip（如果需要）
+            //  下载 sde.zip（如果需要）
             if needsSDEUpdate {
                 try await downloadAndInstallSDE()
             } else {
                 await addLog(NSLocalizedString("SDE_Log_SDE_Up_To_Date", comment: ""), type: .success)
             }
 
-            // [+] 更新完成
+            //  更新完成
             isCompleted = true
 
             // 清理检查缓存，以便下次能立即检查更新
@@ -195,7 +195,7 @@ class SDEUpdateManager: ObservableObject {
         }
         await addLog(NSLocalizedString("SDE_Log_Extract_Icons_Success", comment: ""), type: .success)
 
-        // [+] 解压完成后删除 CloudKit 缓存中的 icons.zip
+        //  解压完成后删除 CloudKit 缓存中的 icons.zip
         try? FileManager.default.removeItem(at: localIconsURL)
         Logger.info("已删除 CloudKit 缓存中的 icons.zip")
 
@@ -205,7 +205,7 @@ class SDEUpdateManager: ObservableObject {
             let metadataURL = try await SDECloudKitManager.shared.fetchMetadataFileForSaving(recordID: recordID)
             try MetadataManager.shared.copyMetadataToIconsDirectory(from: metadataURL)
 
-            // [+] 保存完成后删除 CloudKit 缓存中的 metadata
+            //  保存完成后删除 CloudKit 缓存中的 metadata
             try? FileManager.default.removeItem(at: metadataURL)
             Logger.info("已删除 CloudKit 缓存中的 metadata 临时文件")
 
@@ -268,7 +268,7 @@ class SDEUpdateManager: ObservableObject {
         }
         await addLog(NSLocalizedString("SDE_Log_Extract_SDE_Success", comment: ""), type: .success)
 
-        // [+] 解压完成后删除 CloudKit 缓存中的 sde.zip
+        //  解压完成后删除 CloudKit 缓存中的 sde.zip
         try? FileManager.default.removeItem(at: localSDEURL)
         Logger.info("已删除 CloudKit 缓存中的 sde.zip")
     }

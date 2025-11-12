@@ -135,7 +135,7 @@ enum MarketOrdersUtil {
         guard !typeIds.isEmpty else { return [:] }
 
         let concurrency = max(1, min(10, typeIds.count))
-        Logger.info("[+] 开始加载星域订单，星域ID: \(regionID)，物品数量: \(typeIds.count)，并发数: \(concurrency)")
+        Logger.info(" 开始加载星域订单，星域ID: \(regionID)，物品数量: \(typeIds.count)，并发数: \(concurrency)")
 
         let startTime = Date()
         var result: [Int: [MarketOrder]] = [:]
@@ -156,7 +156,7 @@ enum MarketOrdersUtil {
                             )
                             return (typeId, orders)
                         } catch {
-                            Logger.error("[x] 加载星域订单失败 (物品ID: \(typeId)): \(error)")
+                            Logger.error("加载星域订单失败 (物品ID: \(typeId)): \(error)")
                             return nil
                         }
                     }
@@ -183,7 +183,7 @@ enum MarketOrdersUtil {
                             )
                             return (typeId, orders)
                         } catch {
-                            Logger.error("[x] 加载星域订单失败 (物品ID: \(typeId)): \(error)")
+                            Logger.error("加载星域订单失败 (物品ID: \(typeId)): \(error)")
                             return nil
                         }
                     }
@@ -192,7 +192,7 @@ enum MarketOrdersUtil {
         }
 
         let duration = Date().timeIntervalSince(startTime)
-        Logger.info("[+] 完成星域订单加载，成功获取 \(result.count)/\(typeIds.count) 个物品的订单数据，耗时: \(String(format: "%.2f", duration))秒")
+        Logger.info(" 完成星域订单加载，成功获取 \(result.count)/\(typeIds.count) 个物品的订单数据，耗时: \(String(format: "%.2f", duration))秒")
         return result
     }
 
@@ -239,16 +239,16 @@ enum MarketOrdersUtil {
         guard !typeIds.isEmpty else { return [:] }
 
         guard let structureId = StructureMarketManager.getStructureId(from: regionID) else {
-            Logger.error("[x] 无效的建筑ID: \(regionID)")
+            Logger.error("无效的建筑ID: \(regionID)")
             return [:]
         }
 
         guard let structure = MarketStructureManager.shared.structures.first(where: { $0.structureId == Int(structureId) }) else {
-            Logger.error("[x] 未找到建筑信息: \(structureId)")
+            Logger.error("未找到建筑信息: \(structureId)")
             return [:]
         }
 
-        Logger.info("[+] 开始加载建筑订单，建筑: \(structure.structureName)，物品数量: \(typeIds.count)")
+        Logger.info(" 开始加载建筑订单，建筑: \(structure.structureName)，物品数量: \(typeIds.count)")
 
         do {
             let batchOrders = try await StructureMarketManager.shared.getBatchItemOrdersInStructure(
@@ -259,7 +259,7 @@ enum MarketOrdersUtil {
                 progressCallback: progressCallback
             )
 
-            Logger.info("[+] 完成建筑订单加载，成功获取 \(batchOrders.count)/\(typeIds.count) 个物品的订单数据")
+            Logger.info(" 完成建筑订单加载，成功获取 \(batchOrders.count)/\(typeIds.count) 个物品的订单数据")
 
             // 逐个回调，支持渐进式UI更新
             if let callback = itemCallback {
@@ -270,7 +270,7 @@ enum MarketOrdersUtil {
 
             return batchOrders
         } catch {
-            Logger.error("[x] 批量加载建筑订单失败: \(error)")
+            Logger.error("批量加载建筑订单失败: \(error)")
             return [:]
         }
     }

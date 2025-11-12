@@ -224,7 +224,7 @@ class EVELoginViewModel: ObservableObject {
                 characterPortraits[characterId] = portrait
             }
         } catch {
-            Logger.error("[EVELogin]加载角色头像失败: \(error)")
+            Logger.error("加载角色头像失败: \(error)")
         }
     }
 
@@ -236,7 +236,7 @@ class EVELoginViewModel: ObservableObject {
             // 原子性更新角色列表
             characters = newCharacters
 
-            Logger.info("[EVELoginViewModel]已加载 \(characters.count) 个角色")
+            Logger.info("已加载 \(characters.count) 个角色")
 
             // 异步加载头像
             Task {
@@ -286,7 +286,7 @@ class EVELoginViewModel: ObservableObject {
             } catch {
                 errorMessage = error.localizedDescription
                 showingError = false
-                Logger.error("[EVELogin]登录失败: \(error)")
+                Logger.error("登录失败: \(error)")
             }
         }
     }
@@ -294,7 +294,7 @@ class EVELoginViewModel: ObservableObject {
     // 移除角色
     func removeCharacter(_ character: EVECharacterInfo) {
         let characterId = character.CharacterID
-        Logger.info("[EVELoginViewModel]开始移除角色: \(character.CharacterName) (\(characterId))")
+        Logger.info("开始移除角色: \(character.CharacterName) (\(characterId))")
 
         // 1. 先从本地数组中移除，避免UI闪烁
         characters.removeAll { $0.CharacterID == characterId }
@@ -320,13 +320,13 @@ class EVELoginViewModel: ObservableObject {
 
                 // 如果发现不一致，重新加载
                 if persistedIds != localIds {
-                    Logger.warning("[EVELoginViewModel]检测到本地与持久化状态不一致，重新加载角色列表")
+                    Logger.warning("检测到本地与持久化状态不一致，重新加载角色列表")
                     self.loadCharacters()
                 }
             }
         }
 
-        Logger.info("[EVELoginViewModel]角色移除完成: \(character.CharacterName) (\(characterId))")
+        Logger.info("角色移除完成: \(character.CharacterName) (\(characterId))")
     }
 
     // 更新角色顺序
@@ -412,7 +412,7 @@ class EVELogin {
 
     // 主处理函数 - 基本认证
     func processLogin(authState: OIDAuthState) async throws -> EVECharacterInfo {
-        Logger.info("[EVELogin]开始处理登录流程...")
+        Logger.info("开始处理登录流程...")
 
         // 1. 获取角色信息
         let character = try await getCharacterInfo(
@@ -420,7 +420,7 @@ class EVELogin {
             forceRefresh: true
         )
         Logger.info(
-            "[EVELogin]成功获取角色信息 - 名称: \(character.CharacterName), ID: \(character.CharacterID)")
+            "成功获取角色信息 - 名称: \(character.CharacterName), ID: \(character.CharacterID)")
 
         // 2. 保存认证状态
         await AuthTokenManager.shared.saveAuthState(authState, for: character.CharacterID)
@@ -437,7 +437,7 @@ class EVELogin {
     // 保存角色信息
     func saveCharacterInfo(_ character: EVECharacterInfo) async throws {
         Logger.info(
-            "[EVELogin]开始保存角色信息 - 角色: \(character.CharacterName) (\(character.CharacterID))")
+            "开始保存角色信息 - 角色: \(character.CharacterName) (\(character.CharacterID))")
 
         var characters = loadCharacters()
         var isNewCharacter = false
@@ -453,7 +453,7 @@ class EVELogin {
                 addedDate: originalAddedDate,
                 lastTokenUpdateTime: Date()
             )
-            Logger.info("[EVELogin]更新现有角色信息")
+            Logger.info("更新现有角色信息")
         } else {
             characters.append(
                 CharacterAuth(
@@ -462,13 +462,13 @@ class EVELogin {
                     lastTokenUpdateTime: Date()
                 ))
             isNewCharacter = true
-            Logger.info("[EVELogin]添加新角色信息")
+            Logger.info("添加新角色信息")
         }
 
         // 保存到 UserDefaults
         if let encodedData = try? JSONEncoder().encode(characters) {
             Logger.info(
-                "[EVELogin]正在缓存个人信息数据, key: \(charactersKey), 数据大小: \(encodedData.count) bytes")
+                "正在缓存个人信息数据, key: \(charactersKey), 数据大小: \(encodedData.count) bytes")
             UserDefaults.standard.set(encodedData, forKey: charactersKey)
         }
 
@@ -481,7 +481,7 @@ class EVELogin {
             characterOrder.append(character.CharacterID)
             // 保存更新后的顺序
             Logger.info(
-                "[EVELogin]正在缓存角色顺序数据, key: \(characterOrderKey), 数据大小: \(characterOrder.count) bytes"
+                "正在缓存角色顺序数据, key: \(characterOrderKey), 数据大小: \(characterOrder.count) bytes"
             )
             UserDefaults.standard.set(characterOrder, forKey: characterOrderKey)
         }
@@ -530,7 +530,7 @@ class EVELogin {
         // 保存更新后的信息
         try await saveCharacterInfo(updatedCharacter)
 
-        Logger.info("[EVELogin]详细信息加载完成")
+        Logger.info("详细信息加载完成")
         return updatedCharacter
     }
 
@@ -540,7 +540,7 @@ class EVELogin {
     {
         // 解析JWT令牌
         if let characterInfo = JWTTokenValidator.shared.parseToken(token) {
-            Logger.info("[EVELogin]从JWT令牌成功解析角色信息 - 角色名: \(characterInfo.CharacterName)")
+            Logger.info("从JWT令牌成功解析角色信息 - 角色名: \(characterInfo.CharacterName)")
 
             // 获取角色的公开信息以更新军团和联盟ID
             let publicInfo = try await CharacterAPI.shared.fetchCharacterPublicInfo(
@@ -557,8 +557,8 @@ class EVELogin {
         }
 
         // 如果JWT解析失败
-        Logger.error("[EVELogin]无法解析JWT令牌，请确保使用的是v2版本的OAuth端点")
-        throw NetworkError.authenticationError("[EVELogin]无法解析JWT令牌，请确保使用的是v2版本的OAuth端点")
+        Logger.error("无法解析JWT令牌，请确保使用的是v2版本的OAuth端点")
+        throw NetworkError.authenticationError("无法解析JWT令牌，请确保使用的是v2版本的OAuth端点")
     }
 
     // 加载保存的角色列表
@@ -589,28 +589,28 @@ class EVELogin {
 
             return characters
         } catch {
-            Logger.error("[EVELogin]加载角色信息失败: \(error)")
+            Logger.error("加载角色信息失败: \(error)")
             return []
         }
     }
 
     // 移除角色
     func removeCharacter(characterId: Int) {
-        Logger.info("[EVELogin]开始移除角色 (ID: \(characterId))")
+        Logger.info("开始移除角色 (ID: \(characterId))")
 
         // 1. 从 UserDefaults 中移除角色信息
         var characters = loadCharacters()
         characters.removeAll { $0.character.CharacterID == characterId }
 
         if let encodedData = try? JSONEncoder().encode(characters) {
-            Logger.info("[EVELogin]正在更新角色列表缓存, key: \(charactersKey)")
+            Logger.info("正在更新角色列表缓存, key: \(charactersKey)")
             UserDefaults.standard.set(encodedData, forKey: charactersKey)
         }
 
         // 2. 从角色顺序列表中移除
         var characterOrder = UserDefaults.standard.array(forKey: characterOrderKey) as? [Int] ?? []
         characterOrder.removeAll { $0 == characterId }
-        Logger.info("[EVELogin]正在更新角色顺序缓存, key: \(characterOrderKey)")
+        Logger.info("正在更新角色顺序缓存, key: \(characterOrderKey)")
         UserDefaults.standard.set(characterOrder, forKey: characterOrderKey)
 
         // 3. 清除 AuthTokenManager 中的缓存
@@ -623,14 +623,14 @@ class EVELogin {
             do {
                 try await CharacterDatabaseManager.shared.deleteCharacterData(
                     characterId: characterId)
-                Logger.info("[EVELogin]已清理角色 \(characterId) 在数据库中的所有数据")
+                Logger.info("已清理角色 \(characterId) 在数据库中的所有数据")
             } catch {
-                Logger.error("[EVELogin]清理角色 \(characterId) 的数据库数据失败: \(error)")
+                Logger.error("清理角色 \(characterId) 的数据库数据失败: \(error)")
             }
         }
 
         UserDefaults.standard.synchronize()
-        Logger.info("[EVELogin]角色移除完成 (ID: \(characterId))")
+        Logger.info("角色移除完成 (ID: \(characterId))")
     }
 
     // 保存角色顺序
@@ -644,12 +644,12 @@ class EVELogin {
                 uniqueCharacterIds.append(characterId)
                 seenCharacterIds.insert(characterId)
             } else {
-                Logger.warning("[EVELogin]发现重复的角色ID在顺序列表中，已忽略: \(characterId)")
+                Logger.warning("发现重复的角色ID在顺序列表中，已忽略: \(characterId)")
             }
         }
 
         Logger.info(
-            "[EVELogin]正在缓存角色顺序数据, key: \(characterOrderKey), 数据大小: \(uniqueCharacterIds.count) bytes"
+            "正在缓存角色顺序数据, key: \(characterOrderKey), 数据大小: \(uniqueCharacterIds.count) bytes"
         )
         UserDefaults.standard.set(uniqueCharacterIds, forKey: characterOrderKey)
         UserDefaults.standard.synchronize()
@@ -665,7 +665,7 @@ class EVELogin {
         skills: CharacterSkillsResponse, balance: Double, location: CharacterLocation,
         skillQueue: [SkillQueueItem]
     ) {
-        Logger.info("[EVELogin]EVELogin: 开始获取角色详细信息...")
+        Logger.info("EVELogin: 开始获取角色详细信息...")
 
         async let skills = CharacterSkillsAPI.shared.fetchCharacterSkills(
             characterId: characterId
@@ -687,10 +687,10 @@ class EVELogin {
             let (skillsResult, balanceResult, locationResult, queueResult) = try await (
                 skills, balance, location, skillQueue
             )
-            Logger.info("[EVELogin]成功获取所有角色详细信息")
+            Logger.info("成功获取所有角色详细信息")
             return (skillsResult, balanceResult, locationResult, queueResult)
         } catch {
-            Logger.error("[EVELogin]获取角色详细信息失败: \(error)")
+            Logger.error("获取角色详细信息失败: \(error)")
             throw error
         }
     }
@@ -723,7 +723,7 @@ class EVELogin {
             var updatedCharacter = characters[index].character
             if updatedCharacter.refreshTokenExpired != expired {
                 Logger.info(
-                    "[EVELogin]将人物 \(characterId) 的 refresh token 过期状态从 \(updatedCharacter.refreshTokenExpired) 改为 \(expired)"
+                    "将人物 \(characterId) 的 refresh token 过期状态从 \(updatedCharacter.refreshTokenExpired) 改为 \(expired)"
                 )
                 updatedCharacter.refreshTokenExpired = expired
                 characters[index] = CharacterAuth(
@@ -744,7 +744,7 @@ class EVELogin {
                 )
             } else {
                 Logger.info(
-                    "[EVELogin]人物 \(characterId) 的 refresh token 过期状态为 \(updatedCharacter.refreshTokenExpired), 无需更改"
+                    "人物 \(characterId) 的 refresh token 过期状态为 \(updatedCharacter.refreshTokenExpired), 无需更改"
                 )
             }
         }
@@ -753,7 +753,7 @@ class EVELogin {
     // 保存认证信息
     func saveAuthInfo(token: EVEAuthToken, character: EVECharacterInfo) async throws {
         Logger.info(
-            "[EVELogin]开始保存认证信息 - 角色: \(character.CharacterName) (\(character.CharacterID))")
+            "开始保存认证信息 - 角色: \(character.CharacterName) (\(character.CharacterID))")
 
         // 1. 保存角色信息
         try await saveCharacterInfo(character)
@@ -770,7 +770,7 @@ class EVELogin {
         // 3. 重置refreshTokenExpired状态
         updateCharacterRefreshTokenExpiredStatus(characterId: character.CharacterID, expired: false)
 
-        Logger.info("[EVELogin]EVELogin: 认证状态已保存")
+        Logger.info("EVELogin: 认证状态已保存")
     }
 
     // 添加 getScopes 方法到类内部
@@ -790,9 +790,9 @@ class EVELogin {
                 _ = try await AuthTokenManager.shared.getAccessToken(for: characterId)
                 // 明确将refreshTokenExpired设置为false
                 updateCharacterRefreshTokenExpiredStatus(characterId: characterId, expired: false)
-                Logger.info("[EVELogin]EVELogin: 已重置角色 \(characterId) 的 token 状态")
+                Logger.info("EVELogin: 已重置角色 \(characterId) 的 token 状态")
             } catch {
-                Logger.error("[EVELogin]重置角色 \(characterId) 的 token 状态失败: \(error)")
+                Logger.error("重置角色 \(characterId) 的 token 状态失败: \(error)")
             }
         }
     }
@@ -834,10 +834,10 @@ class ScopeManager {
         do {
             let data = try Data(contentsOf: url)
             let scopesDict = try JSONDecoder().decode([String: [String]].self, from: data)
-            Logger.info("[EVELogin]从文件加载 scopes 成功: \(url)")
+            Logger.info("从文件加载 scopes 成功: \(url)")
             return Array(Set(scopesDict.values.flatMap { $0 }))
         } catch {
-            Logger.error("[EVELogin]从文件加载 scopes 失败: \(error)")
+            Logger.error("从文件加载 scopes 失败: \(error)")
             return nil
         }
     }
@@ -850,9 +850,9 @@ class ScopeManager {
             let scopesDict = ["scopes": sortedScopes]
             let data = try JSONEncoder().encode(scopesDict)
             try data.write(to: latestScopesPath)
-            Logger.info("[EVELogin]成功保存 scopes 到本地文件，共 \(sortedScopes.count) 个权限")
+            Logger.info("成功保存 scopes 到本地文件，共 \(sortedScopes.count) 个权限")
         } catch {
-            Logger.error("[EVELogin]保存 scopes 到本地文件失败: \(error)")
+            Logger.error("保存 scopes 到本地文件失败: \(error)")
         }
     }
 
@@ -908,7 +908,7 @@ class ScopeManager {
         saveScopesToFile(Array(finalScopes))
 
         Logger.info(
-            "[EVELogin]成功从网络获取最新scopes，原始: \(allScopes.count)，交集后: \(intersected.count)，剔除不需要后: \(finalScopes.count)"
+            "成功从网络获取最新scopes，原始: \(allScopes.count)，交集后: \(intersected.count)，剔除不需要后: \(finalScopes.count)"
         )
 
         return Array(finalScopes)
@@ -935,7 +935,7 @@ class ScopeManager {
 
                     Logger.info(
                         """
-                        [EVELogin]Scopes 文件状态:
+                        Scopes 文件状态:
                         - 最后更新时间: \(lastUpdateStr)
                         - 已过去天数: \(days) 天
                         - 剩余有效期: \(remainingDays) 天
@@ -943,28 +943,28 @@ class ScopeManager {
                         """)
                 }
             } catch {
-                Logger.error("[EVELogin]检查 latest_scopes.json 文件属性失败: \(error)")
+                Logger.error("检查 latest_scopes.json 文件属性失败: \(error)")
                 shouldRefresh = true
             }
         } else if !shouldRefresh {
-            Logger.info("[EVELogin]latest_scopes.json 文件不存在，需要创建")
+            Logger.info("latest_scopes.json 文件不存在，需要创建")
             shouldRefresh = true
         }
 
         // 如果需要刷新，尝试从网络获取
         if shouldRefresh {
             do {
-                Logger.info("[EVELogin]尝试从网络获取最新 scopes")
+                Logger.info("尝试从网络获取最新 scopes")
                 let scopes = try await fetchLatestScopes()
                 return ScopeResult(scopes: scopes, source: .network)
             } catch {
-                Logger.error("[EVELogin]从网络获取 scopes 失败: \(error)，尝试使用本地文件")
+                Logger.error("从网络获取 scopes 失败: \(error)，尝试使用本地文件")
             }
         }
 
         // 尝试从本地文件加载
         if let scopes = loadScopesFromFile(latestScopesPath) {
-            Logger.info("[EVELogin]从本地文件加载 scopes 成功")
+            Logger.info("从本地文件加载 scopes 成功")
             // 再次应用规则：与 registered 取交集，并剔除 notRequired
             let config =
                 readBundledScopesConfig() ?? (registered: Set<String>(), notRequired: Set<String>())
@@ -974,14 +974,14 @@ class ScopeManager {
             let finalSet = intersected.subtracting(config.notRequired)
             if scopes.count != finalSet.count {
                 Logger.info(
-                    "[EVELogin]对本地 scopes 应用交集与剔除过滤，原始: \(scopes.count)，交集后: \(intersected.count)，剔除后: \(finalSet.count)"
+                    "对本地 scopes 应用交集与剔除过滤，原始: \(scopes.count)，交集后: \(intersected.count)，剔除后: \(finalSet.count)"
                 )
             }
             return ScopeResult(scopes: Array(finalSet), source: .localCache)
         }
 
         // 如果本地文件加载失败，使用硬编码的 scopes
-        Logger.info("[EVELogin]从本地文件加载失败，使用硬编码的 scopes")
+        Logger.info("从本地文件加载失败，使用硬编码的 scopes")
         let scopes = loadHardcodedScopes() ?? []
         return ScopeResult(scopes: scopes, source: .hardcoded)
     }
@@ -999,7 +999,7 @@ class ScopeManager {
         // 兜底：registeredScopes − notRequiredScopes
         let finalScopes = config.registered.subtracting(config.notRequired)
         Logger.info(
-            "[EVELogin]从硬编码文件加载 scopes 成功（registered − notRequired），共 \(finalScopes.count) 个权限")
+            "从硬编码文件加载 scopes 成功（registered − notRequired），共 \(finalScopes.count) 个权限")
         return Array(finalScopes)
     }
 }

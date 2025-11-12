@@ -84,7 +84,7 @@ class CorporationContractsAPI {
             )
         }
 
-        Logger.debug("成功从服务器获取军团合同数据 - 军团ID: \(corporationId), 合同数量: \(contracts.count)")
+        Logger.success("成功从服务器获取军团合同数据 - 军团ID: \(corporationId), 合同数量: \(contracts.count)")
 
         return contracts
     }
@@ -236,7 +236,7 @@ class CorporationContractsAPI {
                 )
             }
 
-            Logger.debug("成功转换\(contracts.count)个合同数据")
+            Logger.success("成功转换\(contracts.count)个合同数据")
             return contracts
         }
         Logger.error("数据库查询失败")
@@ -539,7 +539,7 @@ class CorporationContractsAPI {
         // 根据执行结果提交或回滚事务
         if success {
             _ = CharacterDatabaseManager.shared.executeQuery("COMMIT")
-            Logger.info("成功保存\(items.count)个合同物品到数据库，合同ID: \(contractId)")
+            Logger.success("成功保存\(items.count)个合同物品到数据库，合同ID: \(contractId)")
 
             // 更新合同的items_fetched标志
             let updateSQL =
@@ -649,7 +649,7 @@ class CorporationContractsAPI {
         ) {
             Logger.error("保存军团合同物品到数据库失败")
         } else {
-            Logger.debug("成功保存军团合同物品到数据库")
+            Logger.success("成功保存军团合同物品到数据库")
         }
 
         return items

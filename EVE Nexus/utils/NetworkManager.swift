@@ -452,7 +452,7 @@ class NetworkManager: NSObject, @unchecked Sendable {
         progressCallback?(1, totalPages)
 
         let firstPageItems = try decoder(firstPageData)
-        Logger.info("成功获取第1页数据，本页包含\(firstPageItems.count)个项目")
+        Logger.success("成功获取第1页数据，本页包含\(firstPageItems.count)个项目")
         allItems.append(contentsOf: firstPageItems)
 
         // 如果有多页，使用并发获取剩余页面
@@ -487,7 +487,7 @@ class NetworkManager: NSObject, @unchecked Sendable {
                             )
 
                             let pageItems = try decoder(data)
-                            Logger.info("成功获取第\(page)页数据，本页包含\(pageItems.count)个项目")
+                            Logger.success("成功获取第\(page)页数据，本页包含\(pageItems.count)个项目")
 
                             // 添加短暂延迟以避免请求过于频繁
                             try await Task.sleep(nanoseconds: UInt64(0.5 * 1_000_000_000)) // 500ms延迟
@@ -528,7 +528,7 @@ class NetworkManager: NSObject, @unchecked Sendable {
                                 )
 
                                 let pageItems = try decoder(data)
-                                Logger.info("成功获取第\(page)页数据，本页包含\(pageItems.count)个项目")
+                                Logger.success("成功获取第\(page)页数据，本页包含\(pageItems.count)个项目")
 
                                 // 添加短暂延迟以避免请求过于频繁
                                 try await Task.sleep(nanoseconds: UInt64(0.5 * 1_000_000_000)) // 500ms延迟

@@ -42,7 +42,7 @@ class MetadataManager {
             let data = try Data(contentsOf: url)
             let metadata = try JSONDecoder().decode(CloudKitMetadata.self, from: data)
 
-            Logger.info("成功读取 metadata:")
+            Logger.success("成功读取 metadata:")
             Logger.info("  - 构建版本: \(metadata.buildNumber)")
             Logger.info("  - 补丁版本: \(metadata.patchNumber)")
             Logger.info("  - 图标版本: \(metadata.iconVersion)")

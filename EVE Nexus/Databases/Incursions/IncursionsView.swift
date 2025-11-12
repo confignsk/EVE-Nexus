@@ -211,7 +211,7 @@ final class IncursionsViewModel: ObservableObject {
         }
 
         if !prepared.isEmpty {
-            Logger.info("成功准备 \(prepared.count) 条数据")
+            Logger.success("成功准备 \(prepared.count) 条数据")
             preparedIncursions = prepared
 
             // 开始加载主权图标

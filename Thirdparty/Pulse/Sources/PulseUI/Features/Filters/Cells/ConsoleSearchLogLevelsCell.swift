@@ -46,7 +46,7 @@ package struct ConsoleSearchLogLevelsCell: View {
             HStack(spacing: 24) {
                 makeLevelsSection(levels: [.trace, .debug, .info])
                 makeLevelsSection(levels: [.notice, .warning])
-                makeLevelsSection(levels: [.error, .critical])
+                makeLevelsSection(levels: [.success, .error, .critical])
             }
             .fixedSize()
         }

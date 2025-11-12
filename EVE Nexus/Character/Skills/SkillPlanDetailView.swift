@@ -1288,7 +1288,7 @@ struct SkillPlanDetailView: View {
             existingMaxLevels[skill.skillId] = max(currentMax, skill.level)
 
             let status = isCompleted ? "[完成]" : ""
-            Logger.debug("  [+] 将添加: \(skillName) 等级 \(skill.level) \(status)")
+            Logger.debug("   将添加: \(skillName) 等级 \(skill.level) \(status)")
         }
 
         // 如果有新技能要添加
@@ -1323,7 +1323,7 @@ struct SkillPlanDetailView: View {
 
     // 添加物品的所有技能依赖到计划
     private func addItemSkillsToPlan(itemId: Int, itemName: String) async {
-        Logger.debug("[+] 开始添加物品技能依赖到计划 - 物品: \(itemName) (ID: \(itemId))")
+        Logger.debug(" 开始添加物品技能依赖到计划 - 物品: \(itemName) (ID: \(itemId))")
 
         // 获取物品的所有技能依赖
         let requirements = SkillTreeManager.shared.getDeduplicatedSkillRequirements(
@@ -1336,7 +1336,7 @@ struct SkillPlanDetailView: View {
             return
         }
 
-        Logger.debug("[+] 物品需要 \(requirements.count) 个技能:")
+        Logger.debug(" 物品需要 \(requirements.count) 个技能:")
         for requirement in requirements {
             if let skillName = SkillTreeManager.shared.getSkillName(for: requirement.skillID) {
                 Logger.debug("  - \(skillName) (ID: \(requirement.skillID)) 等级: \(requirement.level)")
@@ -1379,7 +1379,7 @@ struct SkillPlanDetailView: View {
         // 批量添加所有技能
         addSkillLevelsToPlan(skillsToAdd)
 
-        Logger.debug("[+] 物品技能依赖添加完成")
+        Logger.debug(" 物品技能依赖添加完成")
     }
 
     // 获取技能的所有前置要求（递归，包括所有等级，从1级开始）

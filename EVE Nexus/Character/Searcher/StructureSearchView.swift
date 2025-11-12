@@ -373,7 +373,7 @@ struct StructureSearchView {
         // 最后一次检查是否被取消
         try Task.checkCancellation()
 
-        Logger.debug("成功创建 \(results.count) 个搜索结果")
+        Logger.success("成功创建 \(results.count) 个搜索结果")
 
         // 按照指定的类型ID顺序排序
         results.sort { result1, result2 in

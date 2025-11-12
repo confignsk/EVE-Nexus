@@ -261,7 +261,7 @@ class ColonySimulation {
                 return lastRunTime.addingTimeInterval(cycleTime)
             }
         } else if let factory = pin as? Pin.Factory {
-            // [!] 关键修复：优先检查工厂是否正在生产中（isActive && lastCycleStartTime）
+            // 关键修复：优先检查工厂是否正在生产中（isActive && lastCycleStartTime）
             // 只有在工厂真正处于激活状态时，才使用lastCycleStartTime
             if factory.isActive, let lastCycleStartTime = factory.lastCycleStartTime,
                let schematic = factory.schematic
@@ -283,7 +283,7 @@ class ColonySimulation {
                 }
             }
 
-            // [!] 关键修复：如果工厂有lastRunTime，始终返回lastRunTime + cycleTime
+            // 关键修复：如果工厂有lastRunTime，始终返回lastRunTime + cycleTime
             // 这确保工厂完成周期后，即使没有足够的材料，也会在正确的周期时间被调度
             // 而不是返回nil导致被安排在当前时间+1秒
             // 注意：这里不检查lastCycleStartTime，因为工厂完成周期后，lastCycleStartTime可能还存在但工厂已经不活跃了
@@ -1218,7 +1218,7 @@ class ColonySimulation {
                 return true
             }
 
-            // [!] 关键：如果工厂有足够材料，返回false
+            // 关键：如果工厂有足够材料，返回false
             // 这看起来反直觉，但配合getNextRunTime是正确的：
             // getNextRunTime会对有足够材料的未激活工厂返回nil（立即运行）
             if hasEnoughInputs(factory: factory) {
@@ -2199,7 +2199,7 @@ class ColonySimulationManager {
             // 检查提取器是否过期（动态检测停工时间）
             let currentExpireTime = getExpireTime(colony: simulatedColony)
             if let expire = currentExpireTime, expire <= targetTime {
-                Logger.info("[+] 第\(String(format: "%.2f", totalElapsedHours))小时（\(minutesKey)分钟）检测到提取器过期，终止快照生成")
+                Logger.info(" 第\(String(format: "%.2f", totalElapsedHours))小时（\(minutesKey)分钟）检测到提取器过期，终止快照生成")
                 break
             }
 
@@ -2210,7 +2210,7 @@ class ColonySimulationManager {
 
             // 如果停工，终止生成
             if !isWorking {
-                Logger.info("[+] 第\(String(format: "%.2f", totalElapsedHours))小时（\(minutesKey)分钟）停工，终止快照生成")
+                Logger.info(" 第\(String(format: "%.2f", totalElapsedHours))小时（\(minutesKey)分钟）停工，终止快照生成")
                 break
             }
 
@@ -2252,14 +2252,14 @@ class ColonySimulationManager {
             }
 
             Logger.info("第二阶段完成: 从\(currentCount)个采样点精简到\(finalSnapshots.count)个采样点")
-            Logger.info("快照生成完成: 共\(finalSnapshots.count)个采样点")
+            Logger.success("快照生成完成: 共\(finalSnapshots.count)个采样点")
             Logger.info("========================================")
 
             return finalSnapshots
         } else {
             // 如果采样点数量已经小于等于目标数量，直接返回
             Logger.info("采样点数量(\(currentCount))已满足要求(<=\(targetSnapshotCount))，无需二次采样")
-            Logger.info("快照生成完成: 共\(snapshots.count)个采样点（采样间隔: \(String(format: "%.2f", samplingInterval))小时）")
+            Logger.success("快照生成完成: 共\(snapshots.count)个采样点（采样间隔: \(String(format: "%.2f", samplingInterval))小时）")
             Logger.info("========================================")
 
             return snapshots

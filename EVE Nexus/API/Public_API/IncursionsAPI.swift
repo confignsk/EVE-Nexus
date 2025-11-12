@@ -61,9 +61,9 @@ class IncursionsAPI {
                 try FileManager.default.createDirectory(
                     at: cacheDirectory, withIntermediateDirectories: true
                 )
-                Logger.info("[IncursionsAPI]创建入侵缓存目录: \(cacheDirectory.path)")
+                Logger.info("创建入侵缓存目录: \(cacheDirectory.path)")
             } catch {
-                Logger.error("[IncursionsAPI]创建入侵缓存目录失败: \(error)")
+                Logger.error("创建入侵缓存目录失败: \(error)")
             }
         }
 
@@ -76,7 +76,7 @@ class IncursionsAPI {
         let cacheFilePath = cacheDirectory.appendingPathComponent("incursions.json")
 
         guard FileManager.default.fileExists(atPath: cacheFilePath.path) else {
-            Logger.debug("[IncursionsAPI]入侵缓存文件不存在")
+            Logger.debug("入侵缓存文件不存在")
             return nil
         }
 
@@ -86,20 +86,20 @@ class IncursionsAPI {
             if let modificationDate = attributes[.modificationDate] as? Date {
                 let timeSinceModification = Date().timeIntervalSince(modificationDate)
                 if timeSinceModification > cacheDuration {
-                    Logger.info("[IncursionsAPI]入侵缓存已过期，已过: \(Int(timeSinceModification / 60))分钟")
+                    Logger.info("入侵缓存已过期，已过: \(Int(timeSinceModification / 60))分钟")
                     return nil
                 } else {
                     let remainingMinutes = (cacheDuration - timeSinceModification) / 60
-                    Logger.info("[IncursionsAPI]入侵缓存有效，剩余时间: \(Int(remainingMinutes))分钟")
+                    Logger.info("入侵缓存有效，剩余时间: \(Int(remainingMinutes))分钟")
                 }
             }
 
             let data = try Data(contentsOf: cacheFilePath)
             let cached = try JSONDecoder().decode(CachedData.self, from: data)
-            Logger.info("[IncursionsAPI]成功从文件加载入侵信息，数量: \(cached.data.count)")
+            Logger.info("成功从文件加载入侵信息，数量: \(cached.data.count)")
             return cached.data
         } catch {
-            Logger.error("[IncursionsAPI]加载入侵缓存文件失败: \(error)")
+            Logger.error("加载入侵缓存文件失败: \(error)")
             return nil
         }
     }
@@ -114,10 +114,10 @@ class IncursionsAPI {
             let data = try JSONEncoder().encode(cachedData)
             try data.write(to: cacheFilePath)
             Logger.info(
-                "[IncursionsAPI]成功保存入侵信息到文件，数量: \(incursions.count), 大小: \(data.count) bytes"
+                "成功保存入侵信息到文件，数量: \(incursions.count), 大小: \(data.count) bytes"
             )
         } catch {
-            Logger.error("[IncursionsAPI]保存入侵缓存文件失败: \(error)")
+            Logger.error("保存入侵缓存文件失败: \(error)")
         }
     }
 
@@ -152,7 +152,7 @@ class IncursionsAPI {
         // 保存到缓存
         saveToCache(incursions)
 
-        Logger.info("[IncursionsAPI]成功获取入侵数据，数量: \(incursions.count)")
+        Logger.info("成功获取入侵数据，数量: \(incursions.count)")
         return incursions
     }
 }

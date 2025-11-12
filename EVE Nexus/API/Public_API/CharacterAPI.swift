@@ -92,7 +92,7 @@ final class CharacterAPI: @unchecked Sendable {
             return false
         }
 
-        Logger.debug("成功保存角色信息到数据库 - 角色ID: \(characterId)")
+        Logger.success("成功保存角色信息到数据库 - 角色ID: \(characterId)")
         return true
     }
 
@@ -191,7 +191,7 @@ final class CharacterAPI: @unchecked Sendable {
 
         // 保存到数据库
         if saveCharacterInfoToCache(info, characterId: characterId) {
-            Logger.info("成功缓存角色信息 - 角色ID: \(characterId)")
+            Logger.success("成功缓存角色信息 - 角色ID: \(characterId)")
         }
 
         return info
@@ -218,11 +218,11 @@ final class CharacterAPI: @unchecked Sendable {
                 backgroundUpdate: true
             )
 
-            Logger.info("[CharacterAPI] 成功获取角色头像 - 角色ID: \(characterId), 大小: \(size)")
+            Logger.info("成功获取角色头像 - 角色ID: \(characterId), 大小: \(size)")
             return image
 
         } catch {
-            Logger.error("[CharacterAPI] 获取角色头像失败 - 角色ID: \(characterId), 错误: \(error)")
+            Logger.error("获取角色头像失败 - 角色ID: \(characterId), 错误: \(error)")
             throw error
         }
     }

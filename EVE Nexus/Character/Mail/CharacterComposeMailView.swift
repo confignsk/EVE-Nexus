@@ -431,7 +431,7 @@ class MailListPickerViewModel: ObservableObject {
 
         do {
             mailLists = try await CharacterMailAPI.shared.fetchMailLists(characterId: characterId)
-            Logger.info("成功获取 \(mailLists.count) 个邮件列表")
+            Logger.success("成功获取 \(mailLists.count) 个邮件列表")
         } catch {
             Logger.error("获取邮件列表失败: \(error)")
             self.error = error

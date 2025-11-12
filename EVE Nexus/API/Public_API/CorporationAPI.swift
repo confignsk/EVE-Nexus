@@ -58,17 +58,17 @@ class CorporationAPI {
                 backgroundUpdate: true
             )
 
-            Logger.info("[CorporationAPI] 成功获取军团图标 - 军团ID: \(corporationId), 大小: \(size)")
+            Logger.info("成功获取军团图标 - 军团ID: \(corporationId), 大小: \(size)")
             return image
 
         } catch {
             Logger.error(
-                "[CorporationAPI] 获取军团图标失败 - 军团ID: \(corporationId) - URL: \(logoURL), 错误: \(error)"
+                "获取军团图标失败 - 军团ID: \(corporationId) - URL: \(logoURL), 错误: \(error)"
             )
 
             // 尝试获取默认图标
             if let defaultImage = UIImage(named: "not_found") {
-                Logger.info("[CorporationAPI] 使用默认图标替代 - 军团ID: \(corporationId)")
+                Logger.info("使用默认图标替代 - 军团ID: \(corporationId)")
                 return defaultImage
             }
 
@@ -92,9 +92,9 @@ class CorporationAPI {
             if let localName = localCorporationName {
                 cachedInfo = updateCorporationInfoName(info: cachedInfo, newName: localName)
                 Logger.info(
-                    "[CorporationAPI]使用文件缓存的军团信息，但名称使用本地数据库: \(localName) - 军团ID: \(corporationId)")
+                    "使用文件缓存的军团信息，但名称使用本地数据库: \(localName) - 军团ID: \(corporationId)")
             } else {
-                Logger.info("[CorporationAPI]使用文件缓存的军团信息，保持原缓存名称 - 军团ID: \(corporationId)")
+                Logger.info("使用文件缓存的军团信息，保持原缓存名称 - 军团ID: \(corporationId)")
             }
 
             return cachedInfo
@@ -113,13 +113,13 @@ class CorporationAPI {
         // 如果有本地数据库名称，使用本地名称替换网络返回的名称
         if let localName = localCorporationName {
             info = updateCorporationInfoName(info: info, newName: localName)
-            Logger.info("[CorporationAPI]使用本地数据库中的军团名称: \(localName) 替换网络返回的名称")
+            Logger.info("使用本地数据库中的军团名称: \(localName) 替换网络返回的名称")
         }
 
         // 保存到文件缓存
         saveCorporationInfoToFile(info: info, filePath: cacheFilePath)
 
-        Logger.info("[CorporationAPI]成功获取军团信息 - 军团ID: \(corporationId)")
+        Logger.info("成功获取军团信息 - 军团ID: \(corporationId)")
         return info
     }
 
@@ -138,9 +138,9 @@ class CorporationAPI {
                 try FileManager.default.createDirectory(
                     at: cacheDirectory, withIntermediateDirectories: true
                 )
-                Logger.info("[CorporationAPI]创建军团缓存目录: \(cacheDirectory.path)")
+                Logger.info("创建军团缓存目录: \(cacheDirectory.path)")
             } catch {
-                Logger.error("[CorporationAPI]创建军团缓存目录失败: \(error)")
+                Logger.error("创建军团缓存目录失败: \(error)")
             }
         }
 
@@ -159,23 +159,23 @@ class CorporationAPI {
             if let modificationDate = attributes[.modificationDate] as? Date {
                 let daysSinceModification = Date().timeIntervalSince(modificationDate) / (24 * 3600)
                 if daysSinceModification > 7 {
-                    Logger.info("[CorporationAPI]军团缓存文件已过期 - 军团ID: \(filePath.lastPathComponent)")
+                    Logger.info("军团缓存文件已过期 - 军团ID: \(filePath.lastPathComponent)")
                     return nil
                 } else {
                     let remainingDays = 7 - daysSinceModification
                     let remainingHours = remainingDays * 24
                     Logger.info(
-                        "[CorporationAPI]军团缓存文件有效 - 军团ID: \(filePath.lastPathComponent), 剩余时间: \(String(format: "%.1f", remainingDays))天 (\(String(format: "%.1f", remainingHours))小时)"
+                        "军团缓存文件有效 - 军团ID: \(filePath.lastPathComponent), 剩余时间: \(String(format: "%.1f", remainingDays))天 (\(String(format: "%.1f", remainingHours))小时)"
                     )
                 }
             }
 
             let data = try Data(contentsOf: filePath)
             let info = try JSONDecoder().decode(CorporationInfo.self, from: data)
-            Logger.info("[CorporationAPI]成功从文件加载军团信息 - 文件: \(filePath.lastPathComponent)")
+            Logger.info("成功从文件加载军团信息 - 文件: \(filePath.lastPathComponent)")
             return info
         } catch {
-            Logger.error("[CorporationAPI]加载军团缓存文件失败: \(error) - 文件: \(filePath.lastPathComponent)")
+            Logger.error("加载军团缓存文件失败: \(error) - 文件: \(filePath.lastPathComponent)")
             return nil
         }
     }
@@ -186,11 +186,11 @@ class CorporationAPI {
             let data = try JSONEncoder().encode(info)
             try data.write(to: filePath)
             Logger.info(
-                "[CorporationAPI]成功保存军团信息到文件 - 文件: \(filePath.lastPathComponent), 大小: \(data.count) bytes"
+                "成功保存军团信息到文件 - 文件: \(filePath.lastPathComponent), 大小: \(data.count) bytes"
             )
         } catch {
             Logger.error(
-                "[CorporationAPI]保存军团信息到文件失败: \(error) - 文件: \(filePath.lastPathComponent)")
+                "保存军团信息到文件失败: \(error) - 文件: \(filePath.lastPathComponent)")
         }
     }
 
@@ -243,7 +243,7 @@ class CorporationAPI {
 
         // 检查文件缓存
         if !forceRefresh, let cachedHistory = loadAllianceHistoryFromFile(filePath: cacheFilePath) {
-            Logger.info("[CorporationAPI]使用文件缓存的军团联盟历史 - 军团ID: \(corporationId)")
+            Logger.info("使用文件缓存的军团联盟历史 - 军团ID: \(corporationId)")
             return cachedHistory
         }
 
@@ -264,7 +264,7 @@ class CorporationAPI {
         saveAllianceHistoryToFile(history: sortedHistory, filePath: cacheFilePath)
 
         Logger.info(
-            "[CorporationAPI]成功获取军团联盟历史 - 军团ID: \(corporationId), 记录数: \(sortedHistory.count)")
+            "成功获取军团联盟历史 - 军团ID: \(corporationId), 记录数: \(sortedHistory.count)")
         return sortedHistory
     }
 
@@ -281,9 +281,9 @@ class CorporationAPI {
                 try FileManager.default.createDirectory(
                     at: cacheDirectory, withIntermediateDirectories: true
                 )
-                Logger.info("[CorporationAPI]创建军团联盟历史缓存目录: \(cacheDirectory.path)")
+                Logger.info("创建军团联盟历史缓存目录: \(cacheDirectory.path)")
             } catch {
-                Logger.error("[CorporationAPI]创建军团联盟历史缓存目录失败: \(error)")
+                Logger.error("创建军团联盟历史缓存目录失败: \(error)")
             }
         }
 
@@ -303,23 +303,23 @@ class CorporationAPI {
                 let hoursSinceModification = Date().timeIntervalSince(modificationDate) / 3600
                 if hoursSinceModification > 12 {
                     Logger.info(
-                        "[CorporationAPI]军团联盟历史缓存文件已过期 - 军团ID: \(filePath.lastPathComponent)")
+                        "军团联盟历史缓存文件已过期 - 军团ID: \(filePath.lastPathComponent)")
                     return nil
                 } else {
                     let remainingHours = 12 - hoursSinceModification
                     Logger.info(
-                        "[CorporationAPI]军团联盟历史缓存文件有效 - 军团ID: \(filePath.lastPathComponent), 剩余时间: \(String(format: "%.1f", remainingHours))小时"
+                        "军团联盟历史缓存文件有效 - 军团ID: \(filePath.lastPathComponent), 剩余时间: \(String(format: "%.1f", remainingHours))小时"
                     )
                 }
             }
 
             let data = try Data(contentsOf: filePath)
             let history = try JSONDecoder().decode([CorporationAllianceHistory].self, from: data)
-            Logger.info("[CorporationAPI]成功从文件加载军团联盟历史 - 文件: \(filePath.lastPathComponent)")
+            Logger.info("成功从文件加载军团联盟历史 - 文件: \(filePath.lastPathComponent)")
             return history
         } catch {
             Logger.error(
-                "[CorporationAPI]加载军团联盟历史缓存文件失败: \(error) - 文件: \(filePath.lastPathComponent)")
+                "加载军团联盟历史缓存文件失败: \(error) - 文件: \(filePath.lastPathComponent)")
             return nil
         }
     }
@@ -330,11 +330,11 @@ class CorporationAPI {
             let data = try JSONEncoder().encode(history)
             try data.write(to: filePath)
             Logger.info(
-                "[CorporationAPI]成功保存军团联盟历史到文件 - 文件: \(filePath.lastPathComponent), 大小: \(data.count) bytes"
+                "成功保存军团联盟历史到文件 - 文件: \(filePath.lastPathComponent), 大小: \(data.count) bytes"
             )
         } catch {
             Logger.error(
-                "[CorporationAPI]保存军团联盟历史到文件失败: \(error) - 文件: \(filePath.lastPathComponent)")
+                "保存军团联盟历史到文件失败: \(error) - 文件: \(filePath.lastPathComponent)")
         }
     }
 }

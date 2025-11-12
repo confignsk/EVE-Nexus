@@ -244,7 +244,7 @@ final class FactionWarDetailViewModel: ObservableObject {
                 }
 
                 if !prepared.isEmpty {
-                    Logger.info("成功准备 \(prepared.count) 条数据")
+                    Logger.success("成功准备 \(prepared.count) 条数据")
                     preparedSystems = prepared
 
                     // 加载所有势力图标

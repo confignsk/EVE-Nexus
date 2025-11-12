@@ -93,7 +93,7 @@ class AttributeCompareManager {
             }
             .sorted { $0.lastUpdated < $1.lastUpdated }
 
-            Logger.debug("成功加载属性对比列表数量: \(compares.count)")
+            Logger.success("成功加载属性对比列表数量: \(compares.count)")
             return compares
 
         } catch {

@@ -57,7 +57,7 @@ public class CharacterFWStatsAPI {
     {
         // 如果不是强制刷新，尝试从缓存获取数据
         if !forceRefresh, let cachedData = try? loadFromCache(characterId: characterId) {
-            Logger.info("成功从缓存获取势力战争统计数据，角色ID: \(characterId)")
+            Logger.success("成功从缓存获取势力战争统计数据，角色ID: \(characterId)")
             return cachedData
         }
 
@@ -78,7 +78,7 @@ public class CharacterFWStatsAPI {
             )
 
             let fwStats = try JSONDecoder().decode(CharacterFWStats.self, from: data)
-            Logger.info("成功从API获取势力战争统计数据，角色ID: \(characterId)")
+            Logger.success("成功从API获取势力战争统计数据，角色ID: \(characterId)")
 
             // 保存到缓存
             try saveToCache(characterId: characterId, fwStats: fwStats)

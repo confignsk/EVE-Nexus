@@ -20,6 +20,10 @@ struct EVE_NexusApp: App {
         // 配置 Pulse 日志系统（必须在其他初始化之前）
         Logger.configure()
 
+        // 隐藏 PulseUI 中的支持相关按钮，避免用户误以为是给应用开发者发送反馈
+        UserDefaults.standard.set(true, forKey: "pulse-disable-support-prompts")
+        UserDefaults.standard.set(true, forKey: "pulse-disable-report-issue-prompts")
+
         configureLanguage()
         setupNotifications()
         initializeLanguageMapSettings()
@@ -51,22 +55,23 @@ struct EVE_NexusApp: App {
             }
         }
 
-        Logger.info(
-            "UserDefaults 总大小: \(ByteCountFormatter.string(fromByteCount: Int64(totalSize), countStyle: .file))"
-        )
-
         // 检查总大小是否接近限制（4MB）
-        if totalSize > 3_500_000 {
-            Logger.error(
+        if totalSize > 3_072_000 {
+            Logger.warning(
                 "警告：UserDefaults 总大小(\(ByteCountFormatter.string(fromByteCount: Int64(totalSize), countStyle: .file)))接近限制(4MB)"
             )
-        }
-
-        // 按大小排序并打印
-        sizeMap.sort { $0.size > $1.size }
-        for item in sizeMap {
-            Logger.info(
-                "键: \(item.key), 大小: \(ByteCountFormatter.string(fromByteCount: Int64(item.size), countStyle: .file))"
+            // 按大小排序并只打印超过1MB的键
+            sizeMap.sort { $0.size > $1.size }
+            for item in sizeMap {
+                if item.size > 1_000_000 {
+                    Logger.info(
+                        "键: \(item.key), 大小: \(ByteCountFormatter.string(fromByteCount: Int64(item.size), countStyle: .file))"
+                    )
+                }
+            }
+        } else {
+            Logger.success(
+                "UserDefaults 总大小: \(ByteCountFormatter.string(fromByteCount: Int64(totalSize), countStyle: .file))"
             )
         }
 
@@ -267,7 +272,7 @@ struct EVE_NexusApp: App {
                 do {
                     _ = try await InsurancePricesAPI.shared.fetchInsurancePrices()
                 } catch {
-                    Logger.error("[x] 后台加载保险价格数据失败: \(error)")
+                    Logger.error("后台加载保险价格数据失败: \(error)")
                 }
             }
 

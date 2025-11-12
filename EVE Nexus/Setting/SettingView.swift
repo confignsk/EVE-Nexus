@@ -146,7 +146,7 @@ class CacheManager {
                     totalFilesRemoved += fileCount
 
                     // 记录日志
-                    Logger.debug("成功清理并重建目录: \(dirName)，删除了 \(fileCount) 个文件")
+                    Logger.success("成功清理并重建目录: \(dirName)，删除了 \(fileCount) 个文件")
                 }
             } catch {
                 Logger.error("清理目录失败 - \(dirName): \(error)")
@@ -283,7 +283,7 @@ struct SettingView: View {
             var totalSize: Int64 = 0
             var fileCount = 0
             let largeFileThreshold: Int64 = 10 * 1024 * 1024 // 10MB
-            let fileCountThreshold = 100
+            let fileCountThreshold = 200
 
             if FileManager.default.fileExists(atPath: staticDataSetPath.path) {
                 if let enumerator = FileManager.default.enumerator(

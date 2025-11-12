@@ -530,7 +530,7 @@ class CharacterIndustryViewModel: ObservableObject {
                     }
                 }
             }
-            Logger.debug("成功加载了\(rows.count)个蓝图信息")
+            Logger.success("成功加载了\(rows.count)个蓝图信息")
         } else {
             Logger.error("批量加载蓝图信息失败")
         }
@@ -579,7 +579,7 @@ class CharacterIndustryViewModel: ObservableObject {
                         )
                         self.installerImages[installerId] = image
 
-                        Logger.debug("成功加载发起人信息 - ID: \(installerId), 名称: \(info.name)")
+                        Logger.success("成功加载发起人信息 - ID: \(installerId), 名称: \(info.name)")
                     } catch {
                         Logger.error("加载发起人信息失败 - ID: \(installerId), 错误: \(error)")
                         // 设置默认值，避免重复尝试

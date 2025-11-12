@@ -82,7 +82,7 @@ func processConfiguration(simulationInput: SimulationInput, databaseManager: Dat
         if canInstall {
             // 如果可以安装，添加到处理后的配置中
             processedInput.modules.append(module)
-            Logger.info("成功安装装备: \(module.name) 到槽位 \(module.flag?.rawValue ?? "未知")")
+            Logger.success("成功安装装备: \(module.name) 到槽位 \(module.flag?.rawValue ?? "未知")")
         } else {
             // 如果不能安装，记录到被跳过模块列表
             let reason = "该装备无法安装到当前飞船: \(module.name)"
