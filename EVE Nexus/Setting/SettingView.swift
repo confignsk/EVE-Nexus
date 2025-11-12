@@ -281,6 +281,9 @@ struct SettingView: View {
             // 统计 StaticDataSet 目录大小
             let staticDataSetPath = StaticResourceManager.shared.getStaticDataSetPath()
             var totalSize: Int64 = 0
+            var fileCount = 0
+            let largeFileThreshold: Int64 = 10 * 1024 * 1024 // 10MB
+            let fileCountThreshold = 100
 
             if FileManager.default.fileExists(atPath: staticDataSetPath.path) {
                 if let enumerator = FileManager.default.enumerator(
@@ -299,9 +302,14 @@ struct SettingView: View {
                                     atPath: fileURL.path)
                                 if let fileSize = attributes[.size] as? Int64 {
                                     totalSize += fileSize
-                                    Logger.info(
-                                        "Calculating file size for \(fileURL.path): \(fileSize) bytes"
-                                    )
+                                    fileCount += 1
+
+                                    // 只有当文件大小超过10MB时才记录警告
+                                    if fileSize > largeFileThreshold {
+                                        Logger.warning(
+                                            "大文件: \(fileURL.path) - \(FormatUtil.formatFileSize(fileSize))"
+                                        )
+                                    }
                                 }
                             }
                         } catch {
@@ -340,9 +348,14 @@ struct SettingView: View {
                                     atPath: fileURL.path)
                                 if let fileSize = attributes[.size] as? Int64 {
                                     totalSize += fileSize
-                                    Logger.info(
-                                        "Calculating file size for \(fileURL.path): \(fileSize) bytes"
-                                    )
+                                    fileCount += 1
+
+                                    // 只有当文件大小超过10MB时才记录警告
+                                    if fileSize > largeFileThreshold {
+                                        Logger.warning(
+                                            "大文件: \(fileURL.path) - \(FormatUtil.formatFileSize(fileSize))"
+                                        )
+                                    }
                                 }
                             }
                         } catch {
@@ -351,6 +364,11 @@ struct SettingView: View {
                         }
                     }
                 }
+            }
+
+            // 如果文件总数超过100个，记录警告
+            if fileCount > fileCountThreshold {
+                Logger.warning("缓存文件较多（\(fileCount)个）")
             }
 
             // 更新界面
@@ -536,7 +554,7 @@ struct SettingView: View {
 
         var body: some View {
             VStack(spacing: 0) {
-                // 日志开关
+                // 日志开关 - 只控制是否显示查看日志按钮
                 Toggle(isOn: $enableLogging) {
                     VStack(alignment: .leading) {
                         Text(NSLocalizedString("Main_Setting_Enable_Logging", comment: ""))
@@ -549,7 +567,7 @@ struct SettingView: View {
                 }
                 .tint(.green)
 
-                // 查看日志按钮 - 简单的条件显示，无复杂动画
+                // 查看日志按钮 - 只有在启用调试模式时才显示
                 if enableLogging {
                     Divider()
                         .padding(.vertical, 8)

@@ -3,12 +3,37 @@ import SwiftUI
 
 // MARK: - 数据模型
 
+struct ESIStatusResponse: Codable {
+    let routes: [ESIStatusRoute]
+}
+
+struct ESIStatusRoute: Codable {
+    let method: String
+    let path: String
+    let status: String
+}
+
 struct ESIStatus: Codable {
-    let endpoint: String
     let method: String
     let route: String
     let status: String
-    let tags: [String]
+
+    // 从 path 自动构建标签用于分组（只取第一个路径组件）
+    var tags: [String] {
+        let components = route.split(separator: "/").map { String($0) }
+        if components.isEmpty {
+            return ["Other"]
+        }
+
+        // 只取第一个路径组件，首字母大写
+        let firstComponent = components[0]
+        return [firstComponent.capitalized]
+    }
+
+    // 兼容旧代码，返回 route 作为 endpoint
+    var endpoint: String {
+        return route
+    }
 
     // 唯一标识符，结合route和method
     var uniqueID: String {
@@ -16,15 +41,41 @@ struct ESIStatus: Codable {
     }
 
     var isGreen: Bool {
-        return status == "green"
+        return status == "OK"
     }
 
     var isYellow: Bool {
-        return status == "yellow"
+        return status == "Degraded"
     }
 
     var isRed: Bool {
-        return status == "red"
+        return status == "Down"
+    }
+
+    var isOrange: Bool {
+        return status == "Recovering"
+    }
+
+    var isGray: Bool {
+        return status == "Unknown"
+    }
+
+    // 获取状态对应的颜色
+    var statusColor: Color {
+        switch status {
+        case "OK":
+            return .green
+        case "Degraded":
+            return .yellow
+        case "Down":
+            return .red
+        case "Recovering":
+            return .orange
+        case "Unknown":
+            return .gray
+        default:
+            return .gray
+        }
     }
 }
 
@@ -146,21 +197,27 @@ class ESIStatusAPI {
 
         Logger.info("从网络获取ESI状态数据，强制刷新: \(forceRefresh)")
 
-        // 构建URL
-        var urlString = "https://esi.evetech.net/status.json?version=latest"
+        // 使用固定的兼容性日期获取状态
+        let compatibilityDate = "2025-11-06"
+        var statusURLString = "https://esi.evetech.net/meta/status?tenant=tranquility&compatibility_date=\(compatibilityDate)"
 
         // 添加随机参数，确保不使用浏览器缓存
         if forceRefresh {
-            urlString += "&t=\(Date().timeIntervalSince1970)"
+            statusURLString += "&t=\(Date().timeIntervalSince1970)"
         }
 
-        guard let url = URL(string: urlString) else {
+        guard let statusURL = URL(string: statusURLString) else {
             throw ESIStatusAPIError.invalidURL
         }
 
         // 执行请求
-        let data = try await NetworkManager.shared.fetchData(from: url)
-        let status = try JSONDecoder().decode([ESIStatus].self, from: data)
+        let statusData = try await NetworkManager.shared.fetchData(from: statusURL)
+        let statusResponse = try JSONDecoder().decode(ESIStatusResponse.self, from: statusData)
+
+        // 转换数据格式
+        let status = statusResponse.routes.map { route in
+            ESIStatus(method: route.method, route: route.path, status: route.status)
+        }
 
         // 保存到缓存
         saveToCache(status)

@@ -9,6 +9,9 @@
 /* Begin PBXBuildFile section */
 		C61378522D1A686600B9FB6B /* AppAuth in Frameworks */ = {isa = PBXBuildFile; productRef = C61378512D1A686600B9FB6B /* AppAuth */; };
 		C68E07512D047AD2007DA6D8 /* Zip in Frameworks */ = {isa = PBXBuildFile; productRef = C68E07502D047AD2007DA6D8 /* Zip */; };
+		C6F824CB2EC45B700084AEB7 /* Pulse in Frameworks */ = {isa = PBXBuildFile; productRef = C6F824CA2EC45B700084AEB7 /* Pulse */; };
+		C6F824CD2EC45B700084AEB7 /* PulseProxy in Frameworks */ = {isa = PBXBuildFile; productRef = C6F824CC2EC45B700084AEB7 /* PulseProxy */; };
+		C6F824CF2EC45B700084AEB7 /* PulseUI in Frameworks */ = {isa = PBXBuildFile; productRef = C6F824CE2EC45B700084AEB7 /* PulseUI */; };
 		C6FDBFED2DC9DD17007A9F7D /* JWTDecode in Frameworks */ = {isa = PBXBuildFile; productRef = C6FDBFEC2DC9DD17007A9F7D /* JWTDecode */; };
 /* End PBXBuildFile section */
 
@@ -71,8 +74,11 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C6F824CF2EC45B700084AEB7 /* PulseUI in Frameworks */,
 				C61378522D1A686600B9FB6B /* AppAuth in Frameworks */,
+				C6F824CD2EC45B700084AEB7 /* PulseProxy in Frameworks */,
 				C6FDBFED2DC9DD17007A9F7D /* JWTDecode in Frameworks */,
+				C6F824CB2EC45B700084AEB7 /* Pulse in Frameworks */,
 				C68E07512D047AD2007DA6D8 /* Zip in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -137,6 +143,9 @@
 				C68E07502D047AD2007DA6D8 /* Zip */,
 				C61378512D1A686600B9FB6B /* AppAuth */,
 				C6FDBFEC2DC9DD17007A9F7D /* JWTDecode */,
+				C6F824CA2EC45B700084AEB7 /* Pulse */,
+				C6F824CC2EC45B700084AEB7 /* PulseProxy */,
+				C6F824CE2EC45B700084AEB7 /* PulseUI */,
 			);
 			productName = "EVE Nexus";
 			productReference = C6417FC12CF80C4D0032F75C /* EVE Nexus.app */;
@@ -225,6 +234,7 @@
 				C68E074F2D047AD2007DA6D8 /* XCLocalSwiftPackageReference "Thirdparty/Zip" */,
 				C61378502D1A686600B9FB6B /* XCLocalSwiftPackageReference "Thirdparty/AppAuth-iOS" */,
 				C6FDBFEB2DC9DD17007A9F7D /* XCLocalSwiftPackageReference "Thirdparty/JWTDecode" */,
+				C6F824C92EC45B700084AEB7 /* XCLocalSwiftPackageReference "Thirdparty/Pulse" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C6417FC22CF80C4D0032F75C /* Products */;
@@ -456,7 +466,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.8.3;
+				MARKETING_VERSION = 1.8.4;
 				PRODUCT_BUNDLE_IDENTIFIER = "secgg.EVE-Nexus";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -504,7 +514,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.8.3;
+				MARKETING_VERSION = 1.8.4;
 				PRODUCT_BUNDLE_IDENTIFIER = "secgg.EVE-Nexus";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -658,6 +668,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Thirdparty/Zip;
 		};
+		C6F824C92EC45B700084AEB7 /* XCLocalSwiftPackageReference "Thirdparty/Pulse" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Thirdparty/Pulse;
+		};
 		C6FDBFEB2DC9DD17007A9F7D /* XCLocalSwiftPackageReference "Thirdparty/JWTDecode" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Thirdparty/JWTDecode;
@@ -672,6 +686,18 @@
 		C68E07502D047AD2007DA6D8 /* Zip */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Zip;
+		};
+		C6F824CA2EC45B700084AEB7 /* Pulse */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Pulse;
+		};
+		C6F824CC2EC45B700084AEB7 /* PulseProxy */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PulseProxy;
+		};
+		C6F824CE2EC45B700084AEB7 /* PulseUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PulseUI;
 		};
 		C6FDBFEC2DC9DD17007A9F7D /* JWTDecode */ = {
 			isa = XCSwiftPackageProductDependency;

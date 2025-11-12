@@ -289,4 +289,29 @@ class CharacterPlanetaryAPI {
             "character_\(characterId)_planet_\(planetId).json")
         try data.write(to: cacheFile)
     }
+
+    /// 清理指定角色的所有星球详情缓存
+    /// - Parameter characterId: 角色ID
+    static func clearPlanetDetailCache(characterId: Int) {
+        let fileManager = FileManager.default
+        let cacheDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("Planetary")
+
+        guard fileManager.fileExists(atPath: cacheDirectory.path) else {
+            return
+        }
+
+        do {
+            let files = try fileManager.contentsOfDirectory(at: cacheDirectory, includingPropertiesForKeys: nil)
+            let prefix = "character_\(characterId)_planet_"
+            for file in files {
+                if file.lastPathComponent.hasPrefix(prefix) {
+                    try fileManager.removeItem(at: file)
+                    Logger.info("[CharacterPlanetaryAPI] 已清理星球详情缓存: \(file.lastPathComponent)")
+                }
+            }
+        } catch {
+            Logger.error("[CharacterPlanetaryAPI] 清理星球详情缓存失败: \(error.localizedDescription)")
+        }
+    }
 }

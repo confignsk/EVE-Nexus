@@ -250,6 +250,8 @@
 "Misc_Copy" = "Copy";
 "Misc_Show_Detail" = "Show Info";
 "Misc_Delete" = "Delete";
+"Misc_Rename" = "Rename";
+"Misc_Name" = "Name";
 
 "Misc_Copy_CharID" = "Copy Char Name";
 "Misc_Copy_CEO_CharID" = "Copy CEO Name";
@@ -351,6 +353,7 @@
 "Main_Setting_Reset_Icons_Title" = "Reset Icons Cache";
 "Main_Setting_Reset_Icons_Message" = "This will delete all downloaded icon cache and unzip icons. Are you sure?";
 "Main_Setting_Cancel" = "Cancel";
+"Main_Setting_Restart" = "Restart";
 "Main_Setting_Clean" = "Clean";
 "Main_Setting_Reset" = "Reset";
 "Main_Setting_Cache_Details" = "Details:";
@@ -401,6 +404,8 @@
 "Time_Minutes_Ago_short" = "%dm ago";
 "Time_Seconds_Ago_short" = "%ds ago";
 "Time_Just_Now" = "just now";
+"Time_Days_Hours_Ago" = "%d days %d hours ago";
+"Time_Hours_Minutes_Ago" = "%d hours %d minutes ago";
 "Time_Days_Hours" = "%dd %dh";
 "Time_Days" = "%dd";
 "Time_Days_Long" = "%d Days";
@@ -1164,6 +1169,7 @@
 
 "CEO" = "CEO";
 "No Alliance" = "No Alliance";
+"No Corporation" = "No Corporation";
 "Member Count" = "Member Count";
 "Tax Rate" = "Tax Rate";
 "Description" = "Description";
@@ -1413,17 +1419,17 @@
 "Main_Planetary_Unknown_Type" = "Unknown Type";
 "Main_Planetary_Loading" = "Loading...";
 "Main_Planetary_Error" = "Loading Failed";
-"Planet_Detail_Last_Update" = "Planetary layout submit at";
+"Planet_Detail_Last_Update" = "Submit at";
 "Main_Planetary_Total_Count" = "Total %d planets";
 "Main_Planetary_location_calc" = "Find System for Colony";
 "Main_Planetary_of_Mine" = "My Planetary";
 
 // Extractor Related
 "Total_Yield" = "Total Yield:";
-"Current_Cycle_Yield" = "Current Cycle Yield:";
-"Current_Cycle_Elapsed" = "Current Cycle Elapsed:";
+"Current_Cycle_Yield" = "Cycle Yield:";
+"Current_Cycle_Elapsed" = "Cycle Elapsed:";
 "Cycle_Time" = "Cycle Time:";
-"Time_Remaining" = "Time Remaining:";
+"Time_Remaining" = "Remaining Time:";
 
 // Factory Related
 "Factory_Input" = "Input:";
@@ -1434,7 +1440,20 @@
 "Factory_Stopped" = "Stopped";
 "Factory_Not_Started" = "Not Started";
 "Factory_No_Recipe" = "No Schematic";
+"Factory_Ready" = "Ready";
 "Planet_Detail_No_Data" = "No Data";
+"Planet_Detail_View_Time" = "View Time:";
+"Planet_Detail_Current_Time" = "Current Time";
+"Planet_Detail_At_Submit" = "At Submit";
+"Planet_Detail_Stop_Work_Countdown" = "Stop Work Countdown:";
+"Planet_Detail_Stopped" = "Stopped";
+"Planet_Detail_Generating_Snapshots" = "Generating snapshots...";
+"Planet_Detail_Realtime" = "Realtime";
+"Planet_Detail_Expire" = "Expire";
+"Planet_Detail_Simulating" = "Simulating...";
+"Planet_Detail_Extractor_Expiry_Time" = "Extractor expiry time";
+"Planet_Detail_Extractor_Expired" = "Extractor expired";
+"Storage_Change_Chart" = "Storage Chart";
 
 "Contracts_Personal" = "Personal";
 "Contracts_Corporation" = "Corporation";
@@ -1450,6 +1469,7 @@
 "Contract_Show_Auction" = "Show Auction Contracts";
 "Contract_Settings" = "Contract Settings";
 "Contract_Done" = "Done";
+
 // 钱包流水加载状态
 "Contract_Loading_Fetching" = "Fetching page %d";
 "Contract_Loading_Complete" = "Complete";
@@ -1534,14 +1554,15 @@
 // ESI Status View
 "ESI_Status_Title" = "ESI Status";
 "ESI_Status_Overview" = "Status Overview";
-"ESI_Status_Good" = "Healthy";
-"ESI_Status_Fair" = "Degraded";
-"ESI_Status_Poor" = "Critical";
+"ESI_Status_OK" = "OK";
+"ESI_Status_Degraded" = "Degraded";
+"ESI_Status_Down" = "Down";
+"ESI_Status_Recovering" = "Recovering";
 "ESI_Status_Last_Refresh" = "Updated: %@";
 "ESI_Status_Loading" = "Loading...";
 "ESI_Status_Load_Failed" = "Load Failed";
 "ESI_Status_Retry" = "Retry";
-"ESI_Status_OK" = "OK";
+"ESI_Status_Button_OK" = "OK";
 
 // ESI Tag Names
 "ESI_Tag_Alliance" = "Alliance";
@@ -2213,7 +2234,7 @@
 // Log Management
 "Main_Setting_Logs_Section" = "Debug Logs";
 "Main_Setting_Enable_Logging" = "Enable Debug Mode";
-"Main_Setting_Enable_Logging_Detail" = "Save app logs and system logs to files (restart required)";
+"Main_Setting_Enable_Logging_Detail" = "View App log by PulseUI";
 "Main_Setting_View_Logs" = "View Debug Logs";
 "Main_Setting_View_Logs_Detail" = "Browse and view debug log files";
 "Main_Setting_Logs_Browser_Title" = "Log Browser";
@@ -2346,6 +2367,9 @@
 "Fitting_Delete_Confirm_Message" = "Are you sure you want to delete fitting \"%@\"?";
 "Fitting_Delete_Failed_Title" = "Delete Failed";
 "Fitting_Delete_Success" = "Fitting deleted successfully";
+
+// Fitting Rename
+"Fitting_Online_Rename_Not_Supported" = "Renaming online fittings is not supported";
 
 // 更新
 "Update_Notification_Title" = "Update";

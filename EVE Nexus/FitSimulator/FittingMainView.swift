@@ -576,6 +576,11 @@ struct FittingMainView: View {
         []
     @State private var pendingEftText = ""
 
+    // 重命名状态管理
+    @State private var isShowingRenameAlert = false
+    @State private var renameFitting: FittingListItem?
+    @State private var renameFittingName = ""
+
     // 使用两个独立的视图模型
     @StateObject private var localViewModel: LocalFittingViewModel
     @StateObject private var onlineViewModel: OnlineFittingViewModel
@@ -682,6 +687,54 @@ struct FittingMainView: View {
                     error.localizedDescription
                 )
                 showingImportErrorAlert = true
+            }
+        }
+    }
+
+    // 重命名装配配置（仅本地配置）
+    private func renameFittingName(fitting: FittingListItem, newName: String) {
+        Logger.info("开始重命名装配配置 - ID: \(fitting.fittingId), 新名称: \(newName)")
+
+        // 只处理本地配置
+        guard sourceType == .local else {
+            Logger.warning("尝试重命名在线配置，此操作不被支持")
+            return
+        }
+
+        Task {
+            do {
+                // 加载配置
+                var localFitting = try FitConvert.loadLocalFitting(fittingId: fitting.fittingId)
+
+                // 更新名称
+                localFitting = LocalFitting(
+                    description: localFitting.description,
+                    fitting_id: localFitting.fitting_id,
+                    items: localFitting.items,
+                    name: newName,
+                    ship_type_id: localFitting.ship_type_id,
+                    drones: localFitting.drones,
+                    fighters: localFitting.fighters,
+                    cargo: localFitting.cargo,
+                    implants: localFitting.implants,
+                    environment_type_id: localFitting.environment_type_id
+                )
+
+                // 保存配置
+                try FitConvert.saveLocalFitting(localFitting)
+                Logger.info("成功重命名本地装配配置 - ID: \(fitting.fittingId)")
+
+                // 刷新列表
+                await localViewModel.loadLocalFittings(forceRefresh: true)
+            } catch {
+                Logger.error("重命名本地装配配置失败: \(error)")
+                await MainActor.run {
+                    importErrorMessage = String(
+                        format: NSLocalizedString("Fitting_Import_Failed_Message", comment: "导入失败"),
+                        error.localizedDescription
+                    )
+                    showingImportErrorAlert = true
+                }
             }
         }
     }
@@ -810,12 +863,57 @@ struct FittingMainView: View {
             }
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-            // 只为在线配置添加删除按钮
+            // 删除按钮（先添加，会在右边）
             if sourceType == .online {
                 Button(role: .destructive) {
                     onlineViewModel.deleteFitting(fitting)
                 } label: {
-                    Image(systemName: "trash")
+                    Label(NSLocalizedString("Misc_Delete", comment: ""), systemImage: "trash")
+                }
+            } else {
+                Button(role: .destructive) {
+                    localViewModel.deleteFitting(fitting)
+                } label: {
+                    Label(NSLocalizedString("Misc_Delete", comment: ""), systemImage: "trash")
+                }
+            }
+
+            // 重命名按钮（后添加，会在左边，更靠近内容）- 仅本地配置
+            if sourceType == .local {
+                Button {
+                    renameFitting = fitting
+                    renameFittingName = fitting.name
+                    isShowingRenameAlert = true
+                } label: {
+                    Label(NSLocalizedString("Misc_Rename", comment: ""), systemImage: "pencil")
+                }
+                .tint(.blue)
+            }
+        }
+        .contextMenu {
+            // 重命名选项 - 仅本地配置
+            if sourceType == .local {
+                Button {
+                    renameFitting = fitting
+                    renameFittingName = fitting.name
+                    isShowingRenameAlert = true
+                } label: {
+                    Label(NSLocalizedString("Misc_Rename", comment: ""), systemImage: "pencil")
+                }
+            }
+
+            // 删除选项
+            if sourceType == .online {
+                Button(role: .destructive) {
+                    onlineViewModel.deleteFitting(fitting)
+                } label: {
+                    Label(NSLocalizedString("Misc_Delete", comment: ""), systemImage: "trash")
+                }
+            } else {
+                Button(role: .destructive) {
+                    localViewModel.deleteFitting(fitting)
+                } label: {
+                    Label(NSLocalizedString("Misc_Delete", comment: ""), systemImage: "trash")
                 }
             }
         }
@@ -852,17 +950,6 @@ struct FittingMainView: View {
                                                 fittingItemView(
                                                     fitting: fitting, shipInfo: shipInfo
                                                 )
-                                                .swipeActions(
-                                                    edge: .trailing, allowsFullSwipe: true
-                                                ) {
-                                                    if sourceType == .local {
-                                                        Button(role: .destructive) {
-                                                            localViewModel.deleteFitting(fitting)
-                                                        } label: {
-                                                            Image(systemName: "trash")
-                                                        }
-                                                    }
-                                                }
                                             }
                                         }
                                     }
@@ -1023,6 +1110,23 @@ struct FittingMainView: View {
             Button(NSLocalizedString("Common_OK", comment: "确定")) {}
         } message: {
             Text(importErrorMessage)
+        }
+        .alert(NSLocalizedString("Misc_Rename", comment: ""), isPresented: $isShowingRenameAlert) {
+            TextField(NSLocalizedString("Misc_Name", comment: ""), text: $renameFittingName)
+
+            Button(NSLocalizedString("Misc_Done", comment: "")) {
+                if let fitting = renameFitting, !renameFittingName.isEmpty {
+                    renameFittingName(fitting: fitting, newName: renameFittingName)
+                }
+                renameFitting = nil
+                renameFittingName = ""
+            }
+            .disabled(renameFittingName.isEmpty)
+
+            Button(NSLocalizedString("Main_EVE_Mail_Cancel", comment: ""), role: .cancel) {
+                renameFitting = nil
+                renameFittingName = ""
+            }
         }
         .sheet(
             item: Binding<ShipSelectionItem?>(

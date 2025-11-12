@@ -210,6 +210,7 @@
 "Main_Setting_Reset_Icons_Title" = "重置图标缓存";
 "Main_Setting_Reset_Icons_Message" = "这将重新释放图片资源。是否确认？";
 "Main_Setting_Cancel" = "取消";
+"Main_Setting_Restart" = "重启";
 "Main_Setting_Clean" = "清理";
 "Main_Setting_Reset" = "重置";
 "Main_Setting_Cache_Details" = "各项统计: ";
@@ -267,6 +268,8 @@
 "Misc_Copy" = "复制";
 "Misc_Show_Detail" = "查看详情";
 "Misc_Delete" = "删除";
+"Misc_Rename" = "重命名";
+"Misc_Name" = "名称";
 
 "Misc_Copy_CharID" = "复制人物名称";
 "Misc_Copy_CEO_CharID" = "复制 CEO 名称";
@@ -350,7 +353,7 @@
 "Planetary_Uses" = "用于生产";
 "Planetary_Facilities" = "加工设施";
 "Planetary_Harvest_from" = "采集来源";
-"Planet_Detail_Last_Update" = "行星布局提交于";
+"Planet_Detail_Last_Update" = "提交于";
 "Planet_All-in-One_Calc" = "单球计算器";
 
 // All-in-One Calculator
@@ -402,6 +405,8 @@
 "Time_Minutes_Ago" = "%d分钟前";
 "Time_Seconds_Ago" = "%d秒前";
 "Time_Just_Now" = "刚刚";
+"Time_Days_Hours_Ago" = "%d天%d小时前";
+"Time_Hours_Minutes_Ago" = "%d小时%d分钟前";
 "Common_OK" = "OK";
 "Time_Days_Ago_shord" = "%d天前";
 "Time_Hours_Ago_short" = "%d小时前";
@@ -549,12 +554,12 @@
 "Location_Flag_CorpSAG5" = "公司机库 5";
 "Location_Flag_CorpSAG6" = "公司机库 6";
 "Location_Flag_CorpSAG7" = "公司机库 7";
-"Location_Flag_CorpDeliveries" = "公司交付";
+"Location_Flag_CorpDeliveries" = "公司递送";
 "Location_Flag_AutoFit" = "自动装配";
 "Location_Flag_Cargo" = "货物";
 "Location_Flag_DroneBay" = "无人机舱";
 "Location_Flag_FleetHangar" = "舰队机库";
-"Location_Flag_Deliveries" = "交付";
+"Location_Flag_Deliveries" = "递送";
 "Location_Flag_HiddenModifiers" = "隐藏修改器";
 "Location_Flag_ShipHangar" = "舰船机库";
 "Location_Flag_FighterBay" = "战斗机舱";
@@ -1184,6 +1189,7 @@
 
 "CEO" = "CEO";
 "No Alliance" = "无联盟";
+"No Corporation" = "无军团";
 "Member Count" = "成员数量";
 "Tax Rate" = "税率";
 "Description" = "描述";
@@ -1433,7 +1439,6 @@
 "Main_Planetary_Unknown_Type" = "未知类型";
 "Main_Planetary_Loading" = "加载中...";
 "Main_Planetary_Error" = "加载失败";
-"Planet_Detail_Last_Update" = "行星布局提交于";
 "Main_Planetary_Total_Count" = "共 %d 个行星";
 "Main_Planetary_location_calc" = "行星开发选址";
 "Main_Planetary_of_Mine" = "我的行星";
@@ -1451,7 +1456,7 @@
 // 采集器相关
 "Total_Yield" = "总产量:";
 "Current_Cycle_Yield" = "当前周期产量:";
-"Current_Cycle_Elapsed" = "当前周期已过时间:";
+"Current_Cycle_Elapsed" = "当前周期进度:";
 "Cycle_Time" = "周期时间:";
 "Time_Remaining" = "剩余时间:";
 
@@ -1464,6 +1469,19 @@
 "Factory_Stopped" = "已停止";
 "Factory_Not_Started" = "未启动";
 "Factory_No_Recipe" = "无配方";
+"Factory_Ready" = "就绪";
+"Planet_Detail_View_Time" = "查看时间:";
+"Planet_Detail_Current_Time" = "当前时间";
+"Planet_Detail_At_Submit" = "提交时";
+"Planet_Detail_Stop_Work_Countdown" = "停工倒计时:";
+"Planet_Detail_Stopped" = "已停工";
+"Planet_Detail_Generating_Snapshots" = "正在生成快照...";
+"Planet_Detail_Realtime" = "实时";
+"Planet_Detail_Expire" = "停工";
+"Planet_Detail_Simulating" = "正在模拟...";
+"Planet_Detail_Extractor_Expiry_Time" = "采集器过期时间";
+"Planet_Detail_Extractor_Expired" = "采集器已过期";
+"Storage_Change_Chart" = "仓库图表";
 
 
 // 合同
@@ -1572,14 +1590,15 @@
 // ESI状态视图
 "ESI_Status_Title" = "ESI 端口状态";
 "ESI_Status_Overview" = "端口健康度总览";
-"ESI_Status_Good" = "健康";
-"ESI_Status_Fair" = "警告";
-"ESI_Status_Poor" = "严重";
+"ESI_Status_OK" = "正常";
+"ESI_Status_Degraded" = "降级";
+"ESI_Status_Down" = "故障";
+"ESI_Status_Recovering" = "恢复中";
 "ESI_Status_Last_Refresh" = "上次刷新: %@";
 "ESI_Status_Loading" = "加载中...";
 "ESI_Status_Load_Failed" = "加载失败";
 "ESI_Status_Retry" = "重试";
-"ESI_Status_OK" = "确定";
+"ESI_Status_Button_OK" = "确定";
 
 // ESI标签名称
 "ESI_Tag_Alliance" = "联盟";
@@ -2250,7 +2269,7 @@
 // 日志管理
 "Main_Setting_Logs_Section" = "调试日志";
 "Main_Setting_Enable_Logging" = "启用调试模式";
-"Main_Setting_Enable_Logging_Detail" = "开启并重启APP后会将应用日志和系统日志保存到文件中";
+"Main_Setting_Enable_Logging_Detail" = "通过 PulseUI 查看 APP 运行日志";
 "Main_Setting_View_Logs" = "查看调试日志";
 "Main_Setting_View_Logs_Detail" = "浏览和查看调试日志文件";
 "Main_Setting_Logs_Browser_Title" = "日志浏览器";
@@ -2384,6 +2403,9 @@
 "Fitting_Delete_Confirm_Message" = "确定要删除装配配置 \"%@\" 吗？";
 "Fitting_Delete_Failed_Title" = "删除失败";
 "Fitting_Delete_Success" = "装配配置删除成功";
+
+// Fitting Rename
+"Fitting_Online_Rename_Not_Supported" = "在线配置重命名功能暂不支持";
 
 // 更新
 "Update_Notification_Title" = "更新内容";

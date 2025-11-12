@@ -234,7 +234,7 @@ class DatabaseManager: ObservableObject {
                 let missSlot = row["miss_slot"] as? Int
 
                 // 打印调试信息
-                Logger.debug("处理物品: ID=\(typeId), Name=\(name), MetaGroupID=\(metaGroupId)")
+                // Logger.debug("处理物品: ID=\(typeId), Name=\(name), MetaGroupID=\(metaGroupId)")
 
                 let item = DatabaseItem(
                     id: typeId,

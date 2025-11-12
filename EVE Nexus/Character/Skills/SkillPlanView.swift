@@ -392,6 +392,9 @@ struct SkillPlanView: View {
     @State private var newPlanName = ""
     @State private var searchText = ""
     @State private var learnedSkills: [Int: CharacterSkill] = [:] // 添加已学习技能的状态变量
+    @State private var isShowingRenameAlert = false
+    @State private var renamePlan: SkillPlan?
+    @State private var renamePlanName = ""
 
     // 添加过滤后的计划列表计算属性
     private var filteredPlans: [SkillPlan] {
@@ -426,17 +429,42 @@ struct SkillPlanView: View {
                     } label: {
                         planRowView(plan)
                     }
-                    .contextMenu {
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                         Button(role: .destructive) {
                             if let index = skillPlans.firstIndex(where: { $0.id == plan.id }) {
                                 deletePlan(at: IndexSet(integer: index))
                             }
                         } label: {
-                            Label(NSLocalizedString("Main_Skills_Plan_Delete", comment: ""), systemImage: "trash")
+                            Label(NSLocalizedString("Misc_Delete", comment: ""), systemImage: "trash")
+                        }
+
+                        Button {
+                            renamePlan = plan
+                            renamePlanName = plan.name
+                            isShowingRenameAlert = true
+                        } label: {
+                            Label(NSLocalizedString("Misc_Rename", comment: ""), systemImage: "pencil")
+                        }
+                        .tint(.blue)
+                    }
+                    .contextMenu {
+                        Button {
+                            renamePlan = plan
+                            renamePlanName = plan.name
+                            isShowingRenameAlert = true
+                        } label: {
+                            Label(NSLocalizedString("Misc_Rename", comment: ""), systemImage: "pencil")
+                        }
+
+                        Button(role: .destructive) {
+                            if let index = skillPlans.firstIndex(where: { $0.id == plan.id }) {
+                                deletePlan(at: IndexSet(integer: index))
+                            }
+                        } label: {
+                            Label(NSLocalizedString("Misc_Delete", comment: ""), systemImage: "trash")
                         }
                     }
                 }
-                .onDelete(perform: deletePlan)
                 .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
             }
         }
@@ -485,6 +513,29 @@ struct SkillPlanView: View {
             }
         } message: {
             Text(NSLocalizedString("Main_Skills_Plan_Name", comment: ""))
+        }
+        .alert(NSLocalizedString("Misc_Rename", comment: ""), isPresented: $isShowingRenameAlert) {
+            TextField(NSLocalizedString("Misc_Name", comment: ""), text: $renamePlanName)
+
+            Button(NSLocalizedString("Misc_Done", comment: "")) {
+                if let plan = renamePlan, !renamePlanName.isEmpty {
+                    if let index = skillPlans.firstIndex(where: { $0.id == plan.id }) {
+                        skillPlans[index].name = renamePlanName
+                        SkillPlanFileManager.shared.saveSkillPlan(
+                            characterId: characterId,
+                            plan: skillPlans[index]
+                        )
+                    }
+                }
+                renamePlan = nil
+                renamePlanName = ""
+            }
+            .disabled(renamePlanName.isEmpty)
+
+            Button(NSLocalizedString("Main_EVE_Mail_Cancel", comment: ""), role: .cancel) {
+                renamePlan = nil
+                renamePlanName = ""
+            }
         }
         .task {
             // 先加载角色已学习的技能

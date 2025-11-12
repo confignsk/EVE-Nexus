@@ -375,7 +375,6 @@ class CharacterDatabaseManager: ObservableObject, @unchecked Sendable {
             -- 创建索引以提高查询性能
             CREATE INDEX IF NOT EXISTS idx_wallet_journal_character_date ON wallet_journal(character_id, date);
             CREATE INDEX IF NOT EXISTS idx_wallet_transactions_character_date ON wallet_transactions(character_id, date);
-            CREATE INDEX IF NOT EXISTS idx_mining_ledger_character_date ON mining_ledger(character_id, date);
             CREATE INDEX IF NOT EXISTS idx_character_current_state_update ON character_current_state(last_update);
 
             -- 建筑物缓存表
@@ -399,6 +398,7 @@ class CharacterDatabaseManager: ObservableObject, @unchecked Sendable {
                 last_updated TEXT DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY (character_id, date, type_id, solar_system_id)
             );
+            CREATE INDEX IF NOT EXISTS idx_mining_ledger_character_date ON mining_ledger(character_id, date);
 
             -- 角色信息缓存表
             CREATE TABLE IF NOT EXISTS character_info (
