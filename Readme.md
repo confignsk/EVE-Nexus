@@ -14,8 +14,9 @@
 # 第三方依赖
 
 - **AppAuth-IOS**: https://github.com/openid/AppAuth-iOS
-- **Kingfisher**: https://github.com/onevcat/Kingfisher
+- **JWTDecode**: https://github.com/auth0/JWTDecode.swift
 - **Zip**: https://github.com/marmelroy/Zip
+- **Pulse**: https://github.com/kean/Pulse
 
 # 格式化
 

@@ -41,6 +41,19 @@ struct PlanetDetailView: View {
         }
         return simulatedColony
     }
+    
+    // 判断当前显示的殖民地是否已停工（用于显示状态）
+    private var isColonyStopped: Bool {
+        guard let colony = displayColony else { return false }
+        return !ColonySimulation.isColonyStillWorking(colony: colony)
+    }
+    
+    // 判断当前现实时间的殖民地是否已停工（用于禁用控件和显示提示）
+    private var isRealtimeColonyStopped: Bool {
+        // 只有在实时模式（selectedMinutes == 0）时才检查
+        guard selectedMinutes == 0, let colony = simulatedColony else { return false }
+        return !ColonySimulation.isColonyStillWorking(colony: colony)
+    }
 
     // 计算最大分钟数
     private var maxMinutes: Int {
@@ -65,11 +78,6 @@ struct PlanetDetailView: View {
             return index < 0 ? 0 : (sorted.last ?? 0)
         }
         return sorted[index]
-    }
-
-    // 将分钟数转换为小时数（用于显示）
-    private func minutesToHours(_ minutes: Int) -> Double {
-        return Double(minutes) / 60.0
     }
 
     // 找到下一个可用的快照时间点（分钟数）
@@ -169,7 +177,8 @@ struct PlanetDetailView: View {
                                         selectedMinutes: selectedMinutes,
                                         realtimeColony: simulatedColony,
                                         isSnapshotsReady: !hourlySnapshots.isEmpty && !isGeneratingSnapshots,
-                                        storageVolumeCache: storageVolumeCache
+                                        storageVolumeCache: storageVolumeCache,
+                                        isColonyStopped: isRealtimeColonyStopped
                                     )
 
                                 } footer: {
@@ -199,6 +208,13 @@ struct PlanetDetailView: View {
                                                             .font(.caption)
                                                             .foregroundColor(.secondary)
                                                     }
+                                                }
+                                                
+                                                // 如果当前现实时间的殖民地已停工，显示红色提示
+                                                if isRealtimeColonyStopped {
+                                                    Text(NSLocalizedString("Planet_Colony_Stopped", comment: "星球已停工"))
+                                                        .font(.caption)
+                                                        .foregroundColor(.red)
                                                 }
                                             }
                                         }
@@ -437,10 +453,10 @@ struct PlanetDetailView: View {
                     }) {
                         Image(systemName: "minus.circle.fill")
                             .font(.title3)
-                            .foregroundColor(selectedMinutes > 0 ? .blue : .gray)
+                            .foregroundColor(isRealtimeColonyStopped ? .gray : (selectedMinutes > 0 ? .blue : .gray))
                     }
                     .buttonStyle(.plain)
-                    .disabled(selectedMinutes == 0)
+                    .disabled(isRealtimeColonyStopped || selectedMinutes == 0)
                     .padding(.leading, 32)
 
                     // 实时按钮 - 激活状态与滑动条位置关联
@@ -452,17 +468,18 @@ struct PlanetDetailView: View {
                         Text(NSLocalizedString("Planet_Detail_Realtime", comment: "实时"))
                             .font(.caption)
                             .fontWeight(.medium)
-                            .foregroundColor(isRealtimeActive ? .white : .blue)
+                            .foregroundColor(isRealtimeColonyStopped ? .gray : (isRealtimeActive ? .white : .blue))
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
-                            .background(isRealtimeActive ? Color.blue : Color.clear)
+                            .background(isRealtimeColonyStopped ? Color.clear : (isRealtimeActive ? Color.blue : Color.clear))
                             .cornerRadius(6)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 6)
-                                    .stroke(Color.blue, lineWidth: isRealtimeActive ? 0 : 1)
+                                    .stroke(isRealtimeColonyStopped ? Color.gray : Color.blue, lineWidth: isRealtimeActive ? 0 : 1)
                             )
                     }
                     .buttonStyle(.plain)
+                    .disabled(isRealtimeColonyStopped)
 
                     // 滑动条，左右距离实时和停工组件各4单位
                     // 滑动条直接操作采样点的索引，在离散的采样点之间移动
@@ -479,6 +496,7 @@ struct PlanetDetailView: View {
                             selectedMinutes = getMinutesAtIndex(index)
                         }
                     ), in: 0 ... Double(max(0, snapshotCount - 1)), step: 1.0)
+                    .disabled(isRealtimeColonyStopped)
 
                     // 停工按钮 - 激活状态与滑动条位置关联
                     let isExpireActive = selectedMinutes == maxMinutes
@@ -489,17 +507,18 @@ struct PlanetDetailView: View {
                         Text(NSLocalizedString("Planet_Detail_Expire", comment: "停工"))
                             .font(.caption)
                             .fontWeight(.medium)
-                            .foregroundColor(isExpireActive ? .white : .orange)
+                            .foregroundColor(isRealtimeColonyStopped ? .gray : (isExpireActive ? .white : .orange))
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
-                            .background(isExpireActive ? Color.orange : Color.clear)
+                            .background(isRealtimeColonyStopped ? Color.clear : (isExpireActive ? Color.orange : Color.clear))
                             .cornerRadius(6)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 6)
-                                    .stroke(Color.orange, lineWidth: isExpireActive ? 0 : 1)
+                                    .stroke(isRealtimeColonyStopped ? Color.gray : Color.orange, lineWidth: isExpireActive ? 0 : 1)
                             )
                     }
                     .buttonStyle(.plain)
+                    .disabled(isRealtimeColonyStopped)
 
                     // 加号按钮 - 跳转到下一个快照点
                     Button(action: {
@@ -511,16 +530,24 @@ struct PlanetDetailView: View {
                     }) {
                         Image(systemName: "plus.circle.fill")
                             .font(.title3)
-                            .foregroundColor(selectedMinutes < maxMinutes ? .blue : .gray)
+                            .foregroundColor(isRealtimeColonyStopped ? .gray : (selectedMinutes < maxMinutes ? .blue : .gray))
                     }
                     .buttonStyle(.plain)
-                    .disabled(selectedMinutes == maxMinutes)
+                    .disabled(isRealtimeColonyStopped || selectedMinutes == maxMinutes)
                     .padding(.trailing, 32)
                 }
 
-                // 第二行：当前查看时间（显示在滚动条下方）
-                // 显示采样点的实际时间，保持秒级精度（yyyy-MM-dd HH:mm:ss）
-                if let colony = displayColony {
+                // 第二行：当前查看时间或停工提示（显示在滚动条下方）
+                if isRealtimeColonyStopped {
+                    // 如果当前现实时间的殖民地已停工，显示红色提示
+                    Text(NSLocalizedString("Planet_Colony_Stopped", comment: "星球已停工"))
+                        .font(.caption)
+                        .foregroundColor(.red)
+                        .padding(.leading, 64)
+                        .padding(.trailing, 64)
+                } else if let colony = displayColony {
+                    // 显示采样点的实际时间，保持秒级精度（yyyy-MM-dd HH:mm:ss）
+                    // 计算模拟时间点与原始数据基准时间的差值
                     let timeDiff = colony.currentSimTime.timeIntervalSince(colony.checkpointSimTime)
                     HStack {
                         Text(NSLocalizedString("Planet_Detail_View_Time", comment: ""))

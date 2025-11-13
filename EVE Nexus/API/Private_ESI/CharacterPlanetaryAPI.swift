@@ -259,8 +259,8 @@ class CharacterPlanetaryAPI {
             return nil
         }
 
-        // 检查缓存是否过期（1天）
-        if Date().timeIntervalSince(modificationDate) > 24 * 60 * 60 {
+        // 检查缓存是否过期（1小时）
+        if Date().timeIntervalSince(modificationDate) > 1 * 60 * 60 {
             try? fileManager.removeItem(at: cacheFile)
             return nil
         }

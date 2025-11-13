@@ -13,6 +13,13 @@ struct FinalProduct: Identifiable {
     let icon: String
 }
 
+// 采集器状态模型
+struct ExtractorStatus {
+    let totalCount: Int // 总采集器数量
+    let expiredCount: Int // 已停工的采集器数量
+    let expiringSoonCount: Int // 即将在1小时内停工的采集器数量
+}
+
 @MainActor
 final class CharacterPlanetaryViewModel: ObservableObject {
     @Published private(set) var planets: [CharacterPlanetaryInfo] = []
@@ -22,6 +29,7 @@ final class CharacterPlanetaryViewModel: ObservableObject {
     @Published private(set) var earliestExtractorExpiry: [Int: Date] = [:] // 每个行星的最早采集器过期时间 [planetId: Date]
     @Published private(set) var finalProducts: [Int: [FinalProduct]] = [:] // 每个行星的最终产品 [planetId: [FinalProduct]]
     @Published private(set) var loadingPlanets: Set<Int> = [] // 正在加载的行星ID集合
+    @Published private(set) var extractorStatus: [Int: ExtractorStatus] = [:] // 每个行星的采集器状态 [planetId: ExtractorStatus]
     @Published var isLoading = true
     @Published var errorMessage: String?
 
@@ -206,6 +214,10 @@ final class CharacterPlanetaryViewModel: ObservableObject {
         return finalProducts[planetId] ?? []
     }
 
+    func getExtractorStatus(for planetId: Int) -> ExtractorStatus? {
+        return extractorStatus[planetId]
+    }
+
     func isLoadingPlanetDetail(for planetId: Int) -> Bool {
         return loadingPlanets.contains(planetId)
     }
@@ -232,7 +244,7 @@ final class CharacterPlanetaryViewModel: ObservableObject {
             // 使用 Actor 来限制并发数
             let limiter = ConcurrencyLimiter(maxConcurrent: 6)
 
-            await withTaskGroup(of: (Int, Date?, [FinalProduct]).self) { group in
+            await withTaskGroup(of: (Int, Date?, [FinalProduct], ExtractorStatus?).self) { group in
                 for planet in planets {
                     if Task.isCancelled { break }
 
@@ -252,28 +264,56 @@ final class CharacterPlanetaryViewModel: ObservableObject {
                                 forceRefresh: false
                             )
 
-                            // 查找所有采集器的最早过期时间
+                            // 查找所有采集器的最早过期时间和统计停工状态
                             var earliestExpiry: Date? = nil
                             let currentTime = Date()
+                            var totalExtractors = 0
+                            var expiredCount = 0
+                            var expiringSoonCount = 0
+                            let oneHourFromNow = currentTime.addingTimeInterval(3600) // 1小时后
 
                             for pin in detail.pins {
-                                if let expiryTimeString = pin.expiryTime,
-                                   let expiryTime = dateFormatter.date(from: expiryTimeString),
-                                   expiryTime > currentTime
-                                {
-                                    if earliestExpiry == nil || expiryTime < earliestExpiry! {
-                                        earliestExpiry = expiryTime
+                                // 检查是否是采集器（通过extractorDetails判断）
+                                if pin.extractorDetails != nil {
+                                    totalExtractors += 1
+                                    
+                                    if let expiryTimeString = pin.expiryTime,
+                                       let expiryTime = dateFormatter.date(from: expiryTimeString)
+                                    {
+                                        if expiryTime <= currentTime {
+                                            // 已停工
+                                            expiredCount += 1
+                                        } else if expiryTime <= oneHourFromNow {
+                                            // 即将在1小时内停工
+                                            expiringSoonCount += 1
+                                            // 更新最早过期时间
+                                            if earliestExpiry == nil || expiryTime < earliestExpiry! {
+                                                earliestExpiry = expiryTime
+                                            }
+                                        } else {
+                                            // 更新最早过期时间
+                                            if earliestExpiry == nil || expiryTime < earliestExpiry! {
+                                                earliestExpiry = expiryTime
+                                            }
+                                        }
                                     }
                                 }
                             }
 
                             // 计算最终产品：找出只输出，不输入到其他设施的资源
                             let finalProducts = self.calculateFinalProducts(detail: detail)
+                            
+                            // 创建采集器状态
+                            let extractorStatus = ExtractorStatus(
+                                totalCount: totalExtractors,
+                                expiredCount: expiredCount,
+                                expiringSoonCount: expiringSoonCount
+                            )
 
-                            return (planet.planetId, earliestExpiry, finalProducts)
+                            return (planet.planetId, earliestExpiry, finalProducts, extractorStatus)
                         } catch {
                             Logger.warning("获取行星 \(planet.planetId) 的采集器过期时间失败: \(error.localizedDescription)")
-                            return (planet.planetId, nil, [])
+                            return (planet.planetId, nil, [], nil)
                         }
                     }
                 }
@@ -281,9 +321,10 @@ final class CharacterPlanetaryViewModel: ObservableObject {
                 // 收集结果并更新UI
                 var expiryResults: [Int: Date] = [:]
                 var productResults: [Int: [FinalProduct]] = [:]
+                var statusResults: [Int: ExtractorStatus] = [:]
                 var completedPlanetIds = Set<Int>()
 
-                for await (planetId, expiry, products) in group {
+                for await (planetId, expiry, products, status) in group {
                     completedPlanetIds.insert(planetId)
                     if let expiry = expiry {
                         expiryResults[planetId] = expiry
@@ -291,12 +332,16 @@ final class CharacterPlanetaryViewModel: ObservableObject {
                     if !products.isEmpty {
                         productResults[planetId] = products
                     }
+                    if let status = status {
+                        statusResults[planetId] = status
+                    }
                 }
 
                 if !Task.isCancelled {
                     await MainActor.run {
                         self.earliestExtractorExpiry = expiryResults
                         self.finalProducts = productResults
+                        self.extractorStatus = statusResults
                         // 从加载集合中移除已完成的行星
                         self.loadingPlanets.subtract(completedPlanetIds)
                     }
@@ -631,8 +676,33 @@ struct CharacterPlanetaryView: View {
                                                 .foregroundColor(.gray)
                                             }
 
-                                            // 显示采集器最早过期时间
-                                            if let expiryDate = viewModel.getEarliestExtractorExpiry(for: planet.planetId) {
+                                            // 显示采集器停工状态
+                                            if let status = viewModel.getExtractorStatus(for: planet.planetId), status.totalCount > 0 {
+                                                if status.expiredCount > 0 {
+                                                    // 显示已停工的采集器数量
+                                                    Text(String(format: NSLocalizedString("Planet_Extractor_Expired_Count", comment: "%d/%d个采集器已停工"), status.expiredCount, status.totalCount))
+                                                        .font(.caption2)
+                                                        .foregroundColor(.red)
+                                                } else if status.expiringSoonCount > 0 {
+                                                    // 显示即将停工的采集器数量
+                                                    Text(String(format: NSLocalizedString("Planet_Extractor_Expiring_Soon_Count", comment: "%d/%d个采集器即将停工"), status.expiringSoonCount, status.totalCount))
+                                                        .font(.caption2)
+                                                        .foregroundColor(.red)
+                                                } else if let expiryDate = viewModel.getEarliestExtractorExpiry(for: planet.planetId) {
+                                                    // 显示采集器最早过期时间
+                                                    let timeRemaining = expiryDate.timeIntervalSince(Date())
+                                                    if timeRemaining > 0 {
+                                                        Text("\(NSLocalizedString("Planet_Detail_Extractor_Expiry_Time", comment: "")): \(formatTimeRemaining(timeRemaining))")
+                                                            .font(.caption2)
+                                                            .foregroundColor(timeRemaining < 1 * 24 * 3600 ? .red : .green)
+                                                    } else {
+                                                        Text(NSLocalizedString("Planet_Detail_Extractor_Expired", comment: ""))
+                                                            .font(.caption2)
+                                                            .foregroundColor(.red)
+                                                    }
+                                                }
+                                            } else if let expiryDate = viewModel.getEarliestExtractorExpiry(for: planet.planetId) {
+                                                // 兼容旧逻辑：如果没有状态信息，显示过期时间
                                                 let timeRemaining = expiryDate.timeIntervalSince(Date())
                                                 if timeRemaining > 0 {
                                                     Text("\(NSLocalizedString("Planet_Detail_Extractor_Expiry_Time", comment: "")): \(formatTimeRemaining(timeRemaining))")

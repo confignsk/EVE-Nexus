@@ -83,9 +83,7 @@ struct EVE_NexusApp: App {
         validateRefreshTokens()
 
         // 安排后台任务
-        Task { @MainActor in
-            BackgroundTaskManager.shared.scheduleBackgroundTasks()
-        }
+        BackgroundTaskManager.shared.scheduleDataRefresh()
     }
 
     private func setupNotifications() {
@@ -289,10 +287,6 @@ struct EVE_NexusApp: App {
             ZStack {
                 if isInitialized {
                     ContentView(databaseManager: databaseManager)
-                        .onAppear {
-                            // 应用进入前台时重新安排后台任务
-                            BackgroundTaskManager.shared.scheduleBackgroundTasks()
-                        }
                 } else if needsUnzip {
                     LoadingView(loadingState: $loadingState, progress: unzipProgress) {
                         Task {

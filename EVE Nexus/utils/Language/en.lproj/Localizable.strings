@@ -1451,8 +1451,11 @@
 "Planet_Detail_Realtime" = "Realtime";
 "Planet_Detail_Expire" = "Expire";
 "Planet_Detail_Simulating" = "Simulating...";
-"Planet_Detail_Extractor_Expiry_Time" = "Extractor expiry time";
+"Planet_Detail_Extractor_Expiry_Time" = "Extractor expiry after";
 "Planet_Detail_Extractor_Expired" = "Extractor expired";
+"Planet_Colony_Stopped" = "Colony Stopped";
+"Planet_Extractor_Expired_Count" = "%d/%d extractors expired";
+"Planet_Extractor_Expiring_Soon_Count" = "%d/%d extractors expiring soon";
 "Storage_Change_Chart" = "Storage Chart";
 
 "Contracts_Personal" = "Personal";

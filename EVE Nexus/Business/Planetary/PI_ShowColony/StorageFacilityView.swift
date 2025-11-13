@@ -14,6 +14,7 @@ struct StorageFacilityView: View {
     let realtimeColony: Colony? // 实时模拟的殖民地数据
     let isSnapshotsReady: Bool // 快照是否已计算完成
     let storageVolumeCache: [Int64: [Int: Double]] // 存储设施体积缓存 [pinId: [小时数: 体积]]
+    let isColonyStopped: Bool // 殖民地是否已停工
     @State private var isChartExpanded = false // 图表是否展开
 
     // 检查该仓储是否有传入路由
@@ -72,11 +73,11 @@ struct StorageFacilityView: View {
                 }) {
                     HStack(alignment: .center, spacing: 12) {
                         Image(systemName: isChartExpanded ? "chart.bar.fill" : "chart.bar")
-                            .foregroundColor(.blue)
+                            .foregroundColor(isColonyStopped ? .gray : .blue)
                             .frame(width: 32, height: 32)
                         Text(NSLocalizedString("Storage_Change_Chart", comment: "仓储变化图表"))
                             .font(.subheadline)
-                            .foregroundColor(.blue)
+                            .foregroundColor(isColonyStopped ? .gray : .blue)
                         Spacer()
                         Image(systemName: isChartExpanded ? "chevron.up" : "chevron.down")
                             .foregroundColor(.secondary)
@@ -85,6 +86,7 @@ struct StorageFacilityView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .disabled(isColonyStopped)
                 .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
             } else {
                 // 快照未完成时，显示加载指示器

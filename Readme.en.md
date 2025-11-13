@@ -9,8 +9,9 @@ Compiled with Xcode Version 16.2
 # Third-party Dependencies
 
 - **AppAuth-IOS**: https://github.com/openid/AppAuth-iOS
-- **Kingfisher**: https://github.com/onevcat/Kingfisher
+- **JWTDecode**: https://github.com/auth0/JWTDecode.swift
 - **Zip**: https://github.com/marmelroy/Zip
+- **Pulse**: https://github.com/kean/Pulse
 
 # Formatting
 

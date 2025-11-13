@@ -1481,6 +1481,9 @@
 "Planet_Detail_Simulating" = "正在模拟...";
 "Planet_Detail_Extractor_Expiry_Time" = "采集器过期时间";
 "Planet_Detail_Extractor_Expired" = "采集器已过期";
+"Planet_Colony_Stopped" = "星球已停工";
+"Planet_Extractor_Expired_Count" = "%d/%d个采集器已停工";
+"Planet_Extractor_Expiring_Soon_Count" = "%d/%d个采集器即将停工";
 "Storage_Change_Chart" = "仓库图表";
 
 
