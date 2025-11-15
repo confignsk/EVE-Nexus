@@ -79,18 +79,6 @@ struct WormholeView: View {
             prompt: NSLocalizedString("Main_Database_Search", comment: "")
         )
         .navigationTitle(NSLocalizedString("Main_Market_WH_info", comment: ""))
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: {
-                    showingInfoSheet = true
-                }) {
-                    Image(systemName: "info.circle")
-                }
-            }
-        }
-        .sheet(isPresented: $showingInfoSheet) {
-            WormholeInfoSheetView()
-        }
         .onAppear {
             loadWormholes()
         }
@@ -114,114 +102,11 @@ struct WormholeView: View {
     }
 }
 
-struct WormholeInfoSheetView: View {
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationView {
-            List {
-                Section(
-                    header: Text(NSLocalizedString("WH_time_life", comment: "Time")).font(.headline)
-                        .textCase(.none)
-                ) {
-                    WormholeInfoRow(
-                        description: NSLocalizedString("WH_life_Notyet", comment: ""),
-                        timeInfo: "> 24h",
-                        statusType: .good
-                    )
-                    WormholeInfoRow(
-                        description: NSLocalizedString("WH_life_beginning", comment: ""),
-                        timeInfo: "> 4h, < 24h",
-                        statusType: .warning
-                    )
-                    WormholeInfoRow(
-                        description: NSLocalizedString("WH_life_reaching", comment: ""),
-                        timeInfo: "< 4h",
-                        statusType: .critical
-                    )
-                }
-
-                Section(
-                    header: Text(NSLocalizedString("WH_Mass_life", comment: "Mass")).font(.headline)
-                        .textCase(.none)
-                ) {
-                    WormholeInfoRow(
-                        description: NSLocalizedString("WH_Mass_Notyet", comment: ""),
-                        timeInfo: "> 50%",
-                        statusType: .good
-                    )
-                    WormholeInfoRow(
-                        description: NSLocalizedString("WH_Mass_Notcritical", comment: ""),
-                        timeInfo: "> 10%, < 50%",
-                        statusType: .warning
-                    )
-                    WormholeInfoRow(
-                        description: NSLocalizedString("WH_Mass_critically", comment: ""),
-                        timeInfo: "< 10%",
-                        statusType: .critical
-                    )
-                }
-            }
-            .listStyle(.insetGrouped)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        dismiss()
-                    }) {
-                        Text(NSLocalizedString("Misc_Done", comment: "Done"))
-                    }
-                }
-            }
-        }
-    }
-}
-
 // 状态类型枚举
 enum WormholeStatusType {
     case good
     case warning
     case critical
-}
-
-struct WormholeInfoRow: View {
-    let description: String
-    let timeInfo: String
-    let statusType: WormholeStatusType
-
-    // 根据状态类型确定颜色
-    private var statusColor: Color {
-        switch statusType {
-        case .good:
-            return .green
-        case .warning:
-            return .yellow
-        case .critical:
-            return .red
-        }
-    }
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            // 状态圆点
-            Circle()
-                .fill(statusColor)
-                .frame(width: 12, height: 12)
-                .padding(.top, 4)
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text(description)
-                    .font(.body)
-                    .foregroundColor(.primary)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Text(timeInfo)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
-        }
-        .padding(.vertical, 4)
-    }
 }
 
 struct WormholeDetailView: View {

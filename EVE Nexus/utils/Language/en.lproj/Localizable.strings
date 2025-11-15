@@ -92,6 +92,34 @@
 "Industry_Settings_Multi_Character_Description" = "Aggregate industry job data from multiple characters";
 "Industry_Settings_Select_Characters" = "Select Characters";
 
+// Mining Settings
+"Mining_Settings_Title" = "Settings";
+"Mining_Settings_Multi_Character" = "Multi-Character Aggregation";
+"Mining_Settings_Multi_Character_Description" = "Aggregate mining ledger data from multiple characters";
+"Mining_Settings_Select_Characters" = "Select Characters";
+"Mining_Filter_Select_All" = "Select All";
+
+// Mining Detail
+"Mining_Detail" = "Detail";
+"Mining_Detail_Title" = "Mining Detail";
+"Mining_Detail_This_Week" = "This Week";
+"Mining_Detail_Other" = "Other";
+"Mining_Detail_Total_Volume" = "Total Volume";
+"Mining_Detail_Total_Quantity" = "Total Quantity";
+"Mining_Detail_Ore_Types" = "Ore Types";
+"Mining_Detail_Characters" = "Characters";
+"Mining_Detail_Ore_List" = "Ore List";
+"Mining_Detail_By_System" = "Mining by Solar System";
+"Mining_Detail_By_Character" = "Mining by Character";
+"Mining_Detail_By_Ore_Type" = "Mining by Ore Type";
+"Mining_Detail_Copy" = "Copy";
+"Mining_Detail_Copy_EN" = "Copy (en)";
+"Mining_Detail_Estimate_Price" = "Est. Price";
+"Mining_Chart_Sort_Title" = "Sort By";
+"Mining_Chart_Sort_Volume" = "By Volume";
+"Mining_Chart_Sort_Quantity" = "By Quantity";
+"Mining_Chart_Sort_Price" = "By Price";
+
 // Scheduled Notifications View
 "Calendar_Scheduled_Notifications" = "Scheduled Notifications";
 "Calendar_No_Scheduled_Notifications" = "No Scheduled Notifications";
@@ -619,6 +647,8 @@
 "Assets_Loading_SavingCache" = "Saving to cache";
 "Assets_Unknown_Location" = "Unknown Location";
 "Assets_Unknown_Region" = "Unknown Region";
+"Assets_Data_From_Cache" = "Data from cache";
+"Assets_Data_Loaded" = "Data loaded";
 
 // Market Transactions
 "Main_Market_Transactions_Buy" = "Buy";
@@ -2481,6 +2511,11 @@
 "Structure_Orders_Reload_Message" = "Do you want to reload market orders for this structure?";
 "Structure_Orders_Reload_Cancel" = "Cancel";
 "Structure_Orders_Reload_Confirm" = "Confirm";
+"Structure_Orders_Just_Updated" = "Just updated";
+"Structure_Orders_Minutes_Ago" = "%d minutes ago";
+"Structure_Orders_Hours_Ago" = "%d hours ago";
+"Structure_Orders_Days_Ago" = "%d days ago";
+"Structure_Orders_No_Cache" = "No cache";
 
 // Corporation Industry
 "Loading_Corp_Industry_Jobs" = "Loading corporation industry jobs...";

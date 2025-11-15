@@ -68,8 +68,8 @@ class StructureMarketManager {
     private let networkManager = NetworkManager.shared
     private init() {}
 
-    // 缓存时间：4小时
-    private let cacheTimeoutInterval: TimeInterval = 4 * 60 * 60 // 4 小时有效期
+    // 缓存时间：4小时（非隔离静态常量，可在非隔离静态方法中使用）
+    nonisolated static let cacheTimeoutInterval: TimeInterval = 4 * 60 * 60 // 4 小时有效期
 
     // Documents目录路径
     private var documentsDirectory: URL {
@@ -238,6 +238,27 @@ class StructureMarketManager {
         }
     }
 
+    // 获取本地文件的修改时间（静态方法，用于非隔离上下文）
+    nonisolated static func getLocalOrdersModificationDate(structureId: Int64) -> Date? {
+        let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+        let documentsDirectory = paths[0]
+        let structureOrdersDirectory = documentsDirectory.appendingPathComponent("Structure_Orders")
+        let filePath = structureOrdersDirectory.appendingPathComponent(
+            "structure_orders_\(structureId).json"
+        )
+
+        guard FileManager.default.fileExists(atPath: filePath.path) else {
+            return nil
+        }
+
+        do {
+            let attributes = try FileManager.default.attributesOfItem(atPath: filePath.path)
+            return attributes[.modificationDate] as? Date
+        } catch {
+            return nil
+        }
+    }
+
     // 尝试读取有效的本地缓存订单数据
     // 返回nil表示没有有效缓存，需要联网加载
     // 返回数据表示有有效缓存，无需联网加载
@@ -249,7 +270,7 @@ class StructureMarketManager {
 
         // 检查缓存是否在有效期内
         guard let modificationDate = getLocalOrdersModificationDate(structureId: structureId),
-              Date().timeIntervalSince(modificationDate) < cacheTimeoutInterval
+              Date().timeIntervalSince(modificationDate) < StructureMarketManager.cacheTimeoutInterval
         else {
             return nil
         }
@@ -290,8 +311,7 @@ class StructureMarketManager {
         do {
             let attributes = try FileManager.default.attributesOfItem(atPath: filePath.path)
             if let modificationDate = attributes[.modificationDate] as? Date {
-                let cacheTimeout: TimeInterval = 3600 // 1小时，与 cacheTimeoutInterval 保持一致
-                let isValid = Date().timeIntervalSince(modificationDate) < cacheTimeout
+                let isValid = Date().timeIntervalSince(modificationDate) < cacheTimeoutInterval
                 return isValid ? .valid : .expired
             } else {
                 return .noData

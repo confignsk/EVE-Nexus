@@ -93,6 +93,24 @@ private struct LocationNameView: View {
     }
 }
 
+// 数据加载时间视图
+private struct DataLoadTimeView: View {
+    let loadTime: Date
+
+    var body: some View {
+        Text(formatDate(loadTime))
+            .font(.caption2)
+            .foregroundColor(.secondary)
+    }
+
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MM/dd HH:mm"
+        formatter.locale = Locale.current
+        return formatter.string(from: date)
+    }
+}
+
 // 搜索结果行视图
 private struct SearchResultRowView: View {
     let result: AssetSearchResult
@@ -131,6 +149,7 @@ struct CharacterAssetsView: View {
     @State private var searchText = ""
     @State private var isSearching = false
     @State private var isRefreshing = false
+    @AppStorage("enableLogging") private var enableLogging: Bool = false
 
     init(characterId: Int) {
         // 创建ViewModel并立即开始加载资产
@@ -339,6 +358,19 @@ struct CharacterAssetsView: View {
                             }
                         }
                     }
+                }
+            }
+
+            // 数据加载时间信息（仅在debug模式下显示）
+            if enableLogging, let loadTime = viewModel.dataLoadTime, !viewModel.isLoading {
+                Section {
+                    HStack {
+                        Spacer()
+                        DataLoadTimeView(loadTime: loadTime)
+                        Spacer()
+                    }
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 2, trailing: 16))
                 }
             }
         }

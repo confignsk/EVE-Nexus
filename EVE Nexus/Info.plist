@@ -39,6 +39,11 @@
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
 		<string>com.evenexus.datarefresh</string>
+		<string>com.evenexus.assetjsonrefresh</string>
+		<string>com.evenexus.contractrefresh</string>
+		<string>com.evenexus.structureordersrefresh</string>
+		<string>com.evenexus.industryrefresh</string>
+		<string>com.evenexus.walletrefresh</string>
 	</array>
 	<key>UIBackgroundModes</key>
 	<array>

@@ -301,3 +301,9 @@ Fixes & Improvements:
 # v1.8.5 Nov 13, 2025
 
 1. Resolved a performance issue in Pulse caused by excessive logging from the planetary development feature."
+
+# v1.8.6 Nov 15, 2025
+
+1. Fixed an issue in the mining ledger feature where data could not be displayed due to a parsing error.
+2. Added a background data update feature to periodically refresh contracts, wallet, market orders, and asset data at an appropriate frequency. 
+3. Enhanced mining record functionality, summarizing multi-character mining data through various charts.
