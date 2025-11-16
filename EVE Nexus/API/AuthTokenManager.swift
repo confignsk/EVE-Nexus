@@ -9,7 +9,7 @@ class SecureStorage {
 
     func saveToken(_ token: String, for characterId: Int) throws {
         Logger.info(
-            "SecureStorage: 开始保存 refresh token 到 SecureStorage - 角色ID: \(characterId), token前缀: \(String(token.prefix(10)))..."
+            "SecureStorage: 开始保存 refresh token 到 SecureStorage - 角色ID: \(characterId), token前缀: \(String(token.prefix(4)))......"
         )
 
         guard let tokenData = token.data(using: .utf8) else {

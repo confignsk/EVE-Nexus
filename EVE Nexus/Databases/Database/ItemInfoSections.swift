@@ -8,6 +8,7 @@ struct IndustrySection: View {
 
     var body: some View {
         let materials = databaseManager.getTypeMaterials(for: itemID)
+        let randomizedMaterials = databaseManager.getTypeRandomizedMaterials(for: itemID)
         let blueprintIDs = databaseManager.getBlueprintIDsForProduct(itemID)
         let groups_should_show_source = [18, 1996, 423, 427]
         // 只针对矿物、突变残渣、化学元素、同位素等产物展示精炼来源
@@ -24,7 +25,7 @@ struct IndustrySection: View {
         // 获取可以制造该物品的蓝图列表
         let blueprintDest = databaseManager.getBlueprintDest(for: itemID)
 
-        if materials != nil || !blueprintIDs.isEmpty || sourceMaterials != nil
+        if materials != nil || randomizedMaterials != nil || !blueprintIDs.isEmpty || sourceMaterials != nil
             || !blueprintDest.blueprints.isEmpty
         {
             Section(header: Text(NSLocalizedString("Industry", comment: "")).font(.headline)) {
@@ -141,6 +142,52 @@ struct IndustrySection: View {
                             Spacer()
                             Text(
                                 "\(materials.count)\(NSLocalizedString("Misc_number_items", comment: ""))"
+                            )
+                            .foregroundColor(.secondary)
+                            .frame(alignment: .trailing)
+                        }
+                    }
+                    .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+                }
+
+                // 随机产出下拉列表
+                if let randomizedMaterials = randomizedMaterials, !randomizedMaterials.isEmpty {
+                    DisclosureGroup {
+                        ForEach(randomizedMaterials, id: \.materialTypeID) { material in
+                            NavigationLink {
+                                ShowItemInfo(
+                                    databaseManager: databaseManager,
+                                    itemID: material.materialTypeID
+                                )
+                            } label: {
+                                HStack {
+                                    IconManager.shared.loadImage(for: material.materialIcon)
+                                        .resizable()
+                                        .frame(width: 32, height: 32)
+                                        .cornerRadius(6)
+
+                                    Text(material.materialName)
+                                        .font(.body)
+
+                                    Spacer()
+
+                                    Text("\(material.quantityMin) - \(material.quantityMax)")
+                                        .font(.body)
+                                        .foregroundColor(.secondary)
+                                        .frame(alignment: .trailing)
+                                }
+                            }
+                        }
+                        .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+                    } label: {
+                        HStack {
+                            Image("reprocess")
+                                .resizable()
+                                .frame(width: 32, height: 32)
+                            Text(NSLocalizedString("Main_Database_Randomized_Output", comment: ""))
+                            Spacer()
+                            Text(
+                                "\(randomizedMaterials.count)\(NSLocalizedString("Misc_number_items", comment: ""))"
                             )
                             .foregroundColor(.secondary)
                             .frame(alignment: .trailing)

@@ -1257,9 +1257,11 @@ class Step3 {
 
         // 检查模块是否有该属性，如果没有则不添加修饰器
         if !module.attributes.keys.contains(attributeId), modifier.operation.rawValue != 7 { // 赋值类的，不关心是否存在此属性
-            Logger.info(
-                "模块 \(module.name)[\(module.instanceId)] 不含有该属性 \(attributeId)，不添加效果 \(modifier.effectName) 的修饰器 \(modifier.modifierType)"
-            )
+            if AppConfiguration.Fitting.showDebug {
+                Logger.info(
+                    "模块 \(module.name)[\(module.instanceId)] 不含有该属性 \(attributeId)，不添加效果 \(modifier.effectName) 的修饰器 \(modifier.modifierType)"
+                )
+            }
             return
         }
 
@@ -1552,6 +1554,8 @@ class Step3 {
 
         character.attributeModifiers[attributeId]!.append(simModifier)
 
-        Logger.info("添加修饰器到角色属性: \(attributeId), 修饰器: \(modifier.effectName)")
+        if AppConfiguration.Fitting.showDebug {
+            Logger.info("添加修饰器到角色属性: \(attributeId), 修饰器: \(modifier.effectName)")
+        }
     }
 }

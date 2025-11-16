@@ -258,11 +258,13 @@ struct SettingView: View {
     @AppStorage("selectedTheme") private var selectedTheme: String = "system"
     @AppStorage("enableLogging") private var enableLogging: Bool = false
     @State private var showingCleanCacheAlert = false
+    @State private var showingCleanCharacterDatabaseAlert = false
     @State private var showingDeleteIconsAlert = false
     @State private var showingLanguageView = false
     @State private var cacheSize: String = NSLocalizedString("Misc_Calculating", comment: "")
     @ObservedObject var databaseManager: DatabaseManager
     @State private var isCleaningCache = false
+    @State private var isCleaningCharacterDatabase = false
     @State private var isReextractingIcons = false
     @State private var unzipProgress: Double = 0
     @State private var loadingState: LoadingState = .processing
@@ -279,57 +281,27 @@ struct SettingView: View {
 
     private func updateAllData() {
         Task {
-            // 统计 StaticDataSet 目录大小
-            let staticDataSetPath = StaticResourceManager.shared.getStaticDataSetPath()
+            // 目录统计信息结构
+            struct DirectoryStats {
+                let name: String
+                var fileCount: Int = 0
+                var totalSize: Int64 = 0
+            }
+
             var totalSize: Int64 = 0
             var fileCount = 0
             let largeFileThreshold: Int64 = 10 * 1024 * 1024 // 10MB
             let fileCountThreshold = 200
-
-            if FileManager.default.fileExists(atPath: staticDataSetPath.path) {
-                if let enumerator = FileManager.default.enumerator(
-                    at: staticDataSetPath,
-                    includingPropertiesForKeys: [.fileSizeKey, .isRegularFileKey],
-                    options: [.skipsHiddenFiles]
-                ) {
-                    while let fileURL = enumerator.nextObject() as? URL {
-                        do {
-                            let resourceValues = try fileURL.resourceValues(forKeys: [
-                                .isRegularFileKey,
-                            ])
-                            // 只统计文件，跳过目录
-                            if resourceValues.isRegularFile == true {
-                                let attributes = try FileManager.default.attributesOfItem(
-                                    atPath: fileURL.path)
-                                if let fileSize = attributes[.size] as? Int64 {
-                                    totalSize += fileSize
-                                    fileCount += 1
-
-                                    // 只有当文件大小超过10MB时才记录警告
-                                    if fileSize > largeFileThreshold {
-                                        Logger.warning(
-                                            "大文件: \(fileURL.path) - \(FormatUtil.formatFileSize(fileSize))"
-                                        )
-                                    }
-                                }
-                            }
-                        } catch {
-                            Logger.error(
-                                "计算文件大小失败 - \(fileURL.path): \(error)")
-                        }
-                    }
-                } else {
-                    Logger.error("创建目录枚举器失败")
-                }
-            }
+            var directoryStats: [DirectoryStats] = []
 
             // 计算缓存目录大小
             let documentPath = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
-            // 使用CacheManager中的缓存目录列表
+            // 使用CacheManager中的缓存目录列表（包含StaticDataSet）
             let cacheDirs = CacheManager.shared.getCacheDirs()
 
             for dirName in cacheDirs {
                 let dirPath = documentPath.appendingPathComponent(dirName)
+                var dirStats = DirectoryStats(name: dirName)
 
                 if fileManager.fileExists(atPath: dirPath.path),
                    let enumerator = fileManager.enumerator(
@@ -350,6 +322,8 @@ struct SettingView: View {
                                 if let fileSize = attributes[.size] as? Int64 {
                                     totalSize += fileSize
                                     fileCount += 1
+                                    dirStats.fileCount += 1
+                                    dirStats.totalSize += fileSize
 
                                     // 只有当文件大小超过10MB时才记录警告
                                     if fileSize > largeFileThreshold {
@@ -365,11 +339,27 @@ struct SettingView: View {
                         }
                     }
                 }
+
+                if dirStats.fileCount > 0 {
+                    directoryStats.append(dirStats)
+                }
             }
 
-            // 如果文件总数超过100个，记录警告
+            // 如果文件总数超过阈值，记录警告并显示前3个文件最多的目录
             if fileCount > fileCountThreshold {
-                Logger.warning("缓存文件较多（\(fileCount)个）")
+                // 按文件数排序，取前3个
+                let topDirectories = directoryStats
+                    .sorted { $0.fileCount > $1.fileCount }
+                    .prefix(3)
+
+                var warningMessage = "缓存文件较多（\(fileCount)个），文件数最多的目录："
+                for (index, dir) in topDirectories.enumerated() {
+                    if index > 0 {
+                        warningMessage += "、"
+                    }
+                    warningMessage += "\(dir.name)(\(dir.fileCount)个文件, \(FormatUtil.formatFileSize(dir.totalSize)))"
+                }
+                Logger.warning(warningMessage)
             }
 
             // 更新界面
@@ -601,17 +591,32 @@ struct SettingView: View {
     }
 
     private func createCacheGroup() -> SettingGroup {
+        var items: [SettingItem] = [
+            SettingItem(
+                title: NSLocalizedString("Main_Setting_Clean_Cache", comment: ""),
+                detail: cacheSize,
+                icon: isCleaningCache ? "arrow.triangle.2.circlepath" : "trash",
+                iconColor: .orange,
+                action: { showingCleanCacheAlert = true }
+            ),
+        ]
+
+        // 只有在启用调试模式（日志）时才显示清理人物数据按钮
+        if enableLogging {
+            items.append(
+                SettingItem(
+                    title: NSLocalizedString("Main_Setting_Clean_Character_Database", comment: ""),
+                    detail: NSLocalizedString("Main_Setting_Clean_Character_Database_Detail", comment: ""),
+                    icon: isCleaningCharacterDatabase ? "arrow.triangle.2.circlepath" : "person.crop.circle.badge.minus",
+                    iconColor: .red,
+                    action: { showingCleanCharacterDatabaseAlert = true }
+                )
+            )
+        }
+
         return SettingGroup(
             header: NSLocalizedString("Main_Setting_Cache", comment: ""),
-            items: [
-                SettingItem(
-                    title: NSLocalizedString("Main_Setting_Clean_Cache", comment: ""),
-                    detail: cacheSize,
-                    icon: isCleaningCache ? "arrow.triangle.2.circlepath" : "trash",
-                    iconColor: .orange,
-                    action: { showingCleanCacheAlert = true }
-                ),
-            ]
+            items: items
         )
     }
 
@@ -644,12 +649,13 @@ struct SettingView: View {
     private struct SettingItemView: View {
         let item: SettingItem
         let isCleaningCache: Bool
+        let isCleaningCharacterDatabase: Bool
         let showingLoadingView: Bool
 
         var body: some View {
             if let customView = item.customView {
                 customView(item)
-                    .disabled(isCleaningCache || showingLoadingView)
+                    .disabled(isCleaningCache || isCleaningCharacterDatabase || showingLoadingView)
             } else {
                 Button(action: item.action) {
                     HStack {
@@ -665,9 +671,8 @@ struct SettingView: View {
                         }
                         Spacer()
                         if let icon = item.icon {
-                            if item.title
-                                == NSLocalizedString("Main_Setting_Clean_Cache", comment: "")
-                                && isCleaningCache
+                            if (item.title == NSLocalizedString("Main_Setting_Clean_Cache", comment: "") && isCleaningCache) ||
+                                (item.title == NSLocalizedString("Main_Setting_Clean_Character_Database", comment: "") && isCleaningCharacterDatabase)
                             {
                                 ProgressView()
                                     .frame(width: 36)
@@ -680,7 +685,7 @@ struct SettingView: View {
                         }
                     }
                 }
-                .disabled(isCleaningCache || showingLoadingView)
+                .disabled(isCleaningCache || isCleaningCharacterDatabase || showingLoadingView)
             }
         }
     }
@@ -695,6 +700,7 @@ struct SettingView: View {
                         SettingItemView(
                             item: item,
                             isCleaningCache: isCleaningCache,
+                            isCleaningCharacterDatabase: isCleaningCharacterDatabase,
                             showingLoadingView: showingLoadingView
                         )
                     }
@@ -734,6 +740,17 @@ struct SettingView: View {
             }
         } message: {
             Text(NSLocalizedString("Main_Setting_Clean_Cache_Message", comment: ""))
+        }
+        .alert(
+            NSLocalizedString("Main_Setting_Clean_Character_Database_Title", comment: ""),
+            isPresented: $showingCleanCharacterDatabaseAlert
+        ) {
+            Button(NSLocalizedString("Main_Setting_Cancel", comment: ""), role: .cancel) {}
+            Button(NSLocalizedString("Main_Setting_Clean", comment: ""), role: .destructive) {
+                cleanCharacterDatabase()
+            }
+        } message: {
+            Text(NSLocalizedString("Main_Setting_Clean_Character_Database_Message", comment: ""))
         }
         .alert(
             NSLocalizedString("Main_Setting_Reset_Icons_Title", comment: ""),
@@ -831,15 +848,28 @@ struct SettingView: View {
                 // 清理所有缓存
                 await CacheManager.shared.clearAllCaches()
 
-                // 重置角色数据库
-                CharacterDatabaseManager.shared.resetDatabase()
-
                 // 更新UI
                 await MainActor.run {
                     updateAllData()
                 }
 
-                Logger.info("Cache and character database cleaned successfully")
+                Logger.info("Cache cleaned successfully")
+            }
+        }
+    }
+
+    // MARK: - 人物数据管理
+
+    private func cleanCharacterDatabase() {
+        Task {
+            isCleaningCharacterDatabase = true
+            defer { isCleaningCharacterDatabase = false }
+
+            do {
+                // 重置角色数据库
+                CharacterDatabaseManager.shared.resetDatabase()
+
+                Logger.info("Character database cleaned successfully")
             }
         }
     }

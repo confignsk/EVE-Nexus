@@ -625,9 +625,8 @@ struct SkillPlanView: View {
                 forceRefresh: false
             )
 
-            // 创建技能ID到技能信息的映射
-            learnedSkills = Dictionary(
-                uniqueKeysWithValues: skillsResponse.skills.map { ($0.skill_id, $0) })
+            // 使用技能ID到技能信息的映射
+            learnedSkills = skillsResponse.skillsMap
             Logger.success("成功加载角色技能数量: \(learnedSkills.count)")
         } catch {
             Logger.error("获取技能数据失败: \(error)")

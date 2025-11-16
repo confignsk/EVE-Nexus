@@ -12,6 +12,41 @@ public struct CharacterSkillsResponse: Codable {
     public let skills: [CharacterSkill]
     public let total_sp: Int
     public let unallocated_sp: Int
+
+    /// 技能ID到技能信息的映射，用于快速查找（O(1)时间复杂度）
+    /// 此属性会被缓存到文件中，如果缓存文件中不存在则从 skills 数组自动创建
+    public var skillsMap: [Int: CharacterSkill]
+
+    private enum CodingKeys: String, CodingKey {
+        case skills
+        case total_sp
+        case unallocated_sp
+        case skillsMap
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        skills = try container.decode([CharacterSkill].self, forKey: .skills)
+        total_sp = try container.decode(Int.self, forKey: .total_sp)
+        unallocated_sp = try container.decode(Int.self, forKey: .unallocated_sp)
+
+        // 尝试从缓存文件中读取 skillsMap，如果不存在则从 skills 数组创建（向后兼容）
+        if let cachedMap = try? container.decode([Int: CharacterSkill].self, forKey: .skillsMap) {
+            skillsMap = cachedMap
+        } else {
+            // 从 skills 数组创建技能ID到技能信息的映射
+            skillsMap = Dictionary(uniqueKeysWithValues: skills.map { ($0.skill_id, $0) })
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(skills, forKey: .skills)
+        try container.encode(total_sp, forKey: .total_sp)
+        try container.encode(unallocated_sp, forKey: .unallocated_sp)
+        // 将 skillsMap 也编码到缓存文件中
+        try container.encode(skillsMap, forKey: .skillsMap)
+    }
 }
 
 // 技能队列项目

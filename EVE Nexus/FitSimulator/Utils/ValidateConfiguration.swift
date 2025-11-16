@@ -17,12 +17,16 @@ private func calculateDynamicHardpoints(simulationInput: SimulationInput) -> (
     for module in simulationInput.modules {
         if let turretHardPointModifier = module.attributesByName["turretHardPointModifier"] {
             totalTurretHardpoints += Int(turretHardPointModifier)
-            Logger.info("子系统 \(module.name) 增加炮台挂点: \(Int(turretHardPointModifier))")
+            if AppConfiguration.Fitting.showDebug {
+                Logger.info("子系统 \(module.name) 增加炮台挂点: \(Int(turretHardPointModifier))")
+            }
         }
 
         if let launcherHardPointModifier = module.attributesByName["launcherHardPointModifier"] {
             totalLauncherHardpoints += Int(launcherHardPointModifier)
-            Logger.info("子系统 \(module.name) 增加发射器挂点: \(Int(launcherHardPointModifier))")
+            if AppConfiguration.Fitting.showDebug {
+                Logger.info("子系统 \(module.name) 增加发射器挂点: \(Int(launcherHardPointModifier))")
+            }
         }
     }
 
@@ -30,9 +34,11 @@ private func calculateDynamicHardpoints(simulationInput: SimulationInput) -> (
     totalTurretHardpoints = max(0, totalTurretHardpoints)
     totalLauncherHardpoints = max(0, totalLauncherHardpoints)
 
-    Logger.info(
-        "动态挂点计算结果 - 炮台挂点: \(totalTurretHardpoints) (基础: \(baseTurretHardpoints)), 发射器挂点: \(totalLauncherHardpoints) (基础: \(baseLauncherHardpoints))"
-    )
+    if AppConfiguration.Fitting.showDebug {
+        Logger.info(
+            "动态挂点计算结果 - 炮台挂点: \(totalTurretHardpoints) (基础: \(baseTurretHardpoints)), 发射器挂点: \(totalLauncherHardpoints) (基础: \(baseLauncherHardpoints))"
+        )
+    }
 
     return (turretHardpoints: totalTurretHardpoints, launcherHardpoints: totalLauncherHardpoints)
 }
@@ -82,7 +88,9 @@ func processConfiguration(simulationInput: SimulationInput, databaseManager: Dat
         if canInstall {
             // 如果可以安装，添加到处理后的配置中
             processedInput.modules.append(module)
-            Logger.success("成功安装装备: \(module.name) 到槽位 \(module.flag?.rawValue ?? "未知")")
+            if AppConfiguration.Fitting.showDebug {
+                Logger.success("成功安装装备: \(module.name) 到槽位 \(module.flag?.rawValue ?? "未知")")
+            }
         } else {
             // 如果不能安装，记录到被跳过模块列表
             let reason = "该装备无法安装到当前飞船: \(module.name)"

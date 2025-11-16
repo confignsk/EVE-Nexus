@@ -606,12 +606,8 @@ struct SkillPlanDetailView: View {
                 forceRefresh: false
             )
 
-            // 创建技能ID到技能信息的映射
-            let skillsDict = Dictionary(
-                uniqueKeysWithValues: skillsResponse.skills.map { ($0.skill_id, $0) })
-
-            // 只返回请求的技能ID对应的技能信息
-            return skillsDict.filter { skillIds.contains($0.key) }
+            // 使用技能ID到技能信息的映射，只返回请求的技能ID对应的技能信息
+            return skillsResponse.skillsMap.filter { skillIds.contains($0.key) }
         } catch {
             Logger.error("获取技能数据失败: \(error)")
             return [:]

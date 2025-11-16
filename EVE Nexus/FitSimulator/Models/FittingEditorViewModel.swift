@@ -504,12 +504,16 @@ class FittingEditorViewModel: ObservableObject {
         for module in simulationInput.modules {
             if let turretHardPointModifier = module.attributesByName["turretHardPointModifier"] {
                 totalTurretHardpoints += Int(turretHardPointModifier)
-                Logger.info("子系统 \(module.name) 增加炮台挂点: \(Int(turretHardPointModifier))")
+                if AppConfiguration.Fitting.showDebug {
+                    Logger.info("子系统 \(module.name) 增加炮台挂点: \(Int(turretHardPointModifier))")
+                }
             }
 
             if let launcherHardPointModifier = module.attributesByName["launcherHardPointModifier"] {
                 totalLauncherHardpoints += Int(launcherHardPointModifier)
-                Logger.info("子系统 \(module.name) 增加发射器挂点: \(Int(launcherHardPointModifier))")
+                if AppConfiguration.Fitting.showDebug {
+                    Logger.info("子系统 \(module.name) 增加发射器挂点: \(Int(launcherHardPointModifier))")
+                }
             }
         }
 
@@ -517,9 +521,11 @@ class FittingEditorViewModel: ObservableObject {
         totalTurretHardpoints = max(0, totalTurretHardpoints)
         totalLauncherHardpoints = max(0, totalLauncherHardpoints)
 
-        Logger.info(
-            "动态挂点计算结果 - 炮台挂点: \(totalTurretHardpoints) (基础: \(baseTurretHardpoints)), 发射器挂点: \(totalLauncherHardpoints) (基础: \(baseLauncherHardpoints))"
-        )
+        if AppConfiguration.Fitting.showDebug {
+            Logger.info(
+                "动态挂点计算结果 - 炮台挂点: \(totalTurretHardpoints) (基础: \(baseTurretHardpoints)), 发射器挂点: \(totalLauncherHardpoints) (基础: \(baseLauncherHardpoints))"
+            )
+        }
 
         return (
             turretHardpoints: totalTurretHardpoints, launcherHardpoints: totalLauncherHardpoints
@@ -530,41 +536,45 @@ class FittingEditorViewModel: ObservableObject {
     func calculateAttributes() {
         Logger.info("【calculateAttributes】开始重新计算属性")
 
-        // 记录输入中的舰载机信息
-        if let fighters = simulationInput.fighters {
-            Logger.info("【calculateAttributes】输入中有 \(fighters.count) 个舰载机")
-            for fighter in fighters {
-                Logger.info(
-                    "【calculateAttributes】输入舰载机: \(fighter.name), typeId: \(fighter.typeId), 属性数量: \(fighter.attributesByName.count)"
-                )
+        // 记录输入中的舰载机信息（仅在调试模式下）
+        if AppConfiguration.Fitting.showDebug {
+            if let fighters = simulationInput.fighters {
+                Logger.info("【calculateAttributes】输入中有 \(fighters.count) 个舰载机")
+                for fighter in fighters {
+                    Logger.info(
+                        "【calculateAttributes】输入舰载机: \(fighter.name), typeId: \(fighter.typeId), 属性数量: \(fighter.attributesByName.count)"
+                    )
+                }
+            } else {
+                Logger.info("【calculateAttributes】输入中没有舰载机")
             }
-        } else {
-            Logger.info("【calculateAttributes】输入中没有舰载机")
         }
 
         let output = attributeCalculator.calculateAndGenerateOutput(input: simulationInput)
         simulationOutput = output
 
-        // 记录输出中的舰载机信息
-        if let outputFighters = simulationOutput?.fighters {
-            Logger.info("【calculateAttributes】输出中有 \(outputFighters.count) 个舰载机")
-            for fighter in outputFighters {
-                Logger.info(
-                    "【calculateAttributes】输出舰载机: \(fighter.name), typeId: \(fighter.typeId), 属性数量: \(fighter.attributesByName.count)"
-                )
+        // 记录输出中的舰载机信息（仅在调试模式下）
+        if AppConfiguration.Fitting.showDebug {
+            if let outputFighters = simulationOutput?.fighters {
+                Logger.info("【calculateAttributes】输出中有 \(outputFighters.count) 个舰载机")
+                for fighter in outputFighters {
+                    Logger.info(
+                        "【calculateAttributes】输出舰载机: \(fighter.name), typeId: \(fighter.typeId), 属性数量: \(fighter.attributesByName.count)"
+                    )
 
-                // 检查伤害属性
-                let damageAttributes = fighter.attributesByName.filter {
-                    $0.key.lowercased().contains("damage")
+                    // 检查伤害属性
+                    let damageAttributes = fighter.attributesByName.filter {
+                        $0.key.lowercased().contains("damage")
+                    }
+                    if !damageAttributes.isEmpty {
+                        Logger.info("【calculateAttributes】输出舰载机伤害属性数量: \(damageAttributes.count)")
+                    } else {
+                        Logger.warning("【calculateAttributes】输出舰载机没有伤害属性")
+                    }
                 }
-                if !damageAttributes.isEmpty {
-                    Logger.info("【calculateAttributes】输出舰载机伤害属性数量: \(damageAttributes.count)")
-                } else {
-                    Logger.warning("【calculateAttributes】输出舰载机没有伤害属性")
-                }
+            } else {
+                Logger.info("【calculateAttributes】输出中没有舰载机")
             }
-        } else {
-            Logger.info("【calculateAttributes】输出中没有舰载机")
         }
 
         Logger.info("【calculateAttributes】属性计算完成")

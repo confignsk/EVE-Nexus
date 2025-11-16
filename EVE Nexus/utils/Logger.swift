@@ -27,7 +27,9 @@ class Logger {
     private init() {
         // 总是使用自定义路径存储日志，不管是否启用调试模式
         // 这样日志总是被记录，只是用户界面上的查看按钮受 enableLogging 控制
-        let logPath = StaticResourceManager.shared.getStaticDataSetPath().appendingPathComponent("Logs")
+        // 日志保存在 Documents 根目录下的 PulseLog 目录，避免被缓存清理误删
+        let documentsPath = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let logPath = documentsPath.appendingPathComponent("PulseLog")
         try? fileManager.createDirectory(at: logPath, withIntermediateDirectories: true)
         let storeURL = logPath.appendingPathComponent("Pulse.store")
 

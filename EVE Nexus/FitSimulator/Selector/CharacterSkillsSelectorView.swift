@@ -91,10 +91,8 @@ enum CharacterSkillsUtils {
                     forceRefresh: false
                 )
 
-                // 将所有技能映射到字典中
-                for skill in skillsResponse.skills {
-                    skillsDict[skill.skill_id] = skill.trained_skill_level
-                }
+                // 从技能映射中提取技能ID到等级的字典
+                skillsDict = Dictionary(uniqueKeysWithValues: skillsResponse.skillsMap.map { ($0.key, $0.value.trained_skill_level) })
             } catch {
                 Logger.error("获取角色技能数据失败: \(error)")
             }

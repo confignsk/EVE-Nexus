@@ -87,6 +87,8 @@ class MainViewModel: ObservableObject {
     private var cachedCloneCooldownPeriod: TimeInterval?
     private var lastCloneCooldownCalculation: Date?
     private let cloneCooldownCacheTimeout: TimeInterval = 300 // 5分钟缓存
+    // 刷新任务去重：防止多个刷新任务同时运行
+    private var refreshTask: Task<Void, Never>?
 
     private var cloneCooldownPeriod: TimeInterval {
         // 检查缓存是否有效
@@ -115,7 +117,7 @@ class MainViewModel: ObservableObject {
 
             // 查找 Advanced Infomorph Psychology 技能等级
             var cooldownPeriod = Constants.baseCloneCooldown
-            if let infomorphSkill = skillsResponse.skills.first(where: { $0.skill_id == 33399 }) {
+            if let infomorphSkill = skillsResponse.skillsMap[33399] {
                 // 每级减少1小时，从24小时开始
                 let reductionHours = infomorphSkill.trained_skill_level
                 let remainingHours = max(24 - reductionHours, 1) // 最少保留1小时冷却时间
@@ -285,182 +287,226 @@ class MainViewModel: ObservableObject {
     // MARK: - Public Methods
 
     func refreshAllBasicData(forceRefresh: Bool = false) async {
-        Logger.info("正在刷新人物的全部基本数据")
-        isRefreshing = true
-        lastError = nil
-        let service = CharacterDataService.shared
-
-        // 创建一个独立的任务来处理服务器状态，但不等待它完成
-        Task.detached(priority: .background) {
-            do {
-                Logger.info("正在刷新服务器状态")
-                let status = try await service.getServerStatus(forceRefresh: forceRefresh)
-                await MainActor.run {
-                    self.serverStatus = status
-                }
-            } catch {
-                await MainActor.run {
-                    self.lastError = .serverStatusFailed
-                    Logger.error("获取服务器状态失败: \(error)")
-                }
-            }
+        // 如果已有刷新任务在运行，等待其完成而不是创建新任务
+        if let existingTask = refreshTask {
+            Logger.info("刷新任务已在进行中，等待完成...")
+            await existingTask.value
+            return
         }
 
-        // 如果有选中的角色，开始加载所有数据
-        if let character = selectedCharacter {
-            // 预加载角色技能数据
-            SharedSkillsManager.shared.preloadSkills()
+        // 创建新的刷新任务
+        refreshTask = Task {
+            defer { refreshTask = nil }
 
-            // 优先加载头像
-            if characterPortrait == nil {
-                Task {
-                    Logger.info("正在刷新人物头像")
-                    loadingState = .loadingPortrait
-                    if let portrait = try? await service.getCharacterPortrait(
-                        id: character.CharacterID,
-                        forceRefresh: forceRefresh
-                    ) {
-                        self.characterPortrait = portrait
+            Logger.info("正在刷新人物的全部基本数据")
+            isRefreshing = true
+            lastError = nil
+            let service = CharacterDataService.shared
+
+            // 创建一个独立的任务来处理服务器状态，但不等待它完成
+            Task.detached(priority: .background) {
+                do {
+                    Logger.info("正在刷新服务器状态")
+                    let status = try await service.getServerStatus(forceRefresh: forceRefresh)
+                    await MainActor.run {
+                        self.serverStatus = status
                     }
-                    loadingState = .idle
+                } catch {
+                    await MainActor.run {
+                        self.lastError = .serverStatusFailed
+                        Logger.error("获取服务器状态失败: \(error)")
+                    }
                 }
             }
 
-            // 加载角色公共信息
-            Task {
-                do {
-                    Logger.info("正在刷新人物公共信息")
-                    let publicInfo = try await retryOperation(named: "获取角色公共信息") {
-                        try await CharacterAPI.shared.fetchCharacterPublicInfo(
-                            characterId: character.CharacterID, forceRefresh: forceRefresh
-                        )
-                    }
+            // 如果有选中的角色，开始加载所有数据
+            if let character = selectedCharacter {
+                // 预加载角色技能数据
+                SharedSkillsManager.shared.preloadSkills()
 
-                    // 获取军团信息
-                    async let corpInfoTask = CorporationAPI.shared.fetchCorporationInfo(
-                        corporationId: publicInfo.corporation_id)
-                    async let corpLogoTask = CorporationAPI.shared.fetchCorporationLogo(
-                        corporationId: publicInfo.corporation_id)
-
-                    let (corpInfo, corpLogo) = try await (corpInfoTask, corpLogoTask)
-                    self.corporationInfo = corpInfo
-                    self.corporationLogo = corpLogo
-
-                    // 获取联盟信息
-                    if let allianceId = publicInfo.alliance_id {
-                        async let allianceInfoTask = AllianceAPI.shared.fetchAllianceInfo(
-                            allianceId: allianceId)
-                        async let allianceLogoTask = AllianceAPI.shared.fetchAllianceLogo(
-                            allianceID: allianceId)
-
-                        let (alliInfo, alliLogo) = try await (allianceInfoTask, allianceLogoTask)
-                        self.allianceInfo = alliInfo
-                        self.allianceLogo = alliLogo
-                    } else {
-                        // 如果没有联盟，清除联盟信息
-                        self.allianceInfo = nil
-                        self.allianceLogo = nil
-                    }
-                    // 获取势力信息
-                    if let faction_id = publicInfo.faction_id {
-                        // 从数据库查询势力信息
-                        let query = "SELECT name, iconName FROM factions WHERE id = ?"
-                        if case let .success(rows) = DatabaseManager.shared.executeQuery(
-                            query, parameters: [faction_id]
-                        ),
-                            let row = rows.first,
-                            let name = row["name"] as? String,
-                            let iconName = row["iconName"] as? String
-                        {
-                            self.factionInfo = FactionInfo(
-                                id: faction_id,
-                                name: name,
-                                iconName: iconName
-                            )
-
-                            // 加载势力图标 - 使用UIImage版本
-                            let factionUIImage = IconManager.shared.loadUIImage(for: iconName)
-                            self.factionLogo = factionUIImage
-                        } else {
-                            Logger.error("查询势力信息失败: faction_id=\(faction_id)")
-                            self.factionInfo = nil
-                            self.factionLogo = nil
+                // 优先加载头像 - 在后台线程执行
+                if characterPortrait == nil {
+                    Task.detached(priority: .userInitiated) { [weak self] in
+                        guard let self = self else { return }
+                        await MainActor.run {
+                            self.loadingState = .loadingPortrait
                         }
-                    } else {
-                        // 如果没有势力，清除势力信息
-                        self.factionInfo = nil
-                        self.factionLogo = nil
+                        Logger.info("正在刷新人物头像")
+                        if let portrait = try? await service.getCharacterPortrait(
+                            id: character.CharacterID,
+                            forceRefresh: forceRefresh
+                        ) {
+                            await MainActor.run {
+                                self.characterPortrait = portrait
+                                self.loadingState = .idle
+                            }
+                        } else {
+                            await MainActor.run {
+                                self.loadingState = .idle
+                            }
+                        }
                     }
-                } catch {
-                    Logger.error("获取角色公共信息失败: \(error)")
+                }
+
+                // 加载角色公共信息 - 在后台线程执行，避免阻塞UI
+                Task.detached(priority: .userInitiated) { [weak self] in
+                    guard let self = self else { return }
+                    do {
+                        Logger.info("正在刷新人物公共信息")
+                        let publicInfo = try await self.retryOperation(named: "获取角色公共信息") {
+                            try await CharacterAPI.shared.fetchCharacterPublicInfo(
+                                characterId: character.CharacterID, forceRefresh: forceRefresh
+                            )
+                        }
+
+                        // 获取军团信息
+                        async let corpInfoTask = CorporationAPI.shared.fetchCorporationInfo(
+                            corporationId: publicInfo.corporation_id)
+                        async let corpLogoTask = CorporationAPI.shared.fetchCorporationLogo(
+                            corporationId: publicInfo.corporation_id)
+
+                        let (corpInfo, corpLogo) = try await (corpInfoTask, corpLogoTask)
+
+                        // 获取联盟信息
+                        let (alliInfo, alliLogo): (AllianceInfo?, UIImage?)
+                        if let allianceId = publicInfo.alliance_id {
+                            async let allianceInfoTask = AllianceAPI.shared.fetchAllianceInfo(
+                                allianceId: allianceId)
+                            async let allianceLogoTask = AllianceAPI.shared.fetchAllianceLogo(
+                                allianceID: allianceId)
+                            let (info, logo) = try await (allianceInfoTask, allianceLogoTask)
+                            alliInfo = info
+                            alliLogo = logo
+                        } else {
+                            alliInfo = nil
+                            alliLogo = nil
+                        }
+
+                        // 获取势力信息
+                        let (factionInfo, factionLogo): (FactionInfo?, UIImage?)
+                        if let faction_id = publicInfo.faction_id {
+                            // 从数据库查询势力信息
+                            let query = "SELECT name, iconName FROM factions WHERE id = ?"
+                            if case let .success(rows) = DatabaseManager.shared.executeQuery(
+                                query, parameters: [faction_id]
+                            ),
+                                let row = rows.first,
+                                let name = row["name"] as? String,
+                                let iconName = row["iconName"] as? String
+                            {
+                                let info = FactionInfo(
+                                    id: faction_id,
+                                    name: name,
+                                    iconName: iconName
+                                )
+                                // 加载势力图标 - 在后台线程加载
+                                let logo = IconManager.shared.loadUIImage(for: iconName)
+                                factionInfo = info
+                                factionLogo = logo
+                            } else {
+                                Logger.error("查询势力信息失败: faction_id=\(faction_id)")
+                                factionInfo = nil
+                                factionLogo = nil
+                            }
+                        } else {
+                            factionInfo = nil
+                            factionLogo = nil
+                        }
+
+                        // 批量更新所有UI，减少重绘次数
+                        await MainActor.run {
+                            self.corporationInfo = corpInfo
+                            self.corporationLogo = corpLogo
+                            self.allianceInfo = alliInfo
+                            self.allianceLogo = alliLogo
+                            self.factionInfo = factionInfo
+                            self.factionLogo = factionLogo
+                        }
+                    } catch {
+                        Logger.error("获取角色公共信息失败: \(error)")
+                    }
+                }
+
+                // 加载技能信息 - 在后台线程执行
+                Task.detached(priority: .userInitiated) { [weak self] in
+                    guard let self = self else { return }
+                    do {
+                        Logger.info("正在刷新人物技能数据")
+                        let (skillsResponse, queue) = try await self.retryOperation(named: "获取技能信息") {
+                            try await service.getSkillInfo(
+                                id: character.CharacterID, forceRefresh: forceRefresh
+                            )
+                        }
+                        await MainActor.run {
+                            self.processSkillInfo(skillsResponse: skillsResponse, queue: queue)
+                        }
+                    } catch {
+                        Logger.error("获取技能信息失败: \(error)")
+                    }
+                }
+
+                // 加载钱包余额 - 在后台线程执行
+                Task.detached(priority: .userInitiated) { [weak self] in
+                    guard let self = self else { return }
+                    do {
+                        Logger.info("正在刷新钱包余额")
+                        let balance = try await self.retryOperation(named: "获取钱包余额") {
+                            try await service.getWalletBalance(
+                                id: character.CharacterID, forceRefresh: forceRefresh
+                            )
+                        }
+                        await MainActor.run {
+                            self.cache.walletBalance = balance
+                            self.updateWalletBalance(balance)
+                        }
+                    } catch {
+                        Logger.error("获取钱包余额失败: \(error)")
+                    }
+                }
+
+                // 加载位置信息 - 在后台线程执行
+                Task.detached(priority: .userInitiated) { [weak self] in
+                    guard let self = self else { return }
+                    do {
+                        Logger.info("正在刷新人物位置信息")
+                        let location = try await self.retryOperation(named: "获取位置信息") {
+                            try await service.getLocation(
+                                id: character.CharacterID, forceRefresh: forceRefresh
+                            )
+                        }
+                        await MainActor.run {
+                            self.characterStats.location = location.locationStatus.description
+                        }
+                    } catch {
+                        Logger.error("获取位置信息失败: \(error)")
+                    }
+                }
+
+                // 加载克隆状态 - 在后台线程执行
+                Task.detached(priority: .userInitiated) { [weak self] in
+                    guard let self = self else { return }
+                    do {
+                        Logger.info("正在刷新人物克隆信息")
+                        let cloneInfo = try await self.retryOperation(named: "获取克隆状态") {
+                            try await service.getCloneStatus(
+                                id: character.CharacterID, forceRefresh: forceRefresh
+                            )
+                        }
+                        await MainActor.run {
+                            self.updateCloneStatus(from: cloneInfo)
+                        }
+                    } catch {
+                        Logger.error("获取克隆状态失败: \(error)")
+                    }
                 }
             }
 
-            // 加载技能信息
-            Task {
-                do {
-                    Logger.info("正在刷新人物技能数据")
-                    let (skillsResponse, queue) = try await retryOperation(named: "获取技能信息") {
-                        try await service.getSkillInfo(
-                            id: character.CharacterID, forceRefresh: forceRefresh
-                        )
-                    }
-                    processSkillInfo(skillsResponse: skillsResponse, queue: queue)
-                } catch {
-                    Logger.error("获取技能信息失败: \(error)")
-                }
-            }
-
-            // 加载钱包余额
-            Task {
-                do {
-                    Logger.info("正在刷新钱包余额")
-                    let balance = try await retryOperation(named: "获取钱包余额") {
-                        try await service.getWalletBalance(
-                            id: character.CharacterID, forceRefresh: forceRefresh
-                        )
-                    }
-                    self.cache.walletBalance = balance
-                    self.updateWalletBalance(balance)
-                } catch {
-                    Logger.error("获取钱包余额失败: \(error)")
-                }
-            }
-
-            // 加载位置信息
-            Task {
-                do {
-                    Logger.info("正在刷新人物位置信息")
-                    let location = try await retryOperation(named: "获取位置信息") {
-                        try await service.getLocation(
-                            id: character.CharacterID, forceRefresh: forceRefresh
-                        )
-                    }
-                    self.characterStats.location = location.locationStatus.description
-                } catch {
-                    Logger.error("获取位置信息失败: \(error)")
-                }
-            }
-
-            // 加载克隆状态
-            Task {
-                do {
-                    Logger.info("正在刷新人物克隆信息")
-                    let cloneInfo = try await retryOperation(named: "获取克隆状态") {
-                        try await service.getCloneStatus(
-                            id: character.CharacterID, forceRefresh: forceRefresh
-                        )
-                    }
-                    self.updateCloneStatus(from: cloneInfo)
-                } catch {
-                    Logger.error("获取克隆状态失败: \(error)")
-                }
-            }
+            isRefreshing = false
+            Logger.info("刷新基本信息完成")
+            loadingState = .idle
         }
 
-        isRefreshing = false
-        Logger.info("刷新基本信息完成")
-        loadingState = .idle
+        await refreshTask?.value
     }
 
     // 加载保存的角色信息

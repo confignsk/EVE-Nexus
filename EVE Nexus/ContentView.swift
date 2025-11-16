@@ -241,43 +241,6 @@ struct ServerStatusView: View {
     }
 }
 
-// MARK: - Refresh Token 更新时间视图
-
-struct RefreshTokenUpdateTimeView: View {
-    let characterId: Int
-    @State private var lastUpdateTime: Date?
-
-    private var dateFormatter: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .short
-        formatter.timeStyle = .short
-        formatter.locale = Locale.current
-        return formatter
-    }
-
-    var body: some View {
-        HStack(spacing: 4) {
-            Text("Refresh Token:")
-                .font(.caption)
-                .foregroundColor(.secondary)
-            if let updateTime = lastUpdateTime {
-                Text(dateFormatter.string(from: updateTime))
-                    .font(.monospacedDigit(.caption)())
-                    .foregroundColor(.secondary)
-            } else {
-                Text("Null")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-        }
-        .onAppear {
-            Task {
-                lastUpdateTime = await AuthTokenManager.shared.getLastRefreshTokenUpdateTime(for: characterId)
-            }
-        }
-    }
-}
-
 // MARK: - 自定义按钮样式
 
 struct ScaleButtonStyle: ButtonStyle {
@@ -528,6 +491,8 @@ struct ContentView: View {
     @State private var isRefreshTokenExpired = false // 添加token过期状态
     @State private var navigationAvatarItemVisible = false // 改为使用滚动位置判断
     @State private var hasInitialLayout = false // 添加初始布局标记
+    @StateObject private var sdeUpdateChecker = SDEUpdateChecker.shared // 观察SDE更新状态
+    @State private var showingSDEUpdateSheet = false // 控制SDE更新sheet显示
 
     // 使用计算属性来确定当前的颜色方案
     private var currentColorScheme: ColorScheme? {
@@ -583,49 +548,17 @@ struct ContentView: View {
                 }
                 .navigationTitle(NSLocalizedString("Main_Home", comment: ""))
                 .task {
+                    // 首次加载时刷新数据，在后台异步执行，不阻塞 UI
                     Logger.info("Sidebar appeared, refreshing data...")
-                    await viewModel.refreshAllBasicData()
+                    // 立即更新 token 状态
                     updateTokenStatus()
+                    // 不等待刷新完成，让数据在后台加载
+                    Task {
+                        await viewModel.refreshAllBasicData()
+                    }
                 }
                 .toolbar {
-                    // 在导航栏左侧显示人物头像（仅当滚动且已登录时）
-                    ToolbarItem(placement: .navigationBarLeading) {
-                        if currentCharacterId != 0, viewModel.selectedCharacter != nil,
-                           navigationAvatarItemVisible
-                        {
-                            Button(action: {
-                                // 跳转到人物选择页面
-                                selectedItem = "accounts"
-                            }) {
-                                NavigationBarAvatarView(
-                                    characterPortrait: viewModel.characterPortrait,
-                                    isRefreshTokenExpired: isRefreshTokenExpired,
-                                    isRefreshing: viewModel.isRefreshing
-                                )
-                            }
-                            .buttonStyle(ScaleButtonStyle())
-                            .transition(
-                                .asymmetric(
-                                    insertion: .opacity.combined(with: .scale(scale: 0.8)),
-                                    removal: .opacity.combined(with: .scale(scale: 0.8))
-                                ))
-                        }
-                    }
-
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        if isCustomizeMode {
-                            Button(action: {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    isCustomizeMode = false
-                                }
-                            }) {
-                                Text(NSLocalizedString("Features_Exit_Customize", comment: ""))
-                                    .foregroundColor(.blue)
-                            }
-                        } else if currentCharacterId != 0 {
-                            logoutButton
-                        }
-                    }
+                    toolbarContent
                 }
                 .navigationSplitViewColumnWidth(min: 300, ideal: geometry.size.width * 0.35)
                 .onFrameChange(HeaderFrame.self) { frames in
@@ -864,8 +797,9 @@ struct ContentView: View {
             NotificationCenter.default.publisher(for: NSNotification.Name("LanguageChanged"))
         ) { _ in
             // 语言变更时的处理
+            // 需要等待刷新完成，以确保界面文字立即更新，保持视觉一致性
+            Logger.info("语言变更，刷新数据")
             Task {
-                Logger.info("语言变更，刷新数据")
                 await viewModel.refreshAllBasicData()
             }
         }
@@ -886,9 +820,13 @@ struct ContentView: View {
         ) { _ in
             // App 从后台返回前台时刷新数据
             Logger.info("App entering foreground, refreshing data...")
+
+            // 立即更新 token 状态
+            updateTokenStatus()
+
+            // 不等待刷新完成，让它在后台异步执行，避免阻塞 UI
             Task {
                 await viewModel.refreshAllBasicData()
-                updateTokenStatus()
             }
         }
         .onChange(of: viewModel.selectedCharacter) { _, _ in
@@ -906,6 +844,15 @@ struct ContentView: View {
             }
         } message: {
             Text(NSLocalizedString("App_Updated_Message", comment: "应用已更新到新版本"))
+        }
+        .sheet(isPresented: $showingSDEUpdateSheet, onDismiss: {
+            // 更新完成后重新检查更新状态
+            Task { @MainActor in
+                await SDEUpdateChecker.shared.checkForUpdates()
+            }
+        }) {
+            SDEUpdateDetailView()
+                .interactiveDismissDisabled()
         }
     }
 
@@ -1193,11 +1140,6 @@ struct ContentView: View {
         } footer: {
             VStack(alignment: .leading, spacing: 4) {
                 ServerStatusView(mainViewModel: viewModel)
-
-                // 在调试模式下显示 refresh token 更新时间
-                if enableLogging && currentCharacterId != 0 {
-                    RefreshTokenUpdateTimeView(characterId: currentCharacterId)
-                }
             }
         }
     }
@@ -1619,6 +1561,74 @@ struct ContentView: View {
             .padding(.top, 8)
         }
         .isHidden(!hasVisibleFeatures(in: getFeatureIds(for: "other")))
+    }
+
+    // MARK: - Toolbar Content
+
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        // 在导航栏左侧显示人物头像（仅当滚动且已登录时）
+        ToolbarItem(placement: .navigationBarLeading) {
+            if currentCharacterId != 0, viewModel.selectedCharacter != nil,
+               navigationAvatarItemVisible
+            {
+                Button(action: {
+                    // 跳转到人物选择页面
+                    selectedItem = "accounts"
+                }) {
+                    NavigationBarAvatarView(
+                        characterPortrait: viewModel.characterPortrait,
+                        isRefreshTokenExpired: isRefreshTokenExpired,
+                        isRefreshing: viewModel.isRefreshing
+                    )
+                }
+                .buttonStyle(ScaleButtonStyle())
+                .transition(
+                    .asymmetric(
+                        insertion: .opacity.combined(with: .scale(scale: 0.8)),
+                        removal: .opacity.combined(with: .scale(scale: 0.8))
+                    ))
+            }
+        }
+
+        // 右侧工具栏按钮组（SDE更新按钮和登出按钮）
+        ToolbarItemGroup(placement: .navigationBarTrailing) {
+            // SDE更新下载按钮（仅当有更新时显示）
+            if sdeUpdateChecker.updateStatus == .hasUpdate {
+                Button(action: {
+                    showingSDEUpdateSheet = true
+                }) {
+                    HStack(spacing: 4) {
+                        Text(NSLocalizedString("Main_SDE_Update_Available", comment: ""))
+                            .font(.caption)
+                            .foregroundColor(.green)
+                        Image(systemName: "arrow.down.circle.fill")
+                            .resizable()
+                            .frame(width: 20, height: 20)
+                            .foregroundColor(.green)
+                    }
+                }
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .scale(scale: 0.8)),
+                    removal: .opacity.combined(with: .scale(scale: 0.8))
+                ))
+                .animation(.easeInOut(duration: 0.3), value: sdeUpdateChecker.updateStatus)
+            }
+
+            // 登出按钮或退出自定义模式按钮
+            if isCustomizeMode {
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        isCustomizeMode = false
+                    }
+                }) {
+                    Text(NSLocalizedString("Features_Exit_Customize", comment: ""))
+                        .foregroundColor(.blue)
+                }
+            } else if currentCharacterId != 0 {
+                logoutButton
+            }
+        }
     }
 
     private var logoutButton: some View {

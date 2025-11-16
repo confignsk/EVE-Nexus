@@ -54,10 +54,8 @@ class SharedSkillsManager: ObservableObject {
                     forceRefresh: false
                 )
 
-                var skillsDict = [Int: Int]()
-                for skill in skillsResponse.skills {
-                    skillsDict[skill.skill_id] = skill.trained_skill_level
-                }
+                // 从技能映射中提取技能ID到等级的字典
+                let skillsDict = Dictionary(uniqueKeysWithValues: skillsResponse.skillsMap.map { ($0.key, $0.value.trained_skill_level) })
 
                 await MainActor.run {
                     self.characterSkills = skillsDict

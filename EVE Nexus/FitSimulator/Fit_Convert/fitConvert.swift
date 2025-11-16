@@ -139,13 +139,19 @@ class FitConvert {
             switch info.marketGroupId {
             case 1310: // 重型舰载机
                 heavyFighters.append((typeId: typeId, maxSquadSize: info.maxSquadSize))
-                Logger.info("发现重型舰载机: \(info.name), 最大中队大小: \(info.maxSquadSize)")
+                if AppConfiguration.Fitting.showDebug {
+                    Logger.info("发现重型舰载机: \(info.name), 最大中队大小: \(info.maxSquadSize)")
+                }
             case 2239: // 辅助舰载机
                 supportFighters.append((typeId: typeId, maxSquadSize: info.maxSquadSize))
-                Logger.info("发现辅助舰载机: \(info.name), 最大中队大小: \(info.maxSquadSize)")
+                if AppConfiguration.Fitting.showDebug {
+                    Logger.info("发现辅助舰载机: \(info.name), 最大中队大小: \(info.maxSquadSize)")
+                }
             case 840: // 轻型舰载机
                 lightFighters.append((typeId: typeId, maxSquadSize: info.maxSquadSize))
-                Logger.info("发现轻型舰载机: \(info.name), 最大中队大小: \(info.maxSquadSize)")
+                if AppConfiguration.Fitting.showDebug {
+                    Logger.info("发现轻型舰载机: \(info.name), 最大中队大小: \(info.maxSquadSize)")
+                }
             default:
                 Logger.warning("未知类型舰载机 marketGroupId: \(info.marketGroupId), typeId: \(typeId)")
             }
@@ -179,8 +185,10 @@ class FitConvert {
                 usedTubes += 1
             }
 
-            Logger.info(
-                "添加重型舰载机: \(fighter.typeId), 数量: \(availableTubes), 中队大小: \(fighter.maxSquadSize)")
+            if AppConfiguration.Fitting.showDebug {
+                Logger.info(
+                    "添加重型舰载机: \(fighter.typeId), 数量: \(availableTubes), 中队大小: \(fighter.maxSquadSize)")
+            }
         }
 
         // 2. 添加辅助舰载机
@@ -200,8 +208,10 @@ class FitConvert {
                 usedTubes += 1
             }
 
-            Logger.info(
-                "添加辅助舰载机: \(fighter.typeId), 数量: \(availableTubes), 中队大小: \(fighter.maxSquadSize)")
+            if AppConfiguration.Fitting.showDebug {
+                Logger.info(
+                    "添加辅助舰载机: \(fighter.typeId), 数量: \(availableTubes), 中队大小: \(fighter.maxSquadSize)")
+            }
         }
 
         // 3. 添加轻型舰载机
@@ -221,11 +231,15 @@ class FitConvert {
                 usedTubes += 1
             }
 
-            Logger.info(
-                "添加轻型舰载机: \(fighter.typeId), 数量: \(availableTubes), 中队大小: \(fighter.maxSquadSize)")
+            if AppConfiguration.Fitting.showDebug {
+                Logger.info(
+                    "添加轻型舰载机: \(fighter.typeId), 数量: \(availableTubes), 中队大小: \(fighter.maxSquadSize)")
+            }
         }
 
-        Logger.info("舰载机配置完成，总共添加了 \(fighters.count) 个舰载机，使用了 \(usedTubes) 个发射筒")
+        if AppConfiguration.Fitting.showDebug {
+            Logger.info("舰载机配置完成，总共添加了 \(fighters.count) 个舰载机，使用了 \(usedTubes) 个发射筒")
+        }
         return fighters
     }
 
@@ -250,13 +264,17 @@ class FitConvert {
             let fighterBayItems = online.items.filter { $0.flag == .fighterBay }
 
             // 处理舰载机配置
-            Logger.info("准备处理舰载机配置，找到 \(fighterBayItems.count) 个舰载机物品")
+            if AppConfiguration.Fitting.showDebug {
+                Logger.info("准备处理舰载机配置，找到 \(fighterBayItems.count) 个舰载机物品")
+            }
             let fighters = processFighters(
                 shipTypeId: online.ship_type_id,
                 fighterBayItems: fighterBayItems,
                 databaseManager: databaseManager
             )
-            Logger.info("舰载机处理完成，生成了 \(fighters.count) 个FighterSquad")
+            if AppConfiguration.Fitting.showDebug {
+                Logger.info("舰载机处理完成，生成了 \(fighters.count) 个FighterSquad")
+            }
 
             // 过滤掉无人机、货舱和舰载机，只保留装备
             var equipmentItems = online.items.filter {
@@ -301,7 +319,9 @@ class FitConvert {
 
                     // 添加模式到装备列表
                     equipmentItems.append(modeItem)
-                    Logger.info("在线配置导入: 为战术驱逐舰(ID: \(shipTypeId))添加默认模式模块: \(defaultModeId)")
+                    if AppConfiguration.Fitting.showDebug {
+                        Logger.info("在线配置导入: 为战术驱逐舰(ID: \(shipTypeId))添加默认模式模块: \(defaultModeId)")
+                    }
                 }
             }
 
@@ -567,10 +587,14 @@ class FitConvert {
 
         // 获取T3D模式ID（如果有）- 仅用于日志记录
         if let modeModule = t3dModeModule {
-            Logger.info("从现有配置中检测到T3D模式模块: \(modeModule.type_id)")
+            if AppConfiguration.Fitting.showDebug {
+                Logger.info("从现有配置中检测到T3D模式模块: \(modeModule.type_id)")
+            }
         } else if shipGroupID == 1305 {
             // 是T3D战术驱逐舰但没有模式模块，尝试自动选择默认模式
-            Logger.info("检测到战术驱逐舰(ID: \(shipTypeId))但未设置模式，尝试自动选择默认模式")
+            if AppConfiguration.Fitting.showDebug {
+                Logger.info("检测到战术驱逐舰(ID: \(shipTypeId))但未设置模式，尝试自动选择默认模式")
+            }
 
             // 查询该战术驱逐舰的模式选项
             let modeQuery = """
@@ -589,7 +613,9 @@ class FitConvert {
                 let firstRow = rows.first,
                 let defaultModeId = firstRow["type_id"] as? Int
             {
-                Logger.info("为战术驱逐舰自动选择默认模式: \(defaultModeId)")
+                if AppConfiguration.Fitting.showDebug {
+                    Logger.info("为战术驱逐舰自动选择默认模式: \(defaultModeId)")
+                }
 
                 // 添加模式模块到modules列表
                 if let modeInfo = typeInfoMap[defaultModeId] {
@@ -603,7 +629,9 @@ class FitConvert {
                         charge_quantity: nil
                     )
                     moduleItems.append(modeItem)
-                    Logger.info("已添加T3D模式模块到配置项中: \(modeInfo.name)")
+                    if AppConfiguration.Fitting.showDebug {
+                        Logger.info("已添加T3D模式模块到配置项中: \(modeInfo.name)")
+                    }
                 }
             } else {
                 Logger.error("无法为战术驱逐舰找到默认模式")
@@ -820,7 +848,9 @@ class FitConvert {
 
         // 处理植入体数据
         if let implantTypeIds = localFitting.implants, !implantTypeIds.isEmpty {
-            Logger.info("开始加载植入体数据，数量: \(implantTypeIds.count)")
+            if AppConfiguration.Fitting.showDebug {
+                Logger.info("开始加载植入体数据，数量: \(implantTypeIds.count)")
+            }
 
             // 构建查询参数
             let placeholders = String(repeating: "?,", count: implantTypeIds.count).dropLast()
@@ -925,18 +955,24 @@ class FitConvert {
                     )
 
                     implants.append(implant)
-                    Logger.info("加载植入体: \(name), typeId: \(typeId), groupID: \(groupID)")
+                    if AppConfiguration.Fitting.showDebug {
+                        Logger.info("加载植入体: \(name), typeId: \(typeId), groupID: \(groupID)")
+                    }
                 }
             }
         }
 
         // 6. 组装SimulationInput（带上原始配置元数据）
-        Logger.info("localFittingToSimulationInput 完成组装.")
+        if AppConfiguration.Fitting.showDebug {
+            Logger.info("localFittingToSimulationInput 完成组装.")
+        }
 
         // 处理舰载机数据，将FighterSquad转换为SimFighterSquad
-        Logger.info("开始将FighterSquad转换为SimFighterSquad，原始数量: \(localFitting.fighters?.count ?? 0)")
+        if AppConfiguration.Fitting.showDebug {
+            Logger.info("开始将FighterSquad转换为SimFighterSquad，原始数量: \(localFitting.fighters?.count ?? 0)")
+        }
         // 检查FighterSquad数据完整性
-        if let fighters = localFitting.fighters {
+        if AppConfiguration.Fitting.showDebug, let fighters = localFitting.fighters {
             for (index, fighter) in fighters.enumerated() {
                 Logger.info(
                     "输入FighterSquad[\(index)]: type_id=\(fighter.type_id), tubeId=\(fighter.tubeId), quantity=\(fighter.quantity)"
@@ -945,9 +981,11 @@ class FitConvert {
         }
 
         let simFighters: [SimFighterSquad]? = localFitting.fighters?.compactMap { fighter in
-            Logger.info(
-                "处理舰载机: typeId=\(fighter.type_id), tubeId=\(fighter.tubeId), quantity=\(fighter.quantity)"
-            )
+            if AppConfiguration.Fitting.showDebug {
+                Logger.info(
+                    "处理舰载机: typeId=\(fighter.type_id), tubeId=\(fighter.tubeId), quantity=\(fighter.quantity)"
+                )
+            }
             // 获取舰载机属性和效果
             let attr = attrMap[fighter.type_id]?.0 ?? [:]
             let attrName = attrMap[fighter.type_id]?.1 ?? [:]
@@ -959,7 +997,9 @@ class FitConvert {
                     groupID: 0, capacity: 0, volume: 0, mass: 0, name: "Unknown Fighter",
                     iconFileName: nil
                 )
-            Logger.info("舰载机信息: groupID=\(fighterInfo.groupID), name=\(fighterInfo.name)")
+            if AppConfiguration.Fitting.showDebug {
+                Logger.info("舰载机信息: groupID=\(fighterInfo.groupID), name=\(fighterInfo.name)")
+            }
 
             // 确保volume添加到舰载机的属性字典中
             var updatedAttr = attr
@@ -982,7 +1022,9 @@ class FitConvert {
                 iconFileName: fighterInfo.iconFileName
             )
         }
-        Logger.info("完成SimFighterSquad转换，结果数量: \(simFighters?.count ?? 0)")
+        if AppConfiguration.Fitting.showDebug {
+            Logger.info("完成SimFighterSquad转换，结果数量: \(simFighters?.count ?? 0)")
+        }
 
         return SimulationInput(
             fittingId: localFitting.fitting_id,
@@ -1009,7 +1051,7 @@ class FitConvert {
         let fitId = customFittingId ?? input.fittingId
 
         // 如果有舰载机，先检查其完整性
-        if let fighters = input.fighters {
+        if AppConfiguration.Fitting.showDebug, let fighters = input.fighters {
             Logger.info("检查SimFighterSquad到FighterSquad转换前的数据: 数量 = \(fighters.count)")
             for (index, fighter) in fighters.enumerated() {
                 Logger.info(
@@ -1021,7 +1063,7 @@ class FitConvert {
         // 从模块数据中恢复装备项
         let items = input.modules.map { module -> LocalFittingItem in
             // 添加调试日志，记录弹药信息
-            if let charge = module.charge {
+            if AppConfiguration.Fitting.showDebug, let charge = module.charge {
                 Logger.info(
                     "转换装备弹药: 装备=\(module.name), 弹药=\(charge.name), 弹药数量=\(charge.chargeQuantity ?? -1)"
                 )
@@ -1059,7 +1101,7 @@ class FitConvert {
         }
 
         // 检查转换后的舰载机数据
-        if let fighters = fighters {
+        if AppConfiguration.Fitting.showDebug, let fighters = fighters {
             Logger.info("检查转换后的FighterSquad数据: 数量 = \(fighters.count)")
             for (index, fighter) in fighters.enumerated() {
                 Logger.info(
@@ -1106,7 +1148,9 @@ class FitConvert {
     /// - Parameter input: 模拟器输入数据
     /// - Returns: 在线配置数据，适用于上传到EVE服务器
     static func simulationInputToCharacterFitting(input: SimulationInput) -> CharacterFitting {
-        Logger.info("开始将SimulationInput转换为CharacterFitting - 配置名称: \(input.name)")
+        if AppConfiguration.Fitting.showDebug {
+            Logger.info("开始将SimulationInput转换为CharacterFitting - 配置名称: \(input.name)")
+        }
 
         // 创建装备项列表，只包含安装在飞船上的装备（排除货舱、无人机舱等）
         var items: [FittingItem] = []
@@ -1120,7 +1164,9 @@ class FitConvert {
                     type_id: module.typeId
                 )
                 items.append(item)
-                Logger.debug("添加模块: \(module.name), flag: \(flag), typeId: \(module.typeId)")
+                if AppConfiguration.Fitting.showDebug {
+                    Logger.debug("添加模块: \(module.name), flag: \(flag), typeId: \(module.typeId)")
+                }
             }
         }
 
@@ -1132,7 +1178,9 @@ class FitConvert {
                 type_id: drone.typeId
             )
             items.append(item)
-            Logger.debug("添加无人机: \(drone.name), 数量: \(drone.quantity)")
+            if AppConfiguration.Fitting.showDebug {
+                Logger.debug("添加无人机: \(drone.name), 数量: \(drone.quantity)")
+            }
         }
 
         // 3. 添加舰载机到舰载机舱
@@ -1144,7 +1192,9 @@ class FitConvert {
                     type_id: fighter.typeId
                 )
                 items.append(item)
-                Logger.debug("添加舰载机: \(fighter.name), 数量: \(fighter.quantity)")
+                if AppConfiguration.Fitting.showDebug {
+                    Logger.debug("添加舰载机: \(fighter.name), 数量: \(fighter.quantity)")
+                }
             }
         }
 
@@ -1156,7 +1206,9 @@ class FitConvert {
                 type_id: cargoItem.typeId
             )
             items.append(item)
-            Logger.debug("添加货舱物品: \(cargoItem.name), 数量: \(cargoItem.quantity)")
+            if AppConfiguration.Fitting.showDebug {
+                Logger.debug("添加货舱物品: \(cargoItem.name), 数量: \(cargoItem.quantity)")
+            }
         }
 
         // 创建在线配置对象
@@ -1168,7 +1220,9 @@ class FitConvert {
             ship_type_id: input.ship.typeId
         )
 
-        Logger.info("SimulationInput转换完成 - 总装备数: \(items.count), 飞船ID: \(input.ship.typeId)")
+        if AppConfiguration.Fitting.showDebug {
+            Logger.info("SimulationInput转换完成 - 总装备数: \(items.count), 飞船ID: \(input.ship.typeId)")
+        }
         return characterFitting
     }
 
@@ -1180,7 +1234,9 @@ class FitConvert {
     static func localFittingToEFT(localFitting: LocalFitting, databaseManager: DatabaseManager)
         -> String
     {
-        Logger.info("开始将本地配置转换为EFT格式 - 配置名称: \(localFitting.name)")
+        if AppConfiguration.Fitting.showDebug {
+            Logger.info("开始将本地配置转换为EFT格式 - 配置名称: \(localFitting.name)")
+        }
 
         var lines: [String] = []
 
@@ -1369,7 +1425,9 @@ class FitConvert {
                 lines.append("\(implantName) x1")
             }
 
-            Logger.info("导出了 \(implants.count) 个植入体到EFT格式")
+            if AppConfiguration.Fitting.showDebug {
+                Logger.info("导出了 \(implants.count) 个植入体到EFT格式")
+            }
         }
 
         let result = lines.joined(separator: "\n")
@@ -1378,10 +1436,12 @@ class FitConvert {
         let implantCount = localFitting.implants?.count ?? 0
         let totalLines = lines.count
 
-        if implantCount > 0 {
-            Logger.info("EFT格式转换完成，总行数: \(totalLines)，包含 \(implantCount) 个植入体（作为货舱物品导出）")
-        } else {
-            Logger.info("EFT格式转换完成，总行数: \(totalLines)")
+        if AppConfiguration.Fitting.showDebug {
+            if implantCount > 0 {
+                Logger.info("EFT格式转换完成，总行数: \(totalLines)，包含 \(implantCount) 个植入体（作为货舱物品导出）")
+            } else {
+                Logger.info("EFT格式转换完成，总行数: \(totalLines)")
+            }
         }
 
         return result
@@ -1505,7 +1565,9 @@ class FitConvert {
     private static func eftToLocalFittingInternal(
         eftText: String, databaseManager: DatabaseManager, selectedShipTypeId: Int?
     ) throws -> LocalFitting {
-        Logger.info("开始将EFT格式转换为LocalFitting")
+        if AppConfiguration.Fitting.showDebug {
+            Logger.info("开始将EFT格式转换为LocalFitting")
+        }
 
         let lines = eftText.components(separatedBy: .newlines)
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -1546,13 +1608,17 @@ class FitConvert {
         // 第一步：收集所有物品名称并批量查询typeId
         var allItemNames = collectAllItemNames(lines: lines, startIndex: firstLineIndex + 1)
         allItemNames.insert(shipName)
-        Logger.info("收集到 \(allItemNames.count) 个不重复的物品名称")
+        if AppConfiguration.Fitting.showDebug {
+            Logger.info("收集到 \(allItemNames.count) 个不重复的物品名称")
+        }
 
         // 批量查询所有物品的typeId
         let nameToTypeIdMap = try batchQueryTypeIds(
             itemNames: allItemNames, databaseManager: databaseManager
         )
-        Logger.success("成功查询到 \(nameToTypeIdMap.count) 个物品的typeId")
+        if AppConfiguration.Fitting.showDebug {
+            Logger.success("成功查询到 \(nameToTypeIdMap.count) 个物品的typeId")
+        }
 
         // 查找飞船ID（初始查找，后续会通过验证查询确认）
         guard let initialShipTypeId = nameToTypeIdMap[shipName] else {
@@ -1625,17 +1691,23 @@ class FitConvert {
 
             // 使用验证过的飞船ID（可能与之前查询的不同）
             shipTypeId = validatedShipTypeId
-            Logger.info("验证通过：\(shipName) 是有效的飞船 (ID: \(shipTypeId))")
+            if AppConfiguration.Fitting.showDebug {
+                Logger.info("验证通过：\(shipName) 是有效的飞船 (ID: \(shipTypeId))")
+            }
         } else {
             // 多个同名飞船，需要用户选择
-            Logger.info("发现多个同名飞船：\(shipName)，数量：\(rows.count)")
+            if AppConfiguration.Fitting.showDebug {
+                Logger.info("发现多个同名飞船：\(shipName)，数量：\(rows.count)")
+            }
 
             // 如果提供了选择的飞船ID，验证并使用它
             if let selectedId = selectedShipTypeId {
                 // 验证选择的飞船ID是否在查询结果中
                 if rows.first(where: { ($0["type_id"] as? Int) == selectedId }) != nil {
                     shipTypeId = selectedId
-                    Logger.info("使用用户选择的飞船：\(shipName) (ID: \(shipTypeId))")
+                    if AppConfiguration.Fitting.showDebug {
+                        Logger.info("使用用户选择的飞船：\(shipName) (ID: \(shipTypeId))")
+                    }
                 } else {
                     // 选择的飞船ID不在结果中，可能是无效的选择
                     throw NSError(
@@ -1684,7 +1756,9 @@ class FitConvert {
         let allTypeIds = Array(nameToTypeIdMap.values)
         let classifier = EquipmentClassifier(databaseManager: databaseManager)
         let classifications = classifier.classifyEquipments(typeIds: allTypeIds)
-        Logger.info("完成 \(allTypeIds.count) 个物品的分类")
+        if AppConfiguration.Fitting.showDebug {
+            Logger.info("完成 \(allTypeIds.count) 个物品的分类")
+        }
 
         // 解析装备、无人机、舰载机和货舱物品
         var items: [LocalFittingItem] = []
@@ -1725,7 +1799,9 @@ class FitConvert {
                                 active_count: 0
                             )
                             drones.append(drone)
-                            Logger.debug("数量物品归类为无人机: \(result.itemName) x\(result.quantity)")
+                            if AppConfiguration.Fitting.showDebug {
+                                Logger.debug("数量物品归类为无人机: \(result.itemName) x\(result.quantity)")
+                            }
                         case .fighter:
                             // 暂存舰载机信息，稍后统一处理
                             let fighterItem = FittingItem(
@@ -1734,14 +1810,18 @@ class FitConvert {
                                 type_id: result.typeId
                             )
                             tempFighterBayItems.append(fighterItem)
-                            Logger.debug("数量物品归类为舰载机: \(result.itemName) x\(result.quantity)")
+                            if AppConfiguration.Fitting.showDebug {
+                                Logger.debug("数量物品归类为舰载机: \(result.itemName) x\(result.quantity)")
+                            }
                         default:
                             let cargoItem = CargoItem(
                                 type_id: result.typeId,
                                 quantity: result.quantity
                             )
                             cargo.append(cargoItem)
-                            Logger.debug("数量物品归类为货舱: \(result.itemName) x\(result.quantity)")
+                            if AppConfiguration.Fitting.showDebug {
+                                Logger.debug("数量物品归类为货舱: \(result.itemName) x\(result.quantity)")
+                            }
                         }
                     }
                 } else {
@@ -1760,13 +1840,17 @@ class FitConvert {
         }
 
         // 使用智能舰载机处理逻辑
-        Logger.info("EFT导入: 准备处理舰载机配置，找到 \(tempFighterBayItems.count) 个舰载机物品")
+        if AppConfiguration.Fitting.showDebug {
+            Logger.info("EFT导入: 准备处理舰载机配置，找到 \(tempFighterBayItems.count) 个舰载机物品")
+        }
         let fighters = processFighters(
             shipTypeId: shipTypeId,
             fighterBayItems: tempFighterBayItems,
             databaseManager: databaseManager
         )
-        Logger.info("EFT导入: 舰载机处理完成，生成了 \(fighters.count) 个FighterSquad")
+        if AppConfiguration.Fitting.showDebug {
+            Logger.info("EFT导入: 舰载机处理完成，生成了 \(fighters.count) 个FighterSquad")
+        }
 
         // 创建LocalFitting对象
         let localFitting = LocalFitting(
@@ -1783,104 +1867,106 @@ class FitConvert {
         )
 
         // 打印详细的解析结果
-        Logger.info("=== EFT解析结果详情 ===")
-        Logger.info("Ship: \(shipName)")
-        Logger.info("Fitting Name: \(fittingName)")
+        if AppConfiguration.Fitting.showDebug {
+            Logger.info("=== EFT解析结果详情 ===")
+            Logger.info("Ship: \(shipName)")
+            Logger.info("Fitting Name: \(fittingName)")
 
-        // 获取所有装备的名称（用于调试日志）
-        let allEquipmentTypeIds = items.map { $0.type_id }
-        var equipmentNames: [Int: String] = [:]
-        if !allEquipmentTypeIds.isEmpty {
-            let placeholders = Array(repeating: "?", count: allEquipmentTypeIds.count).joined(
-                separator: ",")
-            let nameQuery = "SELECT type_id, name FROM types WHERE type_id IN (\(placeholders))"
-            if case let .success(rows) = databaseManager.executeQuery(
-                nameQuery, parameters: allEquipmentTypeIds
-            ) {
-                for row in rows {
-                    if let typeId = row["type_id"] as? Int,
-                       let name = row["name"] as? String
-                    {
-                        equipmentNames[typeId] = name
-                    }
-                }
-            }
-        }
-
-        // 打印装备详情
-        for item in items {
-            let equipmentName = equipmentNames[item.type_id] ?? "Unknown Equipment"
-            let category = classifications[item.type_id]?.category.rawValue ?? "unknown"
-            Logger.info("\(item.flag): \(equipmentName) (category: \(category))")
-        }
-
-        // 打印无人机详情
-        if !drones.isEmpty {
-            Logger.info("=== 无人机 ===")
-            for drone in drones {
-                if let droneName = nameToTypeIdMap.first(where: { $0.value == drone.type_id })?.key {
-                    let category = classifications[drone.type_id]?.category.rawValue ?? "unknown"
-                    Logger.info("Drone: \(droneName) x\(drone.quantity) (category: \(category))")
-                }
-            }
-        }
-
-        // 打印舰载机详情
-        if !fighters.isEmpty {
-            Logger.info("=== 舰载机 ===")
-
-            // 获取舰载机名称
-            let fighterTypeIds = fighters.map { $0.type_id }
-            var fighterNames: [Int: String] = [:]
-            if !fighterTypeIds.isEmpty {
-                let placeholders = Array(repeating: "?", count: fighterTypeIds.count).joined(
+            // 获取所有装备的名称（用于调试日志）
+            let allEquipmentTypeIds = items.map { $0.type_id }
+            var equipmentNames: [Int: String] = [:]
+            if !allEquipmentTypeIds.isEmpty {
+                let placeholders = Array(repeating: "?", count: allEquipmentTypeIds.count).joined(
                     separator: ",")
-                let fighterNameQuery =
-                    "SELECT type_id, name FROM types WHERE type_id IN (\(placeholders))"
+                let nameQuery = "SELECT type_id, name FROM types WHERE type_id IN (\(placeholders))"
                 if case let .success(rows) = databaseManager.executeQuery(
-                    fighterNameQuery, parameters: fighterTypeIds
+                    nameQuery, parameters: allEquipmentTypeIds
                 ) {
                     for row in rows {
                         if let typeId = row["type_id"] as? Int,
                            let name = row["name"] as? String
                         {
-                            fighterNames[typeId] = name
+                            equipmentNames[typeId] = name
                         }
                     }
                 }
             }
 
-            for fighter in fighters {
-                let fighterName = fighterNames[fighter.type_id] ?? "Unknown Fighter"
-                let category = classifications[fighter.type_id]?.category.rawValue ?? "fighter"
-                Logger.info(
-                    "Fighter: \(fighterName) x\(fighter.quantity) (tubeId: \(fighter.tubeId), category: \(category))"
-                )
+            // 打印装备详情
+            for item in items {
+                let equipmentName = equipmentNames[item.type_id] ?? "Unknown Equipment"
+                let category = classifications[item.type_id]?.category.rawValue ?? "unknown"
+                Logger.info("\(item.flag): \(equipmentName) (category: \(category))")
             }
-        }
 
-        // 打印货舱物品详情
-        if !cargo.isEmpty {
-            Logger.info("=== 货舱物品 ===")
-            for cargoItem in cargo {
-                if let itemName = nameToTypeIdMap.first(where: { $0.value == cargoItem.type_id })?
-                    .key
-                {
-                    let category =
-                        classifications[cargoItem.type_id]?.category.rawValue ?? "unknown"
-                    Logger.info("Cargo: \(itemName) x\(cargoItem.quantity) (category: \(category))")
+            // 打印无人机详情
+            if !drones.isEmpty {
+                Logger.info("=== 无人机 ===")
+                for drone in drones {
+                    if let droneName = nameToTypeIdMap.first(where: { $0.value == drone.type_id })?.key {
+                        let category = classifications[drone.type_id]?.category.rawValue ?? "unknown"
+                        Logger.info("Drone: \(droneName) x\(drone.quantity) (category: \(category))")
+                    }
                 }
             }
-        }
 
-        Logger.info("=== 解析统计 ===")
-        Logger.info(
-            "EFT转换完成 - 装备: \(items.count), 无人机: \(drones.count), 舰载机: \(fighters.count), 货舱: \(cargo.count)"
-        )
-        Logger.info(
-            "装备分布 - 低槽: \(slotCounters.lowSlot), 中槽: \(slotCounters.medSlot), 高槽: \(slotCounters.hiSlot), 改装件: \(slotCounters.rigSlot), 子系统: \(slotCounters.subSystemSlot), 服务槽: \(slotCounters.serviceSlot)"
-        )
-        Logger.info("注意：使用装备分类器自动分配槽位和归类，舰载机使用智能tubeId分配")
+            // 打印舰载机详情
+            if !fighters.isEmpty {
+                Logger.info("=== 舰载机 ===")
+
+                // 获取舰载机名称
+                let fighterTypeIds = fighters.map { $0.type_id }
+                var fighterNames: [Int: String] = [:]
+                if !fighterTypeIds.isEmpty {
+                    let placeholders = Array(repeating: "?", count: fighterTypeIds.count).joined(
+                        separator: ",")
+                    let fighterNameQuery =
+                        "SELECT type_id, name FROM types WHERE type_id IN (\(placeholders))"
+                    if case let .success(rows) = databaseManager.executeQuery(
+                        fighterNameQuery, parameters: fighterTypeIds
+                    ) {
+                        for row in rows {
+                            if let typeId = row["type_id"] as? Int,
+                               let name = row["name"] as? String
+                            {
+                                fighterNames[typeId] = name
+                            }
+                        }
+                    }
+                }
+
+                for fighter in fighters {
+                    let fighterName = fighterNames[fighter.type_id] ?? "Unknown Fighter"
+                    let category = classifications[fighter.type_id]?.category.rawValue ?? "fighter"
+                    Logger.info(
+                        "Fighter: \(fighterName) x\(fighter.quantity) (tubeId: \(fighter.tubeId), category: \(category))"
+                    )
+                }
+            }
+
+            // 打印货舱物品详情
+            if !cargo.isEmpty {
+                Logger.info("=== 货舱物品 ===")
+                for cargoItem in cargo {
+                    if let itemName = nameToTypeIdMap.first(where: { $0.value == cargoItem.type_id })?
+                        .key
+                    {
+                        let category =
+                            classifications[cargoItem.type_id]?.category.rawValue ?? "unknown"
+                        Logger.info("Cargo: \(itemName) x\(cargoItem.quantity) (category: \(category))")
+                    }
+                }
+            }
+
+            Logger.info("=== 解析统计 ===")
+            Logger.info(
+                "EFT转换完成 - 装备: \(items.count), 无人机: \(drones.count), 舰载机: \(fighters.count), 货舱: \(cargo.count)"
+            )
+            Logger.info(
+                "装备分布 - 低槽: \(slotCounters.lowSlot), 中槽: \(slotCounters.medSlot), 高槽: \(slotCounters.hiSlot), 改装件: \(slotCounters.rigSlot), 子系统: \(slotCounters.subSystemSlot), 服务槽: \(slotCounters.serviceSlot)"
+            )
+            Logger.info("注意：使用装备分类器自动分配槽位和归类，舰载机使用智能tubeId分配")
+        }
 
         return localFitting
     }

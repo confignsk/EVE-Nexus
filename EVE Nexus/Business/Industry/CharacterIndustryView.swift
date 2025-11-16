@@ -28,6 +28,23 @@ struct IndustryJobWithOwner {
     let ownerId: Int // 该工业项目归属的角色ID
 }
 
+// 进度更新 Actor（用于线程安全地更新进度）
+actor IndustryProgressActor {
+    private var current: Int = 0
+    private let total: Int
+    private let onUpdate: (Int, Int) -> Void
+
+    init(total: Int, onUpdate: @escaping (Int, Int) -> Void) {
+        self.total = total
+        self.onUpdate = onUpdate
+    }
+
+    func increment() {
+        current += 1
+        onUpdate(current, total)
+    }
+}
+
 // 工业项目倒计时组件 - 使用SwiftUI原生TimelineView
 struct IndustryCountdownView: View {
     let endDate: Date
@@ -164,6 +181,7 @@ class CharacterIndustryViewModel: ObservableObject {
     @Published var isFiltering = false // 新增：过滤刷新状态
     @Published var errorMessage: String?
     @Published var showError = false
+    @Published var loadingProgress: (current: Int, total: Int)? = nil // 加载进度 (已加载/总数)
     @Published var itemNames: [Int: String] = [:]
     @Published var locationInfoCache: [Int64: LocationInfoDetail] = [:]
     @Published var itemIcons: [Int: String] = [:]
@@ -400,13 +418,6 @@ class CharacterIndustryViewModel: ObservableObject {
 
                 if Task.isCancelled { return }
 
-                // 如果是多人物模式，加载发起人信息
-                if multiCharacterMode {
-                    await loadInstallerInfo()
-
-                    if Task.isCancelled { return }
-                }
-
                 groupJobsByStatus()
 
                 // 更新过滤选项
@@ -422,6 +433,13 @@ class CharacterIndustryViewModel: ObservableObject {
                     self.isLoading = false
                 }
                 self.initialLoadDone = true
+
+                // 如果是多人物模式，在后台加载发起人信息（不阻塞列表显示）
+                if multiCharacterMode {
+                    Task {
+                        await loadInstallerInfo()
+                    }
+                }
 
             } catch {
                 if !Task.isCancelled {
@@ -449,25 +467,62 @@ class CharacterIndustryViewModel: ObservableObject {
         var allJobsWithOwner: [IndustryJobWithOwner] = []
 
         if multiCharacterMode, selectedCharacterIds.count > 1 {
-            // 多人物模式：获取所有选中人物的工业项目
-            for characterId in selectedCharacterIds {
-                do {
-                    let jobs = try await CharacterIndustryAPI.shared.fetchIndustryJobs(
-                        characterId: characterId,
-                        forceRefresh: forceRefresh,
-                        includeCompleted: !hideCompletedAndCancelled
-                    )
-                    allJobs.append(contentsOf: jobs)
+            // 多人物模式：并发获取所有选中人物的工业项目
+            let totalCharacters = selectedCharacterIds.count
 
-                    // 为每个项目添加所有者信息
-                    for job in jobs {
-                        allJobsWithOwner.append(
-                            IndustryJobWithOwner(job: job, ownerId: characterId))
-                    }
-                } catch {
-                    Logger.error("获取角色\(characterId)工业项目失败: \(error)")
-                    // 继续获取其他角色的数据，不因为一个角色失败而停止
+            // 初始化加载进度
+            await MainActor.run {
+                self.loadingProgress = (current: 0, total: totalCharacters)
+            }
+
+            // 使用 Actor 来线程安全地更新进度
+            let progressActor = IndustryProgressActor(total: totalCharacters) { current, total in
+                Task { @MainActor in
+                    self.loadingProgress = (current: current, total: total)
                 }
+            }
+
+            await withTaskGroup(of: (Int, Result<[IndustryJob], Error>).self) { group in
+                for characterId in selectedCharacterIds {
+                    group.addTask { [weak self] in
+                        guard let self = self else { return (characterId, .failure(NSError(domain: "CharacterIndustryViewModel", code: -1, userInfo: [NSLocalizedDescriptionKey: "ViewModel已释放"]))) }
+                        do {
+                            let jobs = try await CharacterIndustryAPI.shared.fetchIndustryJobs(
+                                characterId: characterId,
+                                forceRefresh: forceRefresh,
+                                includeCompleted: !self.hideCompletedAndCancelled
+                            )
+                            return (characterId, .success(jobs))
+                        } catch {
+                            Logger.error("获取角色\(characterId)工业项目失败: \(error)")
+                            return (characterId, .failure(error))
+                        }
+                    }
+                }
+
+                // 收集结果
+                for await (characterId, result) in group {
+                    switch result {
+                    case let .success(jobs):
+                        allJobs.append(contentsOf: jobs)
+                        // 为每个项目添加所有者信息
+                        for job in jobs {
+                            allJobsWithOwner.append(
+                                IndustryJobWithOwner(job: job, ownerId: characterId))
+                        }
+                    case .failure:
+                        // 失败时继续处理，不中断
+                        break
+                    }
+
+                    // 更新进度
+                    await progressActor.increment()
+                }
+            }
+
+            // 清除加载进度
+            await MainActor.run {
+                self.loadingProgress = nil
             }
         } else {
             // 单人物模式：只获取当前角色或选中的唯一角色
@@ -561,29 +616,33 @@ class CharacterIndustryViewModel: ObservableObject {
 
         Logger.debug("开始加载\(installerIds.count)个发起人信息")
 
-        // 并发获取发起人信息
+        // 并发获取发起人信息（网络请求在后台线程执行，只有更新UI时才切换到主线程）
         await withTaskGroup(of: Void.self) { group in
             for installerId in installerIds {
-                group.addTask { @MainActor in
+                group.addTask {
                     do {
-                        // 获取发起人基本信息
+                        // 网络请求在后台线程执行
                         let info = try await CharacterAPI.shared.fetchCharacterPublicInfo(
                             characterId: installerId, forceRefresh: false
                         )
-                        self.installerNames[installerId] = info.name
-
-                        // 获取发起人头像
                         let image = try await CharacterAPI.shared.fetchCharacterPortrait(
                             characterId: installerId, size: 64, forceRefresh: false,
                             catchImage: true
                         )
-                        self.installerImages[installerId] = image
+
+                        // 更新UI相关的@Published属性时切换到主线程
+                        await MainActor.run {
+                            self.installerNames[installerId] = info.name
+                            self.installerImages[installerId] = image
+                        }
 
                         Logger.success("成功加载发起人信息 - ID: \(installerId), 名称: \(info.name)")
                     } catch {
                         Logger.error("加载发起人信息失败 - ID: \(installerId), 错误: \(error)")
                         // 设置默认值，避免重复尝试
-                        self.installerNames[installerId] = "Unknown"
+                        await MainActor.run {
+                            self.installerNames[installerId] = "Unknown"
+                        }
                     }
                 }
             }
@@ -738,23 +797,10 @@ class CharacterIndustryViewModel: ObservableObject {
                     forceRefresh: forceRefresh
                 )
 
-                var charManufacturingRange = 0
-                var charResearchRange = 0
-                var charReactionRange = 0
-
                 // 查找特定技能的等级
-                for skill in skillsResponse.skills {
-                    switch skill.skill_id {
-                    case 24268: // 加工类项目控制距离
-                        charManufacturingRange = skill.trained_skill_level * 5
-                    case 24270: // 科研类项目控制距离
-                        charResearchRange = skill.trained_skill_level * 5
-                    case 45750: // 反应类项目控制范围
-                        charReactionRange = skill.trained_skill_level * 5
-                    default:
-                        break
-                    }
-                }
+                let charManufacturingRange = (skillsResponse.skillsMap[24268]?.trained_skill_level ?? 0) * 5 // 加工类项目控制距离
+                let charResearchRange = (skillsResponse.skillsMap[24270]?.trained_skill_level ?? 0) * 5 // 科研类项目控制距离
+                let charReactionRange = (skillsResponse.skillsMap[45750]?.trained_skill_level ?? 0) * 5 // 反应类项目控制范围
 
                 // 取最大值
                 maxManufacturingRange = max(maxManufacturingRange, charManufacturingRange)
@@ -870,9 +916,9 @@ class CharacterIndustryViewModel: ObservableObject {
                     forceRefresh: forceRefresh
                 )
 
-                // 遍历角色技能，计算槽位增加
-                for skill in skillsResponse.skills {
-                    if let bonus = skillSlotBonuses[skill.skill_id] {
+                // 遍历技能槽位加成，从技能映射中查找对应技能
+                for (skillId, bonus) in skillSlotBonuses {
+                    if let skill = skillsResponse.skillsMap[skillId] {
                         let level = skill.trained_skill_level
                         manufacturingSlots += bonus.manufacturing * level
                         researchSlots += bonus.research * level
@@ -949,11 +995,19 @@ struct CharacterIndustryView: View {
     var body: some View {
         List {
             if viewModel.isLoading {
-                HStack {
-                    Spacer()
+                VStack(alignment: .center, spacing: 12) {
                     ProgressView()
-                    Spacer()
+                        .progressViewStyle(.circular)
+
+                    // 显示加载进度（如果有多人物模式且正在加载）
+                    if let progress = viewModel.loadingProgress, progress.total > 1 {
+                        Text(String(format: NSLocalizedString("Industry_Loading_Progress", comment: "已加载人物 %d/%d"), progress.current, progress.total))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                 }
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.vertical, 8)
             } else {
                 // 工业槽位统计 Section - 始终显示
                 Section(

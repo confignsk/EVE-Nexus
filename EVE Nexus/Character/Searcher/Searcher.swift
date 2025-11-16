@@ -130,6 +130,12 @@ struct SearcherView: View {
                     showOnlyMyAlliance = false
                 }
 
+                // 更新过滤条件
+                viewModel.updateFilters(
+                    corporationFilter: corporationFilter,
+                    allianceFilter: allianceFilter
+                )
+
                 // 如果有搜索文本，则重新搜索
                 if !searchText.isEmpty && !(searchText.count < minSearchLength) {
                     viewModel.processSearchInput(searchText)
@@ -322,6 +328,12 @@ struct SearcherView: View {
                     await viewModel.loadContactsData(character: character)
                 }
             }
+            // 更新过滤条件
+            viewModel.updateFilters(
+                corporationFilter: corporationFilter,
+                allianceFilter: allianceFilter
+            )
+
             viewModel.updateSearchParameters(
                 type: selectedSearchType,
                 character: character,
@@ -466,6 +478,12 @@ struct SearcherView: View {
     }
 
     private func applyFilters() {
+        // 更新 ViewModel 中的过滤条件，确保搜索时使用最新值
+        viewModel.updateFilters(
+            corporationFilter: corporationFilter,
+            allianceFilter: allianceFilter
+        )
+
         if selectedSearchType == .structure {
             viewModel.updateStructureFilters(structureType: selectedStructureType)
         } else {
@@ -850,6 +868,12 @@ class SearcherViewModel: ObservableObject {
         currentShowOnlyMyCorp = showOnlyMyCorp
         currentShowOnlyMyAlliance = showOnlyMyAlliance
         currentStrictMatch = strictMatch
+    }
+
+    // 更新过滤条件
+    func updateFilters(corporationFilter: String, allianceFilter: String) {
+        currentCorpFilter = corporationFilter
+        currentAllianceFilter = allianceFilter
     }
 
     // 加载联系人数据的方法

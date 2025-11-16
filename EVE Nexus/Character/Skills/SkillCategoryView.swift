@@ -95,9 +95,8 @@ class SkillCategoryViewModel: ObservableObject {
                 forceRefresh: forceRefresh
             )
 
-            // 创建已学习技能的查找字典
-            let learnedSkills = Dictionary(
-                uniqueKeysWithValues: skillsResponse.skills.map { ($0.skill_id, $0) })
+            // 使用已学习技能的查找字典
+            let learnedSkills = skillsResponse.skillsMap
 
             // 2. 获取所有技能组和技能信息
             let skillsQuery = """

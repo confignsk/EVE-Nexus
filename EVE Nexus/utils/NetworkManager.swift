@@ -275,7 +275,7 @@ class NetworkManager: NSObject, @unchecked Sendable {
         headers?.forEach { key, value in
             allHeaders[key] = value
         }
-        Logger.debug("Fetch data with token \(token.prefix(32))")
+        Logger.debug("Fetch data with token \(token.prefix(8))......")
         // 使用基础的 fetchData 方法获取数据
         return try await fetchData(
             from: url,

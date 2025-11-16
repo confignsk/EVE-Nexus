@@ -395,15 +395,25 @@ struct CharacterDetailView: View {
                     } label: {
                         HStack(spacing: 4) {
                             Spacer()
-                            Image(systemName: idCopied ? "checkmark" : "doc.on.doc")
-                                .font(.caption)
-                                .frame(width: 12, height: 12)
-                            Text("ID: \(characterId)")
+                            if idCopied {
+                                Text(NSLocalizedString("Misc_Copied", comment: ""))
+                                    .font(.caption)
+                                Image(systemName: "checkmark")
+                                    .font(.caption)
+                                    .frame(width: 12, height: 12)
+                            } else {
+                                Image(systemName: "doc.on.doc")
+                                    .font(.caption)
+                                    .frame(width: 12, height: 12)
+                            }
+                            Text("ID: \(String(characterId))")
                                 .font(.caption)
                         }
                         .foregroundColor(.blue)
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .allowsHitTesting(!idCopied)
                 }
 
                 // 添加外部链接按钮

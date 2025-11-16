@@ -11,11 +11,15 @@ private func checkCapitalShipLimits(
 ) -> Bool {
     // 检查是否是旗舰级舰船
     let isCapitalShip = Int(shipAttributes["isCapitalSize"] ?? 0) == 1
-    Logger.info("是否是旗舰级舰船: \(isCapitalShip)")
+    if AppConfiguration.Fitting.showDebug {
+        Logger.info("是否是旗舰级舰船: \(isCapitalShip)")
+    }
 
     // 检查是否是旗舰装备
     let isCapitalModule = moduleVolume >= 4000
-    Logger.info("是否是旗舰装备: \(moduleVolume) -> \(isCapitalModule)")
+    if AppConfiguration.Fitting.showDebug {
+        Logger.info("是否是旗舰装备: \(moduleVolume) -> \(isCapitalModule)")
+    }
 
     // 检查非旗舰飞船上安装旗舰装备的情况
     if !isCapitalShip && isCapitalModule {
@@ -44,8 +48,10 @@ private func checkTurretAndLauncherLimits(
     // 使用模拟数据中的炮台和发射器槽位数量限制
     let maxTurrets = turretSlotsNum
     let maxLaunchers = launcherSlotsNum
-    Logger.info("飞船炮台槽位数量限制: \(maxTurrets)")
-    Logger.info("飞船发射器槽位数量限制: \(maxLaunchers)")
+    if AppConfiguration.Fitting.showDebug {
+        Logger.info("飞船炮台槽位数量限制: \(maxTurrets)")
+        Logger.info("飞船发射器槽位数量限制: \(maxLaunchers)")
+    }
 
     // 统计当前已安装的炮台和发射器数量
     var currentTurrets = 0
@@ -65,15 +71,19 @@ private func checkTurretAndLauncherLimits(
         }
     }
 
-    Logger.info("当前已安装炮台数量: \(currentTurrets)")
-    Logger.info("当前已安装发射器数量: \(currentLaunchers)")
+    if AppConfiguration.Fitting.showDebug {
+        Logger.info("当前已安装炮台数量: \(currentTurrets)")
+        Logger.info("当前已安装发射器数量: \(currentLaunchers)")
+    }
 
     // 检查新装备是否是炮台或发射器
     let isTurret = itemEffects.contains(42)
     let isLauncher = itemEffects.contains(40)
 
-    Logger.info("新装备是否是炮台: \(isTurret)")
-    Logger.info("新装备是否是发射器: \(isLauncher)")
+    if AppConfiguration.Fitting.showDebug {
+        Logger.info("新装备是否是炮台: \(isTurret)")
+        Logger.info("新装备是否是发射器: \(isLauncher)")
+    }
 
     // 如果是炮台，检查是否超过限制
     if isTurret && currentTurrets >= maxTurrets {
@@ -102,19 +112,25 @@ private func duplicateSubSysCheck(
     // 检查当前装备是否有1366属性
     guard let currentValue = itemAttributesName["subSystemSlot"] else {
         // 如果没有1366属性，不需要检查
-        Logger.info("不是子系统，无需检查重复性")
+        if AppConfiguration.Fitting.showDebug {
+            Logger.info("不是子系统，无需检查重复性")
+        }
         return true
     }
 
-    Logger.info("是子系统，值为: \(currentValue)")
+    if AppConfiguration.Fitting.showDebug {
+        Logger.info("是子系统，值为: \(currentValue)")
+    }
 
     // 遍历所有已安装的装备，检查是否有相同1366属性值的装备
     for module in currentModules {
         // 获取已安装装备的1366属性
         if let existingValue = module.attributesByName["subSystemSlot"] {
-            Logger.info(
-                "发现已安装的子系统，槽位类型: \(module.flag?.rawValue ?? "未知"), 装备名: \(module.name), 属性值: \(existingValue)"
-            )
+            if AppConfiguration.Fitting.showDebug {
+                Logger.info(
+                    "发现已安装的子系统，槽位类型: \(module.flag?.rawValue ?? "未知"), 装备名: \(module.name), 属性值: \(existingValue)"
+                )
+            }
 
             // 如果1366属性值相同，则不允许安装
             if existingValue == currentValue {
@@ -125,7 +141,9 @@ private func duplicateSubSysCheck(
     }
 
     // 如果没有找到相同1366属性值的装备，允许安装
-    Logger.info("子系统1366属性值不与任何已安装子系统重复，允许安装")
+    if AppConfiguration.Fitting.showDebug {
+        Logger.info("子系统1366属性值不与任何已安装子系统重复，允许安装")
+    }
     return true
 }
 
@@ -147,11 +165,15 @@ private func checkSubsystemCompatibility(
     let isSubsystem = itemEffects.contains(3772)
     if !isSubsystem {
         // 如果不是子系统，则无需检查
-        Logger.info("装备不是子系统，无需检查兼容性")
+        if AppConfiguration.Fitting.showDebug {
+            Logger.info("装备不是子系统，无需检查兼容性")
+        }
         return true
     }
 
-    Logger.info("装备是子系统，检查与飞船兼容性")
+    if AppConfiguration.Fitting.showDebug {
+        Logger.info("装备是子系统，检查与飞船兼容性")
+    }
 
     // 确保飞船type_id有效
     if shipTypeID <= 0 {
@@ -162,11 +184,15 @@ private func checkSubsystemCompatibility(
     // 子系统通常有属性1380，表示适用的飞船type_id
     if let subsystemShipTypeID = itemAttributesName["fitsToShipType"] {
         let compatibleShipTypeID = Int(subsystemShipTypeID)
-        Logger.info("子系统适用的飞船type_id: \(compatibleShipTypeID), 当前飞船type_id: \(shipTypeID)")
+        if AppConfiguration.Fitting.showDebug {
+            Logger.info("子系统适用的飞船type_id: \(compatibleShipTypeID), 当前飞船type_id: \(shipTypeID)")
+        }
 
         // 检查飞船type_id是否匹配
         if compatibleShipTypeID == shipTypeID {
-            Logger.info("子系统与飞船兼容")
+            if AppConfiguration.Fitting.showDebug {
+                Logger.info("子系统与飞船兼容")
+            }
             /// 检查子系统重复
             if !duplicateSubSysCheck(
                 itemAttributesName: itemAttributesName,
@@ -235,15 +261,19 @@ private func checkCanFitTo(
 ) -> Bool {
     let (shipGroupAttributes, shipTypeAttributes) = getCanFitAttributes(
         databaseManager: databaseManager)
-    Logger.info("shipTypeID: \(shipTypeID)")
-    Logger.info("shipGroupID: \(shipGroupID)")
+    if AppConfiguration.Fitting.showDebug {
+        Logger.info("shipTypeID: \(shipTypeID)")
+        Logger.info("shipGroupID: \(shipGroupID)")
+    }
 
     // 检查飞船组限制
     for groupAttrID in shipGroupAttributes {
         if let groupValue = itemAttributes[groupAttrID] {
             let allowedGroupID = Int(groupValue)
             if allowedGroupID == shipGroupID {
-                Logger.info("装备可以装配到飞船组 \(shipGroupID)")
+                if AppConfiguration.Fitting.showDebug {
+                    Logger.info("装备可以装配到飞船组 \(shipGroupID)")
+                }
                 return true
             }
         }
@@ -254,7 +284,9 @@ private func checkCanFitTo(
         if let typeValue = itemAttributes[typeAttrID] {
             let allowedTypeID = Int(typeValue)
             if allowedTypeID == shipTypeID {
-                Logger.info("装备可以装配到飞船类型 \(shipTypeID)")
+                if AppConfiguration.Fitting.showDebug {
+                    Logger.info("装备可以装配到飞船类型 \(shipTypeID)")
+                }
                 return true
             }
         }
@@ -270,7 +302,9 @@ private func checkCanFitTo(
     }
 
     // 如果没有找到任何限制属性，则默认允许装配
-    Logger.info("装备没有特定的装配限制")
+    if AppConfiguration.Fitting.showDebug {
+        Logger.info("装备没有特定的装配限制")
+    }
     return true
 }
 
@@ -344,8 +378,10 @@ func canFit(
     let shipAttributes = simulationInput.ship.baseAttributesByName
     let currentModules = simulationInput.modules
 
-    Logger.info("飞船type_id: \(shipTypeID)")
-    Logger.info("飞船group_id: \(shipGroupID)")
+    if AppConfiguration.Fitting.showDebug {
+        Logger.info("飞船type_id: \(shipTypeID)")
+        Logger.info("飞船group_id: \(shipGroupID)")
+    }
     /// 检查装备是否可以装配到指定类型的飞船上
     if !checkCanFitTo(
         shipTypeID: shipTypeID,
@@ -403,6 +439,8 @@ func canFit(
     }
 
     /// 无特殊情况，允许安装
-    Logger.info("装备 \(typeId) 可以安装")
+    if AppConfiguration.Fitting.showDebug {
+        Logger.info("装备 \(typeId) 可以安装")
+    }
     return true
 }

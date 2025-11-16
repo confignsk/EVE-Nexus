@@ -20,6 +20,13 @@ enum AppConfiguration {
         }
     }
 
+    // 装配模拟器调试配置
+    enum Fitting {
+        static var showDebug: Bool {
+            Bundle.main.object(forInfoDictionaryKey: "showFittingDebug") as? Bool ?? false
+        }
+    }
+
     // 数据库版本信息
     enum Database {
         struct VersionInfo {

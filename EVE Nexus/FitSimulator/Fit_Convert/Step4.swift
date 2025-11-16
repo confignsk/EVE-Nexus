@@ -137,14 +137,17 @@ class Step4 {
         // 将计算结果更新到输出对象
         updateOutputWithCachedValues(input: input, output: &output, cache: cache)
 
-        // 显示关键属性的计算结果
-        displayAttributeCalculationResults(input: input, output: output)
+        // 仅在调试模式下显示日志（不影响计算）
+        if AppConfiguration.Fitting.showDebug {
+            // 显示关键属性的计算结果
+            displayAttributeCalculationResults(input: input, output: output)
 
-        // 展示每个装备的最终属性
-        displayAllModuleAttributes(output: output)
+            // 展示每个装备的最终属性
+            displayAllModuleAttributes(output: output)
 
-        // 展示属性计算过程
-        displayAttributeCalculationProcess()
+            // 展示属性计算过程
+            displayAttributeCalculationProcess()
+        }
 
         Logger.info("Step4完成 - 成功计算所有属性的最终值")
 
@@ -435,18 +438,23 @@ class Step4 {
         let instanceId = getInstanceId(itemType: itemType, itemIndex: itemIndex, input: input)
         let instanceIdShort = String(instanceId.uuidString.prefix(8))
 
-        // 记录计算过程
+        // 记录计算过程（仅在调试模式下）
         let attrName = getAttributeName(for: attributeId) ?? "未知属性"
-        var process =
-            "[AttributeCalc] TypeID：\(typeId)，实例ID：\(instanceIdShort)，属性：\(attrName)(ID: \(attributeId))，基础值：\(baseValue)"
+        var process: String? = nil
+        if AppConfiguration.Fitting.showDebug {
+            process =
+                "[AttributeCalc] TypeID：\(typeId)，实例ID：\(instanceIdShort)，属性：\(attrName)(ID: \(attributeId))，基础值：\(baseValue)"
+        }
 
         // 如果没有修饰器，直接缓存基础值
         if modifiers.isEmpty {
             cache.setValue(
                 itemType: itemType, itemIndex: itemIndex, attributeId: attributeId, value: baseValue
             )
-            process += "\n  无修饰器，最终值：\(baseValue)"
-            attributeCalculationProcess["\(instanceIdShort):\(attributeId)"] = process
+            if AppConfiguration.Fitting.showDebug, var processValue = process {
+                processValue += "\n  无修饰器，最终值：\(baseValue)"
+                attributeCalculationProcess["\(instanceIdShort):\(attributeId)"] = processValue
+            }
             return
         }
 
@@ -475,7 +483,10 @@ class Step4 {
             )
 
             currentValue = operationResult.newValue
-            process += operationResult.process
+            if AppConfiguration.Fitting.showDebug, var processValue = process {
+                processValue += operationResult.process
+                process = processValue
+            }
         }
 
         // 缓存计算结果
@@ -483,13 +494,14 @@ class Step4 {
             itemType: itemType, itemIndex: itemIndex, attributeId: attributeId, value: currentValue
         )
 
-        // 记录最终结果
-        if !process.contains("最终值") {
-            process += "\n  最终值: \(currentValue)"
+        // 记录最终结果（仅在调试模式下）
+        if AppConfiguration.Fitting.showDebug, var processValue = process {
+            if !processValue.contains("最终值") {
+                processValue += "\n  最终值: \(currentValue)"
+            }
+            // 存储计算过程，使用instanceId作为键的一部分
+            attributeCalculationProcess["\(instanceIdShort):\(attributeId)"] = processValue
         }
-
-        // 存储计算过程，使用instanceId作为键的一部分
-        attributeCalculationProcess["\(instanceIdShort):\(attributeId)"] = process
     }
 
     /// 获取物品的instanceId
@@ -527,11 +539,13 @@ class Step4 {
         moduleInstanceMap: [UUID: (module: SimModule, index: Int)]
     ) -> (newValue: Double, process: String) {
         var newValue = currentValue
-        var process = "\n  \(operation): \(currentValue)"
+        var process = AppConfiguration.Fitting.showDebug ? "\n  \(operation): \(currentValue)" : ""
 
         // 如果没有修饰器，直接返回
         if modifiers.isEmpty {
-            process += "\n    无修饰器应用"
+            if AppConfiguration.Fitting.showDebug {
+                process += "\n    无修饰器应用"
+            }
             return (newValue, process)
         }
 
@@ -561,7 +575,9 @@ class Step4 {
 
         // 如果过滤后没有有效修饰器，直接返回
         if validModifiers.isEmpty {
-            process += "\n    没有符合当前状态的修饰器"
+            if AppConfiguration.Fitting.showDebug {
+                process += "\n    没有符合当前状态的修饰器"
+            }
             return (newValue, process)
         }
 
@@ -609,7 +625,9 @@ class Step4 {
 
             if let value = bestValue {
                 newValue = value
-                process += "\n    直接赋值为\(bestSource)"
+                if AppConfiguration.Fitting.showDebug {
+                    process += "\n    直接赋值为\(bestSource)"
+                }
             }
 
         case "PreMul", "PostMul", "PreDiv", "PostDiv", "PostPercent":
@@ -660,7 +678,9 @@ class Step4 {
             // 应用非叠加惩罚的修饰器
             for (value, source) in nonStackingValues {
                 newValue *= (1.0 + value)
-                process += "\n    * (1 + \(value)) [\(source)] = \(newValue)"
+                if AppConfiguration.Fitting.showDebug {
+                    process += "\n    * (1 + \(value)) [\(source)] = \(newValue)"
+                }
             }
 
             // 按绝对值从大到小排序
@@ -668,7 +688,7 @@ class Step4 {
             negativeStackingValues.sort { abs($0.value) > abs($1.value) }
 
             // 应用正值叠加惩罚
-            if !positiveStackingValues.isEmpty {
+            if AppConfiguration.Fitting.showDebug, !positiveStackingValues.isEmpty {
                 process += "\n    正值叠加惩罚:"
             }
 
@@ -676,12 +696,14 @@ class Step4 {
                 let penalty = pow(penaltyFactor, Double(index * index))
                 let penalizedValue = value * penalty
                 newValue *= (1.0 + penalizedValue)
-                process +=
-                    "\n    * (1 + \(value) * \(penalty)) [\(source), 第\(index + 1)级惩罚] = \(newValue)"
+                if AppConfiguration.Fitting.showDebug {
+                    process +=
+                        "\n    * (1 + \(value) * \(penalty)) [\(source), 第\(index + 1)级惩罚] = \(newValue)"
+                }
             }
 
             // 应用负值叠加惩罚
-            if !negativeStackingValues.isEmpty {
+            if AppConfiguration.Fitting.showDebug, !negativeStackingValues.isEmpty {
                 process += "\n    负值叠加惩罚:"
             }
 
@@ -689,8 +711,10 @@ class Step4 {
                 let penalty = pow(penaltyFactor, Double(index * index))
                 let penalizedValue = value * penalty
                 newValue *= (1.0 + penalizedValue)
-                process +=
-                    "\n    * (1 + \(value) * \(penalty)) [\(source), 第\(index + 1)级惩罚] = \(newValue)"
+                if AppConfiguration.Fitting.showDebug {
+                    process +=
+                        "\n    * (1 + \(value) * \(penalty)) [\(source), 第\(index + 1)级惩罚] = \(newValue)"
+                }
             }
 
         case "ModAdd", "ModSub":
@@ -706,14 +730,18 @@ class Step4 {
                 let value = operation == "ModAdd" ? sourceValue : -sourceValue
                 newValue += value
 
-                let sourceName = modifier.sourceName
-                let sourceAttrName = getAttributeName(for: modifier.sourceAttributeId) ?? "未知属性"
-                let operationSymbol = operation == "ModAdd" ? "+" : "-"
+                if AppConfiguration.Fitting.showDebug {
+                    let sourceName = modifier.sourceName
+                    let sourceAttrName = getAttributeName(for: modifier.sourceAttributeId) ?? "未知属性"
+                    let operationSymbol = operation == "ModAdd" ? "+" : "-"
 
-                process += " \(operationSymbol) \(sourceValue) (\(sourceName)的\(sourceAttrName))"
+                    process += " \(operationSymbol) \(sourceValue) (\(sourceName)的\(sourceAttrName))"
+                }
             }
 
-            process += " = \(newValue)"
+            if AppConfiguration.Fitting.showDebug {
+                process += " = \(newValue)"
+            }
 
         default:
             break
@@ -1200,7 +1228,9 @@ class Step4 {
             return modifiers
         }
 
-        Logger.info("发现 \(dbuffModifiers.count) 个 dbuff 修饰器，开始去重处理")
+        if AppConfiguration.Fitting.showDebug {
+            Logger.info("发现 \(dbuffModifiers.count) 个 dbuff 修饰器，开始去重处理")
+        }
 
         // 按 effectId 分组 dbuff 修饰器
         var dbuffGroups: [Int: [SimAttributeModifier]] = [:]
@@ -1224,7 +1254,9 @@ class Step4 {
             if groupModifiers.count == 1 {
                 // 如果只有一个修饰器，直接添加
                 deduplicatedDbuffModifiers.append(groupModifiers[0])
-                Logger.info("效果ID \(effectId): 只有1个修饰器，直接保留")
+                if AppConfiguration.Fitting.showDebug {
+                    Logger.info("效果ID \(effectId): 只有1个修饰器，直接保留")
+                }
             } else {
                 // 如果有多个修饰器，根据 aggregateMode 选择保留策略
                 let dbuffId = abs(effectId) // 转换为正数的 dbuff_id
@@ -1255,7 +1287,9 @@ class Step4 {
                             selectedValue = detail.strength
                         }
                     }
-                    Logger.info("效果ID \(effectId): 使用 Maximum 模式，保留数值较大的修饰器")
+                    if AppConfiguration.Fitting.showDebug {
+                        Logger.info("效果ID \(effectId): 使用 Maximum 模式，保留数值较大的修饰器")
+                    }
 
                 case "minimum":
                     // 取较小的修饰器
@@ -1265,7 +1299,9 @@ class Step4 {
                             selectedValue = detail.strength
                         }
                     }
-                    Logger.info("效果ID \(effectId): 使用 Minimum 模式，保留数值较小的修饰器")
+                    if AppConfiguration.Fitting.showDebug {
+                        Logger.info("效果ID \(effectId): 使用 Minimum 模式，保留数值较小的修饰器")
+                    }
 
                 default:
                     // 默认情况：取绝对值最大的修饰器
@@ -1275,47 +1311,55 @@ class Step4 {
                             selectedValue = detail.strength
                         }
                     }
-                    Logger.info("效果ID \(effectId): 使用 Default 模式，保留绝对值最大的修饰器")
+                    if AppConfiguration.Fitting.showDebug {
+                        Logger.info("效果ID \(effectId): 使用 Default 模式，保留绝对值最大的修饰器")
+                    }
                 }
 
                 if let selected = selectedModifier {
                     deduplicatedDbuffModifiers.append(selected)
 
-                    // 记录详细的去重信息
-                    let removedCount = groupModifiers.count - 1
-                    Logger.info(
-                        "效果ID \(effectId): 发现 \(groupModifiers.count) 个相同的 dbuff 修饰器，聚合模式: \(aggregateMode)"
-                    )
-
-                    // 显示所有修饰器的强度
-                    for (index, detail) in strengthDetails.enumerated() {
-                        let isSelected =
-                            detail.modifier.sourceInstanceId == selected.sourceInstanceId
-                        let status = isSelected ? "【保留】" : "【移除】"
-                        let sourceName = detail.modifier.sourceName
+                    if AppConfiguration.Fitting.showDebug {
+                        // 记录详细的去重信息
+                        let removedCount = groupModifiers.count - 1
                         Logger.info(
-                            "  \(index + 1). \(status) \(sourceName) - 强度: \(detail.strength)")
-                    }
+                            "效果ID \(effectId): 发现 \(groupModifiers.count) 个相同的 dbuff 修饰器，聚合模式: \(aggregateMode)"
+                        )
 
-                    if removedCount > 0 {
-                        Logger.info("  结果: 保留选中的修饰器 (\(selectedValue))，移除了 \(removedCount) 个其他的")
+                        // 显示所有修饰器的强度
+                        for (index, detail) in strengthDetails.enumerated() {
+                            let isSelected =
+                                detail.modifier.sourceInstanceId == selected.sourceInstanceId
+                            let status = isSelected ? "【保留】" : "【移除】"
+                            let sourceName = detail.modifier.sourceName
+                            Logger.info(
+                                "  \(index + 1). \(status) \(sourceName) - 强度: \(detail.strength)")
+                        }
+
+                        if removedCount > 0 {
+                            Logger.info("  结果: 保留选中的修饰器 (\(selectedValue))，移除了 \(removedCount) 个其他的")
+                        }
                     }
                 } else {
-                    Logger.warning("效果ID \(effectId): 无法确定要保留的修饰器，跳过该组")
+                    if AppConfiguration.Fitting.showDebug {
+                        Logger.warning("效果ID \(effectId): 无法确定要保留的修饰器，跳过该组")
+                    }
                 }
             }
         }
 
-        let totalDbuffBefore = dbuffModifiers.count
-        let totalDbuffAfter = deduplicatedDbuffModifiers.count
-        let removedDbuffCount = totalDbuffBefore - totalDbuffAfter
+        if AppConfiguration.Fitting.showDebug {
+            let totalDbuffBefore = dbuffModifiers.count
+            let totalDbuffAfter = deduplicatedDbuffModifiers.count
+            let removedDbuffCount = totalDbuffBefore - totalDbuffAfter
 
-        if removedDbuffCount > 0 {
-            Logger.info(
-                "Dbuff去重完成: 原有 \(totalDbuffBefore) 个，去重后 \(totalDbuffAfter) 个，移除了 \(removedDbuffCount) 个重复的"
-            )
-        } else {
-            Logger.info("Dbuff去重完成: 没有发现重复的 dbuff 修饰器")
+            if removedDbuffCount > 0 {
+                Logger.info(
+                    "Dbuff去重完成: 原有 \(totalDbuffBefore) 个，去重后 \(totalDbuffAfter) 个，移除了 \(removedDbuffCount) 个重复的"
+                )
+            } else {
+                Logger.info("Dbuff去重完成: 没有发现重复的 dbuff 修饰器")
+            }
         }
 
         // 合并普通修饰器和去重后的 dbuff 修饰器
@@ -1345,11 +1389,15 @@ class Step4 {
                    let aggregateMode = row["aggregateMode"] as? String
                 {
                     aggregateModes[dbuffId] = aggregateMode
-                    Logger.info("获取到 dbuff_id \(dbuffId) 的聚合模式: \(aggregateMode)")
+                    if AppConfiguration.Fitting.showDebug {
+                        Logger.info("获取到 dbuff_id \(dbuffId) 的聚合模式: \(aggregateMode)")
+                    }
                 }
             }
         } else {
-            Logger.warning("查询 dbuffCollection 表的 aggregateMode 失败")
+            if AppConfiguration.Fitting.showDebug {
+                Logger.warning("查询 dbuffCollection 表的 aggregateMode 失败")
+            }
         }
 
         return aggregateModes

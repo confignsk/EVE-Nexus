@@ -95,11 +95,17 @@ class PIResourceCache {
     // 星系信息缓存
     private var systemInfoCache: [Int: (name: String, security: Double, region: String)] = [:]
 
+    // 加载状态标志，防止重复加载
+    private var isPreloaded = false
+
     // 私有初始化方法
     private init() {}
 
-    // 预加载所有资源信息
+    // 预加载所有资源信息（只加载一次）
     func preloadResourceInfo() {
+        // 如果已经加载过，直接返回
+        guard !isPreloaded else { return }
+
         DispatchQueue.global(qos: .userInitiated).async {
             // 预加载所有P0-P4资源信息
             let query = """
@@ -137,6 +143,10 @@ class PIResourceCache {
 
             // 预加载配方信息
             self.preloadSchematicInfo()
+
+            // 标记为已加载
+            self.isPreloaded = true
+            Logger.info("PIResourceCache: 资源信息预加载完成")
         }
     }
 
@@ -213,35 +223,77 @@ class PIResourceCache {
         return nil
     }
 
-    // 预加载配方信息
+    // 预加载配方信息（统一将数据库结果转为 Int 类型）
     private func preloadSchematicInfo() {
         let query = """
             SELECT output_typeid, output_value, input_typeid, input_value
             FROM planetSchematics
         """
 
-        if case let .success(rows) = DatabaseManager.shared.executeQuery(query) {
-            for row in rows {
-                if let outputTypeId = row["output_typeid"] as? Int,
-                   let outputValue = row["output_value"] as? Int,
-                   let inputTypeIdStr = row["input_typeid"] as? String,
-                   let inputValueStr = row["input_value"] as? String
-                {
-                    // 解析输入资源ID和值
-                    let inputTypeIds = inputTypeIdStr.components(separatedBy: ",").compactMap {
-                        Int($0.trimmingCharacters(in: .whitespaces))
-                    }
-                    let inputValues = inputValueStr.components(separatedBy: ",").compactMap {
-                        Int($0.trimmingCharacters(in: .whitespaces))
-                    }
-
-                    schematicCache[outputTypeId] = (
-                        outputValue: outputValue,
-                        inputTypeIds: inputTypeIds,
-                        inputValues: inputValues
-                    )
-                }
-            }
+        guard case let .success(rows) = DatabaseManager.shared.executeQuery(query) else {
+            Logger.error("PIResourceCache: 查询 planetSchematics 表失败")
+            return
         }
+
+        var tempCache: [Int: (outputValue: Int, inputTypeIds: [Int], inputValues: [Int])] = [:]
+
+        for row in rows {
+            // 1. 获取 output_typeid 和 output_value（必须是 Int）
+            guard let outputTypeId = row["output_typeid"] as? Int,
+                  let outputValue = row["output_value"] as? Int
+            else {
+                continue
+            }
+
+            // 2. 将 input_typeid 统一转为 [Int]（处理 String/Int/NSNumber 类型）
+            let inputTypeIds: [Int] = {
+                if let str = row["input_typeid"] as? String {
+                    // 字符串类型：用逗号分隔
+                    return str.components(separatedBy: ",").compactMap {
+                        Int($0.trimmingCharacters(in: .whitespacesAndNewlines))
+                    }
+                } else if let int = row["input_typeid"] as? Int {
+                    // Int 类型：单个值
+                    return [int]
+                } else if let number = row["input_typeid"] as? NSNumber {
+                    // NSNumber 类型：单个值
+                    return [number.intValue]
+                }
+                return []
+            }()
+
+            // 3. 将 input_value 统一转为 [Int]（处理 String/Int/NSNumber 类型）
+            let inputValues: [Int] = {
+                if let str = row["input_value"] as? String {
+                    // 字符串类型：用逗号分隔
+                    return str.components(separatedBy: ",").compactMap {
+                        Int($0.trimmingCharacters(in: .whitespacesAndNewlines))
+                    }
+                } else if let int = row["input_value"] as? Int {
+                    // Int 类型：单个值
+                    return [int]
+                } else if let number = row["input_value"] as? NSNumber {
+                    // NSNumber 类型：单个值
+                    return [number.intValue]
+                }
+                return []
+            }()
+
+            // 4. 验证数据有效性
+            guard inputTypeIds.count == inputValues.count, !inputTypeIds.isEmpty else {
+                continue
+            }
+
+            // 5. 存储到缓存（key 是 Int 类型的 outputTypeId）
+            tempCache[outputTypeId] = (
+                outputValue: outputValue,
+                inputTypeIds: inputTypeIds,
+                inputValues: inputValues
+            )
+        }
+
+        // 6. 一次性更新缓存（在后台线程完成，后续只读）
+        schematicCache = tempCache
+        Logger.info("PIResourceCache: 配方缓存加载完成，共 \(tempCache.count) 条记录")
     }
 }
