@@ -256,6 +256,7 @@ struct SettingView: View {
     // MARK: - 属性定义
 
     @AppStorage("selectedTheme") private var selectedTheme: String = "system"
+    @AppStorage("enableLogging") private var enableLogging: Bool = false
     @State private var showingCleanCacheAlert = false
     @State private var showingDeleteIconsAlert = false
     @State private var showingLanguageView = false
@@ -547,14 +548,12 @@ struct SettingView: View {
         )
     }
 
-    // 高性能的日志组件 - 使用简单的条件渲染
-    private struct LoggingSection: View {
-        @AppStorage("enableLogging") private var enableLogging: Bool = false
-        @Binding var showingLogsBrowserView: Bool
+    // 日志开关组件
+    private struct LoggingToggle: View {
+        @Binding var enableLogging: Bool
 
         var body: some View {
-            VStack(spacing: 0) {
-                // 日志开关 - 只控制是否显示查看日志按钮
+            HStack {
                 Toggle(isOn: $enableLogging) {
                     VStack(alignment: .leading) {
                         Text(NSLocalizedString("Main_Setting_Enable_Logging", comment: ""))
@@ -566,47 +565,38 @@ struct SettingView: View {
                     }
                 }
                 .tint(.green)
-
-                // 查看日志按钮 - 只有在启用调试模式时才显示
-                if enableLogging {
-                    Divider()
-                        .padding(.vertical, 8)
-
-                    Button(action: { showingLogsBrowserView = true }) {
-                        HStack {
-                            VStack(alignment: .leading) {
-                                Text(NSLocalizedString("Main_Setting_View_Logs", comment: ""))
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.primary)
-                                Text(NSLocalizedString("Main_Setting_View_Logs_Detail", comment: ""))
-                                    .font(.system(size: 12))
-                                    .foregroundColor(.gray)
-                            }
-                            Spacer()
-                            Image(systemName: "doc.text.magnifyingglass")
-                                .font(.system(size: 20))
-                                .frame(width: 36)
-                                .foregroundColor(.blue)
-                        }
-                    }
-                }
             }
         }
     }
 
     private func createLogsGroup() -> SettingGroup {
+        var items: [SettingItem] = [
+            SettingItem(
+                title: NSLocalizedString("Main_Setting_Enable_Logging", comment: ""),
+                detail: nil,
+                iconColor: .blue,
+                action: {}
+            ) { _ in
+                AnyView(LoggingToggle(enableLogging: $enableLogging))
+            },
+        ]
+
+        // 只有在启用日志时才显示"查看日志"按钮
+        if enableLogging {
+            items.append(
+                SettingItem(
+                    title: NSLocalizedString("Main_Setting_View_Logs", comment: ""),
+                    detail: NSLocalizedString("Main_Setting_View_Logs_Detail", comment: ""),
+                    icon: "doc.text.magnifyingglass",
+                    iconColor: .blue,
+                    action: { showingLogsBrowserView = true }
+                )
+            )
+        }
+
         return SettingGroup(
             header: NSLocalizedString("Main_Setting_Logs_Section", comment: ""),
-            items: [
-                SettingItem(
-                    title: "", // 空标题，使用自定义组件
-                    detail: nil,
-                    iconColor: .blue,
-                    action: {}
-                ) { _ in
-                    AnyView(LoggingSection(showingLogsBrowserView: $showingLogsBrowserView))
-                },
-            ]
+            items: items
         )
     }
 
@@ -785,6 +775,9 @@ struct SettingView: View {
         }
         .onChange(of: selectedTheme) { _, _ in
             updateSettingGroups() // 主题改变时更新
+        }
+        .onChange(of: enableLogging) { _, _ in
+            updateSettingGroups() // 日志开关改变时更新
         }
         .navigationTitle(NSLocalizedString("Main_Setting_Title", comment: ""))
         .fullScreenCover(isPresented: $showingLoadingView) {

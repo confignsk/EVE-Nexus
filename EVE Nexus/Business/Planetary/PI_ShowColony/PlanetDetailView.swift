@@ -41,13 +41,13 @@ struct PlanetDetailView: View {
         }
         return simulatedColony
     }
-    
+
     // 判断当前显示的殖民地是否已停工（用于显示状态）
     private var isColonyStopped: Bool {
         guard let colony = displayColony else { return false }
         return !ColonySimulation.isColonyStillWorking(colony: colony)
     }
-    
+
     // 判断当前现实时间的殖民地是否已停工（用于禁用控件和显示提示）
     private var isRealtimeColonyStopped: Bool {
         // 只有在实时模式（selectedMinutes == 0）时才检查
@@ -209,7 +209,7 @@ struct PlanetDetailView: View {
                                                             .foregroundColor(.secondary)
                                                     }
                                                 }
-                                                
+
                                                 // 如果当前现实时间的殖民地已停工，显示红色提示
                                                 if isRealtimeColonyStopped {
                                                     Text(NSLocalizedString("Planet_Colony_Stopped", comment: "星球已停工"))
@@ -496,7 +496,7 @@ struct PlanetDetailView: View {
                             selectedMinutes = getMinutesAtIndex(index)
                         }
                     ), in: 0 ... Double(max(0, snapshotCount - 1)), step: 1.0)
-                    .disabled(isRealtimeColonyStopped)
+                        .disabled(isRealtimeColonyStopped)
 
                     // 停工按钮 - 激活状态与滑动条位置关联
                     let isExpireActive = selectedMinutes == maxMinutes

@@ -94,6 +94,34 @@
 "Industry_Settings_Multi_Character_Description" = "聚合显示多个角色的工业项目数据";
 "Industry_Settings_Select_Characters" = "选择角色";
 
+// 挖矿设置相关
+"Mining_Settings_Title" = "设置";
+"Mining_Settings_Multi_Character" = "多人物聚合";
+"Mining_Settings_Multi_Character_Description" = "聚合显示多个角色的挖矿记录数据";
+"Mining_Settings_Select_Characters" = "选择角色";
+"Mining_Filter_Select_All" = "全选";
+
+// 挖矿明细相关
+"Mining_Detail" = "明细";
+"Mining_Detail_Title" = "挖矿明细";
+"Mining_Detail_This_Week" = "本周";
+"Mining_Detail_Other" = "其他";
+"Mining_Detail_Total_Volume" = "总体积";
+"Mining_Detail_Total_Quantity" = "总挖矿量";
+"Mining_Detail_Ore_Types" = "矿石种类";
+"Mining_Detail_Characters" = "参与人物";
+"Mining_Detail_Ore_List" = "矿石明细";
+"Mining_Detail_By_System" = "各星系挖矿量";
+"Mining_Detail_By_Character" = "各人物挖矿量";
+"Mining_Detail_By_Ore_Type" = "各矿石类型挖矿量";
+"Mining_Detail_Copy" = "复制";
+"Mining_Detail_Copy_EN" = "复制(en)";
+"Mining_Detail_Estimate_Price" = "估价";
+"Mining_Chart_Sort_Title" = "排序方式";
+"Mining_Chart_Sort_Volume" = "按体积";
+"Mining_Chart_Sort_Quantity" = "按数量";
+"Mining_Chart_Sort_Price" = "按估价";
+
 // 计划通知视图
 "Calendar_Scheduled_Notifications" = "计划中的通知";
 "Calendar_No_Scheduled_Notifications" = "暂无计划通知";
@@ -610,6 +638,8 @@
 "Assets_Loading_SavingCache" = "正在保存缓存";
 "Assets_Unknown_Location" = "未知位置";
 "Assets_Unknown_Region" = "未知星域";
+"Assets_Data_From_Cache" = "数据来自缓存";
+"Assets_Data_Loaded" = "数据已加载";
 
 // Market Transactions
 "Main_Market_Transactions_Buy" = "买入";
@@ -2517,6 +2547,11 @@
 "Structure_Orders_Reload_Message" = "是否重新加载该建筑的市场订单数据？";
 "Structure_Orders_Reload_Cancel" = "取消";
 "Structure_Orders_Reload_Confirm" = "确认";
+"Structure_Orders_Just_Updated" = "刚刚更新";
+"Structure_Orders_Minutes_Ago" = "%d分钟前更新";
+"Structure_Orders_Hours_Ago" = "%d小时前更新";
+"Structure_Orders_Days_Ago" = "%d天前更新";
+"Structure_Orders_No_Cache" = "无缓存";
 
 // Corporation Industry
 "Loading_Corp_Industry_Jobs" = "正在加载军团工业项目...";

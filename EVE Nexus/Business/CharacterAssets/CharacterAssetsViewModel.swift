@@ -52,6 +52,7 @@ class CharacterAssetsViewModel: ObservableObject {
     @Published var systemInfoCache: [Int: SolarSystemInfo] = [:]
     @Published var stationNameCache: [Int64: String] = [:]
     @Published var solarSystemNameCache: [Int: String] = [:]
+    @Published var dataLoadTime: Date?
 
     // MARK: - 私有属性
 
@@ -332,6 +333,10 @@ class CharacterAssetsViewModel: ObservableObject {
                 let decoder = JSONDecoder()
                 if let data = jsonString.data(using: .utf8) {
                     let wrapper = try decoder.decode(AssetTreeWrapper.self, from: data)
+
+                    // 记录数据加载时间
+                    let loadTime = Date(timeIntervalSince1970: TimeInterval(wrapper.update_time))
+                    dataLoadTime = loadTime
 
                     // 更新UI
                     assetLocations = wrapper.assetsTree

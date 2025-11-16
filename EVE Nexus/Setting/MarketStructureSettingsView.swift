@@ -112,7 +112,12 @@ class MarketStructureManager: ObservableObject {
 
         do {
             let data = try Data(contentsOf: configFilePath)
-            structures = try JSONDecoder().decode([MarketStructure].self, from: data)
+            var loadedStructures = try JSONDecoder().decode([MarketStructure].self, from: data)
+
+            // 按添加时间排序，先添加的在前面
+            loadedStructures.sort { $0.addedDate < $1.addedDate }
+
+            structures = loadedStructures
             Logger.info("加载了 \(structures.count) 个市场建筑")
         } catch {
             Logger.error("加载市场建筑失败: \(error)")
@@ -218,6 +223,7 @@ struct StructureRowView: View {
     @State private var structureOrdersProgress: StructureOrdersProgress? = nil
     @State private var cacheStatus: StructureMarketManager.CacheStatus = .noData
     @State private var showingReloadAlert = false
+    @State private var lastUpdateDate: Date? = nil
 
     var body: some View {
         HStack(spacing: 12) {
@@ -256,17 +262,34 @@ struct StructureRowView: View {
                         .font(.caption)
                 }
 
-                // 角色信息
-                HStack {
-                    Image(systemName: "person.circle")
-                        .foregroundColor(.blue)
-                        .font(.caption)
+                // 角色信息和缓存更新时间
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack {
+                        Image(systemName: "person.circle")
+                            .foregroundColor(.blue)
+                            .font(.caption)
 
-                    Text(structure.characterName)
-                        .foregroundColor(.secondary)
-                        .font(.caption)
+                        Text(structure.characterName)
+                            .foregroundColor(.secondary)
+                            .font(.caption)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                    }
 
-                    Spacer()
+                    // 缓存更新时间（人物名称下方）
+                    if let updateDate = lastUpdateDate {
+                        let minutesAgo = Int(Date().timeIntervalSince(updateDate) / 60)
+                        if minutesAgo >= 0 {
+                            Text(formatTimeAgo(minutesAgo))
+                                .foregroundColor(.secondary)
+                                .font(.caption2)
+                        }
+                    } else {
+                        // 没有缓存时显示提示
+                        Text(NSLocalizedString("Structure_Orders_No_Cache", comment: "无缓存"))
+                            .foregroundColor(.secondary)
+                            .font(.caption2)
+                    }
                 }
             }
 
@@ -300,11 +323,7 @@ struct StructureRowView: View {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundColor(.green)
                             .font(.title2)
-                    case .expired:
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundColor(.orange)
-                            .font(.title2)
-                    case .noData:
+                    case .expired, .noData:
                         Image(systemName: "exclamationmark.triangle.fill")
                             .foregroundColor(.red)
                             .font(.title2)
@@ -351,6 +370,8 @@ struct StructureRowView: View {
         .padding(.vertical, 4)
         .onAppear {
             cacheStatus = StructureMarketManager.getCacheStatus(
+                structureId: Int64(structure.structureId))
+            lastUpdateDate = StructureMarketManager.getLocalOrdersModificationDate(
                 structureId: Int64(structure.structureId))
         }
         .alert(
@@ -400,11 +421,22 @@ struct StructureRowView: View {
             Logger.error("加载建筑市场订单失败: \(error)")
         }
 
-        // 更新缓存状态
+        // 更新缓存状态和更新时间
         cacheStatus = StructureMarketManager.getCacheStatus(
+            structureId: Int64(structure.structureId))
+        lastUpdateDate = StructureMarketManager.getLocalOrdersModificationDate(
             structureId: Int64(structure.structureId))
 
         isLoadingOrders = false
         structureOrdersProgress = nil
+    }
+
+    // 格式化时间差为"X分钟前更新"
+    private func formatTimeAgo(_ minutes: Int) -> String {
+        if minutes < 1 {
+            return NSLocalizedString("Structure_Orders_Just_Updated", comment: "刚刚更新")
+        } else {
+            return String(format: NSLocalizedString("Structure_Orders_Minutes_Ago", comment: "%d分钟前更新"), minutes)
+        }
     }
 }

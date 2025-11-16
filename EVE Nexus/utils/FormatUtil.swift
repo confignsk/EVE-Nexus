@@ -392,6 +392,15 @@ enum FormatUtil {
         return formatter
     }()
 
+    /// UTC日期解析器（仅日期格式 yyyy-MM-dd）
+    private static let utcDateOnlyFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone(identifier: "UTC")!
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter
+    }()
+
     /// 本地时间显示格式器（短格式）
     private static let localDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -434,6 +443,7 @@ enum FormatUtil {
     ///   ```
     ///   parseUTCDate("2024-01-15T10:30:00Z")     // Date对象
     ///   parseUTCDate("2024-01-15T10:30:00+0000") // Date对象
+    ///   parseUTCDate("2024-01-15")               // Date对象（仅日期格式）
     ///   ```
     static func parseUTCDate(_ utcDateString: String) -> Date? {
         // 首先尝试标准格式
@@ -448,6 +458,11 @@ enum FormatUtil {
 
         // 尝试ISO8601格式
         if let date = iso8601Formatter.date(from: utcDateString) {
+            return date
+        }
+
+        // 尝试仅日期格式（yyyy-MM-dd）
+        if let date = utcDateOnlyFormatter.date(from: utcDateString) {
             return date
         }
 

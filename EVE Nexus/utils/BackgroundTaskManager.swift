@@ -1,171 +1,144 @@
 import BackgroundTasks
 import Foundation
 
-// MARK: - 后台任务刷新间隔配置
-
-/// 数据刷新任务间隔（秒）
-private let DATA_REFRESH_INTERVAL: TimeInterval = 1 * 60 * 60
-
-/// 后台任务标识符
-private let backgroundTaskIdentifier = "com.evenexus.datarefresh"
-
 /// 后台任务管理器
+/// 负责注册、调度和管理所有后台任务
 @MainActor
 class BackgroundTaskManager: ObservableObject {
     static let shared = BackgroundTaskManager()
 
-    private var refreshTask: Task<Void, Never>?
+    // 后台任务实例
+    private let dataRefreshTask: DataRefreshTask
+    private let assetJsonRefreshTask: AssetJsonRefreshTask
+    private let contractRefreshTask: ContractRefreshTask
+    private let structureOrdersRefreshTask: StructureOrdersRefreshTask
+    private let industryRefreshTask: IndustryRefreshTask
+    private let walletRefreshTask: WalletRefreshTask
+
+    // 所有任务列表（统一使用 AnyBackgroundTask 协议）
+    private var tasks: [AnyBackgroundTask] {
+        [dataRefreshTask, assetJsonRefreshTask, contractRefreshTask, structureOrdersRefreshTask, industryRefreshTask, walletRefreshTask]
+    }
 
     private init() {
+        // 初始化任务实例
+        dataRefreshTask = DataRefreshTask()
+        assetJsonRefreshTask = AssetJsonRefreshTask()
+        contractRefreshTask = ContractRefreshTask()
+        structureOrdersRefreshTask = StructureOrdersRefreshTask()
+        industryRefreshTask = IndustryRefreshTask()
+        walletRefreshTask = WalletRefreshTask()
+
+        // 注册所有后台任务
         registerBackgroundTasks()
     }
 
-    /// 注册后台任务
+    /// 注册所有后台任务
     private func registerBackgroundTasks() {
+        // 注册数据刷新任务
         BGTaskScheduler.shared.register(
-            forTaskWithIdentifier: backgroundTaskIdentifier,
+            forTaskWithIdentifier: DataRefreshTask.identifier,
             using: nil
         ) { task in
             Logger.info("数据刷新任务被系统触发")
-            self.handleDataRefreshTask(task: task as! BGAppRefreshTask)
-        }
-
-        Logger.info("后台任务注册完成，标识符: \(backgroundTaskIdentifier)")
-    }
-
-    /// 处理数据刷新任务
-    private func handleDataRefreshTask(task: BGAppRefreshTask) {
-        Logger.info("开始执行数据刷新任务")
-
-        // 安排下一次刷新任务
-        scheduleDataRefresh()
-
-        // 创建刷新任务
-        refreshTask = Task {
-            await performDataRefresh()
-            
-            // 通知系统后台任务已完成
-            // 只要任务执行完成就标记为成功，部分数据刷新失败不影响任务状态
-            task.setTaskCompleted(success: true)
-            Logger.info("数据刷新任务完成")
-        }
-
-        // 提供过期处理器，在系统需要终止任务时取消任务
-        task.expirationHandler = {
-            Logger.warning("数据刷新任务已过期，取消任务")
-            self.refreshTask?.cancel()
-            task.setTaskCompleted(success: false)
-        }
-    }
-
-    /// 执行数据刷新
-    private func performDataRefresh() async {
-        Logger.info("开始执行后台数据刷新")
-
-        let characters = EVELogin.shared.loadCharacters()
-        guard !characters.isEmpty else {
-            Logger.info("没有需要刷新的角色")
-            return
-        }
-
-        // 刷新所有角色的基本信息
-        for characterAuth in characters {
-            // 检查任务是否被取消
-            if Task.isCancelled {
-                Logger.warning("数据刷新任务被取消")
-                return
-            }
-
-            let characterId = characterAuth.character.CharacterID
-
-            // 跳过token已过期的角色
-            if characterAuth.character.refreshTokenExpired {
-                Logger.warning("跳过token已过期的角色: \(characterId)")
-                continue
-            }
-
-            do {
-                // 刷新角色详细信息
-                try await refreshCharacterData(characterId: characterId)
-                Logger.success("成功刷新角色数据: \(characterId)")
-            } catch {
-                Logger.error("刷新角色数据失败: \(characterId), 错误: \(error)")
-                // 继续处理其他角色，不中断整个任务
+            Task { @MainActor in
+                self.dataRefreshTask.handle(task: task as! BGAppRefreshTask)
             }
         }
 
-        // 刷新公共数据
-        await refreshPublicData()
-
-        Logger.success("后台数据刷新完成")
-    }
-
-    /// 刷新单个角色的数据（仅钱包和位置信息）
-    private func refreshCharacterData(characterId: Int) async throws {
-        // 获取角色信息
-        guard var character = EVELogin.shared.getCharacterByID(characterId)?.character else {
-            throw NetworkError.invalidData
+        // 注册资产JSON更新任务（使用 BGProcessingTask 以获得更长的执行时间）
+        BGTaskScheduler.shared.register(
+            forTaskWithIdentifier: AssetJsonRefreshTask.identifier,
+            using: nil
+        ) { task in
+            Logger.info("资产JSON更新任务被系统触发")
+            Task { @MainActor in
+                self.assetJsonRefreshTask.handle(task: task as! BGProcessingTask)
+            }
         }
 
-        // 并发获取钱包余额和位置信息
-        async let balance = CharacterWalletAPI.shared.getWalletBalance(characterId: characterId)
-        async let location = CharacterLocationAPI.shared.fetchCharacterLocation(characterId: characterId)
-
-        let (balanceResult, locationResult) = try await (balance, location)
-
-        // 获取位置详细信息
-        let databaseManager = DatabaseManager()
-        let locationInfo = await getSolarSystemInfo(
-            solarSystemId: locationResult.solar_system_id,
-            databaseManager: databaseManager
-        )
-
-        // 只更新钱包和位置信息
-        character.walletBalance = balanceResult
-        character.location = locationInfo
-        character.locationStatus = locationResult.locationStatus
-
-        // 保存更新后的信息
-        try await EVELogin.shared.saveCharacterInfo(character)
-    }
-
-    /// 刷新公共数据（仅主权数据）
-    private func refreshPublicData() async {
-        // 刷新主权数据
-        do {
-            _ = try await SovereigntyDataAPI.shared.fetchSovereigntyData(forceRefresh: false)
-            Logger.success("主权数据刷新完成")
-        } catch {
-            Logger.error("主权数据刷新失败: \(error)")
+        // 注册合同数据更新任务（使用 BGProcessingTask 以获得更长的执行时间）
+        BGTaskScheduler.shared.register(
+            forTaskWithIdentifier: ContractRefreshTask.identifier,
+            using: nil
+        ) { task in
+            Logger.info("合同数据更新任务被系统触发")
+            Task { @MainActor in
+                self.contractRefreshTask.handle(task: task as! BGProcessingTask)
+            }
         }
+
+        // 注册建筑市场订单更新任务（使用 BGProcessingTask 以获得更长的执行时间）
+        BGTaskScheduler.shared.register(
+            forTaskWithIdentifier: StructureOrdersRefreshTask.identifier,
+            using: nil
+        ) { task in
+            Logger.info("建筑市场订单更新任务被系统触发")
+            Task { @MainActor in
+                self.structureOrdersRefreshTask.handle(task: task as! BGProcessingTask)
+            }
+        }
+
+        // 注册工业项目数据更新任务（使用 BGProcessingTask 以获得更长的执行时间）
+        BGTaskScheduler.shared.register(
+            forTaskWithIdentifier: IndustryRefreshTask.identifier,
+            using: nil
+        ) { task in
+            Logger.info("工业项目数据更新任务被系统触发")
+            Task { @MainActor in
+                self.industryRefreshTask.handle(task: task as! BGProcessingTask)
+            }
+        }
+
+        // 注册钱包数据更新任务（使用 BGProcessingTask 以获得更长的执行时间）
+        BGTaskScheduler.shared.register(
+            forTaskWithIdentifier: WalletRefreshTask.identifier,
+            using: nil
+        ) { task in
+            Logger.info("钱包数据更新任务被系统触发")
+            Task { @MainActor in
+                self.walletRefreshTask.handle(task: task as! BGProcessingTask)
+            }
+        }
+
+        Logger.info("后台任务注册完成，标识符: \(DataRefreshTask.identifier), \(AssetJsonRefreshTask.identifier), \(ContractRefreshTask.identifier), \(StructureOrdersRefreshTask.identifier), \(IndustryRefreshTask.identifier), \(WalletRefreshTask.identifier)")
     }
 
     /// 安排数据刷新任务
     func scheduleDataRefresh() {
-        let request = BGAppRefreshTaskRequest(identifier: backgroundTaskIdentifier)
-        request.earliestBeginDate = Date(timeIntervalSinceNow: DATA_REFRESH_INTERVAL)
+        dataRefreshTask.schedule()
+    }
 
-        do {
-            try BGTaskScheduler.shared.submit(request)
+    /// 安排资产JSON更新任务
+    func scheduleAssetJsonRefresh() {
+        assetJsonRefreshTask.schedule()
+    }
 
-            // 格式化日期为本地时区显示
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateStyle = .medium
-            dateFormatter.timeStyle = .medium
-            dateFormatter.timeZone = TimeZone.current
-            dateFormatter.locale = Locale.current
+    /// 安排合同数据更新任务
+    func scheduleContractRefresh() {
+        contractRefreshTask.schedule()
+    }
 
-            let formattedDate = request.earliestBeginDate.map { dateFormatter.string(from: $0) } ?? "未知"
-            Logger.success("数据刷新任务已安排: \(formattedDate)")
-        } catch {
-            Logger.error("安排数据刷新任务失败: \(error)")
-        }
+    /// 安排建筑市场订单更新任务
+    func scheduleStructureOrdersRefresh() {
+        structureOrdersRefreshTask.schedule()
+    }
+
+    /// 安排工业项目数据更新任务
+    func scheduleIndustryRefresh() {
+        industryRefreshTask.schedule()
+    }
+
+    /// 安排钱包数据更新任务
+    func scheduleWalletRefresh() {
+        walletRefreshTask.schedule()
     }
 
     /// 取消所有后台任务
     func cancelAllTasks() {
-        BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: backgroundTaskIdentifier)
-        refreshTask?.cancel()
+        for task in tasks {
+            task.cancel()
+        }
         Logger.warning("所有后台任务已取消")
     }
 }

@@ -276,7 +276,7 @@ final class CharacterPlanetaryViewModel: ObservableObject {
                                 // 检查是否是采集器（通过extractorDetails判断）
                                 if pin.extractorDetails != nil {
                                     totalExtractors += 1
-                                    
+
                                     if let expiryTimeString = pin.expiryTime,
                                        let expiryTime = dateFormatter.date(from: expiryTimeString)
                                     {
@@ -302,7 +302,7 @@ final class CharacterPlanetaryViewModel: ObservableObject {
 
                             // 计算最终产品：找出只输出，不输入到其他设施的资源
                             let finalProducts = self.calculateFinalProducts(detail: detail)
-                            
+
                             // 创建采集器状态
                             let extractorStatus = ExtractorStatus(
                                 totalCount: totalExtractors,

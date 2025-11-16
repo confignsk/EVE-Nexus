@@ -84,6 +84,11 @@ struct EVE_NexusApp: App {
 
         // 安排后台任务
         BackgroundTaskManager.shared.scheduleDataRefresh()
+        BackgroundTaskManager.shared.scheduleAssetJsonRefresh()
+        BackgroundTaskManager.shared.scheduleContractRefresh()
+        BackgroundTaskManager.shared.scheduleStructureOrdersRefresh()
+        BackgroundTaskManager.shared.scheduleIndustryRefresh()
+        BackgroundTaskManager.shared.scheduleWalletRefresh()
     }
 
     private func setupNotifications() {
