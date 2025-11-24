@@ -54,17 +54,17 @@ struct FittingSettingsView: View {
             }
             skillsMode = "all5"
         } else if skillsMode == "all5" {
-            return String(format: NSLocalizedString("Fitting_All_Skills", comment: "全5级"), 5)
+            return String.localizedStringWithFormat(NSLocalizedString("Fitting_All_Skills", comment: "全5级"), 5)
         } else if skillsMode == "all4" {
-            return String(format: NSLocalizedString("Fitting_All_Skills", comment: ""), 4)
+            return String.localizedStringWithFormat(NSLocalizedString("Fitting_All_Skills", comment: ""), 4)
         } else if skillsMode == "all3" {
-            return String(format: NSLocalizedString("Fitting_All_Skills", comment: ""), 3)
+            return String.localizedStringWithFormat(NSLocalizedString("Fitting_All_Skills", comment: ""), 3)
         } else if skillsMode == "all2" {
-            return String(format: NSLocalizedString("Fitting_All_Skills", comment: ""), 2)
+            return String.localizedStringWithFormat(NSLocalizedString("Fitting_All_Skills", comment: ""), 2)
         } else if skillsMode == "all1" {
-            return String(format: NSLocalizedString("Fitting_All_Skills", comment: ""), 1)
+            return String.localizedStringWithFormat(NSLocalizedString("Fitting_All_Skills", comment: ""), 1)
         } else if skillsMode == "all0" {
-            return String(format: NSLocalizedString("Fitting_All_Skills", comment: ""), 0)
+            return String.localizedStringWithFormat(NSLocalizedString("Fitting_All_Skills", comment: ""), 0)
         } else if skillsMode == "character" {
             let charId = UserDefaults.standard.integer(forKey: "selectedSkillCharacterId")
             let chars = CharacterSkillsUtils.getAllCharacters(excludeCurrentCharacter: false)

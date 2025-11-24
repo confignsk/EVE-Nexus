@@ -19,7 +19,7 @@ class IconManager {
 
     private func setupIconsDirectory() {
         let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let iconsDir = documentsURL.appendingPathComponent("Icons")
+        let iconsDir = documentsURL.appendingPathComponent("icons")
 
         // 如果图标目录不存在，创建它
         if !fileManager.fileExists(atPath: iconsDir.path) {

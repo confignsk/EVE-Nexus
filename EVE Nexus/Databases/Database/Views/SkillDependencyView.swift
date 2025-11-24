@@ -58,7 +58,7 @@ struct SkillDependencyListView: View {
         }
         .listStyle(.insetGrouped)
         .navigationTitle(
-            Text(String(format: NSLocalizedString("Misc_Level", comment: "lv%d"), level)))
+            Text(String.localizedStringWithFormat(NSLocalizedString("Misc_Level", comment: "lv%d"), level)))
     }
 }
 

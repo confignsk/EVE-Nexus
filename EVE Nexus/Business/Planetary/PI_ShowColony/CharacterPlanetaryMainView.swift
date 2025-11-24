@@ -94,6 +94,18 @@ final class CharacterPlanetaryViewModel: ObservableObject {
         // 加载可用角色列表
         availableCharacters = CharacterSkillsUtils.getAllCharacters()
 
+        // 过滤掉已保存但已不在可用角色列表中的角色ID
+        let availableCharacterIds = Set(availableCharacters.map { $0.id })
+        let validSelectedIds = selectedCharacterIds.intersection(availableCharacterIds)
+
+        // 如果有角色被过滤掉，更新 UserDefaults
+        if validSelectedIds.count != selectedCharacterIds.count {
+            selectedCharacterIds = validSelectedIds
+            UserDefaults.standard.set(
+                Array(selectedCharacterIds), forKey: "selectedCharacterIds_planetary"
+            )
+        }
+
         // 如果没有选中的角色，默认选择当前角色
         if selectedCharacterIds.isEmpty, let characterId = characterId {
             selectedCharacterIds.insert(characterId)
@@ -1085,41 +1097,10 @@ struct CharacterPlanetaryView: View {
 
     var body: some View {
         List {
-            // 行星开发计算器功能
-            Section(NSLocalizedString("Main_Planetary_calc", comment: "")) {
-                NavigationLink {
-                    PlanetarySiteFinder(characterId: characterId)
-                } label: {
-                    Text(NSLocalizedString("Main_Planetary_location_calc", comment: ""))
-                }
-                NavigationLink {
-                    PIOutputCalculatorView(characterId: characterId)
-                } label: {
-                    Text(NSLocalizedString("Main_Planetary_Output", comment: ""))
-                }
-                NavigationLink {
-                    PIAllInOneMainView(characterId: characterId)
-                } label: {
-                    Text(NSLocalizedString("Planet_All-in-One_Calc", comment: ""))
-                }
-                NavigationLink {
-                    PIAllInOneSystemFinderMainView(characterId: characterId)
-                } label: {
-                    Text(
-                        NSLocalizedString(
-                            "AllInOne_SystemFinder_Title", comment: "查找 All-in-One 星系"
-                        ))
-                }
-                NavigationLink {
-                    PIProductionChainView(characterId: characterId)
-                } label: {
-                    Text(NSLocalizedString("PI_Chain_Title", comment: "生产链分析"))
-                }
-            }
             if viewModel.isLoading {
                 Section(header: Text(NSLocalizedString("Main_Planetary_of_Mine", comment: ""))) {
                     if let progress = viewModel.loadingProgress, progress.total > 1 {
-                        Text(String(format: NSLocalizedString("Planetary_Loading_Progress", comment: "已加载人物 %d/%d"), progress.current, progress.total))
+                        Text(String.localizedStringWithFormat(NSLocalizedString("Planetary_Loading_Progress", comment: "已加载人物 %d/%d"), progress.current, progress.total))
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -1520,12 +1501,12 @@ struct PlanetRow: View {
                     if let status = viewModel.getExtractorStatus(for: planet.planetId, characterId: characterId), status.totalCount > 0 {
                         if status.expiredCount > 0 {
                             // 显示已停工的采集器数量
-                            Text(String(format: NSLocalizedString("Planet_Extractor_Expired_Count", comment: "%d/%d个采集器已停工"), status.expiredCount, status.totalCount))
+                            Text(String.localizedStringWithFormat(NSLocalizedString("Planet_Extractor_Expired_Count", comment: "%d/%d个采集器已停工"), status.expiredCount, status.totalCount))
                                 .font(.caption2)
                                 .foregroundColor(.red)
                         } else if status.expiringSoonCount > 0 {
                             // 显示即将停工的采集器数量
-                            Text(String(format: NSLocalizedString("Planet_Extractor_Expiring_Soon_Count", comment: "%d/%d个采集器即将停工"), status.expiringSoonCount, status.totalCount))
+                            Text(String.localizedStringWithFormat(NSLocalizedString("Planet_Extractor_Expiring_Soon_Count", comment: "%d/%d个采集器即将停工"), status.expiringSoonCount, status.totalCount))
                                 .font(.caption2)
                                 .foregroundColor(.red)
                         } else if let expiryDate = viewModel.getEarliestExtractorExpiry(for: planet.planetId, characterId: characterId) {
@@ -1588,18 +1569,18 @@ private func formatTimeRemaining(_ interval: TimeInterval) -> String {
 
     if days > 0 {
         if hours > 0 {
-            return String(format: NSLocalizedString("Time_Days_Hours", comment: ""), days, hours)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Days_Hours", comment: ""), days, hours)
         } else {
-            return String(format: NSLocalizedString("Time_Days", comment: ""), days)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Days", comment: ""), days)
         }
     } else if hours > 0 {
         if minutes > 0 {
-            return String(format: NSLocalizedString("Time_Hours_Minutes", comment: ""), hours, minutes)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Hours_Minutes", comment: ""), hours, minutes)
         } else {
-            return String(format: NSLocalizedString("Time_Hours", comment: ""), hours)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Hours", comment: ""), hours)
         }
     } else if minutes > 0 {
-        return String(format: NSLocalizedString("Time_Minutes", comment: ""), minutes)
+        return String.localizedStringWithFormat(NSLocalizedString("Time_Minutes", comment: ""), minutes)
     } else {
         return NSLocalizedString("Time_Just_Now", comment: "刚刚")
     }

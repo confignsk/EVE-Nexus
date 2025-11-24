@@ -115,7 +115,7 @@ struct SkillRequirementRow: View {
                     Spacer()
 
                     // 等级要求
-                    Text(String(format: NSLocalizedString("Misc_Level", comment: "lv%d"), level))
+                    Text(String.localizedStringWithFormat(NSLocalizedString("Misc_Level", comment: "lv%d"), level))
                         .font(.body)
                         .foregroundColor(.secondary)
                 }
@@ -313,7 +313,7 @@ struct SkillRequirementsView: View {
     // 新增：格式化时间显示（复用现有逻辑）
     private func formatTrainingTime(_ timeInterval: TimeInterval) -> String {
         if timeInterval < 1 {
-            return String(format: NSLocalizedString("Time_Seconds", comment: ""), 0)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Seconds", comment: ""), 0)
         }
 
         let totalSeconds = timeInterval
@@ -328,7 +328,7 @@ struct SkillRequirementsView: View {
             if minutes >= 30 {
                 hours += 1
                 if hours == 24 { // 如果四舍五入后小时数达到24
-                    return String(format: NSLocalizedString("Time_Days", comment: ""), days + 1)
+                    return String.localizedStringWithFormat(NSLocalizedString("Time_Days", comment: ""), days + 1)
                 }
             }
             if hours > 0 {
@@ -336,13 +336,13 @@ struct SkillRequirementsView: View {
                     format: NSLocalizedString("Time_Days_Hours", comment: ""), days, hours
                 )
             }
-            return String(format: NSLocalizedString("Time_Days", comment: ""), days)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Days", comment: ""), days)
         } else if hours > 0 {
             // 对分钟进行四舍五入
             if seconds >= 30 {
                 minutes += 1
                 if minutes == 60 { // 如果四舍五入后分钟数达到60
-                    return String(format: NSLocalizedString("Time_Hours", comment: ""), hours + 1)
+                    return String.localizedStringWithFormat(NSLocalizedString("Time_Hours", comment: ""), hours + 1)
                 }
             }
             if minutes > 0 {
@@ -350,16 +350,16 @@ struct SkillRequirementsView: View {
                     format: NSLocalizedString("Time_Hours_Minutes", comment: ""), hours, minutes
                 )
             }
-            return String(format: NSLocalizedString("Time_Hours", comment: ""), hours)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Hours", comment: ""), hours)
         } else if minutes > 0 {
             // 对秒进行四舍五入
             if seconds >= 30 {
                 minutes += 1
             }
-            return String(format: NSLocalizedString("Time_Minutes", comment: ""), minutes)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Minutes", comment: ""), minutes)
         }
         // 只有秒
-        return String(format: NSLocalizedString("Time_Seconds", comment: ""), Int(totalSeconds))
+        return String.localizedStringWithFormat(NSLocalizedString("Time_Seconds", comment: ""), Int(totalSeconds))
     }
 
     // 加载角色属性点数

@@ -270,37 +270,37 @@ struct FactoryFacilityView: View {
         let absInterval = abs(interval)
 
         if absInterval < 60 {
-            return String(format: NSLocalizedString("Time_Seconds", comment: ""), Int(absInterval))
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Seconds", comment: ""), Int(absInterval))
         } else if absInterval < 3600 {
             let minutes = Int(absInterval) / 60
             let seconds = Int(absInterval) % 60
             if seconds >= 30 {
-                return String(format: NSLocalizedString("Time_Minutes", comment: ""), minutes + 1)
+                return String.localizedStringWithFormat(NSLocalizedString("Time_Minutes", comment: ""), minutes + 1)
             }
-            return String(format: NSLocalizedString("Time_Minutes", comment: ""), minutes)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Minutes", comment: ""), minutes)
         } else if absInterval < 86400 {
             let hours = Int(absInterval) / 3600
             let minutes = Int(absInterval) / 60 % 60
             if minutes >= 30 {
-                return String(format: NSLocalizedString("Time_Hours", comment: ""), hours + 1)
+                return String.localizedStringWithFormat(NSLocalizedString("Time_Hours", comment: ""), hours + 1)
             }
             if hours > 0 {
-                return String(format: NSLocalizedString("Time_Hours", comment: ""), hours)
+                return String.localizedStringWithFormat(NSLocalizedString("Time_Hours", comment: ""), hours)
             }
-            return String(format: NSLocalizedString("Time_Minutes", comment: ""), minutes)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Minutes", comment: ""), minutes)
         } else {
             let days = Int(absInterval) / 86400
             let hours = Int(absInterval) / 3600 % 24
             if hours >= 12 {
-                return String(format: NSLocalizedString("Time_Days", comment: ""), days + 1)
+                return String.localizedStringWithFormat(NSLocalizedString("Time_Days", comment: ""), days + 1)
             }
             if days > 0 {
                 if hours > 0 {
-                    return String(format: NSLocalizedString("Time_Days_Hours", comment: ""), days, hours)
+                    return String.localizedStringWithFormat(NSLocalizedString("Time_Days_Hours", comment: ""), days, hours)
                 }
-                return String(format: NSLocalizedString("Time_Days", comment: ""), days)
+                return String.localizedStringWithFormat(NSLocalizedString("Time_Days", comment: ""), days)
             }
-            return String(format: NSLocalizedString("Time_Hours", comment: ""), hours)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Hours", comment: ""), hours)
         }
     }
 }

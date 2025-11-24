@@ -8,30 +8,30 @@ class SkillGroupIconManager {
 
     // 技能组图标映射
     private let skillGroupIcons: [Int: String] = [
-        255: "1_42", // 射击学
-        256: "1_48", // 导弹
-        257: "1_26", // 飞船操控学
-        258: "1_36", // 舰队支援
-        266: "1_12", // 军团管理
-        268: "1_25", // 生产
-        269: "1_37", // 改装件
-        270: "1_49", // 科学
-        272: "1_24", // 电子系统
-        273: "1_18", // 无人机
-        274: "1_50", // 贸易学
-        275: "1_05", // 导航学
-        278: "1_20", // 社会学
-        1209: "1_14", // 护盾
-        1210: "1_03", // 装甲
-        1213: "1_44", // 锁定系统
-        1216: "1_30", // 工程学
-        1217: "1_43", // 扫描
-        1218: "1_31", // 资源处理
-        1220: "1_13", // 神经增强
-        1240: "1_38", // 子系统
-        1241: "1_19", // 行星管理
-        1545: "1_32", // 建筑管理
-        4734: "1_07", // 排序
+        255: "skill_group_gunnery", // 射击学
+        256: "skill_group_missiles", // 导弹
+        257: "skill_group_spaceshipcmd", // 飞船操控学
+        258: "skill_group_fleetsupport", // 舰队支援
+        266: "skill_group_corpmgmt", // 军团管理
+        268: "skill_group_production", // 生产
+        269: "skill_group_rigging", // 改装件
+        270: "skill_group_science", // 科学
+        272: "skill_group_electronicsystems", // 电子系统
+        273: "skill_group_drones", // 无人机
+        274: "skill_group_trade", // 贸易学
+        275: "skill_group_navigation", // 导航学
+        278: "skill_group_social", // 社会学
+        1209: "skill_group_shields", // 护盾
+        1210: "skill_group_armor", // 装甲
+        1213: "skill_group_targeting", // 锁定系统
+        1216: "skill_group_engineering", // 工程学
+        1217: "skill_group_scanning", // 扫描
+        1218: "skill_group_resourceprocessing", // 资源处理
+        1220: "skill_group_neuralenhancement", // 神经增强
+        1240: "skill_group_subsystems", // 子系统
+        1241: "skill_group_planetmgmt", // 行星管理
+        1545: "skill_group_structuremgmt", // 建筑管理
+        4734: "skill_group_skinsequencing", // 排序
     ]
 
     /// 获取技能组图标名称

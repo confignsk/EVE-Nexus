@@ -480,7 +480,7 @@ struct InsurgencyView: View {
                             Spacer()
                         }
                     } header: {
-                        Text(String(format: NSLocalizedString("Insurgency_stage", comment: ""), 1))
+                        Text(String.localizedStringWithFormat(NSLocalizedString("Insurgency_stage", comment: ""), 1))
                             .font(.headline)
                     }
 
@@ -504,7 +504,7 @@ struct InsurgencyView: View {
                             Spacer()
                         }
                     } header: {
-                        Text(String(format: NSLocalizedString("Insurgency_stage", comment: ""), 2))
+                        Text(String.localizedStringWithFormat(NSLocalizedString("Insurgency_stage", comment: ""), 2))
                             .font(.headline)
                     }
 
@@ -528,7 +528,7 @@ struct InsurgencyView: View {
                             Spacer()
                         }
                     } header: {
-                        Text(String(format: NSLocalizedString("Insurgency_stage", comment: ""), 3))
+                        Text(String.localizedStringWithFormat(NSLocalizedString("Insurgency_stage", comment: ""), 3))
                             .font(.headline)
                     }
 
@@ -552,7 +552,7 @@ struct InsurgencyView: View {
                             Spacer()
                         }
                     } header: {
-                        Text(String(format: NSLocalizedString("Insurgency_stage", comment: ""), 4))
+                        Text(String.localizedStringWithFormat(NSLocalizedString("Insurgency_stage", comment: ""), 4))
                             .font(.headline)
                     }
 
@@ -576,7 +576,7 @@ struct InsurgencyView: View {
                             Spacer()
                         }
                     } header: {
-                        Text(String(format: NSLocalizedString("Insurgency_stage", comment: ""), 5))
+                        Text(String.localizedStringWithFormat(NSLocalizedString("Insurgency_stage", comment: ""), 5))
                             .font(.headline)
                     }
                 }

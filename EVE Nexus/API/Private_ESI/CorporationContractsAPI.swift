@@ -61,7 +61,7 @@ class CorporationContractsAPI {
         let contracts = try await NetworkManager.shared.fetchPaginatedData(
             from: baseUrl,
             characterId: characterId,
-            maxConcurrentPages: 5, // 保持原有的最大并发数
+            maxConcurrentPages: 5,
             decoder: { data in
                 let decoder = JSONDecoder()
                 decoder.dateDecodingStrategy = .iso8601
@@ -243,26 +243,46 @@ class CorporationContractsAPI {
         return nil
     }
 
+    // 合同过滤模式枚举
+    enum ContractFilterMode {
+        case assignee // 过滤指定给自己公司的合同
+        case issuer // 过滤自己公司发起的合同
+    }
+
     // 保存合同列表到数据库
-    private func saveContractsToDB(corporationId: Int, contracts: [ContractInfo]) -> Bool {
+    private func saveContractsToDB(corporationId: Int, contracts: [ContractInfo], filterMode: ContractFilterMode = .assignee) -> Bool {
         // 如果没有合同需要保存，直接返回成功
         if contracts.isEmpty {
             Logger.info("没有军团合同需要保存")
             return true
         }
 
-        // 过滤只保存指定给自己公司且未删除的合同
-        let filteredContracts = contracts.filter { contract in
-            contract.assignee_id == corporationId && contract.status != "deleted"
+        // 根据过滤模式过滤合同
+        let filteredContracts: [ContractInfo]
+        let filterDescription: String
+
+        switch filterMode {
+        case .assignee:
+            // 过滤只保存指定给自己公司且未删除的合同
+            filteredContracts = contracts.filter { contract in
+                contract.assignee_id == corporationId && contract.status != "deleted"
+            }
+            filterDescription = "已排除指定给其他公司和已删除的合同"
+        case .issuer:
+            // 过滤出发起人属于自己公司且未删除的合同且for_corporation为true的项目
+            filteredContracts = contracts.filter { contract in
+                contract.issuer_corporation_id == corporationId && contract.status != "deleted" && contract.for_corporation
+            }
+            filterDescription = "发起人属于自己公司且未删除且for_corporation=true"
         }
 
         if filteredContracts.isEmpty {
-            Logger.info("没有符合条件的军团合同需要保存（已排除指定给其他公司和已删除的合同）")
+            Logger.info("没有符合条件的军团合同需要保存（\(filterDescription)）")
             return true
         }
 
         Logger.debug(
-            "过滤后需要保存的合同数量: \(filteredContracts.count) / \(contracts.count) (已排除指定给其他公司和已删除的合同)")
+            "过滤后需要保存的合同数量: \(filteredContracts.count) / \(contracts.count) (\(filterDescription))")
 
         // 获取已存在的合同ID和状态
         let checkQuery =
@@ -396,6 +416,23 @@ class CorporationContractsAPI {
 
         // 根据执行结果提交或回滚事务
         if success {
+            // 删除3个月前的记录
+            let threeMonthsAgo = Calendar.current.date(byAdding: .month, value: -3, to: Date()) ?? Date()
+            let dateFormatter = ISO8601DateFormatter()
+            dateFormatter.formatOptions = [.withInternetDateTime]
+            let cutoffDate = dateFormatter.string(from: threeMonthsAgo)
+
+            let deleteQuery = "DELETE FROM corporation_contracts WHERE corporation_id = ? AND date_issued < ?"
+            let deleteResult = CharacterDatabaseManager.shared.executeQuery(
+                deleteQuery, parameters: [corporationId, cutoffDate]
+            )
+
+            if case .success = deleteResult {
+                Logger.info("已删除3个月前的军团合同记录（日期早于 \(cutoffDate)）")
+            } else {
+                Logger.warning("删除3个月前的军团合同记录失败，但继续提交事务")
+            }
+
             _ = CharacterDatabaseManager.shared.executeQuery("COMMIT")
             Logger.info("数据库更新成功：新增\(newCount)个合同，更新\(updateCount)个合同状态")
             return true
@@ -609,6 +646,208 @@ class CorporationContractsAPI {
         // 4. 从数据库获取数据并返回
         if let contracts = await getContractsFromDB(corporationId: corporationId) {
             // 不需要再次过滤，因为数据库中已经只有指定给自己公司且未删除的合同
+            return contracts
+        }
+        return []
+    }
+
+    // 从数据库获取军团发起的合同列表
+    private func getMyCorpContractsFromDB(corporationId: Int) async -> [ContractInfo]? {
+        let query = """
+            SELECT contract_id, acceptor_id, assignee_id, availability,
+                   buyout, collateral, date_accepted, date_completed, date_expired,
+                   date_issued, days_to_complete, end_location_id,
+                   for_corporation, issuer_corporation_id, issuer_id,
+                   price, reward, start_location_id, status, title,
+                   type, volume
+            FROM corporation_contracts 
+            WHERE corporation_id = ? AND for_corporation = 1 AND issuer_corporation_id = ? AND status != 'deleted'
+            ORDER BY date_issued DESC
+        """
+
+        if case let .success(results) = CharacterDatabaseManager.shared.executeQuery(
+            query, parameters: [corporationId, corporationId]
+        ) {
+            Logger.debug("数据库查询成功，获取到\(results.count)行军团发起合同数据")
+
+            let contracts = results.compactMap { row -> ContractInfo? in
+                let dateFormatter = ISO8601DateFormatter()
+
+                let contractId: Int
+                if let id = row["contract_id"] as? Int64 {
+                    contractId = Int(id)
+                } else if let id = row["contract_id"] as? Int {
+                    contractId = id
+                } else {
+                    Logger.error("contract_id 无效或类型不匹配")
+                    return nil
+                }
+
+                guard let dateIssuedStr = row["date_issued"] as? String else {
+                    Logger.error("date_issued 为空")
+                    return nil
+                }
+
+                guard let dateExpiredStr = row["date_expired"] as? String else {
+                    Logger.error("date_expired 为空")
+                    return nil
+                }
+
+                guard let dateIssued = dateFormatter.date(from: dateIssuedStr),
+                      let dateExpired = dateFormatter.date(from: dateExpiredStr)
+                else {
+                    Logger.error("日期解析失败")
+                    return nil
+                }
+
+                let dateAccepted = (row["date_accepted"] as? String).flatMap {
+                    dateFormatter.date(from: $0)
+                }
+                let dateCompleted = (row["date_completed"] as? String).flatMap {
+                    dateFormatter.date(from: $0)
+                }
+
+                let startLocationId: Int64
+                if let id = row["start_location_id"] as? Int64 {
+                    startLocationId = id
+                } else if let id = row["start_location_id"] as? Int {
+                    startLocationId = Int64(id)
+                } else {
+                    Logger.error("start_location_id 无效或类型不匹配")
+                    return nil
+                }
+
+                let endLocationId: Int64
+                if let id = row["end_location_id"] as? Int64 {
+                    endLocationId = id
+                } else if let id = row["end_location_id"] as? Int {
+                    endLocationId = Int64(id)
+                } else {
+                    Logger.error("end_location_id 无效或类型不匹配")
+                    return nil
+                }
+
+                let acceptorId: Int?
+                if let id = row["acceptor_id"] as? Int64 {
+                    acceptorId = Int(id)
+                } else if let id = row["acceptor_id"] as? Int {
+                    acceptorId = id
+                } else {
+                    acceptorId = nil
+                }
+
+                let assigneeId: Int?
+                if let id = row["assignee_id"] as? Int64 {
+                    assigneeId = Int(id)
+                } else if let id = row["assignee_id"] as? Int {
+                    assigneeId = id
+                } else {
+                    assigneeId = nil
+                }
+
+                let issuerId: Int
+                if let id = row["issuer_id"] as? Int64 {
+                    issuerId = Int(id)
+                } else if let id = row["issuer_id"] as? Int {
+                    issuerId = id
+                } else {
+                    Logger.error("issuer_id 无效或类型不匹配")
+                    return nil
+                }
+
+                let issuerCorpId: Int
+                if let id = row["issuer_corporation_id"] as? Int64 {
+                    issuerCorpId = Int(id)
+                } else if let id = row["issuer_corporation_id"] as? Int {
+                    issuerCorpId = id
+                } else {
+                    Logger.error("issuer_corporation_id 无效或类型不匹配")
+                    return nil
+                }
+
+                return ContractInfo(
+                    acceptor_id: acceptorId,
+                    assignee_id: assigneeId,
+                    availability: row["availability"] as? String ?? "",
+                    buyout: row["buyout"] as? Double,
+                    collateral: row["collateral"] as? Double,
+                    contract_id: contractId,
+                    date_accepted: dateAccepted,
+                    date_completed: dateCompleted,
+                    date_expired: dateExpired,
+                    date_issued: dateIssued,
+                    days_to_complete: row["days_to_complete"] as? Int ?? 0,
+                    end_location_id: endLocationId,
+                    for_corporation: true,
+                    issuer_corporation_id: issuerCorpId,
+                    issuer_id: issuerId,
+                    price: row["price"] as? Double ?? 0.0,
+                    reward: row["reward"] as? Double ?? 0.0,
+                    start_location_id: startLocationId,
+                    status: row["status"] as? String ?? "",
+                    title: row["title"] as? String ?? "",
+                    type: row["type"] as? String ?? "",
+                    volume: row["volume"] as? Double ?? 0.0
+                )
+            }
+
+            Logger.success("成功转换\(contracts.count)个军团发起合同数据")
+            return contracts
+        }
+        Logger.error("数据库查询失败")
+        return nil
+    }
+
+    // 获取军团发起的合同列表（公开方法）
+    func fetchMyCorpContracts(
+        characterId: Int, forceRefresh: Bool = false, progressCallback: ((Int) -> Void)? = nil
+    ) async throws -> [ContractInfo] {
+        // 1. 获取角色的军团ID
+        guard
+            let corporationId = try await CharacterDatabaseManager.shared.getCharacterCorporationId(
+                characterId: characterId)
+        else {
+            throw NetworkError.authenticationError("无法获取军团ID")
+        }
+
+        // 2. 检查数据库中是否有符合issuer条件的数据
+        let checkQuery =
+            "SELECT COUNT(*) as count FROM corporation_contracts WHERE corporation_id = ? AND for_corporation = 1 AND issuer_corporation_id = ? AND status != 'deleted'"
+        let result = CharacterDatabaseManager.shared.executeQuery(
+            checkQuery, parameters: [corporationId, corporationId]
+        )
+        let isEmpty =
+            if case let .success(rows) = result,
+            let row = rows.first,
+            let count = row["count"] as? Int64 {
+                count == 0
+            } else {
+                true
+            }
+
+        // 3. 如果数据为空或强制刷新，则从网络获取
+        if isEmpty || forceRefresh {
+            Logger.debug("军团发起合同数据为空或强制刷新，从网络获取数据")
+            let contracts = try await fetchContractsFromServer(
+                corporationId: corporationId, characterId: characterId,
+                progressCallback: progressCallback
+            )
+            // 使用issuer过滤模式保存到数据库
+            if !saveContractsToDB(corporationId: corporationId, contracts: contracts, filterMode: .issuer) {
+                Logger.error("保存军团合同到数据库失败")
+            }
+            // 过滤出发起人属于自己公司且未删除的合同且for_corporation为true的项目
+            let filteredContracts = contracts.filter { contract in
+                contract.issuer_corporation_id == corporationId && contract.status != "deleted" && contract.for_corporation
+            }
+            Logger.debug(
+                "从服务器获取的合同数量: \(contracts.count)，过滤后数量: \(filteredContracts.count) (发起人属于自己公司且未删除且for_corporation=true)"
+            )
+            return filteredContracts
+        }
+
+        // 4. 从数据库获取数据并返回（使用专门的查询函数，已在SQL层面过滤）
+        if let contracts = await getMyCorpContractsFromDB(corporationId: corporationId) {
             return contracts
         }
         return []

@@ -153,8 +153,8 @@ class SkillQueueCorrector {
 
         Logger.debug("[队列修正] 开始修正技能队列，输入 \(inputSkills.count) 个技能")
 
-        for (index, inputSkill) in inputSkills.enumerated() {
-            Logger.debug("[队列修正] 处理第 \(index + 1) 个技能: ID \(inputSkill.skillId) 等级 \(inputSkill.level)")
+        for (_, inputSkill) in inputSkills.enumerated() {
+            // Logger.debug("[队列修正] 处理第 \(index + 1) 个技能: ID \(inputSkill.skillId) 等级 \(inputSkill.level)")
 
             // 获取这个技能及其所有前置依赖（包括等级依赖），按正确顺序排列
             let skillsToAdd = getSkillsWithPrerequisites(skillId: inputSkill.skillId, targetLevel: inputSkill.level)
@@ -174,7 +174,7 @@ class SkillQueueCorrector {
                 }
             }
 
-            Logger.debug("[队列修正]   添加 \(newCount) 个技能等级，跳过 \(skipCount) 个重复")
+            // Logger.debug("[队列修正]   添加 \(newCount) 个技能等级，跳过 \(skipCount) 个重复")
         }
 
         Logger.debug("[队列修正] 修正完成，输出 \(result.count) 个技能等级")

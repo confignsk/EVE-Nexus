@@ -2011,6 +2011,7 @@ struct RefinerySettingsView: View {
 
     @State private var taxRateText: String = ""
     @State private var showCharacterSelector = false
+    @FocusState private var isInputFocused: Bool
 
     var body: some View {
         NavigationStack {
@@ -2074,6 +2075,7 @@ struct RefinerySettingsView: View {
                         .multilineTextAlignment(.trailing)
                         .frame(width: 100)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .focused($isInputFocused)
                         Text("%")
                             .foregroundColor(.secondary)
                     }
@@ -2104,6 +2106,9 @@ struct RefinerySettingsView: View {
                     }
                     .foregroundColor(.primary)
                 }
+            }
+            .onTapGesture {
+                isInputFocused = false
             }
             .navigationTitle(NSLocalizedString("Ore_Refinery_Settings", comment: ""))
             .navigationBarTitleDisplayMode(.inline)

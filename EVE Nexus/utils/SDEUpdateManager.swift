@@ -105,14 +105,14 @@ class SDEUpdateManager: ObservableObject {
             let needsIconsUpdate = updateChecker.currentIconVersion < updateChecker.latestIconVersion
 
             await addLog(NSLocalizedString("SDE_Log_Checking_Requirements", comment: ""), type: .info)
-            await addLog(String(format: NSLocalizedString("SDE_Log_SDE_Needs_Update", comment: ""),
-                                needsSDEUpdate ? "true" : "false",
-                                updateChecker.currentSDEVersion,
-                                updateChecker.latestSDEVersion), type: .info)
-            await addLog(String(format: NSLocalizedString("SDE_Log_Icons_Need_Update", comment: ""),
-                                needsIconsUpdate ? "true" : "false",
-                                updateChecker.currentIconVersion,
-                                updateChecker.latestIconVersion), type: .info)
+            await addLog(String.localizedStringWithFormat(NSLocalizedString("SDE_Log_SDE_Needs_Update", comment: ""),
+                                                          needsSDEUpdate ? "true" : "false",
+                                                          updateChecker.currentSDEVersion,
+                                                          updateChecker.latestSDEVersion), type: .info)
+            await addLog(String.localizedStringWithFormat(NSLocalizedString("SDE_Log_Icons_Need_Update", comment: ""),
+                                                          needsIconsUpdate ? "true" : "false",
+                                                          updateChecker.currentIconVersion,
+                                                          updateChecker.latestIconVersion), type: .info)
 
             //  下载 icons.zip（如果需要）
             if needsIconsUpdate {
@@ -138,7 +138,7 @@ class SDEUpdateManager: ObservableObject {
             reloadDataWithNewSDE()
 
         } catch {
-            await addLog(String(format: NSLocalizedString("SDE_Log_Update_Failed", comment: ""), error.localizedDescription), type: .error)
+            await addLog(String.localizedStringWithFormat(NSLocalizedString("SDE_Log_Update_Failed", comment: ""), error.localizedDescription), type: .error)
             hasError = true
         }
     }
@@ -211,7 +211,7 @@ class SDEUpdateManager: ObservableObject {
 
             await addLog(NSLocalizedString("SDE_Log_Metadata_Saved", comment: ""), type: .success)
         } catch {
-            await addLog(String(format: NSLocalizedString("SDE_Log_Metadata_Failed", comment: ""), error.localizedDescription), type: .warning)
+            await addLog(String.localizedStringWithFormat(NSLocalizedString("SDE_Log_Metadata_Failed", comment: ""), error.localizedDescription), type: .warning)
             Logger.warning("Failed to save metadata.json: \(error)")
         }
     }

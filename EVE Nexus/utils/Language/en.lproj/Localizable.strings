@@ -12,6 +12,7 @@
 "Features_Customize_Mode" = "Customize Mode";
 "Features_Exit_Customize" = "Exit Custom Mode";
 "Features_Restore_Default" = "Restore Default";
+"Main_Pinned_Features" = "Pinned Features";
 
 "Main_Home" = "Home";
 "Main_Character" = "Character";
@@ -188,6 +189,9 @@
 "Main_Database_NPC_Ships" = "Ships";
 "Main_Market_Current_Price" = "Current Price";
 "Main_Market_Price_History" = "Price History";
+"Main_Market_Price_History_1M" = "1 Month";
+"Main_Market_Price_History_3M" = "3 Months";
+"Main_Market_Price_History_1Y" = "1 Year";
 "Main_Market_Show_market_orders" = "Show market orders";
 "Main_Market_WH_info" = "Info of wormhole";
 "Main_Market_WH_Details" = "Details";
@@ -254,6 +258,7 @@
 
 "Main_About" = "About";
 "Main_About_Database_Version" = "SDE";
+"Main_About_Database_BuiltIn" = "Built-in";
 "Main_About_Database_Update_Available" = "Update Available";
 "Main_SDE_Update_Available" = "New SDE";
 "Main_About_Build_Number" = "Build";
@@ -285,6 +290,7 @@
 "Misc_Level" = "Level %d";
 "Misc_Level_Short" = "Lv %d";
 "Misc_No_Data" = "No Data";
+"Misc_No_Matched_Data" = "No matching data";
 "Misc_Clear" = "Clear";
 "Misc_Filter" = "Filter";
 "Misc_OpenLink" = "Open Link";
@@ -508,6 +514,12 @@
 "Account_Total_SP" = "Total SP";
 "Account_Wallet_value" = "Wallet";
 "Scopes_refresh_hint" = "Click to refresh invalid scopes:";
+"Account_Steam_Login_Hint" = "About Steam Login";
+"Account_Steam_Login_Title" = "Steam Login Help";
+"Account_Steam_Login_Description" = "We received an email from a user who found that they could not log in to their game account through Steam. \n\nWe verified this issue but have not yet found a suitable solution. \n\nThis issue mainly occurs on iOS user devices with the Steam App installed. If you have the same problem, you can take the following measures to mitigate it.\n\n";
+"Account_Steam_Login_GIF_Not_Found" = "GIF image not found";
+"Account_Steam_Login_Reference_Hint" = "We recommend referring to this document to set an account name for accounts created through Steam:";
+"Account_Steam_Login_Reference_Link" = "Reference Link";
 "Common_OK" = "OK";
 
 // Language Settings
@@ -689,6 +701,7 @@
 "Wallet_Transaction_Category" = "Category";
 "Wallet_Income" = "Income";
 "Wallet_Expense" = "Expense";
+"Wallet_Journal_Sorted_By_Count" = "Sorted by transaction count";
 "Wallet_Partial_Data_Notice" = "Too many records, only showing partial transaction journal";
 "Wallet_Copy_Detail" = "Copy Detail";
 
@@ -796,11 +809,15 @@
 "Industry_Slots_Manufacturing" = "Manufacturing Jobs";
 "Industry_Slots_Research" = "Science Jobs";
 "Industry_Slots_Reaction" = "Reactions";
+"Industry_Slots_Detail_Title" = "Slot Details";
 "Industry_Range_Current_System" = "Current System";
 "Industry_Range_Jumps" = "%d Jumps";
 "Industry_Operation_Range" = "Operation Range";
 "Industry_Filtering_Data" = "Updating data...";
 "Industry_Task_List_Header" = "Task List";
+"Industry_Production_List" = "Production List";
+"Industry_Production_List_Empty" = "No production items";
+"Industry_Production_Quantity" = "Quantity: %d";
 
 // Industry List Headers
 "Industry_Started_On" = "Started on %@";
@@ -1028,6 +1045,7 @@
 "Main_Corporation" = "Corporation";
 "Main_Setting_Show_Corporation_Affairs_detail" = "Whether to show the list of corporation affairs on the home page";
 "Main_Corporation_wallet" = "Corp Wallet";
+"Main_Corporation_Assets" = "Corp Assets";
 "Main_Corporation_Members" = "Corp Members";
 "Main_Corporation_Members_Title" = "Corporation Members";
 "Main_Corporation_Members_Loading" = "Loading members...";
@@ -1326,7 +1344,7 @@
 "KillMail_View_Title" = "KillBoard";
 
 // KillMail Stats
-"KillMail_Data_Source" = "Data from zkillboard and kb.evetools.org";
+"KillMail_Data_Source" = "Data from zkillboard and ESI";
 
 "KillMail_Search_Prompt" = "Tap here to start searching...";
 "KillMail_Search_Input_Prompt" = "Enter search keyword";
@@ -1553,6 +1571,11 @@
 "Contract_Group_Incomplete" = "Incomplete";
 "Contract_Group_Issued_On" = "Issued on";
 "Contract_Group_Completed_On" = "Completed on";
+"Contract_Show_Only_My_Corp_Issued" = "Show Only My Corporation Issued Contracts";
+"Contract_Corporation_Issued" = "Corporation Issued Contracts";
+"Main_Corporation_Issued_Contracts" = "Corporation Issued Contracts";
+"Contract_Show_Only_My_Corp_Issued_Description" = "Only show contracts issued by my corporation";
+"Contract_Corporation_Filter" = "Corporation Contract Filter";
 
 // Contract Settings
 "Contract_Show_Active_Only" = "Outstanding";
@@ -1840,6 +1863,8 @@
 "Calculator_Title" = "Calculator";
 "Calculator_Blueprint" = "Blueprint Calculator";
 "Calculator_Ore_Refinery" = "Refinery Calculator";
+"Calculator_Industry_Section" = "Industry";
+"Calculator_PI_Section" = "Planetary Industry";
 "Blueprint_Calculator_Settings" = "Blueprint Settings";
 "Blueprint_Calculator_Material_Efficiency" = "Material Efficiency";
 "Blueprint_Calculator_Time_Efficiency" = "Time Efficiency";
@@ -2536,6 +2561,7 @@
 "Structure_Orders_Hours_Ago" = "%d hours ago";
 "Structure_Orders_Days_Ago" = "%d days ago";
 "Structure_Orders_No_Cache" = "No cache";
+"Structure_Orders_Statistics" = "%d orders; %d item types";
 
 // Corporation Industry
 "Loading_Corp_Industry_Jobs" = "Loading corporation industry jobs...";

@@ -217,7 +217,7 @@ struct WealthDetailView: View {
             }
         }
         .navigationTitle(
-            String(format: NSLocalizedString("Wealth_Detail_Title", comment: ""), title)
+            String.localizedStringWithFormat(NSLocalizedString("Wealth_Detail_Title", comment: ""), title)
         )
         .onAppear {
             loadInitialDataIfNeeded()

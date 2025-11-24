@@ -740,7 +740,7 @@ struct MarketQuickbarView: View {
                         .foregroundColor(.secondary)
                         .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                 } else {
-                    Text(String(format: NSLocalizedString("Main_EVE_Mail_No_Results", comment: "")))
+                    Text(String.localizedStringWithFormat(NSLocalizedString("Main_EVE_Mail_No_Results", comment: "")))
                         .foregroundColor(.secondary)
                         .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                 }

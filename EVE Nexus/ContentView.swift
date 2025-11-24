@@ -481,8 +481,10 @@ struct ContentView: View {
 
     // 功能自定义相关状态
     @AppStorage("hiddenFeatures") private var hiddenFeaturesData: Data = .init()
+    @AppStorage("pinnedFeatures") private var pinnedFeaturesData: Data = .init()
     @State private var isCustomizeMode: Bool = false
     @State private var hiddenFeatures: Set<String> = []
+    @State private var pinnedFeatures: [String] = [] // 使用数组保持顺序
     @Environment(\.colorScheme) var systemColorScheme
     @State private var columnVisibility = NavigationSplitViewVisibility.all
     @State private var selectedItem: String? = nil
@@ -514,6 +516,11 @@ struct ContentView: View {
                         // 登录部分
                         loginSection
                             .framePreference(in: .global, HeaderFrame.self)
+
+                        // 常用功能部分（置顶功能）
+                        if !isCustomizeMode && hasVisiblePinnedFeatures {
+                            pinnedFeaturesSection
+                        }
 
                         // 角色功能部分
                         if currentCharacterId != 0 || isCustomizeMode {
@@ -738,6 +745,14 @@ struct ContentView: View {
                             if let character = viewModel.selectedCharacter {
                                 CorpIndustryView(characterId: character.CharacterID)
                             }
+                        case "corporation_assets":
+                            if let character = viewModel.selectedCharacter {
+                                CorporationAssetsViewWrapper(characterId: character.CharacterID)
+                            }
+                        case "corporation_issued_contracts":
+                            if let character = viewModel.selectedCharacter {
+                                CorporationIssuedContractsView(character: character)
+                            }
                         case "jump_navigation":
                             JumpNavigationView(databaseManager: databaseManager)
                         case "calculator":
@@ -789,6 +804,9 @@ struct ContentView: View {
 
             // 加载隐藏功能列表
             loadHiddenFeatures()
+
+            // 加载置顶功能列表
+            loadPinnedFeatures()
 
             // 检查应用版本更新
             checkAppVersionUpdate()
@@ -897,6 +915,40 @@ struct ContentView: View {
         }
     }
 
+    private func loadPinnedFeatures() {
+        do {
+            if !pinnedFeaturesData.isEmpty {
+                pinnedFeatures = try JSONDecoder().decode(
+                    [String].self, from: pinnedFeaturesData
+                )
+            }
+        } catch {
+            Logger.error("加载置顶功能列表失败: \(error)")
+            pinnedFeatures = []
+        }
+    }
+
+    private func savePinnedFeatures() {
+        do {
+            pinnedFeaturesData = try JSONEncoder().encode(pinnedFeatures)
+        } catch {
+            Logger.error("保存置顶功能列表失败: \(error)")
+        }
+    }
+
+    private func isFeaturePinned(_ featureId: String) -> Bool {
+        return pinnedFeatures.contains(featureId)
+    }
+
+    private func toggleFeaturePin(_ featureId: String) {
+        if let index = pinnedFeatures.firstIndex(of: featureId) {
+            pinnedFeatures.remove(at: index)
+        } else {
+            pinnedFeatures.append(featureId)
+        }
+        savePinnedFeatures()
+    }
+
     private func isFeatureHidden(_ featureId: String) -> Bool {
         return hiddenFeatures.contains(featureId)
     }
@@ -910,17 +962,35 @@ struct ContentView: View {
         saveHiddenFeatures()
     }
 
+    // 检查是否有可见的置顶功能
+    private var hasVisiblePinnedFeatures: Bool {
+        return pinnedFeatures.contains { featureId in
+            isFeatureAvailableForCurrentUser(featureId) && !isFeatureHidden(featureId)
+        }
+    }
+
+    // 按照原列表顺序排序置顶功能
+    private var sortedPinnedFeatures: [String] {
+        return pinnedFeatures.sorted { featureId1, featureId2 in
+            let index1 = featureConfigs.firstIndex(where: { $0.id == featureId1 }) ?? Int.max
+            let index2 = featureConfigs.firstIndex(where: { $0.id == featureId2 }) ?? Int.max
+            return index1 < index2
+        }
+    }
+
     // 检查section是否有可见的功能
     private func hasVisibleFeatures(in features: [String]) -> Bool {
         if isCustomizeMode {
             return true // 自定义模式下总是显示section
         }
 
-        // 检查是否有任何功能未被隐藏且满足登录要求
+        // 检查是否有任何功能未被隐藏、未被置顶且满足登录要求
         return features.contains { featureId in
             let participatesInHiding = shouldParticipateInHiding(featureId)
             let isHidden = participatesInHiding && isFeatureHidden(featureId)
-            return !isHidden && isFeatureAvailableForCurrentUser(featureId)
+            let isPinned = isFeaturePinned(featureId)
+            // 功能必须：未被隐藏、未被置顶（置顶的功能在常用功能section中显示）、且对当前用户可用
+            return !isHidden && !isPinned && isFeatureAvailableForCurrentUser(featureId)
         }
     }
 
@@ -949,6 +1019,8 @@ struct ContentView: View {
         FeatureConfig(id: "corporation_moon", requiresLogin: true, section: "corporation"),
         FeatureConfig(id: "corporation_structures", requiresLogin: true, section: "corporation"),
         FeatureConfig(id: "corporation_industry", requiresLogin: true, section: "corporation"),
+        FeatureConfig(id: "corporation_assets", requiresLogin: true, section: "corporation"),
+        FeatureConfig(id: "corporation_issued_contracts", requiresLogin: true, section: "corporation"),
 
         // 数据库功能
         FeatureConfig(id: "database", requiresLogin: false, section: "database"),
@@ -975,7 +1047,7 @@ struct ContentView: View {
         FeatureConfig(id: "wallet_journal", requiresLogin: true, section: "business"),
         FeatureConfig(id: "industry_jobs", requiresLogin: true, section: "business"),
         FeatureConfig(id: "mining_ledger", requiresLogin: true, section: "business"),
-        FeatureConfig(id: "planetary", requiresLogin: false, section: "business"),
+        FeatureConfig(id: "planetary", requiresLogin: true, section: "business"),
 
         // 战斗功能
         FeatureConfig(id: "killboard", requiresLogin: true, section: "battle"),
@@ -1030,6 +1102,142 @@ struct ContentView: View {
         return config.section != "other"
     }
 
+    // 功能信息映射结构
+    struct FeatureInfo {
+        let title: String
+        let icon: String
+        let noteView: AnyView?
+    }
+
+    // 获取功能的标题、图标和noteView
+    private func getFeatureInfo(_ featureId: String) -> FeatureInfo? {
+        switch featureId {
+        case "character_sheet":
+            let noteView: AnyView? = (!viewModel.characterStats.skillPoints.isEmpty && viewModel.characterStats.skillPoints != "--") ? AnyView(
+                Text(viewModel.characterStats.skillPoints)
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(1)
+            ) : nil
+            return FeatureInfo(
+                title: NSLocalizedString("Main_Character_Sheet", comment: ""),
+                icon: "charactersheet",
+                noteView: noteView
+            )
+        case "character_clones":
+            return FeatureInfo(
+                title: NSLocalizedString("Main_Jump_Clones", comment: ""),
+                icon: "jumpclones",
+                noteView: AnyView(CloneCountdownView(targetDate: viewModel.cloneCooldownEndDate))
+            )
+        case "character_skills":
+            return FeatureInfo(
+                title: NSLocalizedString("Main_Skills", comment: ""),
+                icon: "skills",
+                noteView: AnyView(
+                    SkillQueueCountdownView(
+                        queueEndDate: viewModel.skillQueueEndDate,
+                        skillCount: viewModel.skillQueueCount
+                    )
+                )
+            )
+        case "character_mail":
+            return FeatureInfo(title: NSLocalizedString("Main_EVE_Mail", comment: ""), icon: "evemail", noteView: nil)
+        case "calendar":
+            return FeatureInfo(title: NSLocalizedString("Main_Calendar", comment: ""), icon: "calendar", noteView: nil)
+        case "character_wealth":
+            let noteView: AnyView? = (!viewModel.characterStats.walletBalance.isEmpty && viewModel.characterStats.walletBalance != "--") ? AnyView(
+                Text(viewModel.characterStats.walletBalance)
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(1)
+            ) : nil
+            return FeatureInfo(
+                title: NSLocalizedString("Main_Wealth", comment: ""),
+                icon: "Folder",
+                noteView: noteView
+            )
+        case "character_lp":
+            return FeatureInfo(title: NSLocalizedString("Main_Loyalty_Points", comment: ""), icon: "lpstore", noteView: nil)
+        case "searcher":
+            return FeatureInfo(title: NSLocalizedString("Main_Contact_Search", comment: ""), icon: "peopleandplaces", noteView: nil)
+        case "corporation_wallet":
+            return FeatureInfo(title: NSLocalizedString("Main_Corporation_wallet", comment: ""), icon: "wallet", noteView: nil)
+        case "corporation_members":
+            return FeatureInfo(title: NSLocalizedString("Main_Corporation_Members", comment: ""), icon: "corporation", noteView: nil)
+        case "corporation_moon":
+            return FeatureInfo(title: NSLocalizedString("Main_Corporation_Moon_Mining", comment: ""), icon: "satellite", noteView: nil)
+        case "corporation_structures":
+            return FeatureInfo(title: NSLocalizedString("Main_Corporation_Structures", comment: ""), icon: "Structurebrowser", noteView: nil)
+        case "corporation_industry":
+            return FeatureInfo(title: NSLocalizedString("Main_Corporation_Industry", comment: ""), icon: "industry", noteView: nil)
+        case "corporation_assets":
+            return FeatureInfo(title: NSLocalizedString("Main_Corporation_Assets", comment: ""), icon: "assets", noteView: nil)
+        case "corporation_issued_contracts":
+            return FeatureInfo(title: NSLocalizedString("Main_Corporation_Issued_Contracts", comment: ""), icon: "contracts", noteView: nil)
+        case "database":
+            return FeatureInfo(title: NSLocalizedString("Main_Database", comment: ""), icon: "items", noteView: nil)
+        case "market":
+            return FeatureInfo(title: NSLocalizedString("Main_Market", comment: ""), icon: "market", noteView: nil)
+        case "vip_market_item":
+            return FeatureInfo(title: NSLocalizedString("Main_Market_Watch_List", comment: ""), icon: "searchmarket", noteView: nil)
+        case "attribute_compare":
+            return FeatureInfo(title: NSLocalizedString("Main_Attribute_Compare", comment: ""), icon: "comparetool", noteView: nil)
+        case "npc":
+            return FeatureInfo(title: NSLocalizedString("Main_NPC_entity", comment: ""), icon: "criminal", noteView: nil)
+        case "npc_faction":
+            return FeatureInfo(title: NSLocalizedString("Main_NPC_Faction", comment: ""), icon: "concord", noteView: nil)
+        case "agents":
+            return FeatureInfo(title: NSLocalizedString("Main_Agents", comment: ""), icon: "agentfinder", noteView: nil)
+        case "star_map":
+            return FeatureInfo(title: NSLocalizedString("Main_Star_Map", comment: ""), icon: "map", noteView: nil)
+        case "wormhole":
+            return FeatureInfo(title: NSLocalizedString("Main_WH", comment: ""), icon: "terminate", noteView: nil)
+        case "incursions":
+            return FeatureInfo(title: NSLocalizedString("Main_Incursions", comment: ""), icon: "incursions", noteView: nil)
+        case "faction_war":
+            return FeatureInfo(title: NSLocalizedString("Main_Section_Frontlines", comment: ""), icon: "factionalwarfare", noteView: nil)
+        case "sovereignty":
+            return FeatureInfo(title: NSLocalizedString("Main_Sovereignty", comment: ""), icon: "sovereignty", noteView: nil)
+        case "language_map":
+            return FeatureInfo(title: NSLocalizedString("Main_Language_Map", comment: ""), icon: "browser", noteView: nil)
+        case "jump_navigation":
+            return FeatureInfo(title: NSLocalizedString("Main_Jump_Navigation", comment: ""), icon: "capitalnavigation", noteView: nil)
+        case "calculator":
+            return FeatureInfo(title: NSLocalizedString("Calculator_Title", comment: ""), icon: "calculator", noteView: nil)
+        case "assets":
+            return FeatureInfo(title: NSLocalizedString("Main_Assets", comment: ""), icon: "assets", noteView: nil)
+        case "market_orders":
+            return FeatureInfo(title: NSLocalizedString("Main_Market_Orders", comment: ""), icon: "marketdeliveries", noteView: nil)
+        case "contracts":
+            return FeatureInfo(title: NSLocalizedString("Main_Contracts", comment: ""), icon: "contracts", noteView: nil)
+        case "market_transactions":
+            return FeatureInfo(title: NSLocalizedString("Main_Market_Transactions", comment: ""), icon: "journal", noteView: nil)
+        case "wallet_journal":
+            return FeatureInfo(title: NSLocalizedString("Main_Wallet_Journal", comment: ""), icon: "wallet", noteView: nil)
+        case "industry_jobs":
+            return FeatureInfo(title: NSLocalizedString("Main_Industry_Jobs", comment: ""), icon: "industry", noteView: nil)
+        case "mining_ledger":
+            return FeatureInfo(title: NSLocalizedString("Main_Mining_Ledger", comment: ""), icon: "miningledger", noteView: nil)
+        case "planetary":
+            return FeatureInfo(title: NSLocalizedString("Main_Planetary", comment: ""), icon: "planets", noteView: nil)
+        case "killboard":
+            return FeatureInfo(title: NSLocalizedString("Main_Killboard", comment: ""), icon: "killreport", noteView: nil)
+        case "fitting":
+            return FeatureInfo(title: NSLocalizedString("Main_Fitting_Simulation", comment: ""), icon: "fitting", noteView: nil)
+        case "settings":
+            return FeatureInfo(title: NSLocalizedString("Main_Setting", comment: ""), icon: "Settings", noteView: nil)
+        case "update_history":
+            return FeatureInfo(title: NSLocalizedString("Main_Update_History", comment: ""), icon: "log", noteView: nil)
+        case "about":
+            return FeatureInfo(title: NSLocalizedString("Main_About", comment: ""), icon: "info", noteView: nil)
+        default:
+            return nil
+        }
+    }
+
     // 创建可自定义的NavigationLink（带有默认的listRowInsets）
     @ViewBuilder
     private func customizableNavigationLink(
@@ -1044,6 +1252,19 @@ struct ContentView: View {
         let showSelectionCircle = shouldShowSelectionCircle(value)
 
         let contentView = HStack {
+            // 在编辑模式下显示大头针按钮
+            if isCustomizeMode && showSelectionCircle {
+                Button(action: {
+                    toggleFeaturePin(value)
+                }) {
+                    Image(systemName: isFeaturePinned(value) ? "pin.fill" : "pin")
+                        .font(.system(size: 16))
+                        .foregroundColor(isFeaturePinned(value) ? .orange : .gray)
+                        .frame(width: 24, height: 24)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+
             Image(icon)
                 .resizable()
                 .frame(width: 36, height: 36)
@@ -1066,11 +1287,11 @@ struct ContentView: View {
             }
             Spacer()
 
-            // 在自定义模式下显示选择圆环（仅对显示选择圆圈的功能显示）
+            // 在自定义模式下显示眼睛图标（仅对显示选择圆圈的功能显示）
             if isCustomizeMode && showSelectionCircle {
-                Image(systemName: !isFeatureHidden(value) ? "checkmark.circle.fill" : "circle")
+                Image(systemName: !isFeatureHidden(value) ? "eye.fill" : "eye.slash.fill")
                     .font(.title2)
-                    .foregroundColor(!isFeatureHidden(value) ? .blue : .gray)
+                    .foregroundColor(!isFeatureHidden(value) ? .blue : .red)
             }
         }
 
@@ -1090,7 +1311,8 @@ struct ContentView: View {
                 contentView
             }
             .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
-            .isHidden(isHidden)
+            // 非编辑模式下，如果功能已置顶，则在原section中隐藏
+            .isHidden(isHidden || (!isCustomizeMode && isFeaturePinned(value)))
         }
     }
 
@@ -1112,6 +1334,48 @@ struct ContentView: View {
     }
 
     // MARK: - 视图组件
+
+    private var pinnedFeaturesSection: some View {
+        Section {
+            ForEach(sortedPinnedFeatures, id: \.self) { featureId in
+                // 只显示对当前用户可用且未隐藏的功能
+                if isFeatureAvailableForCurrentUser(featureId) && !isFeatureHidden(featureId),
+                   let featureInfo = getFeatureInfo(featureId)
+                {
+                    NavigationLink(value: featureId) {
+                        HStack {
+                            Image(featureInfo.icon)
+                                .resizable()
+                                .frame(width: 36, height: 36)
+                                .cornerRadius(6)
+                                .drawingGroup()
+
+                            VStack(alignment: .leading) {
+                                Text(featureInfo.title)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                if let noteView = featureInfo.noteView {
+                                    noteView
+                                }
+                            }
+                            Spacer()
+                        }
+                    }
+                    .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+                }
+            }
+        } header: {
+            HStack {
+                Image(systemName: "star.fill")
+                    .foregroundColor(.yellow)
+                    .font(.system(size: 16))
+                Text(NSLocalizedString("Main_Pinned_Features", comment: "常用功能"))
+                    .fontWeight(.semibold)
+                    .font(.system(size: 18))
+                    .foregroundColor(.primary)
+            }
+            .textCase(nil)
+        }
+    }
 
     private var loginSection: some View {
         Section {
@@ -1253,6 +1517,20 @@ struct ContentView: View {
                 value: "corporation_industry",
                 title: NSLocalizedString("Main_Corporation_Industry", comment: ""),
                 icon: "industry"
+            )
+            .isHidden(currentCharacterId == 0 && !isCustomizeMode)
+
+            customizableNavigationLink(
+                value: "corporation_assets",
+                title: NSLocalizedString("Main_Corporation_Assets", comment: ""),
+                icon: "assets"
+            )
+            .isHidden(currentCharacterId == 0 && !isCustomizeMode)
+
+            customizableNavigationLink(
+                value: "corporation_issued_contracts",
+                title: NSLocalizedString("Main_Corporation_Issued_Contracts", comment: ""),
+                icon: "contracts"
             )
             .isHidden(currentCharacterId == 0 && !isCustomizeMode)
         } header: {
@@ -1422,6 +1700,7 @@ struct ContentView: View {
                 title: NSLocalizedString("Main_Planetary", comment: ""),
                 icon: "planets"
             )
+            .isHidden(currentCharacterId == 0 && !isCustomizeMode)
         } header: {
             Text(NSLocalizedString("Main_Business", comment: ""))
                 .fontWeight(.semibold)

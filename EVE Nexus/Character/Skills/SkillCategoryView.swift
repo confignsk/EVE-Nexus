@@ -27,6 +27,8 @@ struct SkillGroup: Identifiable {
     let name: String // group_name
     var skills: [CharacterSkill]
     let totalSkillsInGroup: Int // 该组中的总技能数
+    let maxTotalSkillPoints: Int // 该组所有技能满级时的总点数
+    let learnedTotalSkillPoints: Int // 该组已学技能的总点数
 
     var totalSkillPoints: Int {
         skills.reduce(0) { $0 + $1.skillpoints_in_skill }
@@ -207,13 +209,26 @@ class SkillCategoryViewModel: ObservableObject {
                     )
                 }
 
+                // 计算该组所有已发布技能满级时的总点数（包括未注入的技能）
+                let maxTotalSP = groupSkills.reduce(0) { total, item in
+                    let maxSP = Int(256_000 * item.value.timeMultiplier)
+                    return total + maxSP
+                }
+
+                // 计算该组已学技能的总点数
+                let learnedTotalSP = groupSkills.reduce(0) { total, item in
+                    total + item.value.currentSkillPoints
+                }
+
                 if !allSkills.isEmpty {
                     groups.append(
                         SkillGroup(
                             id: groupId,
                             name: groupInfo.name,
                             skills: allSkills,
-                            totalSkillsInGroup: groupSkills.count
+                            totalSkillsInGroup: groupSkills.count,
+                            maxTotalSkillPoints: maxTotalSP,
+                            learnedTotalSkillPoints: learnedTotalSP
                         ))
                 }
             }
@@ -252,7 +267,9 @@ class SkillCategoryViewModel: ObservableObject {
                     id: group.id,
                     name: group.name,
                     skills: filteredSkills,
-                    totalSkillsInGroup: group.totalSkillsInGroup
+                    totalSkillsInGroup: group.totalSkillsInGroup,
+                    maxTotalSkillPoints: group.maxTotalSkillPoints,
+                    learnedTotalSkillPoints: group.learnedTotalSkillPoints
                 )
             }.filter { !$0.skills.isEmpty } // 移除空组
         } else {
@@ -286,23 +303,22 @@ class SkillCategoryViewModel: ObservableObject {
             }
 
             // 在过滤后的技能中搜索
-            return
-                filteredByLevel
-                    .filter { _, info in
-                        info.zh_name.localizedCaseInsensitiveContains(searchText)
-                            || info.en_name.localizedCaseInsensitiveContains(searchText)
-                    }
-                    .map { typeId, info in
-                        (
-                            typeId: typeId,
-                            name: info.name, // 显示时使用 name
-                            timeMultiplier: info.timeMultiplier,
-                            currentSkillPoints: info.currentSkillPoints,
-                            currentLevel: info.currentLevel,
-                            trainingRate: info.trainingRate
-                        )
-                    }
-                    .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+            return filteredByLevel
+                .filter { _, info in
+                    info.zh_name.localizedCaseInsensitiveContains(searchText)
+                        || info.en_name.localizedCaseInsensitiveContains(searchText)
+                }
+                .map { typeId, info in
+                    (
+                        typeId: typeId,
+                        name: info.name, // 显示时使用 name
+                        timeMultiplier: info.timeMultiplier,
+                        currentSkillPoints: info.currentSkillPoints,
+                        currentLevel: info.currentLevel,
+                        trainingRate: info.trainingRate
+                    )
+                }
+                .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         }
     }
 }
@@ -425,7 +441,7 @@ struct SkillCellView: View {
                     days, adjustedHours
                 )
             }
-            return String(format: NSLocalizedString("Time_Days", comment: ""), days)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Days", comment: ""), days)
         } else if hours > 0 {
             // 如果有剩余分钟，分钟数要向上取整
             if minutes > 0 {
@@ -434,10 +450,10 @@ struct SkillCellView: View {
                     hours, minutes
                 )
             }
-            return String(format: NSLocalizedString("Time_Hours", comment: ""), hours)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Hours", comment: ""), hours)
         }
         // 分钟数已经在一开始就向上取整了
-        return String(format: NSLocalizedString("Time_Minutes", comment: ""), minutes)
+        return String.localizedStringWithFormat(NSLocalizedString("Time_Minutes", comment: ""), minutes)
     }
 }
 
@@ -446,6 +462,7 @@ struct SkillCategoryView: View {
     let databaseManager: DatabaseManager
     @StateObject private var viewModel: SkillCategoryViewModel
     @State private var isFirstAppear = true // 添加一个状态来跟踪是否是首次出现
+    @Environment(\.colorScheme) private var colorScheme
 
     init(characterId: Int, databaseManager: DatabaseManager) {
         self.characterId = characterId
@@ -464,12 +481,9 @@ struct SkillCategoryView: View {
             if viewModel.isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, alignment: .center)
-            } else if viewModel.skillGroups.isEmpty {
-                Text(NSLocalizedString("Main_Skills_No_Skills", comment: ""))
-                    .foregroundColor(.secondary)
             } else {
                 if viewModel.searchText.isEmpty {
-                    // 添加筛选器 Picker
+                    // 添加筛选器 Picker（始终显示，即使没有技能）
                     Picker("Filter", selection: $viewModel.selectedFilter) {
                         ForEach(SkillFilter.allCases, id: \.self) { filter in
                             Text(filter.localized).tag(filter)
@@ -481,38 +495,72 @@ struct SkillCategoryView: View {
                         viewModel.updateFilteredGroups()
                     }
 
-                    // 显示技能组列表
-                    ForEach(
-                        viewModel.skillGroups.sorted(by: {
-                            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-                        })
-                    ) { group in
-                        NavigationLink {
-                            SkillGroupDetailView(
-                                group: group, databaseManager: databaseManager,
-                                characterId: characterId
-                            )
-                        } label: {
-                            HStack(spacing: 12) {
-                                // 显示技能组图标
-                                Image(SkillGroupIconManager.shared.getIconName(for: group.id))
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 36, height: 32)
-                                    .cornerRadius(8)
+                    // 显示技能组列表或空状态
+                    if viewModel.skillGroups.isEmpty {
+                        Text(NSLocalizedString("Main_Skills_No_Skills", comment: ""))
+                            .foregroundColor(.secondary)
+                    } else {
+                        ForEach(
+                            viewModel.skillGroups.sorted(by: {
+                                $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+                            })
+                        ) { group in
+                            NavigationLink {
+                                SkillGroupDetailView(
+                                    group: group, databaseManager: databaseManager,
+                                    characterId: characterId
+                                )
+                            } label: {
+                                HStack(spacing: 8) {
+                                    // 显示技能组图标
+                                    Image(SkillGroupIconManager.shared.getIconName(for: group.id))
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 32, height: 32)
+                                        .cornerRadius(8)
+                                        .modifier(SkillGroupIconModifier(colorScheme: colorScheme))
 
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(group.name)
-                                    Text(
-                                        "\(group.skills.count) \(NSLocalizedString("Main_Skills_number", comment: "")) - \(formatNumber(group.totalSkillPoints)) SP"
-                                    )
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+                                    VStack(alignment: .leading) {
+                                        HStack(spacing: 4) {
+                                            Text(group.name)
+                                            // 如果全部完成，显示绿色对勾图标
+                                            if group.maxTotalSkillPoints > 0,
+                                               group.learnedTotalSkillPoints >= group.maxTotalSkillPoints
+                                            {
+                                                Image(systemName: "checkmark.circle.fill")
+                                                    .foregroundColor(.green)
+                                                    .font(.caption)
+                                            }
+                                        }
+                                        Text(
+                                            "\(group.skills.count) \(NSLocalizedString("Main_Skills_number", comment: "")) - \(formatNumber(group.totalSkillPoints)) SP"
+                                        )
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    }
                                 }
                             }
+                            .listRowBackground(
+                                group.maxTotalSkillPoints > 0
+                                    ? GeometryReader { geometry in
+                                        let progress = Double(group.learnedTotalSkillPoints) / Double(group.maxTotalSkillPoints)
+                                        let progressWidth = geometry.size.width * min(max(progress, 0), 1)
+
+                                        ZStack(alignment: .leading) {
+                                            // 使用系统背景色作为底层，保持默认的白色
+                                            Color(UIColor.systemBackground)
+                                                .frame(width: geometry.size.width, height: geometry.size.height)
+
+                                            // 已学技能部分的背景（蓝色），覆盖在默认行背景上
+                                            Color.blue.opacity(0.2)
+                                                .frame(width: progressWidth, height: geometry.size.height)
+                                        }
+                                    }
+                                    : nil
+                            )
                         }
+                        .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                     }
-                    .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                 } else {
                     // 显示搜索结果
                     ForEach(viewModel.filteredSkills, id: \.typeId) { skill in
@@ -623,6 +671,19 @@ struct SkillGroupDetailView: View {
             Task {
                 await viewModel.loadSkills()
             }
+        }
+    }
+}
+
+// 技能组图标修饰符，在浅色模式下反色
+struct SkillGroupIconModifier: ViewModifier {
+    let colorScheme: ColorScheme
+
+    func body(content: Content) -> some View {
+        if colorScheme == .light {
+            content.colorInvert()
+        } else {
+            content
         }
     }
 }

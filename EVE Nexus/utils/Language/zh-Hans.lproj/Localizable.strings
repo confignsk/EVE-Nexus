@@ -12,6 +12,7 @@
 "Features_Customize_Mode" = "自定义模式";
 "Features_Exit_Customize" = "退出编辑模式";
 "Features_Restore_Default" = "恢复默认";
+"Main_Pinned_Features" = "常用功能";
 
 "Main_Home" = "首页";
 "Main_Character" = "人物";
@@ -149,6 +150,8 @@
 "Calculator_Title" = "计算器";
 "Calculator_Blueprint" = "蓝图计算器";
 "Calculator_Ore_Refinery" = "精炼计算器";
+"Calculator_Industry_Section" = "工业";
+"Calculator_PI_Section" = "行星开发";
 "Blueprint_Calculator_Settings" = "蓝图设置";
 "Blueprint_Calculator_Material_Efficiency" = "材料效率";
 "Blueprint_Calculator_Time_Efficiency" = "时间效率";
@@ -205,6 +208,9 @@
 "Main_Database_Show_Important_Only_Detail" = "在数据库中只展示物品的重要属性";
 "Main_Market_Current_Price" = "当前售价";
 "Main_Market_Price_History" = "历史价格";
+"Main_Market_Price_History_1M" = "近1月";
+"Main_Market_Price_History_3M" = "近3月";
+"Main_Market_Price_History_1Y" = "近一年";
 "Main_Market_Show_market_orders" = "查看市场订单";
 "Main_Market_WH_info" = "虫洞信息";
 "Main_Market_WH_Details" = "详细信息";
@@ -276,6 +282,7 @@
 
 "Main_About" = "关于";
 "Main_About_Database_Version" = "SDE 数据库";
+"Main_About_Database_BuiltIn" = "内置";
 "Main_About_Database_Update_Available" = "可更新";
 "Main_SDE_Update_Available" = "可更新";
 "Main_About_Build_Number" = "构建号";
@@ -502,6 +509,12 @@
 "Account_Total_SP" = "总技能点";
 "Account_Wallet_value" = "钱包";
 "Scopes_refresh_hint" = "出错时点击按钮刷新Scope列表:";
+"Account_Steam_Login_Hint" = "关于使用 Steam 登录";
+"Account_Steam_Login_Title" = "Steam 登录说明";
+"Account_Steam_Login_Description" = "我们收到一位用户的邮件，其发现无法通过Steam登录游戏账号。\n\n我们验证了此问题，但暂未找到合适的解决方案。\n\n此问题主要出现在安装了 Steam App 的 IOS 用户设备，如果您也有相同的问题，可以尝试采取以下措施进行缓解。\n\n";
+"Account_Steam_Login_GIF_Not_Found" = "GIF 图片未找到";
+"Account_Steam_Login_Reference_Hint" = "建议参考此文档为通过Steam创建的账号设置账号名称：";
+"Account_Steam_Login_Reference_Link" = "参考链接";
 // Language Settings
 "Main_Setting_Language_Switch_Title" = "切换语言";
 "Main_Setting_Language_Switch_Message" = "需要重新加载应用以应用语言更改，是否继续？";
@@ -680,6 +693,7 @@
 "Wallet_Transaction_Category" = "日志类型";
 "Wallet_Income" = "收入";
 "Wallet_Expense" = "支出";
+"Wallet_Journal_Sorted_By_Count" = "根据流水条目数排序";
 "Wallet_Partial_Data_Notice" = "由于数据量较大,仅显示最近30天的部分流水记录";
 "Wallet_Copy_Detail" = "复制详情";
 
@@ -803,11 +817,15 @@
 "Industry_Slots_Manufacturing" = "加工任务";
 "Industry_Slots_Research" = "科研任务";
 "Industry_Slots_Reaction" = "反应任务";
+"Industry_Slots_Detail_Title" = "槽位详情";
 "Industry_Range_Current_System" = "当前星系";
 "Industry_Range_Jumps" = "%d 跳";
 "Industry_Operation_Range" = "操作范围";
 "Industry_Filtering_Data" = "正在更新数据...";
 "Industry_Task_List_Header" = "任务清单";
+"Industry_Production_List" = "生产清单";
+"Industry_Production_List_Empty" = "暂无生产项目";
+"Industry_Production_Quantity" = "数量: %d";
 
 // 工业列表标题
 "Industry_Started_On" = "开始于%@";
@@ -1041,6 +1059,7 @@
 "Main_Corporation" = "军团";
 "Main_Setting_Show_Corporation_Affairs_detail" = "是否需要在首页展示军团管理相关的列表";
 "Main_Corporation_wallet" = "军团账户";
+"Main_Corporation_Assets" = "军团资产";
 "Main_Corporation_Members" = "军团成员";
 "Main_Corporation_Members_Title" = "军团成员列表";
 "Main_Corporation_Members_Loading" = "正在加载成员信息...";
@@ -1346,7 +1365,7 @@
 "KillMail_View_Title" = "战斗记录";
 
 // KillMail Stats
-"KillMail_Data_Source" = "数据来自zkillboard和kb.evetools.org";
+"KillMail_Data_Source" = "数据来自zkillboard and ESI";
 
 "KillMail_Search_Prompt" = "点击这里输入关键词...";
 "KillMail_Search_Input_Prompt" = "输入搜索关键词";
@@ -1585,6 +1604,11 @@
 "Contract_Group_Incomplete" = "未完成";
 "Contract_Group_Issued_On" = "发起于";
 "Contract_Group_Completed_On" = "完成于";
+"Contract_Show_Only_My_Corp_Issued" = "只看我的军团发起的合同";
+"Contract_Corporation_Issued" = "军团发起的合同";
+"Main_Corporation_Issued_Contracts" = "军团发起的合同";
+"Contract_Show_Only_My_Corp_Issued_Description" = "仅显示由我方军团发起的合同";
+"Contract_Corporation_Filter" = "军团合同筛选";
 
 "Main_Corporation_Members_Favorites" = "特别关注";
 "Main_Corporation_Members_Favorites_Title" = "特别关注列表";
@@ -1624,6 +1648,7 @@
 "Main_Language_Map_Settings" = "语言设置";
 "Misc_Done" = "完成";
 "Misc_No_Data" = "暂无数据";
+"Misc_No_Matched_Data" = "暂无符合要求的数据";
 "Misc_Loading" = "加载中...";
 "Misc_Not_Found" = "未找到";
 
@@ -2572,6 +2597,7 @@
 "Structure_Orders_Hours_Ago" = "%d小时前更新";
 "Structure_Orders_Days_Ago" = "%d天前更新";
 "Structure_Orders_No_Cache" = "无缓存";
+"Structure_Orders_Statistics" = "%d个订单; %d种物资";
 
 // Corporation Industry
 "Loading_Corp_Industry_Jobs" = "正在加载军团工业项目...";

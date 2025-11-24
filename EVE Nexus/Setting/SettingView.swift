@@ -63,8 +63,9 @@ class CacheManager {
         "AssetCache", // 资产缓存
         "StaticDataSet", // 临时静态数据
         "ContactsCache", // 声望
-        "kb", // 战斗日志
-        "BRKillmails", // 战斗日志细节
+        "kb", // 战斗日志（zkillboard 列表数据）
+        "BRKillmails", // 战斗日志细节（旧格式，保留兼容）
+        "ESIKillmails", // ESI 战斗日志详情缓存
         "MarketCache", // 市场价格细节
         "Planetary", // 行星开发
         "CharacterOrders", // 人物市场订单
@@ -884,13 +885,13 @@ struct SettingView: View {
 
             let fileManager = FileManager.default
             let documentPath = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
-            let iconPath = documentPath.appendingPathComponent("Icons")
+            let iconPath = documentPath.appendingPathComponent("icons")
 
             do {
                 // 1. 删除现有图标
                 if fileManager.fileExists(atPath: iconPath.path) {
                     try fileManager.removeItem(at: iconPath)
-                    Logger.info("Successfully deleted Icons directory")
+                    Logger.info("Successfully deleted Icons directory:\(iconPath)")
                 }
 
                 // 2. 重置解压状态

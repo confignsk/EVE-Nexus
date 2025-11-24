@@ -64,8 +64,21 @@ class MetadataManager {
         let iconsDirectory = getIconsDirectory()
         let metadataURL = iconsDirectory.appendingPathComponent("metadata.json")
 
+        // 检查路径是否存在且是文件（而不是目录）
+        var isDirectory: ObjCBool = false
+        let pathExists = FileManager.default.fileExists(atPath: iconsDirectory.path, isDirectory: &isDirectory)
+
+        if pathExists && !isDirectory.boolValue {
+            // 如果存在同名文件，先删除
+            Logger.warning("发现同名文件，正在删除: \(iconsDirectory.path)")
+            try FileManager.default.removeItem(at: iconsDirectory)
+        }
+
         // 确保目录存在
-        try FileManager.default.createDirectory(at: iconsDirectory, withIntermediateDirectories: true)
+        if !pathExists || !isDirectory.boolValue {
+            try FileManager.default.createDirectory(at: iconsDirectory, withIntermediateDirectories: true)
+            Logger.info("已创建 Icons 目录: \(iconsDirectory.path)")
+        }
 
         // 编码并保存
         let encoder = JSONEncoder()

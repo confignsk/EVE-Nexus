@@ -15,63 +15,6 @@ class KbEvetoolAPI {
         return formatter.string(from: date)
     }
 
-    // 获取角色战斗记录
-    func fetchCharacterKillMails(characterId: Int, page: Int = 1, filter: KillMailFilter = .all)
-        async throws -> [String: Any]
-    {
-        Logger.debug("准备获取角色战斗日志 - 角色ID: \(characterId), 页码: \(page)")
-
-        let url = URL(string: "https://kb.evetools.org/api/v1/killmails")!
-        let headers = [
-            "Accept-Encoding": "gzip",
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-        ]
-
-        // 构造请求体
-        var requestBody: [String: Any] = [
-            "charID": characterId,
-            "page": page,
-        ]
-
-        // 添加过滤参数
-        switch filter {
-        case .kill:
-            requestBody["isKills"] = true
-        case .loss:
-            requestBody["isLosses"] = true
-        case .all:
-            break
-        }
-
-        let bodyData = try JSONSerialization.data(withJSONObject: requestBody)
-
-        // 打印请求体内容
-        if let jsonString = String(data: bodyData, encoding: .utf8) {
-            Logger.debug("请求体内容: \(jsonString)")
-        }
-
-        Logger.debug("开始发送网络请求...")
-        let data = try await NetworkManager.shared.fetchData(
-            from: url,
-            method: "POST",
-            body: bodyData,
-            headers: headers,
-            timeouts: [3, 3, 5, 5, 10]
-        )
-        Logger.debug("收到网络响应，数据大小: \(data.count) 字节")
-
-        // 解析JSON数据
-        guard let jsonData = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            throw NSError(
-                domain: "KbEvetoolAPI", code: -1,
-                userInfo: [NSLocalizedDescriptionKey: "解析JSON失败: \(data)"]
-            )
-        }
-
-        return jsonData
-    }
-
     func getShipInfo(_ record: [String: Any], path: String...) -> (id: Int?, name: String?) {
         var current: Any? = record
         for key in path {
@@ -221,129 +164,143 @@ class KbEvetoolAPI {
         let image: String
     }
 
-    // 根据搜索结果获取战斗日志
-    func fetchKillMailsBySearchResult(
-        result: SearchResult, page: Int = 1, filter: KillMailFilter = .all
-    ) async throws -> [String: Any] {
-        Logger.debug("准备获取战斗日志列表 - 类型: \(result.category), ID: \(result.id), 页码: \(page)")
+    // 从 zkillboard 获取角色战斗记录列表
+    func fetchZKBCharacterKillMails(characterId: Int, page: Int = 1, filter: KillMailFilter = .all)
+        async throws -> [ZKBKillMailEntry]
+    {
+        Logger.debug("准备从 zkillboard 获取角色战斗日志 - 角色ID: \(characterId), 页码: \(page), 过滤: \(filter)")
 
-        let url = URL(string: "https://kb.evetools.org/api/v1/killmails")!
-        let headers = [
-            "Accept-Encoding": "gzip",
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-        ]
-
-        // 根据不同类型构造请求体
-        var requestBody: [String: Any] = ["page": page]
-        switch result.category {
-        case .region:
-            requestBody["regionID"] = result.id
-        case .character:
-            requestBody["charID"] = result.id
-        case .inventory_type:
-            requestBody["shipID"] = result.id
-        case .solar_system:
-            requestBody["systemID"] = result.id
-        case .corporation:
-            requestBody["corpID"] = result.id
-        case .alliance:
-            requestBody["allyID"] = result.id
-        }
-
-        // 添加过滤参数
+        let urlString: String
         switch filter {
         case .kill:
-            requestBody["isKills"] = true
+            urlString = "https://zkillboard.com/api/kills/characterID/\(characterId)/page/\(page)/"
         case .loss:
-            requestBody["isLosses"] = true
+            urlString = "https://zkillboard.com/api/losses/characterID/\(characterId)/page/\(page)/"
         case .all:
-            break
+            urlString = "https://zkillboard.com/api/characterID/\(characterId)/page/\(page)/"
         }
 
-        let bodyData = try JSONSerialization.data(withJSONObject: requestBody)
-
-        // 打印请求体内容
-        if let jsonString = String(data: bodyData, encoding: .utf8) {
-            Logger.debug("请求体内容: \(jsonString)")
-        }
-
-        Logger.debug("开始发送网络请求...")
-        let data = try await NetworkManager.shared.fetchData(
-            from: url,
-            method: "POST",
-            body: bodyData,
-            headers: headers
-        )
-        Logger.debug("收到网络响应，数据大小: \(data.count) 字节")
-
-        // 解析JSON数据
-        guard let jsonData = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+        guard let url = URL(string: urlString) else {
             throw NSError(
-                domain: "KbEvetoolAPI", code: -3,
-                userInfo: [NSLocalizedDescriptionKey: "解析JSON失败: \(data)"]
+                domain: "KbEvetoolAPI", code: -1,
+                userInfo: [NSLocalizedDescriptionKey: "无效的 URL: \(urlString)"]
             )
         }
 
-        return jsonData
-    }
-
-    // 根据ID获取完整战斗日志
-    func fetchKillMailDetail(killMailId: Int) async throws -> [String: Any] {
-        Logger.debug("准备获取战斗日志详情 - ID: \(killMailId)")
-
-        // 获取缓存目录路径
-        let fileManager = FileManager.default
-        let cacheDirectory = try fileManager.url(
-            for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true
-        )
-        .appendingPathComponent("BRKillmails", isDirectory: true)
-
-        // 创建缓存目录(如果不存在)
-        if !fileManager.fileExists(atPath: cacheDirectory.path) {
-            try fileManager.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
-        }
-
-        let cacheFile = cacheDirectory.appendingPathComponent("\(killMailId).json")
-
-        // 检查本地缓存
-        if fileManager.fileExists(atPath: cacheFile.path) {
-            Logger.debug("发现本地缓存,读取缓存文件: \(cacheFile.path)")
-            let data = try Data(contentsOf: cacheFile)
-            if let jsonData = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                Logger.success("成功读取本地缓存")
-                return jsonData
-            }
-        }
-
-        // 如果没有缓存或缓存无效,从网络获取
-        Logger.debug("开始从网络获取战斗日志...")
-        let url = URL(string: "https://kb.evetools.org/api/v1/killmails/\(killMailId)")!
-
-        // 添加请求头
         let headers = [
             "Accept-Encoding": "gzip",
             "Accept": "application/json",
+            "User-Agent": "Tritanium Maintainer: tritanium_support@icloud.com",
         ]
 
+        Logger.debug("开始发送 zkillboard 网络请求...")
         let data = try await NetworkManager.shared.fetchData(
             from: url,
-            headers: headers
+            headers: headers,
+            timeouts: [3, 3, 5, 5, 10]
         )
-        Logger.debug("收到网络响应，数据大小: \(data.count) 字节")
+        Logger.debug("收到 zkillboard 响应，数据大小: \(data.count) 字节")
 
-        // 解析JSON数据
-        guard let jsonData = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+        // 解析 JSON 数据
+        do {
+            let entries = try JSONDecoder().decode([ZKBKillMailEntry].self, from: data)
+            Logger.debug("成功解析 \(entries.count) 个 killmail 条目")
+            return entries
+        } catch {
+            Logger.error("解析 zkillboard JSON 失败: \(error)")
             throw NSError(
-                domain: "KbEvetoolAPI", code: -4,
-                userInfo: [NSLocalizedDescriptionKey: "解析JSON失败: \(data)"]
+                domain: "KbEvetoolAPI", code: -2,
+                userInfo: [NSLocalizedDescriptionKey: "解析JSON失败: \(error.localizedDescription)"]
+            )
+        }
+    }
+
+    // 根据搜索结果从 zkillboard 获取战斗日志列表
+    func fetchZKBKillMailsBySearchResult(
+        result: SearchResult, page: Int = 1, filter: KillMailFilter = .all
+    ) async throws -> [ZKBKillMailEntry] {
+        Logger.debug("准备从 zkillboard 获取战斗日志列表 - 类型: \(result.category), ID: \(result.id), 页码: \(page), 过滤: \(filter)")
+
+        // 根据类别确定 API 路径
+        let typePath: String
+        switch result.category {
+        case .character:
+            typePath = "characterID"
+        case .corporation:
+            typePath = "corporationID"
+        case .alliance:
+            typePath = "allianceID"
+        case .inventory_type:
+            typePath = "shipTypeID"
+        case .solar_system:
+            typePath = "systemID"
+        case .region:
+            typePath = "regionID"
+        }
+
+        // 根据过滤条件构造 URL
+        let urlString: String
+        switch filter {
+        case .kill:
+            urlString = "https://zkillboard.com/api/kills/\(typePath)/\(result.id)/page/\(page)/"
+        case .loss:
+            urlString = "https://zkillboard.com/api/losses/\(typePath)/\(result.id)/page/\(page)/"
+        case .all:
+            urlString = "https://zkillboard.com/api/\(typePath)/\(result.id)/page/\(page)/"
+        }
+
+        guard let url = URL(string: urlString) else {
+            throw NSError(
+                domain: "KbEvetoolAPI", code: -1,
+                userInfo: [NSLocalizedDescriptionKey: "无效的 URL: \(urlString)"]
             )
         }
 
-        // 将数据写入缓存
-        Logger.debug("将数据写入缓存: \(cacheFile.path)")
-        try data.write(to: cacheFile)
+        let headers = [
+            "Accept-Encoding": "gzip",
+            "Accept": "application/json",
+            "User-Agent": "Tritanium Maintainer: tritanium_support@icloud.com",
+        ]
 
-        return jsonData
+        Logger.debug("开始发送 zkillboard 搜索请求...")
+        let data = try await NetworkManager.shared.fetchData(
+            from: url,
+            headers: headers,
+            timeouts: [3, 3, 5, 5, 10]
+        )
+        Logger.debug("收到 zkillboard 响应，数据大小: \(data.count) 字节")
+
+        // 解析 JSON 数据
+        do {
+            let entries = try JSONDecoder().decode([ZKBKillMailEntry].self, from: data)
+            Logger.debug("成功解析 \(entries.count) 个 killmail 条目")
+            return entries
+        } catch {
+            Logger.error("解析 zkillboard JSON 失败: \(error)")
+            throw NSError(
+                domain: "KbEvetoolAPI", code: -2,
+                userInfo: [NSLocalizedDescriptionKey: "解析JSON失败: \(error.localizedDescription)"]
+            )
+        }
     }
+}
+
+// ZKillboard API 响应数据结构（与 KillMailDataConverter 中的定义保持一致）
+struct ZKBKillMailEntry: Codable {
+    let killmail_id: Int
+    let zkb: ZKBInfo
+}
+
+struct ZKBInfo: Codable {
+    let locationID: Int
+    let hash: String
+    let fittedValue: Double
+    let droppedValue: Double
+    let destroyedValue: Double
+    let totalValue: Double
+    let points: Int
+    let npc: Bool
+    let solo: Bool
+    let awox: Bool
+    let labels: [String]
 }

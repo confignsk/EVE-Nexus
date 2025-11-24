@@ -224,6 +224,8 @@ struct StructureRowView: View {
     @State private var cacheStatus: StructureMarketManager.CacheStatus = .noData
     @State private var showingReloadAlert = false
     @State private var lastUpdateDate: Date? = nil
+    @State private var ordersCount: Int? = nil
+    @State private var itemTypesCount: Int? = nil
 
     var body: some View {
         HStack(spacing: 12) {
@@ -276,19 +278,35 @@ struct StructureRowView: View {
                             .truncationMode(.tail)
                     }
 
-                    // 缓存更新时间（人物名称下方）
-                    if let updateDate = lastUpdateDate {
-                        let minutesAgo = Int(Date().timeIntervalSince(updateDate) / 60)
-                        if minutesAgo >= 0 {
-                            Text(formatTimeAgo(minutesAgo))
+                    // 缓存更新时间和订单统计信息
+                    HStack(spacing: 8) {
+                        if let updateDate = lastUpdateDate {
+                            let minutesAgo = Int(Date().timeIntervalSince(updateDate) / 60)
+                            if minutesAgo >= 0 {
+                                Text(formatTimeAgo(minutesAgo))
+                                    .foregroundColor(.secondary)
+                                    .font(.caption2)
+                            }
+                        } else {
+                            // 没有缓存时显示提示
+                            Text(NSLocalizedString("Structure_Orders_No_Cache", comment: "无缓存"))
                                 .foregroundColor(.secondary)
                                 .font(.caption2)
                         }
-                    } else {
-                        // 没有缓存时显示提示
-                        Text(NSLocalizedString("Structure_Orders_No_Cache", comment: "无缓存"))
+
+                        // 订单数和物品类别数
+                        if let ordersCount = ordersCount, let itemTypesCount = itemTypesCount {
+                            Text("•")
+                                .foregroundColor(.secondary)
+                                .font(.caption2)
+                            Text(String.localizedStringWithFormat(
+                                NSLocalizedString("Structure_Orders_Statistics", comment: ""),
+                                ordersCount,
+                                itemTypesCount
+                            ))
                             .foregroundColor(.secondary)
                             .font(.caption2)
+                        }
                     }
                 }
             }
@@ -373,6 +391,10 @@ struct StructureRowView: View {
                 structureId: Int64(structure.structureId))
             lastUpdateDate = StructureMarketManager.getLocalOrdersModificationDate(
                 structureId: Int64(structure.structureId))
+            // 加载本地订单统计信息
+            Task {
+                await loadLocalOrdersStatistics()
+            }
         }
         .alert(
             NSLocalizedString("Structure_Orders_Reload_Title", comment: "重新加载订单"),
@@ -427,8 +449,48 @@ struct StructureRowView: View {
         lastUpdateDate = StructureMarketManager.getLocalOrdersModificationDate(
             structureId: Int64(structure.structureId))
 
+        // 更新订单统计信息
+        await loadLocalOrdersStatistics()
+
         isLoadingOrders = false
         structureOrdersProgress = nil
+    }
+
+    // 加载本地订单统计信息
+    private func loadLocalOrdersStatistics() async {
+        // 先检查是否有本地缓存文件（无论是否过期）
+        let hasLocal = await StructureMarketManager.shared.hasLocalOrders(structureId: Int64(structure.structureId))
+        guard hasLocal else {
+            await MainActor.run {
+                ordersCount = nil
+                itemTypesCount = nil
+            }
+            return
+        }
+
+        do {
+            // 尝试从本地缓存加载订单数据（不强制刷新，优先使用本地缓存）
+            let orders = try await StructureMarketManager.shared.getStructureOrders(
+                structureId: Int64(structure.structureId),
+                characterId: structure.characterId,
+                forceRefresh: false
+            )
+
+            // 计算订单总数和物品类别数
+            let totalOrders = orders.count
+            let uniqueItemTypes = Set(orders.map { $0.typeId }).count
+
+            await MainActor.run {
+                ordersCount = totalOrders
+                itemTypesCount = uniqueItemTypes
+            }
+        } catch {
+            // 如果加载失败，清空统计信息
+            await MainActor.run {
+                ordersCount = nil
+                itemTypesCount = nil
+            }
+        }
     }
 
     // 格式化时间差为"X分钟前更新"
@@ -436,7 +498,7 @@ struct StructureRowView: View {
         if minutes < 1 {
             return NSLocalizedString("Structure_Orders_Just_Updated", comment: "刚刚更新")
         } else {
-            return String(format: NSLocalizedString("Structure_Orders_Minutes_Ago", comment: "%d分钟前更新"), minutes)
+            return String.localizedStringWithFormat(NSLocalizedString("Structure_Orders_Minutes_Ago", comment: "%d分钟前更新"), minutes)
         }
     }
 }

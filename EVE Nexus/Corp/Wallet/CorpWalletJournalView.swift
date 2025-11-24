@@ -97,11 +97,11 @@ final class CorpWalletJournalViewModel: ObservableObject {
         var localizedString: String {
             switch self {
             case .last30Days:
-                return String(format: NSLocalizedString("Time_Days_Long", comment: ""), 30)
+                return String.localizedStringWithFormat(NSLocalizedString("Time_Days_Long", comment: ""), 30)
             case .last7Days:
-                return String(format: NSLocalizedString("Time_Days_Long", comment: ""), 7)
+                return String.localizedStringWithFormat(NSLocalizedString("Time_Days_Long", comment: ""), 7)
             case .last1Day:
-                return String(format: NSLocalizedString("Time_Days_Long", comment: ""), 1)
+                return String.localizedStringWithFormat(NSLocalizedString("Time_Days_Long", comment: ""), 1)
             }
         }
     }
@@ -681,7 +681,7 @@ struct CorpWalletJournalEntryRow: View {
 
             // Reason 信息
             if !entry.reason.isEmpty {
-                Text(String(format: NSLocalizedString("Reason", comment: ""), entry.reason))
+                Text(String.localizedStringWithFormat(NSLocalizedString("Reason", comment: ""), entry.reason))
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -710,7 +710,7 @@ struct CorpWalletJournalEntryRow: View {
                     language: selectedLanguage == "zh-Hans" ? "zh" : "en"
                 )
                 let sign = entry.amount >= 0 ? "+" : ""
-                let detailText = "[\(FormatUtil.formatUTCToLocalTime(entry.date))] \(processedDescription): \(sign)\(FormatUtil.format(entry.amount)) ISK, \(String(format: NSLocalizedString("Reason", comment: ""), entry.reason))"
+                let detailText = "[\(FormatUtil.formatUTCToLocalTime(entry.date))] \(processedDescription): \(sign)\(FormatUtil.format(entry.amount)) ISK, \(String.localizedStringWithFormat(NSLocalizedString("Reason", comment: ""), entry.reason))"
                 UIPasteboard.general.string = detailText
             } label: {
                 Label(

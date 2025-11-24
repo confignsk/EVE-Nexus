@@ -141,6 +141,10 @@ struct DatabaseVersionRow: View {
         updateChecker.isChecking
     }
 
+    private var isUsingBuiltInDatabase: Bool {
+        StaticResourceManager.shared.shouldUseBundleSDE()
+    }
+
     var body: some View {
         HStack(spacing: 16) {
             Image(systemName: "server.rack")
@@ -152,6 +156,16 @@ struct DatabaseVersionRow: View {
                     Text(NSLocalizedString("Main_About_Database_Version", comment: ""))
                         .font(.system(size: 15))
                         .foregroundColor(.primary)
+
+                    if isUsingBuiltInDatabase {
+                        Text(NSLocalizedString("Main_About_Database_BuiltIn", comment: ""))
+                            .font(.system(size: 11))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color(red: 0.4, green: 0.7, blue: 1.0))
+                            .cornerRadius(4)
+                    }
 
                     if hasUpdate {
                         Text(NSLocalizedString("Main_About_Database_Update_Available", comment: ""))

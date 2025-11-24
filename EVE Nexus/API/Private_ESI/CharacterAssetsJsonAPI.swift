@@ -268,13 +268,17 @@ public class CharacterAssetsJsonAPI {
     }
 
     // 收集所有容器的ID (除了最顶层建筑物)
-    private func collectContainerIds(from nodes: [AssetTreeNode]) -> Set<Int64> {
-        var containerIds = Set<Int64>()
+    // 只收集categoryID为6、22、65的容器
+    private func collectContainerIds(
+        from nodes: [AssetTreeNode],
+        databaseManager: DatabaseManager
+    ) -> (ids: Set<Int64>, idToTypeId: [Int64: Int]) {
+        var containerCandidates: [(itemId: Int64, typeId: Int)] = []
 
         func collect(from node: AssetTreeNode, isRoot: Bool = false) {
             // 如果不是根节点且有子项，则这是一个容器
-            if !isRoot && node.items != nil && !node.items!.isEmpty {
-                containerIds.insert(node.item_id)
+            if !isRoot, node.items != nil, !node.items!.isEmpty {
+                containerCandidates.append((itemId: node.item_id, typeId: node.type_id))
             }
 
             // 递归处理子节点
@@ -290,13 +294,55 @@ public class CharacterAssetsJsonAPI {
             collect(from: node, isRoot: true)
         }
 
-        return containerIds
+        // 如果没有任何容器，直接返回
+        if containerCandidates.isEmpty {
+            return (Set<Int64>(), [:])
+        }
+
+        // 查询这些type_id的categoryID，只保留categoryID为6、22、65的容器
+        let typeIds = Set(containerCandidates.map { $0.typeId })
+        let typeIdList = typeIds.sorted().map { String($0) }.joined(separator: ",")
+        let query = """
+            SELECT type_id, categoryID 
+            FROM types 
+            WHERE type_id IN (\(typeIdList))
+        """
+
+        var validTypeIds = Set<Int>()
+        if case let .success(rows) = databaseManager.executeQuery(query) {
+            for row in rows {
+                if let typeId = row["type_id"] as? Int,
+                   let categoryID = row["categoryID"] as? Int,
+                   [6, 22, 65].contains(categoryID)
+                {
+                    validTypeIds.insert(typeId)
+                }
+            }
+        }
+
+        // 过滤掉不符合categoryID要求的容器
+        let filteredContainers = containerCandidates
+            .filter { validTypeIds.contains($0.typeId) }
+
+        var containerIds = Set<Int64>()
+        var idToTypeId: [Int64: Int] = [:]
+        for container in filteredContainers {
+            containerIds.insert(container.itemId)
+            idToTypeId[container.itemId] = container.typeId
+        }
+
+        Logger.debug("收集容器ID - 总候选数: \(containerCandidates.count), 符合categoryID(6,22,65)的数量: \(containerIds.count)")
+
+        return (containerIds, idToTypeId)
     }
 
     // 获取容器名称
-    private func fetchContainerNames(containerIds: [Int64], characterId: Int) async throws
-        -> [Int64: String]
-    {
+    private func fetchContainerNames(
+        containerIds: [Int64],
+        idToTypeId _: [Int64: Int],
+        characterId: Int,
+        databaseManager _: DatabaseManager
+    ) async throws -> [Int64: String] {
         guard !containerIds.isEmpty else { return [:] }
 
         let urlString = "https://esi.evetech.net/characters/\(characterId)/assets/names/"
@@ -498,8 +544,8 @@ public class CharacterAssetsJsonAPI {
         // 添加进度回调 - 准备容器信息
         progressCallback?(.preparingContainers)
 
-        // 收集所有容器的ID
-        let containerIds = collectContainerIds(from: rootNodes)
+        // 收集所有容器的ID和对应的type_id映射（只收集categoryID为6、22、65的容器）
+        let (containerIds, idToTypeId) = collectContainerIds(from: rootNodes, databaseManager: databaseManager)
 
         // 获取容器名称
         var allNames = names
@@ -508,7 +554,9 @@ public class CharacterAssetsJsonAPI {
             do {
                 let containerNames = try await fetchContainerNames(
                     containerIds: Array(containerIds),
-                    characterId: characterId
+                    idToTypeId: idToTypeId,
+                    characterId: characterId,
+                    databaseManager: databaseManager
                 )
                 for (id, name) in containerNames {
                     allNames[id] = name

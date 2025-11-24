@@ -167,36 +167,108 @@ class ColonySimulation {
     // MARK: - 私有方法
 
     /// 检查殖民地是否处于工作状态
-    /// - Parameter pins: 设施列表
+    /// - Parameters:
+    ///   - pins: 设施列表
+    ///   - currentSimTime: 当前模拟时间（用于检查提取器是否过期）
     /// - Returns: 是否处于工作状态
-    private static func isColonyWorking(pins: [Pin]) -> Bool {
-        // 检查是否有任何设施处于工作状态
+    /// 逻辑：
+    /// 1. 首先检查是否有提取器存在
+    /// 2. 如果有提取器，检查是否有活跃的提取器（且未过期）
+    ///    - 如果有活跃的提取器，返回 true
+    ///    - 如果没有活跃的提取器，继续检查工厂
+    /// 3. 如果没有提取器，跳过提取器检查，直接检查工厂
+    /// 4. 检查工厂：
+    ///    - 如果工厂正在生产，返回 true
+    ///    - 如果工厂有足够的输入材料，返回 true
+    ///    - 如果工厂没有足够的输入材料，返回 false（停工）
+    /// 5. 仓储类设施完全不需要考虑
+    private static func isColonyWorking(pins: [Pin], currentSimTime: Date) -> Bool {
+        // 首先检查是否有提取器存在
+        var hasExtractor = false
+        var hasActiveExtractor = false
+
         for pin in pins {
-            if isActive(pin: pin) {
-                return true
+            if let extractor = pin as? Pin.Extractor {
+                hasExtractor = true
+                if extractor.isActive {
+                    // 检查是否已过期
+                    if let expiryTime = extractor.expiryTime {
+                        if expiryTime > currentSimTime {
+                            // 提取器活跃且未过期
+                            hasActiveExtractor = true
+                            break
+                        }
+                    } else {
+                        // 没有过期时间，认为提取器还在工作
+                        hasActiveExtractor = true
+                        break
+                    }
+                }
             }
         }
 
-        // 检查是否有任何设施可以激活
+        // 如果有提取器且存在活跃的提取器，返回 true
+        if hasExtractor && hasActiveExtractor {
+            return true
+        }
+
+        // 如果没有提取器，或者有提取器但没有活跃的提取器，检查工厂状态
         for pin in pins {
-            if canActivate(pin: pin) {
-                return true
+            if let factory = pin as? Pin.Factory {
+                // 如果工厂正在生产，返回 true
+                if factory.isActive {
+                    return true
+                }
+                // 如果工厂有足够的输入材料，返回 true
+                if factory.hasEnoughInputs() {
+                    return true
+                }
             }
         }
 
+        // 如果工厂也没有足够的输入材料，返回 false（停工）
         return false
     }
 
     /// 检查殖民地是否还在工作（公开方法，用于快照生成）
     /// - Parameter colony: 殖民地
     /// - Returns: 是否还在工作
+    /// 逻辑：
+    /// 1. 首先检查是否有提取器存在
+    /// 2. 如果有提取器，检查是否有活跃的提取器（且未过期）
+    ///    - 如果有活跃的提取器，继续检查工厂（因为提取器在工作）
+    ///    - 如果没有活跃的提取器，继续检查工厂
+    /// 3. 如果没有提取器，跳过提取器检查，直接检查工厂
+    /// 4. 检查工厂：
+    ///    - 如果工厂正在生产或有材料可以生产，返回 true
+    ///    - 否则返回 false
     static func isColonyStillWorking(colony: Colony) -> Bool {
-        // 检查提取器
+        let currentTime = colony.currentSimTime
+
+        // 检查是否有活跃的提取器
+        var hasActiveExtractor = false
+
         for pin in colony.pins {
-            if let extractor = pin as? Pin.Extractor, extractor.isActive {
-                return true
+            if let extractor = pin as? Pin.Extractor {
+                if extractor.isActive {
+                    // 检查是否已过期
+                    if let expiryTime = extractor.expiryTime {
+                        // 如果过期时间已过，认为提取器已停工
+                        if expiryTime > currentTime {
+                            hasActiveExtractor = true
+                            break
+                        }
+                    } else {
+                        // 如果没有过期时间，认为提取器还在工作
+                        hasActiveExtractor = true
+                        break
+                    }
+                }
             }
         }
+
+        // 如果有提取器且存在活跃的提取器，继续检查工厂（因为提取器在工作）
+        // 如果没有提取器，或者有提取器但没有活跃的提取器，也继续检查工厂
 
         // 检查工厂
         for pin in colony.pins {
@@ -208,6 +280,14 @@ class ColonySimulation {
             }
         }
 
+        // 如果有活跃的提取器，即使工厂暂时没有材料，也认为还在工作
+        // 因为提取器可能会继续产出资源
+        if hasActiveExtractor {
+            return true
+        }
+
+        // 如果没有提取器，且工厂也没有材料，返回 false（停工）
+        // 如果有提取器但没有活跃的提取器，且工厂也没有材料，返回 false（停工）
         return false
     }
 
@@ -417,21 +497,25 @@ class ColonySimulation {
             {
                 // 获取殖民地当前状态
                 updatePinStatuses(colony: colony)
-                let isWorking = isColonyWorking(pins: colony.pins)
+                let isWorking = isColonyWorking(pins: colony.pins, currentSimTime: currentSimTime)
 
                 // 如果已经不在工作，设置模拟结束时间
                 if !isWorking {
-                    // 检查是否有设施的存储已满
-                    let hasStorageFull = colony.pins.contains { pin in
-                        pin.status == .storageFull
-                    }
+                    simEndTime = currentSimTime
+                }
+            } else {
+                // 对于普通模拟（模拟到指定时间），也应该检查停工状态
+                // 如果殖民地已经停工，提前结束模拟以避免不必要的计算
+                // 使用与"模拟到未来"相同的判断逻辑
+                // 每处理一定数量的事件后检查一次，避免频繁检查影响性能
+                if eventCount % 50 == 0 {
+                    updatePinStatuses(colony: colony)
+                    let isWorking = isColonyWorking(pins: colony.pins, currentSimTime: currentSimTime)
 
-                    if hasStorageFull {
-                        // 如果因为存储已满而停止，立即结束模拟
-                        break
-                    } else {
-                        // 否则，继续模拟到当前时间点
+                    // 如果已经不在工作，设置模拟结束时间并提前结束
+                    if !isWorking {
                         simEndTime = currentSimTime
+                        break
                     }
                 }
             }

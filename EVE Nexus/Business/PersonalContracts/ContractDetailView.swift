@@ -883,7 +883,7 @@ struct ContractDetailView: View {
 
                                 if remainingDays > 0 {
                                     Text(
-                                        "\(expiredText) (\(String(format: NSLocalizedString("Contract_Days_Remaining_Full", comment: ""), remainingDays)))"
+                                        "\(expiredText) (\(String.localizedStringWithFormat(NSLocalizedString("Contract_Days_Remaining_Full", comment: ""), remainingDays)))"
                                     )
                                     .font(.caption)
                                     .foregroundColor(.secondary)

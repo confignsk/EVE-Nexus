@@ -169,6 +169,21 @@ struct IndustryProgressView: View {
     }
 }
 
+// 人物详细信息结构体
+struct CharacterSlotDetail {
+    let characterId: Int
+    let characterName: String
+    let manufacturingSlots: Int
+    let researchSlots: Int
+    let reactionSlots: Int
+    let manufacturingRange: Int
+    let researchRange: Int
+    let reactionRange: Int
+    let manufacturingUsed: Int
+    let researchUsed: Int
+    let reactionUsed: Int
+}
+
 @MainActor
 class CharacterIndustryViewModel: ObservableObject {
     // 配置常量
@@ -266,6 +281,19 @@ class CharacterIndustryViewModel: ObservableObject {
     // 缓存最大槽位数据，在初始化时计算一次
     private var maxSlots: (manufacturing: Int, research: Int, reaction: Int) = (1, 1, 1)
 
+    // 缓存每个角色的详细信息
+    @Published var characterSlotDetails: [CharacterSlotDetail] = []
+
+    // 生产清单数据
+    struct ProductionItem {
+        let typeId: Int
+        let typeName: String
+        let typeIcon: String
+        var totalQuantity: Int
+    }
+
+    @Published var productionList: [ProductionItem] = []
+
     private let characterId: Int
     private let databaseManager: DatabaseManager
     private var loadingTask: Task<Void, Never>?
@@ -288,6 +316,18 @@ class CharacterIndustryViewModel: ObservableObject {
 
         // 加载可用角色列表
         availableCharacters = CharacterSkillsUtils.getAllCharacters()
+
+        // 过滤掉已保存但已不在可用角色列表中的角色ID
+        let availableCharacterIds = Set(availableCharacters.map { $0.id })
+        let validSelectedIds = selectedCharacterIds.intersection(availableCharacterIds)
+
+        // 如果有角色被过滤掉，更新 UserDefaults
+        if validSelectedIds.count != selectedCharacterIds.count {
+            selectedCharacterIds = validSelectedIds
+            UserDefaults.standard.set(
+                Array(selectedCharacterIds), forKey: "selectedCharacterIds_industry"
+            )
+        }
 
         // 如果没有选中的角色，默认选择当前角色
         if selectedCharacterIds.isEmpty {
@@ -425,6 +465,12 @@ class CharacterIndustryViewModel: ObservableObject {
 
                 // 计算工业槽位统计
                 calculateIndustrySlotStats()
+
+                // 更新characterSlotDetails中的已用槽位数
+                updateCharacterSlotUsedCounts()
+
+                // 计算生产清单
+                calculateProductionList()
 
                 // 根据是否是过滤刷新来清除相应的加载状态
                 if isFiltering {
@@ -769,91 +815,8 @@ class CharacterIndustryViewModel: ObservableObject {
         maxSlots = await calculateMaxIndustrySlots(forceRefresh: forceRefresh)
     }
 
-    // 加载操作范围技能等级
-    private func loadOperationRanges(forceRefresh: Bool = false) async {
-        // 技能ID对应关系：
-        // 24268: 影响加工类项目的控制距离，每一级+5跳
-        // 24270: 影响科研类项目的控制距离，每一级+5跳
-        // 45750: 影响反应类项目的控制范围，每一级+5跳
-
-        // 确定要计算的角色ID列表
-        let characterIdsToCalculate: Set<Int>
-        if multiCharacterMode, selectedCharacterIds.count > 1 {
-            characterIdsToCalculate = selectedCharacterIds
-        } else if multiCharacterMode, !selectedCharacterIds.isEmpty {
-            characterIdsToCalculate = selectedCharacterIds
-        } else {
-            characterIdsToCalculate = Set([characterId])
-        }
-
-        var maxManufacturingRange = 0
-        var maxResearchRange = 0
-        var maxReactionRange = 0
-
-        for charId in characterIdsToCalculate {
-            do {
-                let skillsResponse = try await CharacterSkillsAPI.shared.fetchCharacterSkills(
-                    characterId: charId,
-                    forceRefresh: forceRefresh
-                )
-
-                // 查找特定技能的等级
-                let charManufacturingRange = (skillsResponse.skillsMap[24268]?.trained_skill_level ?? 0) * 5 // 加工类项目控制距离
-                let charResearchRange = (skillsResponse.skillsMap[24270]?.trained_skill_level ?? 0) * 5 // 科研类项目控制距离
-                let charReactionRange = (skillsResponse.skillsMap[45750]?.trained_skill_level ?? 0) * 5 // 反应类项目控制范围
-
-                // 取最大值
-                maxManufacturingRange = max(maxManufacturingRange, charManufacturingRange)
-                maxResearchRange = max(maxResearchRange, charResearchRange)
-                maxReactionRange = max(maxReactionRange, charReactionRange)
-
-            } catch {
-                Logger.error("获取角色\(charId)操作范围技能数据失败: \(error)")
-            }
-        }
-
-        // 设置最大操作范围
-        manufacturingRange = maxManufacturingRange
-        researchRange = maxResearchRange
-        reactionRange = maxReactionRange
-    }
-
-    // 获取操作范围显示文本
-    func getOperationRangeText(_ range: Int) -> String {
-        if range == 0 {
-            return NSLocalizedString("Industry_Range_Current_System", comment: "当前星系")
-        } else {
-            return String(format: NSLocalizedString("Industry_Range_Jumps", comment: "%d 跳"), range)
-        }
-    }
-
-    // 计算工业槽位统计（只计算使用数量，不重新计算最大值）
-    private func calculateIndustrySlotStats() {
-        // 计算当前使用的槽位数，包括已完成但未交付的任务
-        let activeJobs = jobs.filter { job in
-            (job.status == "active" && job.end_date > Date()) // 正在进行中
-                || job.status == "ready" // 已完成但未交付
-                || (job.status == "active" && job.end_date <= Date()) // 已完成但状态未更新
-        }
-
-        let manufacturingUsed = activeJobs.filter { $0.activity_id == 1 }.count
-        let researchUsed = activeJobs.filter { [3, 4, 5, 8].contains($0.activity_id) }.count
-        let reactionUsed = activeJobs.filter { $0.activity_id == 9 }.count
-
-        // 取计算出的最大槽位数和实际使用数量中的较大值，避免缓存不同步问题
-        let actualManufacturingTotal = max(maxSlots.manufacturing, manufacturingUsed)
-        let actualResearchTotal = max(maxSlots.research, researchUsed)
-        let actualReactionTotal = max(maxSlots.reaction, reactionUsed)
-
-        manufacturingSlots = (used: manufacturingUsed, total: actualManufacturingTotal)
-        researchSlots = (used: researchUsed, total: actualResearchTotal)
-        reactionSlots = (used: reactionUsed, total: actualReactionTotal)
-    }
-
-    // 计算最大工业槽位数
-    private func calculateMaxIndustrySlots(forceRefresh: Bool = false) async -> (
-        manufacturing: Int, research: Int, reaction: Int
-    ) {
+    // 计算并缓存所有角色的详细信息
+    private func calculateCharacterSlotDetails(forceRefresh: Bool = false) async -> [CharacterSlotDetail] {
         // 获取技能槽位增加属性的映射
         let attributeQuery = """
             SELECT type_id, attribute_id, value 
@@ -888,26 +851,29 @@ class CharacterIndustryViewModel: ObservableObject {
             }
         }
 
-        // 确定要计算的角色ID列表
-        let characterIdsToCalculate: Set<Int>
+        // 确定要计算的角色ID列表（按ID排序）
+        let characterIdsToCalculate: [Int]
         if multiCharacterMode, selectedCharacterIds.count > 1 {
-            characterIdsToCalculate = selectedCharacterIds
+            characterIdsToCalculate = Array(selectedCharacterIds).sorted()
         } else if multiCharacterMode, !selectedCharacterIds.isEmpty {
-            characterIdsToCalculate = selectedCharacterIds
+            characterIdsToCalculate = Array(selectedCharacterIds).sorted()
         } else {
-            characterIdsToCalculate = Set([characterId])
+            characterIdsToCalculate = [characterId]
         }
 
-        // 累计所有角色的槽位
-        var totalManufacturingSlots = 0
-        var totalResearchSlots = 0
-        var totalReactionSlots = 0
+        var details: [CharacterSlotDetail] = []
 
         for charId in characterIdsToCalculate {
             // 每个角色的基础槽位数
             var manufacturingSlots = 1
             var researchSlots = 1
             var reactionSlots = 1
+            var manufacturingRange = 0
+            var researchRange = 0
+            var reactionRange = 0
+
+            // 获取角色名称
+            let characterName = availableCharacters.first(where: { $0.id == charId })?.name ?? "Unknown"
 
             // 使用 CharacterSkillsAPI 获取角色技能数据
             do {
@@ -925,17 +891,212 @@ class CharacterIndustryViewModel: ObservableObject {
                         reactionSlots += bonus.reaction * level
                     }
                 }
+
+                // 计算操作范围
+                manufacturingRange = (skillsResponse.skillsMap[24268]?.trained_skill_level ?? 0) * 5
+                researchRange = (skillsResponse.skillsMap[24270]?.trained_skill_level ?? 0) * 5
+                reactionRange = (skillsResponse.skillsMap[45750]?.trained_skill_level ?? 0) * 5
             } catch {
                 Logger.error("获取角色\(charId)技能数据失败: \(error)")
             }
 
-            totalManufacturingSlots += manufacturingSlots
-            totalResearchSlots += researchSlots
-            totalReactionSlots += reactionSlots
+            // 计算该角色的已用槽位数
+            let characterJobs = jobsWithOwner.filter { $0.ownerId == charId }.map { $0.job }
+            let activeJobs = characterJobs.filter { job in
+                (job.status == "active" && job.end_date > Date()) // 正在进行中
+                    || job.status == "ready" // 已完成但未交付
+                    || (job.status == "active" && job.end_date <= Date()) // 已完成但状态未更新
+            }
+
+            let manufacturingUsed = activeJobs.filter { $0.activity_id == 1 }.count
+            let researchUsed = activeJobs.filter { [3, 4, 5, 8].contains($0.activity_id) }.count
+            let reactionUsed = activeJobs.filter { $0.activity_id == 9 }.count
+
+            details.append(CharacterSlotDetail(
+                characterId: charId,
+                characterName: characterName,
+                manufacturingSlots: manufacturingSlots,
+                researchSlots: researchSlots,
+                reactionSlots: reactionSlots,
+                manufacturingRange: manufacturingRange,
+                researchRange: researchRange,
+                reactionRange: reactionRange,
+                manufacturingUsed: manufacturingUsed,
+                researchUsed: researchUsed,
+                reactionUsed: reactionUsed
+            ))
         }
 
+        return details
+    }
+
+    // 计算生产清单
+    func calculateProductionList() {
+        // 计算制造项目（activity_id == 1）和反应项目（activity_id == 9）
+        // 只计算正在加工（status == "active" && end_date > Date()）和待交付（status == "ready"）的项目
+        let productionJobs = jobs.filter { job in
+            (job.activity_id == 1 || job.activity_id == 9) && (
+                (job.status == "active" && job.end_date > Date()) ||
+                    job.status == "ready"
+            )
+        }
+
+        // 统计每个产品的总数量
+        var productMap: [Int: ProductionItem] = [:]
+
+        for job in productionJobs {
+            if let productInfo = BlueprintCalcUtil.getBlueprintProductInfo(
+                blueprintId: job.blueprint_type_id,
+                runs: job.runs
+            ) {
+                if let existing = productMap[productInfo.typeId] {
+                    // 如果已存在，累加数量
+                    productMap[productInfo.typeId] = ProductionItem(
+                        typeId: existing.typeId,
+                        typeName: existing.typeName,
+                        typeIcon: existing.typeIcon,
+                        totalQuantity: existing.totalQuantity + productInfo.totalQuantity
+                    )
+                } else {
+                    // 如果不存在，创建新条目
+                    productMap[productInfo.typeId] = ProductionItem(
+                        typeId: productInfo.typeId,
+                        typeName: productInfo.typeName,
+                        typeIcon: productInfo.typeIcon,
+                        totalQuantity: productInfo.totalQuantity
+                    )
+                }
+            }
+        }
+
+        // 转换为数组并按产品名称排序
+        productionList = Array(productMap.values).sorted { $0.typeName.localizedCompare($1.typeName) == .orderedAscending }
+    }
+
+    // 更新已用槽位数（在loadJobs完成后调用）
+    private func updateCharacterSlotUsedCounts() {
+        // 如果characterSlotDetails为空，说明还没有计算过，直接返回
+        guard !characterSlotDetails.isEmpty else { return }
+
+        // 重新创建characterSlotDetails数组，更新已用槽位数
+        characterSlotDetails = characterSlotDetails.map { detail in
+            // 计算该角色的已用槽位数
+            let characterJobs = jobsWithOwner.filter { $0.ownerId == detail.characterId }.map { $0.job }
+            let activeJobs = characterJobs.filter { job in
+                (job.status == "active" && job.end_date > Date()) // 正在进行中
+                    || job.status == "ready" // 已完成但未交付
+                    || (job.status == "active" && job.end_date <= Date()) // 已完成但状态未更新
+            }
+
+            let manufacturingUsed = activeJobs.filter { $0.activity_id == 1 }.count
+            let researchUsed = activeJobs.filter { [3, 4, 5, 8].contains($0.activity_id) }.count
+            let reactionUsed = activeJobs.filter { $0.activity_id == 9 }.count
+
+            return CharacterSlotDetail(
+                characterId: detail.characterId,
+                characterName: detail.characterName,
+                manufacturingSlots: detail.manufacturingSlots,
+                researchSlots: detail.researchSlots,
+                reactionSlots: detail.reactionSlots,
+                manufacturingRange: detail.manufacturingRange,
+                researchRange: detail.researchRange,
+                reactionRange: detail.reactionRange,
+                manufacturingUsed: manufacturingUsed,
+                researchUsed: researchUsed,
+                reactionUsed: reactionUsed
+            )
+        }
+    }
+
+    // 加载操作范围技能等级
+    private func loadOperationRanges(forceRefresh: Bool = false) async {
+        // 如果已经有缓存的详细信息，直接使用
+        if !characterSlotDetails.isEmpty, !forceRefresh {
+            let maxManufacturingRange = characterSlotDetails.map { $0.manufacturingRange }.max() ?? 0
+            let maxResearchRange = characterSlotDetails.map { $0.researchRange }.max() ?? 0
+            let maxReactionRange = characterSlotDetails.map { $0.reactionRange }.max() ?? 0
+
+            manufacturingRange = maxManufacturingRange
+            researchRange = maxResearchRange
+            reactionRange = maxReactionRange
+            return
+        }
+
+        // 重新计算详细信息
+        let details = await calculateCharacterSlotDetails(forceRefresh: forceRefresh)
+        characterSlotDetails = details
+
+        // 计算最大操作范围
+        let maxManufacturingRange = details.map { $0.manufacturingRange }.max() ?? 0
+        let maxResearchRange = details.map { $0.researchRange }.max() ?? 0
+        let maxReactionRange = details.map { $0.reactionRange }.max() ?? 0
+
+        manufacturingRange = maxManufacturingRange
+        researchRange = maxResearchRange
+        reactionRange = maxReactionRange
+    }
+
+    // 获取操作范围显示文本
+    func getOperationRangeText(_ range: Int) -> String {
+        if range == 0 {
+            return NSLocalizedString("Industry_Range_Current_System", comment: "当前星系")
+        } else {
+            return String.localizedStringWithFormat(NSLocalizedString("Industry_Range_Jumps", comment: "%d 跳"), range)
+        }
+    }
+
+    // 计算工业槽位统计（只计算使用数量，不重新计算最大值）
+    private func calculateIndustrySlotStats() {
+        // 计算当前使用的槽位数，包括已完成但未交付的任务
+        let activeJobs = jobs.filter { job in
+            (job.status == "active" && job.end_date > Date()) // 正在进行中
+                || job.status == "ready" // 已完成但未交付
+                || (job.status == "active" && job.end_date <= Date()) // 已完成但状态未更新
+        }
+
+        let manufacturingUsed = activeJobs.filter { $0.activity_id == 1 }.count
+        let researchUsed = activeJobs.filter { [3, 4, 5, 8].contains($0.activity_id) }.count
+        let reactionUsed = activeJobs.filter { $0.activity_id == 9 }.count
+
+        // 取计算出的最大槽位数和实际使用数量中的较大值，避免缓存不同步问题
+        let actualManufacturingTotal = max(maxSlots.manufacturing, manufacturingUsed)
+        let actualResearchTotal = max(maxSlots.research, researchUsed)
+        let actualReactionTotal = max(maxSlots.reaction, reactionUsed)
+
+        manufacturingSlots = (used: manufacturingUsed, total: actualManufacturingTotal)
+        researchSlots = (used: researchUsed, total: actualResearchTotal)
+        reactionSlots = (used: reactionUsed, total: actualReactionTotal)
+    }
+
+    // 计算最大工业槽位数
+    private func calculateMaxIndustrySlots(forceRefresh: Bool = false) async -> (
+        manufacturing: Int, research: Int, reaction: Int
+    ) {
+        // 如果已经有缓存的详细信息，直接使用
+        if !characterSlotDetails.isEmpty, !forceRefresh {
+            let totalManufacturingSlots = characterSlotDetails.reduce(0) { $0 + $1.manufacturingSlots }
+            let totalResearchSlots = characterSlotDetails.reduce(0) { $0 + $1.researchSlots }
+            let totalReactionSlots = characterSlotDetails.reduce(0) { $0 + $1.reactionSlots }
+
+            return (
+                manufacturing: totalManufacturingSlots,
+                research: totalResearchSlots,
+                reaction: totalReactionSlots
+            )
+        }
+
+        // 重新计算详细信息
+        let details = await calculateCharacterSlotDetails(forceRefresh: forceRefresh)
+        characterSlotDetails = details
+
+        // 累计所有角色的槽位
+        let totalManufacturingSlots = details.reduce(0) { $0 + $1.manufacturingSlots }
+        let totalResearchSlots = details.reduce(0) { $0 + $1.researchSlots }
+        let totalReactionSlots = details.reduce(0) { $0 + $1.reactionSlots }
+
         return (
-            manufacturing: totalManufacturingSlots, research: totalResearchSlots,
+            manufacturing: totalManufacturingSlots,
+            research: totalResearchSlots,
             reaction: totalReactionSlots
         )
     }
@@ -946,6 +1107,8 @@ struct CharacterIndustryView: View {
     @StateObject private var viewModel: CharacterIndustryViewModel
     @State private var showFilterSheet = false
     @State private var showSettingsSheet = false
+    @State private var showSlotDetailSheet = false
+    @State private var showProductionListSheet = false
 
     init(characterId: Int, databaseManager: DatabaseManager = DatabaseManager()) {
         self.characterId = characterId
@@ -1001,7 +1164,7 @@ struct CharacterIndustryView: View {
 
                     // 显示加载进度（如果有多人物模式且正在加载）
                     if let progress = viewModel.loadingProgress, progress.total > 1 {
-                        Text(String(format: NSLocalizedString("Industry_Loading_Progress", comment: "已加载人物 %d/%d"), progress.current, progress.total))
+                        Text(String.localizedStringWithFormat(NSLocalizedString("Industry_Loading_Progress", comment: "已加载人物 %d/%d"), progress.current, progress.total))
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -1011,11 +1174,21 @@ struct CharacterIndustryView: View {
             } else {
                 // 工业槽位统计 Section - 始终显示
                 Section(
-                    header: Text(NSLocalizedString("Industry_Slots_Header", comment: "工业槽位"))
-                        .fontWeight(.semibold)
-                        .font(.system(size: 18))
-                        .foregroundColor(.primary)
-                        .textCase(.none)
+                    header: HStack {
+                        Text(NSLocalizedString("Industry_Slots_Header", comment: "工业槽位"))
+                            .fontWeight(.semibold)
+                            .font(.system(size: 18))
+                            .foregroundColor(.primary)
+                            .textCase(.none)
+                        Spacer()
+                        Button(action: {
+                            showSlotDetailSheet = true
+                        }) {
+                            Image(systemName: "info.circle")
+                                .font(.system(size: 16))
+                                .foregroundColor(.blue)
+                        }
+                    }
                 ) {
                     // 加工任务
                     VStack(alignment: .leading, spacing: 4) {
@@ -1106,6 +1279,27 @@ struct CharacterIndustryView: View {
                                     .fontDesign(.monospaced)
                                     .foregroundColor(Color.cyan) // 青蓝色
                             }
+                        }
+                    }
+
+                    // 生产清单
+                    Button(action: {
+                        showProductionListSheet = true
+                    }) {
+                        HStack {
+                            Text(NSLocalizedString("Industry_Production_List", comment: "生产清单"))
+                                .font(.body)
+                                .foregroundColor(.primary)
+                            Spacer()
+                            if !viewModel.productionList.isEmpty {
+                                Text("\(viewModel.productionList.count)")
+                                    .font(.body)
+                                    .fontDesign(.monospaced)
+                                    .foregroundColor(.secondary)
+                            }
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
                         }
                     }
                 }
@@ -1246,6 +1440,12 @@ struct CharacterIndustryView: View {
         }
         .sheet(isPresented: $showSettingsSheet) {
             IndustrySettingsSheet(viewModel: viewModel)
+        }
+        .sheet(isPresented: $showSlotDetailSheet) {
+            IndustrySlotDetailSheet(viewModel: viewModel)
+        }
+        .sheet(isPresented: $showProductionListSheet) {
+            IndustryProductionListSheet(viewModel: viewModel)
         }
     }
 }
@@ -1995,6 +2195,225 @@ struct IndustryFilterSheet: View {
                 }
             }
             .navigationTitle(NSLocalizedString("Industry_Filter_Title", comment: "过滤设置"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(NSLocalizedString("Common_Done", comment: "完成")) {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct IndustrySlotDetailSheet: View {
+    @ObservedObject var viewModel: CharacterIndustryViewModel
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationView {
+            List {
+                // 只显示选中的人物信息
+                ForEach(viewModel.characterSlotDetails, id: \.characterId) { detail in
+                    Section(
+                        header: HStack {
+                            CharacterPortraitView(characterId: detail.characterId)
+                                .padding(.trailing, 8)
+                            Text(detail.characterName)
+                                .fontWeight(.semibold)
+                                .font(.system(size: 18))
+                                .foregroundColor(.primary)
+                                .textCase(.none)
+                        }
+                    ) {
+                        // 加工任务槽位
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(
+                                    NSLocalizedString(
+                                        "Industry_Slots_Manufacturing", comment: "加工任务"
+                                    )
+                                )
+                                .font(.body)
+                                Text(
+                                    viewModel.getOperationRangeText(detail.manufacturingRange)
+                                )
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            }
+                            Spacer()
+                            HStack(spacing: 0) {
+                                Text("\(detail.manufacturingUsed)")
+                                    .font(.body)
+                                    .fontDesign(.monospaced)
+                                    .foregroundColor(
+                                        detail.manufacturingUsed >= detail.manufacturingSlots ? .red : .green
+                                    )
+                                Text(" / ")
+                                    .font(.body)
+                                    .foregroundColor(.secondary)
+                                Text("\(detail.manufacturingSlots)")
+                                    .font(.body)
+                                    .fontDesign(.monospaced)
+                                    .foregroundColor(
+                                        Color(red: 204 / 255, green: 153 / 255, blue: 0 / 255)
+                                    )
+                            }
+                        }
+                        .padding(.vertical, 4)
+
+                        // 研究任务槽位
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(
+                                    NSLocalizedString("Industry_Slots_Research", comment: "研究任务")
+                                )
+                                .font(.body)
+                                Text(
+                                    viewModel.getOperationRangeText(detail.researchRange)
+                                )
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            }
+                            Spacer()
+                            HStack(spacing: 0) {
+                                Text("\(detail.researchUsed)")
+                                    .font(.body)
+                                    .fontDesign(.monospaced)
+                                    .foregroundColor(
+                                        detail.researchUsed >= detail.researchSlots ? .red : .green
+                                    )
+                                Text(" / ")
+                                    .font(.body)
+                                    .foregroundColor(.secondary)
+                                Text("\(detail.researchSlots)")
+                                    .font(.body)
+                                    .fontDesign(.monospaced)
+                                    .foregroundColor(Color.blue)
+                            }
+                        }
+                        .padding(.vertical, 4)
+
+                        // 反应任务槽位
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(
+                                    NSLocalizedString("Industry_Slots_Reaction", comment: "反应任务")
+                                )
+                                .font(.body)
+                                Text(
+                                    viewModel.getOperationRangeText(detail.reactionRange)
+                                )
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            }
+                            Spacer()
+                            HStack(spacing: 0) {
+                                Text("\(detail.reactionUsed)")
+                                    .font(.body)
+                                    .fontDesign(.monospaced)
+                                    .foregroundColor(
+                                        detail.reactionUsed >= detail.reactionSlots ? .red : .green
+                                    )
+                                Text(" / ")
+                                    .font(.body)
+                                    .foregroundColor(.secondary)
+                                Text("\(detail.reactionSlots)")
+                                    .font(.body)
+                                    .fontDesign(.monospaced)
+                                    .foregroundColor(Color.cyan)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+                }
+            }
+            .listStyle(.insetGrouped)
+            .navigationTitle(NSLocalizedString("Industry_Slots_Detail_Title", comment: "槽位详情"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(NSLocalizedString("Common_Done", comment: "完成")) {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct IndustryProductionListSheet: View {
+    @ObservedObject var viewModel: CharacterIndustryViewModel
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationView {
+            List {
+                if viewModel.productionList.isEmpty {
+                    Section {
+                        HStack {
+                            Spacer()
+                            VStack(spacing: 8) {
+                                Image(systemName: "doc.text")
+                                    .font(.system(size: 30))
+                                    .foregroundColor(.secondary)
+                                Text(NSLocalizedString("Industry_Production_List_Empty", comment: "暂无生产项目"))
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding()
+                            Spacer()
+                        }
+                    }
+                } else {
+                    ForEach(viewModel.productionList, id: \.typeId) { item in
+                        HStack(spacing: 12) {
+                            // 产品图标
+                            if !item.typeIcon.isEmpty {
+                                IconManager.shared.loadImage(for: item.typeIcon)
+                                    .resizable()
+                                    .frame(width: 40, height: 40)
+                                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                            } else {
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(Color.gray.opacity(0.3))
+                                    .frame(width: 40, height: 40)
+                            }
+
+                            // 产品名称和数量
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(item.typeName)
+                                    .font(.body)
+                                    .foregroundColor(.primary)
+                                Text(
+                                    String(
+                                        format: NSLocalizedString(
+                                            "Industry_Production_Quantity", comment: "数量: %d"
+                                        ),
+                                        item.totalQuantity
+                                    )
+                                )
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            }
+
+                            Spacer()
+
+                            // 数量（右侧显示）
+                            Text("\(item.totalQuantity)")
+                                .font(.body)
+                                .fontDesign(.monospaced)
+                                .foregroundColor(
+                                    Color(red: 204 / 255, green: 153 / 255, blue: 0 / 255)
+                                )
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+            }
+            .listStyle(.insetGrouped)
+            .navigationTitle(NSLocalizedString("Industry_Production_List", comment: "生产清单"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {

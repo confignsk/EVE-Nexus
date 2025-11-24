@@ -316,3 +316,17 @@ Fixes & Improvements:
 4. Support aggregating planetary industry data for multiple characters.
 5. Create an indicator for SDE updates on the home page.
 6. Enhancing UI Fluidity
+
+# v1.8.8 Dec 2, 2025
+
+1. Added more detailed information in the industrial features, allowing users to view each character’s production line count and the list of products currently being manufactured/reacted.
+2. Added a help document addressing issues that may occur when logging in via Steam.
+3. Optimized the operation logic of the PI Simulator and fixed the termination logic of simulation calculations.
+4. \[Corp\] Added "corp assets" and "show corp issued contracts" features.
+5. Mitigated crashes caused by a large number of concurrent database queries.
+6. Adjust the API of the KillBoard feature to improve stability.
+7. Display the completion status of each category in the skill catalog using progress bars. 
+8. Move the calculation tools from the planetary industry feature to the dedicated calculator page.
+9. fix a bug that picker in skill category function may disappear.
+
+

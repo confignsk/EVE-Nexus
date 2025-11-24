@@ -466,11 +466,11 @@ struct ImplantSettingsView: View {
     }
 
     private func getImplantSlotName(_ slot: Int) -> String {
-        return String(format: NSLocalizedString("Implant_Slot_Num", comment: "植入体槽位 %d"), slot)
+        return String.localizedStringWithFormat(NSLocalizedString("Implant_Slot_Num", comment: "植入体槽位 %d"), slot)
     }
 
     private func getBoosterSlotName(_ slot: Int) -> String {
-        return String(format: NSLocalizedString("Booster_Slot_Num", comment: "增效剂槽位 %d"), slot)
+        return String.localizedStringWithFormat(NSLocalizedString("Booster_Slot_Num", comment: "增效剂槽位 %d"), slot)
     }
 
     private func clearAllImplantsAndBoosters() {

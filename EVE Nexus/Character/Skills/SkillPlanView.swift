@@ -414,7 +414,7 @@ struct SkillPlanView: View {
                     Text(NSLocalizedString("Main_Skills_Plan_Empty", comment: ""))
                         .foregroundColor(.secondary)
                 } else {
-                    Text(String(format: NSLocalizedString("Main_EVE_Mail_No_Results", comment: "")))
+                    Text(String.localizedStringWithFormat(NSLocalizedString("Main_EVE_Mail_No_Results", comment: "")))
                         .foregroundColor(.secondary)
                 }
             } else {
@@ -592,14 +592,14 @@ struct SkillPlanView: View {
                 formatter.dateFormat = NSLocalizedString("Date_Format_Month_Day", comment: "")
                 return formatter.string(from: date)
             } else if days > 0 {
-                return String(format: NSLocalizedString("Time_Days_Ago", comment: ""), days)
+                return String.localizedStringWithFormat(NSLocalizedString("Time_Days_Ago", comment: ""), days)
             }
         }
 
         if let hours = components.hour, hours > 0 {
-            return String(format: NSLocalizedString("Time_Hours_Ago", comment: ""), hours)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Hours_Ago", comment: ""), hours)
         } else if let minutes = components.minute, minutes > 0 {
-            return String(format: NSLocalizedString("Time_Minutes_Ago", comment: ""), minutes)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Minutes_Ago", comment: ""), minutes)
         } else {
             return NSLocalizedString("Time_Just_Now", comment: "")
         }

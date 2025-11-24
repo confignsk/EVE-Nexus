@@ -80,6 +80,42 @@ class UserDefaultsManager {
         return pinnedIDs.contains(locationID)
     }
 
+    // MARK: - 军团资产置顶功能（使用corporationId）
+
+    // 获取指定军团的置顶资产位置ID列表
+    func getPinnedAssetLocationIDs(forCorporation corporationId: Int) -> [Int64] {
+        let key = "\(Keys.pinnedAssetLocationIDs)_corp_\(corporationId)"
+        return defaults.array(forKey: key) as? [Int64] ?? []
+    }
+
+    // 设置指定军团的置顶资产位置ID列表
+    func setPinnedAssetLocationIDs(_ locationIDs: [Int64], forCorporation corporationId: Int) {
+        let key = "\(Keys.pinnedAssetLocationIDs)_corp_\(corporationId)"
+        defaults.set(locationIDs, forKey: key)
+    }
+
+    // 添加置顶资产位置
+    func addPinnedAssetLocation(_ locationID: Int64, forCorporation corporationId: Int) {
+        var pinnedIDs = getPinnedAssetLocationIDs(forCorporation: corporationId)
+        if !pinnedIDs.contains(locationID) {
+            pinnedIDs.append(locationID)
+            setPinnedAssetLocationIDs(pinnedIDs, forCorporation: corporationId)
+        }
+    }
+
+    // 移除置顶资产位置
+    func removePinnedAssetLocation(_ locationID: Int64, forCorporation corporationId: Int) {
+        var pinnedIDs = getPinnedAssetLocationIDs(forCorporation: corporationId)
+        pinnedIDs.removeAll { $0 == locationID }
+        setPinnedAssetLocationIDs(pinnedIDs, forCorporation: corporationId)
+    }
+
+    // 检查资产位置是否已置顶
+    func isAssetLocationPinned(_ locationID: Int64, forCorporation corporationId: Int) -> Bool {
+        let pinnedIDs = getPinnedAssetLocationIDs(forCorporation: corporationId)
+        return pinnedIDs.contains(locationID)
+    }
+
     // 交易记录合并设置（全局设置，对所有人物生效）
     var mergeSimilarTransactions: Bool {
         get {

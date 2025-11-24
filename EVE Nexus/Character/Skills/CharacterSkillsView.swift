@@ -470,7 +470,7 @@ struct CharacterSkillsView: View {
     @ViewBuilder
     private func skillQueueHeaderView(activeSkills: [SkillQueueItem]) -> some View {
         if skillQueue.isEmpty {
-            Text(String(format: NSLocalizedString("Main_Skills_Queue_Count", comment: ""), 0))
+            Text(String.localizedStringWithFormat(NSLocalizedString("Main_Skills_Queue_Count", comment: ""), 0))
         } else if isQueuePaused {
             Text(
                 String(
@@ -1203,7 +1203,7 @@ struct CharacterSkillsView: View {
                     days, seconds
                 )
             }
-            return String(format: NSLocalizedString("Time_Days", comment: ""), days)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Days", comment: ""), days)
         } else if hours > 0 {
             // 显示小时 + 下一个非零单位（第二个单位向上取整）
             if minutes > 0 || seconds > 0 {
@@ -1222,7 +1222,7 @@ struct CharacterSkillsView: View {
                     hours, seconds
                 )
             }
-            return String(format: NSLocalizedString("Time_Hours", comment: ""), hours)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Hours", comment: ""), hours)
         } else if minutes > 0 {
             // 显示分钟 + 秒
             if seconds > 0 {
@@ -1231,10 +1231,10 @@ struct CharacterSkillsView: View {
                     minutes, seconds
                 )
             }
-            return String(format: NSLocalizedString("Time_Minutes", comment: ""), minutes)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Minutes", comment: ""), minutes)
         }
         // 只有秒
-        return String(format: NSLocalizedString("Time_Seconds", comment: ""), seconds)
+        return String.localizedStringWithFormat(NSLocalizedString("Time_Seconds", comment: ""), seconds)
     }
 
     private func formatNumber(_ number: Int) -> String {

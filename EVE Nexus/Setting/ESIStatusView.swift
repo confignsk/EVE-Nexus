@@ -236,22 +236,22 @@ struct ESIStatusView: View {
 
         let days = Int(timeInterval / (24 * 3600))
         if days > 0 {
-            return String(format: NSLocalizedString("Time_Days_Ago_short", comment: ""), days)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Days_Ago_short", comment: ""), days)
         }
 
         let hours = Int(timeInterval / 3600)
         if hours > 0 {
-            return String(format: NSLocalizedString("Time_Hours_Ago_short", comment: ""), hours)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Hours_Ago_short", comment: ""), hours)
         }
 
         let minutes = Int(timeInterval / 60)
         if minutes > 0 {
-            return String(format: NSLocalizedString("Time_Minutes_Ago_short", comment: ""), minutes)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Minutes_Ago_short", comment: ""), minutes)
         }
 
         let seconds = Int(timeInterval)
         if seconds > 0 {
-            return String(format: NSLocalizedString("Time_Seconds_Ago_short", comment: ""), seconds)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Seconds_Ago_short", comment: ""), seconds)
         }
 
         return NSLocalizedString("Time_Just_Now", comment: "")

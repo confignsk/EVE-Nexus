@@ -102,42 +102,6 @@ class SecureStorage {
         }
     }
 
-    /// 从 Keychain 读取 refresh token 更新时间戳
-    private func loadTokenUpdateTimestamp(for characterId: Int) -> Date? {
-        let query: [String: Any] = [
-            String(kSecClass): kSecClassGenericPassword,
-            String(kSecAttrAccount): "token_timestamp_\(characterId)",
-            String(kSecReturnData): true,
-            String(kSecMatchLimit): kSecMatchLimitOne,
-        ]
-
-        var result: AnyObject?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
-
-        if status == errSecItemNotFound {
-            Logger.info("SecureStorage: 未找到时间戳记录 - 角色ID: \(characterId)，返回 nil（将在下次 token 更新时自动补充）")
-            return nil
-        } else if status != errSecSuccess {
-            Logger.error(
-                "SecureStorage: 从 Keychain 加载时间戳失败 - 角色ID: \(characterId), 错误码: \(status)"
-            )
-            return nil
-        }
-
-        guard let data = result as? Data,
-              let timestampString = String(data: data, encoding: .utf8),
-              let timestamp = Double(timestampString)
-        else {
-            Logger.error(
-                "SecureStorage: 时间戳数据格式错误 - 角色ID: \(characterId)")
-            return nil
-        }
-
-        let date = Date(timeIntervalSince1970: timestamp)
-        Logger.info("SecureStorage: 成功加载时间戳 - 角色ID: \(characterId), 时间: \(date)")
-        return date
-    }
-
     func loadToken(for characterId: Int) throws -> String? {
         // Logger.info("SecureStorage: 开始尝试从 Keychain 加载 refresh token - 角色ID: \(characterId)")
 
@@ -255,13 +219,6 @@ class SecureStorage {
 
         Logger.success("SecureStorage: 共找到 \(validCharacterIds.count) 个有效的 refresh token")
         return validCharacterIds
-    }
-
-    /// 获取指定角色的 refresh token 上次更新时间
-    /// - Parameter characterId: 角色ID
-    /// - Returns: 上次更新的时间，如果未找到则返回 nil
-    func getLastRefreshTokenUpdateTime(for characterId: Int) -> Date? {
-        return loadTokenUpdateTimestamp(for: characterId)
     }
 }
 
@@ -441,13 +398,6 @@ actor AuthTokenManager: NSObject {
         )
         Logger.info("开始主动刷新 access token - 角色ID: \(characterId)")
         return try await refreshAccessToken(for: characterId)
-    }
-
-    /// 获取指定角色的 refresh token 上次更新时间
-    /// - Parameter characterId: 角色ID
-    /// - Returns: 上次更新的时间，如果未找到则返回 nil
-    func getLastRefreshTokenUpdateTime(for characterId: Int) -> Date? {
-        return SecureStorage.shared.getLastRefreshTokenUpdateTime(for: characterId)
     }
 
     /// 清除所有 token（包括 access token 和 refresh token）

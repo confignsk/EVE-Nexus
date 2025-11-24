@@ -1298,10 +1298,17 @@ struct PersonalContractsView: View {
             if !courierMode {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
-                        Picker(selection: $viewModel.groupingMode, label: Text("")) {
-                            ForEach(PersonalContractsViewModel.GroupingMode.allCases, id: \.self) { mode in
-                                Label(mode.localizedName, systemImage: mode == .byIssueDate ? "calendar.badge.plus" : "calendar.badge.checkmark")
-                                    .tag(mode)
+                        ForEach(PersonalContractsViewModel.GroupingMode.allCases, id: \.self) { mode in
+                            Button {
+                                viewModel.groupingMode = mode
+                            } label: {
+                                HStack {
+                                    Label(mode.localizedName, systemImage: mode == .byIssueDate ? "calendar.badge.plus" : "calendar.badge.checkmark")
+                                    if viewModel.groupingMode == mode {
+                                        Spacer()
+                                        Image(systemName: "checkmark")
+                                    }
+                                }
                             }
                         }
                     } label: {
@@ -1335,7 +1342,7 @@ struct PersonalContractsView: View {
     }
 
     private var emptyView: some View {
-        NoDataSection()
+        NoDataSection(text: NSLocalizedString("Misc_No_Matched_Data", comment: ""))
     }
 
     // 价格筛选检查方法
@@ -1461,81 +1468,319 @@ struct ContractRow: View {
         }
     }
 
-    @ViewBuilder
-    private func priceView() -> some View {
-        switch contract.type {
+    // 字段显示信息
+    private struct FieldDisplayInfo {
+        let value: Double // 字段值
+        let prefix: String // 符号：+、- 或空字符串
+        let color: Color // 颜色
+    }
+
+    // 合同价格显示信息：包含要显示的所有字段
+    private struct ContractPriceDisplayInfo {
+        let fields: [FieldDisplayInfo] // 要显示的字段列表（可能包含 price 和/或 reward）
+    }
+
+    /*
+     * 合同价格显示逻辑说明
+     * ===================
+     *
+     * 1. 物品交换合同 (item_exchange)
+     *    - 角色：发起人/接收者
+     *    - price 字段：发起人显示收入（绿色+），接收者显示支出（红色-）
+     *    - reward 字段：发起人显示支出（红色-），接收者显示收入（绿色+）
+     *
+     *    场景1：price > 0 && reward > 0
+     *      - 发起人：显示 [+price 绿色] [-reward 红色]
+     *      - 接收者：显示 [-price 红色] [+reward 绿色]
+     *
+     *    场景2：只有 price > 0
+     *      - 发起人：显示 [+price 绿色]
+     *      - 接收者：显示 [-price 红色]
+     *
+     *    场景3：只有 reward > 0
+     *      - 发起人：显示 [-reward 红色]
+     *      - 接收者：显示 [+reward 绿色]
+     *
+     *    场景4：price = 0 && reward = 0
+     *      - 发起人：显示 [+0 绿色]（显示 price）
+     *      - 接收者：显示 [-0 红色]（显示 price）
+     *
+     * 2. 运输合同 (courier)
+     *    - 角色：发起人/接收者
+     *    - reward 字段：发起人显示支出（红色-），接收者显示收入（绿色+）
+     *    - price 字段：通常不使用，如果出现则显示为灰色无符号
+     *
+     *    场景1：price > 0 && reward > 0
+     *      - 发起人：显示 [price 灰色] [-reward 红色]
+     *      - 接收者：显示 [price 灰色] [+reward 绿色]
+     *
+     *    场景2：只有 reward > 0
+     *      - 发起人：显示 [-reward 红色]
+     *      - 接收者：显示 [+reward 绿色]
+     *
+     *    场景3：只有 price > 0（不常见）
+     *      - 显示 [price 灰色]
+     *
+     *    场景4：price = 0 && reward = 0
+     *      - 发起人：显示 [-0 红色]（显示 reward）
+     *      - 接收者：显示 [+0 绿色]（显示 reward）
+     *
+     * 3. 拍卖合同 (auction)
+     *    - 角色：发起人/接收者/其他角色
+     *    - price 字段：
+     *      * 发起人：收入（绿色+）
+     *      * 接收者：支出（红色-）
+     *      * 其他角色：无符号，橙色
+     *    - reward 字段：始终为收入（绿色+）
+     *
+     *    场景1：price > 0 && reward > 0
+     *      - 发起人：显示 [+price 绿色] [+reward 绿色]
+     *      - 接收者：显示 [-price 红色] [+reward 绿色]
+     *      - 其他角色：显示 [price 橙色] [+reward 绿色]
+     *
+     *    场景2：只有 price > 0
+     *      - 发起人：显示 [+price 绿色]
+     *      - 接收者：显示 [-price 红色]
+     *      - 其他角色：显示 [price 橙色]
+     *
+     *    场景3：只有 reward > 0
+     *      - 所有角色：显示 [+reward 绿色]
+     *
+     *    场景4：price = 0 && reward = 0
+     *      - 发起人：显示 [+0 绿色]（显示 price）
+     *      - 接收者：显示 [-0 红色]（显示 price）
+     *      - 其他角色：显示 [0 橙色]（显示 price）
+     */
+
+    // 统一的显示信息计算函数：根据合同类型、字段值和角色决定显示哪些字段及其格式
+    private func getContractPriceDisplayInfo(
+        contractType: String,
+        price: Double,
+        reward: Double,
+        contractTypeEnum: PersonalContractsViewModel.ContractType
+    ) -> ContractPriceDisplayInfo {
+        let hasPrice = price > 0
+        let hasReward = reward > 0
+        let isCurrentUserIssuer = contract.issuer_id == currentCharacterId
+        var fields: [FieldDisplayInfo] = []
+
+        switch contractType {
         case "item_exchange":
             // 物品交换合同
-            switch contractType {
-            case .personal:
-                // 个人合同：保持原有逻辑
-                if isIssuer {
-                    Text("+\(FormatUtil.format(contract.price)) ISK")
-                        .foregroundColor(.green)
-                        .font(.system(.caption, design: .monospaced))
-                } else {
-                    Text("-\(FormatUtil.format(contract.price)) ISK")
-                        .foregroundColor(.red)
-                        .font(.system(.caption, design: .monospaced))
+            if hasPrice && hasReward {
+                // 两个字段都有值：都显示
+                // price 字段：发布者显示收入（绿色+），接收者显示支出（红色-）
+                let pricePrefix: String
+                let priceColor: Color
+                switch contractTypeEnum {
+                case .personal:
+                    pricePrefix = isIssuer ? "+" : "-"
+                    priceColor = isIssuer ? .green : .red
+                case .corporation, .alliance:
+                    pricePrefix = isCurrentUserIssuer ? "+" : "-"
+                    priceColor = isCurrentUserIssuer ? .green : .red
                 }
-            case .corporation, .alliance:
-                // 军团/联盟合同：发起人是自己则显示收入（绿色），否则显示支出（红色）
-                if contract.issuer_id == currentCharacterId {
-                    Text("+\(FormatUtil.format(contract.price)) ISK")
-                        .foregroundColor(.green)
-                        .font(.system(.caption, design: .monospaced))
-                } else {
-                    Text("-\(FormatUtil.format(contract.price)) ISK")
-                        .foregroundColor(.red)
-                        .font(.system(.caption, design: .monospaced))
+                fields.append(FieldDisplayInfo(value: price, prefix: pricePrefix, color: priceColor))
+
+                // reward 字段：发布者显示支出（红色-），接收者显示收入（绿色+）
+                let rewardPrefix: String
+                let rewardColor: Color
+                switch contractTypeEnum {
+                case .personal:
+                    rewardPrefix = isIssuer ? "-" : "+"
+                    rewardColor = isIssuer ? .red : .green
+                case .corporation, .alliance:
+                    rewardPrefix = isCurrentUserIssuer ? "-" : "+"
+                    rewardColor = isCurrentUserIssuer ? .red : .green
                 }
+                fields.append(FieldDisplayInfo(value: reward, prefix: rewardPrefix, color: rewardColor))
+            } else if hasPrice {
+                // 只有 price 有值
+                let prefix: String
+                let color: Color
+                switch contractTypeEnum {
+                case .personal:
+                    prefix = isIssuer ? "+" : "-"
+                    color = isIssuer ? .green : .red
+                case .corporation, .alliance:
+                    prefix = isCurrentUserIssuer ? "+" : "-"
+                    color = isCurrentUserIssuer ? .green : .red
+                }
+                fields.append(FieldDisplayInfo(value: price, prefix: prefix, color: color))
+            } else if hasReward {
+                // 只有 reward 有值
+                let prefix: String
+                let color: Color
+                switch contractTypeEnum {
+                case .personal:
+                    prefix = isIssuer ? "-" : "+"
+                    color = isIssuer ? .red : .green
+                case .corporation, .alliance:
+                    prefix = isCurrentUserIssuer ? "-" : "+"
+                    color = isCurrentUserIssuer ? .red : .green
+                }
+                fields.append(FieldDisplayInfo(value: reward, prefix: prefix, color: color))
+            } else {
+                // 两个都为0：显示 price
+                let prefix: String
+                let color: Color
+                switch contractTypeEnum {
+                case .personal:
+                    prefix = isIssuer ? "+" : "-"
+                    color = isIssuer ? .green : .red
+                case .corporation, .alliance:
+                    prefix = isCurrentUserIssuer ? "+" : "-"
+                    color = isCurrentUserIssuer ? .green : .red
+                }
+                fields.append(FieldDisplayInfo(value: price, prefix: prefix, color: color))
             }
 
         case "courier":
-            // 运输合同
-            switch contractType {
-            case .personal:
-                // 个人合同：保持原有逻辑
-                if isIssuer {
-                    Text("-\(FormatUtil.format(contract.reward)) ISK")
-                        .foregroundColor(.red)
-                        .font(.system(.caption, design: .monospaced))
-                } else {
-                    Text("+\(FormatUtil.format(contract.reward)) ISK")
-                        .foregroundColor(.green)
-                        .font(.system(.caption, design: .monospaced))
+            // 运输合同：主要显示 reward
+            if hasPrice && hasReward {
+                // 两个字段都有值：都显示（price 使用默认格式）
+                fields.append(FieldDisplayInfo(value: price, prefix: "", color: .secondary))
+
+                // reward 字段：发布者显示支出（红色-），接收者显示收入（绿色+）
+                let rewardPrefix: String
+                let rewardColor: Color
+                switch contractTypeEnum {
+                case .personal:
+                    rewardPrefix = isIssuer ? "-" : "+"
+                    rewardColor = isIssuer ? .red : .green
+                case .corporation, .alliance:
+                    rewardPrefix = isCurrentUserIssuer ? "-" : "+"
+                    rewardColor = isCurrentUserIssuer ? .red : .green
                 }
-            case .corporation, .alliance:
-                // 军团/联盟合同：发起人是自己则显示支出（红色），否则显示收入（绿色）
-                if contract.issuer_id == currentCharacterId {
-                    Text("-\(FormatUtil.format(contract.reward)) ISK")
-                        .foregroundColor(.red)
-                        .font(.system(.caption, design: .monospaced))
-                } else {
-                    Text("+\(FormatUtil.format(contract.reward)) ISK")
-                        .foregroundColor(.green)
-                        .font(.system(.caption, design: .monospaced))
+                fields.append(FieldDisplayInfo(value: reward, prefix: rewardPrefix, color: rewardColor))
+            } else if hasReward {
+                // 只有 reward 有值
+                let prefix: String
+                let color: Color
+                switch contractTypeEnum {
+                case .personal:
+                    prefix = isIssuer ? "-" : "+"
+                    color = isIssuer ? .red : .green
+                case .corporation, .alliance:
+                    prefix = isCurrentUserIssuer ? "-" : "+"
+                    color = isCurrentUserIssuer ? .red : .green
                 }
+                fields.append(FieldDisplayInfo(value: reward, prefix: prefix, color: color))
+            } else if hasPrice {
+                // 只有 price 有值（不常见）
+                fields.append(FieldDisplayInfo(value: price, prefix: "", color: .secondary))
+            } else {
+                // 两个都为0：显示 reward
+                let prefix: String
+                let color: Color
+                switch contractTypeEnum {
+                case .personal:
+                    prefix = isIssuer ? "-" : "+"
+                    color = isIssuer ? .red : .green
+                case .corporation, .alliance:
+                    prefix = isCurrentUserIssuer ? "-" : "+"
+                    color = isCurrentUserIssuer ? .red : .green
+                }
+                fields.append(FieldDisplayInfo(value: reward, prefix: prefix, color: color))
             }
 
         case "auction":
-            // 拍卖合同：保持原有逻辑
-            if isIssuer {
-                Text("+\(FormatUtil.format(contract.price)) ISK")
-                    .foregroundColor(.green)
-                    .font(.system(.caption, design: .monospaced))
-            } else if isAcceptor {
-                Text("-\(FormatUtil.format(contract.price)) ISK")
-                    .foregroundColor(.red)
-                    .font(.system(.caption, design: .monospaced))
+            // 拍卖合同
+            if hasPrice && hasReward {
+                // 两个字段都有值：都显示
+                // price 字段
+                let pricePrefix: String
+                let priceColor: Color
+                if isIssuer {
+                    pricePrefix = "+"
+                    priceColor = .green
+                } else if isAcceptor {
+                    pricePrefix = "-"
+                    priceColor = .red
+                } else {
+                    pricePrefix = ""
+                    priceColor = .orange
+                }
+                fields.append(FieldDisplayInfo(value: price, prefix: pricePrefix, color: priceColor))
+
+                // reward 字段：拍卖合同的 reward 通常为收入（绿色+）
+                fields.append(FieldDisplayInfo(value: reward, prefix: "+", color: .green))
+            } else if hasPrice {
+                // 只有 price 有值
+                let prefix: String
+                let color: Color
+                if isIssuer {
+                    prefix = "+"
+                    color = .green
+                } else if isAcceptor {
+                    prefix = "-"
+                    color = .red
+                } else {
+                    prefix = ""
+                    color = .orange
+                }
+                fields.append(FieldDisplayInfo(value: price, prefix: prefix, color: color))
+            } else if hasReward {
+                // 只有 reward 有值
+                fields.append(FieldDisplayInfo(value: reward, prefix: "+", color: .green))
             } else {
-                Text("\(FormatUtil.format(contract.price)) ISK")
-                    .foregroundColor(.orange)
-                    .font(.system(.caption, design: .monospaced))
+                // 两个都为0：显示 price
+                let prefix: String
+                let color: Color
+                if isIssuer {
+                    prefix = "+"
+                    color = .green
+                } else if isAcceptor {
+                    prefix = "-"
+                    color = .red
+                } else {
+                    prefix = ""
+                    color = .orange
+                }
+                fields.append(FieldDisplayInfo(value: price, prefix: prefix, color: color))
             }
 
         default:
+            // 其他合同类型：默认显示 price
+            if hasPrice {
+                fields.append(FieldDisplayInfo(value: price, prefix: "", color: .secondary))
+            } else if hasReward {
+                fields.append(FieldDisplayInfo(value: reward, prefix: "", color: .secondary))
+            }
+        }
+
+        return ContractPriceDisplayInfo(fields: fields)
+    }
+
+    // 根据字段显示信息创建文本视图
+    @ViewBuilder
+    private func createFieldText(_ fieldInfo: FieldDisplayInfo) -> some View {
+        Text("\(fieldInfo.prefix)\(FormatUtil.format(fieldInfo.value)) ISK")
+            .foregroundColor(fieldInfo.color)
+            .font(.system(.caption, design: .monospaced))
+    }
+
+    @ViewBuilder
+    private func priceView() -> some View {
+        let displayInfo = getContractPriceDisplayInfo(
+            contractType: contract.type,
+            price: contract.price,
+            reward: contract.reward,
+            contractTypeEnum: contractType
+        )
+
+        if displayInfo.fields.isEmpty {
             EmptyView()
+        } else if displayInfo.fields.count == 1 {
+            // 只显示一个字段
+            createFieldText(displayInfo.fields[0])
+        } else {
+            // 显示多个字段（用 HStack 排列）
+            HStack(spacing: 8) {
+                ForEach(Array(displayInfo.fields.enumerated()), id: \.offset) { _, fieldInfo in
+                    createFieldText(fieldInfo)
+                }
+            }
         }
     }
 
@@ -1621,15 +1866,13 @@ struct ContractRow: View {
                     }
                 }
                 HStack {
-                    if contract.volume > 0 {
-                        Text(
-                            NSLocalizedString("Contract_Volume", comment: "")
-                                + ": \(FormatUtil.format(contract.volume)) m³"
-                        )
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
-                    }
+                    Text(
+                        NSLocalizedString("Contract_Volume", comment: "")
+                            + ": \(FormatUtil.format(contract.volume)) m³"
+                    )
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
                     Spacer()
 
                     // 根据分组方式决定显示的时间
@@ -1646,7 +1889,7 @@ struct ContractRow: View {
 
                             if remainingDays > 0 {
                                 Text(
-                                    "\(FormatUtil.formatDateToLocalTime(contract.date_issued)) (\(String(format: NSLocalizedString("Contract_Days_Remaining", comment: ""), remainingDays)))"
+                                    "\(FormatUtil.formatDateToLocalTime(contract.date_issued)) (\(String.localizedStringWithFormat(NSLocalizedString("Contract_Days_Remaining", comment: ""), remainingDays)))"
                                 )
                                 .font(.caption)
                                 .foregroundColor(.gray)
@@ -1682,7 +1925,7 @@ struct ContractRow: View {
                                     ).day ?? 0
 
                                 if remainingDays > 0 {
-                                    Text(String(format: NSLocalizedString("Contract_Days_Remaining_Full", comment: ""), remainingDays))
+                                    Text(String.localizedStringWithFormat(NSLocalizedString("Contract_Days_Remaining_Full", comment: ""), remainingDays))
                                         .font(.caption)
                                         .foregroundColor(.gray)
                                 } else if remainingDays == 0 {

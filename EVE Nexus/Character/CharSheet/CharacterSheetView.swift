@@ -1023,7 +1023,7 @@ struct CharacterSheetView: View {
                 format: NSLocalizedString("Time_Hours_Minutes", comment: ""), hours, minutes
             )
         } else {
-            return String(format: NSLocalizedString("Time_Minutes", comment: ""), minutes)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Minutes", comment: ""), minutes)
         }
     }
 

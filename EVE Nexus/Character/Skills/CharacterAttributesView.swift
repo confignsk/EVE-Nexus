@@ -122,7 +122,7 @@ struct CharacterAttributesView: View {
                     format: NSLocalizedString("Time_Months_Days", comment: ""), months, days
                 )
             }
-            return String(format: NSLocalizedString("Time_Months", comment: ""), months)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Months", comment: ""), months)
         }
 
         if let days = components.day, days > 0 {
@@ -131,11 +131,11 @@ struct CharacterAttributesView: View {
                     format: NSLocalizedString("Time_Days_Hours", comment: ""), days, hours
                 )
             }
-            return String(format: NSLocalizedString("Time_Days", comment: ""), days)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Days", comment: ""), days)
         }
 
         if let hours = components.hour, hours > 0 {
-            return String(format: NSLocalizedString("Time_Hours", comment: ""), hours)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Hours", comment: ""), hours)
         }
 
         return NSLocalizedString("Character_Attributes_Ready_Now", comment: "")

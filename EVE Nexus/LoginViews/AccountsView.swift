@@ -173,6 +173,7 @@ struct AccountsView: View {
     @Binding var selectedItem: String?
     @State private var successMessage: String = ""
     @State private var showingSuccess: Bool = false
+    @State private var showingSteamLoginSheet: Bool = false
 
     // 添加角色选择回调
     var onCharacterSelect: ((EVECharacterInfo, UIImage?) -> Void)?
@@ -383,58 +384,67 @@ struct AccountsView: View {
                 }
                 .disabled(isLoggingIn)
             } footer: {
-                HStack {
-                    Text(NSLocalizedString("Scopes_refresh_hint", comment: ""))
-                    Button(action: {
-                        // 添加刷新状态指示
-                        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-                        impactFeedback.impactOccurred()
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(NSLocalizedString("Scopes_refresh_hint", comment: ""))
+                        Button(action: {
+                            // 添加刷新状态指示
+                            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                            impactFeedback.impactOccurred()
 
-                        // 设置刷新状态
-                        isRefreshingScopes = true
+                            // 设置刷新状态
+                            isRefreshingScopes = true
 
-                        Task {
-                            // 强制刷新 scopes
-                            Logger.info("手动强制刷新 scopes")
-                            let scopeResult = await ScopeManager.shared.getLatestScopesWithSource(
-                                forceRefresh: true)
+                            Task {
+                                // 强制刷新 scopes
+                                Logger.info("手动强制刷新 scopes")
+                                let scopeResult = await ScopeManager.shared.getLatestScopesWithSource(
+                                    forceRefresh: true)
 
-                            // 更新 EVELogin 中的 scopes 配置
-                            await MainActor.run {
-                                EVELogin.shared.config?.scopes = scopeResult.scopes
-                            }
-                            Logger.info(
-                                "成功刷新 scopes，获取到 \(scopeResult.scopes.count) 个权限，来源: \(scopeResult.source)"
-                            )
-
-                            // 显示成功提示
-                            await MainActor.run {
-                                isRefreshingScopes = false // 重置刷新状态
-
-                                // 根据数据来源选择不同的消息
-                                let messageKey =
-                                    scopeResult.source == .network
-                                        ? "Scopes_Refresh_Success" : "Scopes_Local_Refresh_Success"
-                                successMessage = String(
-                                    format: NSLocalizedString(messageKey, comment: ""),
-                                    scopeResult.scopes.count
+                                // 更新 EVELogin 中的 scopes 配置
+                                await MainActor.run {
+                                    EVELogin.shared.config?.scopes = scopeResult.scopes
+                                }
+                                Logger.info(
+                                    "成功刷新 scopes，获取到 \(scopeResult.scopes.count) 个权限，来源: \(scopeResult.source)"
                                 )
-                                showingSuccess = true
+
+                                // 显示成功提示
+                                await MainActor.run {
+                                    isRefreshingScopes = false // 重置刷新状态
+
+                                    // 根据数据来源选择不同的消息
+                                    let messageKey =
+                                        scopeResult.source == .network
+                                            ? "Scopes_Refresh_Success" : "Scopes_Local_Refresh_Success"
+                                    successMessage = String(
+                                        format: NSLocalizedString(messageKey, comment: ""),
+                                        scopeResult.scopes.count
+                                    )
+                                    showingSuccess = true
+                                }
+                            }
+                        }) {
+                            HStack {
+                                if isRefreshingScopes {
+                                    ProgressView()
+                                        .scaleEffect(0.7)
+                                        .padding(.trailing, 2)
+                                }
+                                Text("scopes")
+                                    .foregroundColor(.blue)
                             }
                         }
-                    }) {
-                        HStack {
-                            if isRefreshingScopes {
-                                ProgressView()
-                                    .scaleEffect(0.7)
-                                    .padding(.trailing, 2)
-                            }
-                            Text("scopes")
-                                .foregroundColor(.blue)
-                        }
+                        .disabled(isRefreshingScopes)
+                        Text(".")
                     }
-                    .disabled(isRefreshingScopes)
-                    Text(".")
+
+                    Button(action: {
+                        showingSteamLoginSheet = true
+                    }) {
+                        Text(NSLocalizedString("Account_Steam_Login_Hint", comment: ""))
+                            .foregroundColor(.blue)
+                    }
                 }
                 .font(.caption)
                 .foregroundColor(.secondary)
@@ -595,6 +605,9 @@ struct AccountsView: View {
             if let character = characterToRemove {
                 Text(character.CharacterName)
             }
+        }
+        .sheet(isPresented: $showingSteamLoginSheet) {
+            SteamLoginHelpView()
         }
         .onAppear {
             viewModel.loadCharacters()
@@ -1454,5 +1467,136 @@ enum SkillProgressCalculator {
         let progress =
             Double(trainingStartSp - previousLevelSp) / Double(levelEndSp - previousLevelSp)
         return min(max(progress, 0.0), 1.0) // 确保进度在0.0到1.0之间
+    }
+}
+
+// Steam 登录帮助视图
+struct SteamLoginHelpView: View {
+    @AppStorage("selectedLanguage") private var selectedLanguage: String = "en"
+    @Environment(\.dismiss) private var dismiss
+
+    private var gifFileName: String {
+        if selectedLanguage.hasPrefix("zh") {
+            return "Steam(zh)"
+        } else {
+            return "Steam(en)"
+        }
+    }
+
+    private var gifURL: URL? {
+        return Bundle.main.url(forResource: gifFileName, withExtension: "gif")
+    }
+
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    // 介绍文本和参考链接
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(NSLocalizedString("Account_Steam_Login_Description", comment: ""))
+                            .font(.body)
+                            .foregroundColor(.primary)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        Text(NSLocalizedString("Account_Steam_Login_Reference_Hint", comment: ""))
+                            .font(.body)
+                            .foregroundColor(.primary)
+                        Link(
+                            NSLocalizedString("Account_Steam_Login_Reference_Link", comment: ""),
+                            destination: URL(string: "https://support.eveonline.com/hc/articles/203523662")!
+                        )
+                        .font(.body)
+                        .foregroundColor(.blue)
+                    }
+                    .padding(.horizontal)
+
+                    // GIF 图片
+                    if let gifURL = gifURL, let gifData = try? Data(contentsOf: gifURL) {
+                        GIFWebView(data: gifData)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 640)
+                            .cornerRadius(8)
+                            .padding(.horizontal)
+                    } else {
+                        VStack {
+                            Image(systemName: "photo")
+                                .font(.largeTitle)
+                                .foregroundColor(.secondary)
+                            Text(NSLocalizedString("Account_Steam_Login_GIF_Not_Found", comment: ""))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 200)
+                        .padding(.horizontal)
+                    }
+                }
+                .padding(.vertical)
+            }
+            .navigationTitle(NSLocalizedString("Account_Steam_Login_Title", comment: ""))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(NSLocalizedString("Common_OK", comment: "")) {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+// GIF 显示组件
+struct GIFWebView: UIViewRepresentable {
+    let data: Data
+
+    func makeUIView(context _: Context) -> WKWebView {
+        let configuration = WKWebViewConfiguration()
+        configuration.allowsInlineMediaPlayback = true
+        configuration.mediaTypesRequiringUserActionForPlayback = []
+
+        let webView = WKWebView(frame: .zero, configuration: configuration)
+        webView.isOpaque = false
+        webView.backgroundColor = .clear
+        webView.scrollView.backgroundColor = .clear
+        webView.scrollView.isScrollEnabled = false
+        webView.scrollView.showsVerticalScrollIndicator = false
+        webView.scrollView.showsHorizontalScrollIndicator = false
+
+        // 创建 HTML 内容来显示 GIF
+        let htmlString = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            <style>
+                body {
+                    margin: 0;
+                    padding: 0;
+                    background-color: transparent;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    height: 100vh;
+                }
+                img {
+                    max-width: 100%;
+                    height: auto;
+                    object-fit: contain;
+                }
+            </style>
+        </head>
+        <body>
+            <img src="data:image/gif;base64,\(data.base64EncodedString())" alt="GIF">
+        </body>
+        </html>
+        """
+
+        webView.loadHTMLString(htmlString, baseURL: nil)
+        return webView
+    }
+
+    func updateUIView(_: WKWebView, context _: Context) {
+        // 不需要更新
     }
 }

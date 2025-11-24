@@ -922,9 +922,9 @@ struct AllianceHistoryRowView: View {
         let hours = components.hour ?? 0
 
         if days == 0 {
-            return "(\(String(format: NSLocalizedString("Time_Hours_Long", comment: ""), hours)))"
+            return "(\(String.localizedStringWithFormat(NSLocalizedString("Time_Hours_Long", comment: ""), hours)))"
         } else {
-            return "(\(String(format: NSLocalizedString("Time_Days_Long", comment: ""), days)))"
+            return "(\(String.localizedStringWithFormat(NSLocalizedString("Time_Days_Long", comment: ""), days)))"
         }
     }
 }

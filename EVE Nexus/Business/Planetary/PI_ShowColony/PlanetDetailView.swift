@@ -606,22 +606,22 @@ struct PlanetDetailView: View {
         if days > 0 {
             // 如果有小时，显示"x 天 x 小时前"
             if hours > 0 {
-                return String(format: NSLocalizedString("Time_Days_Hours_Ago", comment: "%d天%d小时前"), days, hours)
+                return String.localizedStringWithFormat(NSLocalizedString("Time_Days_Hours_Ago", comment: "%d天%d小时前"), days, hours)
             } else {
                 // 只有天数
-                return String(format: NSLocalizedString("Time_Days_Ago", comment: ""), days)
+                return String.localizedStringWithFormat(NSLocalizedString("Time_Days_Ago", comment: ""), days)
             }
         } else if hours > 0 {
             // 如果有分钟，显示"x 小时 x 分钟前"
             if minutes > 0 {
-                return String(format: NSLocalizedString("Time_Hours_Minutes_Ago", comment: "%d小时%d分钟前"), hours, minutes)
+                return String.localizedStringWithFormat(NSLocalizedString("Time_Hours_Minutes_Ago", comment: "%d小时%d分钟前"), hours, minutes)
             } else {
                 // 只有小时
-                return String(format: NSLocalizedString("Time_Hours_Ago", comment: ""), hours)
+                return String.localizedStringWithFormat(NSLocalizedString("Time_Hours_Ago", comment: ""), hours)
             }
         } else if minutes > 0 {
             // 只有分钟
-            return String(format: NSLocalizedString("Time_Minutes_Ago", comment: ""), minutes)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Minutes_Ago", comment: ""), minutes)
         } else {
             // 小于30秒，显示"刚刚"
             return NSLocalizedString("Time_Just_Now", comment: "刚刚")
@@ -631,7 +631,7 @@ struct PlanetDetailView: View {
     // 格式化时间差（使用本地化字符串）
     private func formatTimeDiff(_ interval: TimeInterval) -> String {
         if interval < 1 {
-            return String(format: NSLocalizedString("Time_Seconds", comment: ""), 0)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Seconds", comment: ""), 0)
         }
 
         let totalSeconds = interval
@@ -646,7 +646,7 @@ struct PlanetDetailView: View {
             if minutes >= 30 {
                 hours += 1
                 if hours == 24 { // 如果四舍五入后小时数达到24
-                    return String(format: NSLocalizedString("Time_Days", comment: ""), days + 1)
+                    return String.localizedStringWithFormat(NSLocalizedString("Time_Days", comment: ""), days + 1)
                 }
             }
             if hours > 0 {
@@ -654,13 +654,13 @@ struct PlanetDetailView: View {
                     format: NSLocalizedString("Time_Days_Hours", comment: ""), days, hours
                 )
             }
-            return String(format: NSLocalizedString("Time_Days", comment: ""), days)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Days", comment: ""), days)
         } else if hours > 0 {
             // 对分钟进行四舍五入
             if seconds >= 30 {
                 minutes += 1
                 if minutes == 60 { // 如果四舍五入后分钟数达到60
-                    return String(format: NSLocalizedString("Time_Hours", comment: ""), hours + 1)
+                    return String.localizedStringWithFormat(NSLocalizedString("Time_Hours", comment: ""), hours + 1)
                 }
             }
             if minutes > 0 {
@@ -668,20 +668,20 @@ struct PlanetDetailView: View {
                     format: NSLocalizedString("Time_Hours_Minutes", comment: ""), hours, minutes
                 )
             }
-            return String(format: NSLocalizedString("Time_Hours", comment: ""), hours)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Hours", comment: ""), hours)
         } else if minutes > 0 {
             // 对秒进行四舍五入
             if seconds >= 30 {
-                return String(format: NSLocalizedString("Time_Minutes", comment: ""), minutes + 1)
+                return String.localizedStringWithFormat(NSLocalizedString("Time_Minutes", comment: ""), minutes + 1)
             }
             if seconds > 0 {
                 return String(
                     format: NSLocalizedString("Time_Minutes_Seconds", comment: ""), minutes, seconds
                 )
             }
-            return String(format: NSLocalizedString("Time_Minutes", comment: ""), minutes)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Minutes", comment: ""), minutes)
         }
-        return String(format: NSLocalizedString("Time_Seconds", comment: ""), seconds)
+        return String.localizedStringWithFormat(NSLocalizedString("Time_Seconds", comment: ""), seconds)
     }
 
     private func shouldUpdateView(newTime: Date) -> Bool {

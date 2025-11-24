@@ -230,7 +230,7 @@ struct AddSkillSelectorView: View {
     private func removeSkillLevels(skillId: Int, fromLevel: Int, toLevel: Int) {
         guard fromLevel <= toLevel else { return }
 
-        Logger.debug("[降级] 移除技能 ID: \(skillId), 从等级 \(fromLevel) 到 \(toLevel)")
+        // Logger.debug("[降级] 移除技能 ID: \(skillId), 从等级 \(fromLevel) 到 \(toLevel)")
 
         // 更新本地状态
         if fromLevel == 1 {
@@ -282,6 +282,7 @@ struct SkillGroupInfo: Identifiable {
 // 技能组行视图
 struct SkillGroupRowView: View {
     let group: SkillGroupInfo
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         HStack(spacing: 12) {
@@ -291,6 +292,7 @@ struct SkillGroupRowView: View {
                 .scaledToFit()
                 .frame(width: 36, height: 32)
                 .cornerRadius(8)
+                .modifier(SkillGroupIconModifier(colorScheme: colorScheme))
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(group.name)
@@ -441,7 +443,7 @@ struct SkillGroupSkillsView: View {
     private func removeSkillLevels(skillId: Int, fromLevel: Int, toLevel: Int) {
         guard fromLevel <= toLevel else { return }
 
-        Logger.debug("[降级] 移除技能 ID: \(skillId), 从等级 \(fromLevel) 到 \(toLevel)")
+        // Logger.debug("[降级] 移除技能 ID: \(skillId), 从等级 \(fromLevel) 到 \(toLevel)")
 
         // 更新本地状态
         if fromLevel == 1 {

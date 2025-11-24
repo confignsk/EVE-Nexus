@@ -431,14 +431,6 @@ struct CorpWalletTransactionsView: View {
     @Binding var selectedTab: WalletTab
     @State private var currentCharacter: EVECharacterInfo?
 
-    private let displayDateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = TimeZone(identifier: "UTC")!
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        return formatter
-    }()
-
     var body: some View {
         VStack(spacing: 0) {
             // 搜索框

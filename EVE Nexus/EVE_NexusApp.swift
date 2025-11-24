@@ -181,7 +181,7 @@ struct EVE_NexusApp: App {
 
         let destinationPath = FileManager.default.urls(
             for: .documentDirectory, in: .userDomainMask
-        )[0].appendingPathComponent("Icons")
+        )[0].appendingPathComponent("icons")
         let iconURL = URL(fileURLWithPath: iconPath)
 
         // 获取当前 App 版本

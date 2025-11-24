@@ -513,17 +513,29 @@ class DatabaseManager: ObservableObject {
         }
 
         // 3. 组合成最终的属性组列表
-        return categories.sorted { $0.key < $1.key } // 按 category_id 排序
-            .compactMap { categoryId, category in
-                if let attributes = attributesByCategory[categoryId], !attributes.isEmpty {
-                    return AttributeGroup(
-                        id: categoryId,
-                        name: category.name,
-                        attributes: attributes.sorted { $0.id < $1.id } // 按 attribute_id 排序
-                    )
-                }
-                return nil // 如果这个分类没有属性，就不包含在结果中
+        var resultGroups: [AttributeGroup] = []
+
+        // 先添加所有有分类的属性组
+        for (categoryId, category) in categories.sorted(by: { $0.key < $1.key }) {
+            if let attributes = attributesByCategory[categoryId], !attributes.isEmpty {
+                resultGroups.append(AttributeGroup(
+                    id: categoryId,
+                    name: category.name,
+                    attributes: attributes.sorted { $0.id < $1.id } // 按 attribute_id 排序
+                ))
             }
+        }
+
+        // 4. 添加 categoryID 为 0 的属性到"其他"分类
+        if let uncategorizedAttributes = attributesByCategory[0], !uncategorizedAttributes.isEmpty {
+            resultGroups.append(AttributeGroup(
+                id: 0, // 使用 0 作为特殊标识，表示"其他"分类
+                name: NSLocalizedString("Main_Other", comment: ""),
+                attributes: uncategorizedAttributes.sorted { $0.id < $1.id }
+            ))
+        }
+
+        return resultGroups
     }
 
     // 加载属性单位信息
@@ -588,7 +600,7 @@ class DatabaseManager: ObservableObject {
 
     // 获取属性分类名称
     func getAttributeCategoryName(for categoryID: Int) -> String? {
-        let query = "SELECT name FROM dogmaAttributesCategory WHERE category_id = ?"
+        let query = "SELECT name FROM dogmaAttributeCategories WHERE attribute_category_id = ?"
 
         if case let .success(rows) = executeQuery(query, parameters: [categoryID]),
            let row = rows.first,
@@ -1873,43 +1885,6 @@ class DatabaseManager: ObservableObject {
             return iconFileName.isEmpty ? DatabaseConfig.defaultItemIcon : iconFileName
         }
         return DatabaseConfig.defaultItemIcon
-    }
-
-    // 在 DatabaseManager 类中添加
-    func getItemDamages(for itemID: Int) -> (em: Double, therm: Double, kin: Double, exp: Double)? {
-        var damages: (em: Double, therm: Double, kin: Double, exp: Double) = (0, 0, 0, 0)
-        var hasData = false
-
-        let query = """
-            SELECT attribute_id, value 
-            FROM typeAttributes 
-            WHERE type_id = ? AND attribute_id IN (114, 116, 117, 118)
-        """
-
-        let result = executeQuery(query, parameters: [itemID])
-
-        switch result {
-        case let .success(rows):
-            for row in rows {
-                if let attributeID = row["attribute_id"] as? Int,
-                   let value = row["value"] as? Double
-                {
-                    switch attributeID {
-                    case 114: damages.em = value
-                    case 118: damages.therm = value
-                    case 117: damages.kin = value
-                    case 116: damages.exp = value
-                    default: break
-                    }
-                    hasData = true
-                }
-            }
-        case let .error(error):
-            Logger.error("Error fetching damages for item \(itemID): \(error)")
-            return nil
-        }
-
-        return hasData ? damages : nil
     }
 
     // 获取导弹相关属性（伤害、飞行时间、飞行速度）

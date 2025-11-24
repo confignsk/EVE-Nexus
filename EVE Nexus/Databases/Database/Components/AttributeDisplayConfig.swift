@@ -248,6 +248,11 @@ enum AttributeDisplayConfig {
 
     // 判断属性组是否应该显示
     static func shouldShowGroup(_ groupId: Int) -> Bool {
+        // categoryID 为 0 的"其他"分类只在关闭"只展示重要属性"时显示
+        if groupId == 0 {
+            return !showImportantOnly
+        }
+
         // 首先检查组是否被显式隐藏
         if activeHiddenGroups.contains(groupId) && showImportantOnly {
             return false
@@ -284,7 +289,11 @@ enum AttributeDisplayConfig {
 
     // 获取属性组的排序权重
     static func getGroupOrder(_ groupId: Int) -> Int {
-        activeGroupOrder[groupId] ?? 999 // 未定义顺序的组放到最后
+        // categoryID 为 0 的"其他"分类始终放在最后
+        if groupId == 0 {
+            return 9999
+        }
+        return activeGroupOrder[groupId] ?? 999 // 未定义顺序的组放到最后
     }
 
     // 计算属性值

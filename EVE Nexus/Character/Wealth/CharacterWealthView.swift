@@ -225,21 +225,21 @@ struct WealthItemRow: View {
     private func getProgressText(_ progress: AssetLoadingProgress) -> String {
         switch progress {
         case let .loading(page):
-            return String(format: NSLocalizedString("Assets_Loading_Page", comment: ""), page)
+            return String.localizedStringWithFormat(NSLocalizedString("Assets_Loading_Page", comment: ""), page)
         case .buildingTree:
             return NSLocalizedString("Assets_Loading_BuildingTree", comment: "")
         case .processingLocations:
             return NSLocalizedString("Assets_Loading_ProcessingLocations", comment: "")
         case let .fetchingStructureInfo(current, total):
-            return String(
-                format: NSLocalizedString("Assets_Loading_FetchingStructures", comment: ""),
+            return String.localizedStringWithFormat(
+                NSLocalizedString("Assets_Loading_FetchingStructures", comment: ""),
                 current, total
             )
         case .preparingContainers:
             return NSLocalizedString("Assets_Loading_PreparingContainers", comment: "")
         case let .loadingNames(current, total):
-            return String(
-                format: NSLocalizedString("Assets_Loading_Names", comment: ""), current, total
+            return String.localizedStringWithFormat(
+                NSLocalizedString("Assets_Loading_Names", comment: ""), current, total
             )
         case .savingCache:
             return NSLocalizedString("Assets_Loading_SavingCache", comment: "")

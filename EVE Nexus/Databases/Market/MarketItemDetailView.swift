@@ -522,6 +522,35 @@ struct RegionRow: View {
     }
 }
 
+// 时间范围枚举
+enum PriceHistoryTimeRange: String, CaseIterable {
+    case oneMonth = "1M"
+    case threeMonths = "3M"
+    case oneYear = "1Y"
+
+    var days: Int {
+        switch self {
+        case .oneMonth:
+            return 30
+        case .threeMonths:
+            return 90
+        case .oneYear:
+            return 365
+        }
+    }
+
+    var localizedName: String {
+        switch self {
+        case .oneMonth:
+            return NSLocalizedString("Main_Market_Price_History_1M", comment: "")
+        case .threeMonths:
+            return NSLocalizedString("Main_Market_Price_History_3M", comment: "")
+        case .oneYear:
+            return NSLocalizedString("Main_Market_Price_History_1Y", comment: "")
+        }
+    }
+}
+
 struct MarketItemDetailView: View {
     @ObservedObject var databaseManager: DatabaseManager
     let itemID: Int
@@ -539,6 +568,7 @@ struct MarketItemDetailView: View {
     @State private var selectedRegionName: String = ""
     @State private var saveSelection: Bool = true
     @State private var structureOrdersProgress: StructureOrdersProgress? = nil // 建筑订单加载进度
+    @State private var selectedTimeRange: PriceHistoryTimeRange = .oneYear // 默认选择近一年
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     private var chartHeight: CGFloat {
         // 根据设备类型和方向调整高度
@@ -662,17 +692,14 @@ struct MarketItemDetailView: View {
                     HStack {
                         Text(NSLocalizedString("Main_Market_Price_History", comment: ""))
                             .font(.headline)
-                        if !isLoadingHistory {
-                            Button(action: {
-                                Task {
-                                    await loadHistoryData(forceRefresh: true)
-                                }
-                            }) {
-                                Image(systemName: "arrow.clockwise")
-                                    .font(.caption)
-                                    .foregroundColor(.blue)
+                        Spacer()
+                        Picker("", selection: $selectedTimeRange) {
+                            ForEach(PriceHistoryTimeRange.allCases, id: \.self) { range in
+                                Text(range.localizedName).tag(range)
                             }
                         }
+                        .pickerStyle(.segmented)
+                        .frame(maxWidth: 200)
                     }
 
                     // 使用 ZStack 来保持固定高度
@@ -681,7 +708,7 @@ struct MarketItemDetailView: View {
                             ProgressView()
                         } else if let history = marketHistory, !history.isEmpty {
                             MarketHistoryChartView(
-                                history: history,
+                                history: filteredHistory(for: history, timeRange: selectedTimeRange),
                                 orders: marketOrders ?? []
                             )
                         } else {
@@ -930,6 +957,34 @@ struct MarketItemDetailView: View {
     // 根据建筑ID获取建筑信息
     private func getStructureById(_ structureId: Int64) -> MarketStructure? {
         return MarketStructureManager.shared.structures.first { $0.structureId == Int(structureId) }
+    }
+
+    // 根据时间范围过滤历史数据
+    private func filteredHistory(for history: [MarketHistory], timeRange: PriceHistoryTimeRange) -> [MarketHistory] {
+        let calendar = Calendar.current
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+
+        guard let cutoffDate = calendar.date(byAdding: .day, value: -timeRange.days, to: Date()) else {
+            return history
+        }
+
+        let filtered = history.filter { historyItem in
+            guard let itemDate = dateFormatter.date(from: historyItem.date) else {
+                return false
+            }
+            return itemDate >= cutoffDate
+        }
+
+        // 按日期排序，确保数据按时间顺序显示
+        return filtered.sorted { item1, item2 in
+            guard let date1 = dateFormatter.date(from: item1.date),
+                  let date2 = dateFormatter.date(from: item2.date)
+            else {
+                return false
+            }
+            return date1 < date2
+        }
     }
 
     // 验证区域ID是否有效（星域或存在的建筑）

@@ -244,7 +244,7 @@ struct CharacterMailDetailView: View {
 
         switch type {
         case .reply, .replyAll:
-            let header = String(format: NSLocalizedString("Main_EVE_Mail_Wrote", comment: ""))
+            let header = String.localizedStringWithFormat(NSLocalizedString("Main_EVE_Mail_Wrote", comment: ""))
             return formatMailContent("\n\n\(header)\n\n\(detail.content.body)")
         case .forward:
             let forwardHeader = NSLocalizedString("Main_EVE_Mail_Forward_Header", comment: "")

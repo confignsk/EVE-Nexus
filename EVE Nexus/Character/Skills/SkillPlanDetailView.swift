@@ -383,7 +383,7 @@ struct SkillPlanDetailView: View {
 
     private func formatTimeInterval(_ interval: TimeInterval) -> String {
         if interval < 1 {
-            return String(format: NSLocalizedString("Time_Seconds", comment: ""), 0)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Seconds", comment: ""), 0)
         }
 
         let totalSeconds = interval
@@ -398,7 +398,7 @@ struct SkillPlanDetailView: View {
             if minutes >= 30 {
                 hours += 1
                 if hours == 24 { // 如果四舍五入后小时数达到24
-                    return String(format: NSLocalizedString("Time_Days", comment: ""), days + 1)
+                    return String.localizedStringWithFormat(NSLocalizedString("Time_Days", comment: ""), days + 1)
                 }
             }
             if hours > 0 {
@@ -406,13 +406,13 @@ struct SkillPlanDetailView: View {
                     format: NSLocalizedString("Time_Days_Hours", comment: ""), days, hours
                 )
             }
-            return String(format: NSLocalizedString("Time_Days", comment: ""), days)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Days", comment: ""), days)
         } else if hours > 0 {
             // 对分钟进行四舍五入
             if seconds >= 30 {
                 minutes += 1
                 if minutes == 60 { // 如果四舍五入后分钟数达到60
-                    return String(format: NSLocalizedString("Time_Hours", comment: ""), hours + 1)
+                    return String.localizedStringWithFormat(NSLocalizedString("Time_Hours", comment: ""), hours + 1)
                 }
             }
             if minutes > 0 {
@@ -420,7 +420,7 @@ struct SkillPlanDetailView: View {
                     format: NSLocalizedString("Time_Hours_Minutes", comment: ""), hours, minutes
                 )
             }
-            return String(format: NSLocalizedString("Time_Hours", comment: ""), hours)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Hours", comment: ""), hours)
         } else if minutes > 0 {
             // 对秒进行四舍五入
             if seconds >= 30 {
@@ -431,9 +431,9 @@ struct SkillPlanDetailView: View {
                     format: NSLocalizedString("Time_Minutes_Seconds", comment: ""), minutes, seconds
                 )
             }
-            return String(format: NSLocalizedString("Time_Minutes", comment: ""), minutes)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Minutes", comment: ""), minutes)
         }
-        return String(format: NSLocalizedString("Time_Seconds", comment: ""), seconds)
+        return String.localizedStringWithFormat(NSLocalizedString("Time_Seconds", comment: ""), seconds)
     }
 
     private func importSkillsFromClipboard() async {
@@ -872,7 +872,7 @@ struct SkillPlanDetailView: View {
 
     // 移除技能的某些等级（从技能选择器降级时调用）
     private func removeSkillLevels(skillId: Int, fromLevel: Int, toLevel: Int) {
-        Logger.debug("[移除技能等级] skillId: \(skillId), 从等级 \(fromLevel) 到 \(toLevel)")
+        // Logger.debug("[移除技能等级] skillId: \(skillId), 从等级 \(fromLevel) 到 \(toLevel)")
 
         var updatedPlan = plan
 
@@ -1283,8 +1283,8 @@ struct SkillPlanDetailView: View {
             let currentMax = existingMaxLevels[skill.skillId] ?? 0
             existingMaxLevels[skill.skillId] = max(currentMax, skill.level)
 
-            let status = isCompleted ? "[完成]" : ""
-            Logger.debug("   将添加: \(skillName) 等级 \(skill.level) \(status)")
+            // let status = isCompleted ? "[完成]" : ""
+            // Logger.debug("   将添加: \(skillName) 等级 \(skill.level) \(status)")
         }
 
         // 如果有新技能要添加

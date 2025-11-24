@@ -103,11 +103,11 @@ struct AgentSearchView: View {
 
     // 等级数据
     let levels = [
-        (1, String(format: NSLocalizedString("Misc_Level", comment: "lv1"), 1)),
-        (2, String(format: NSLocalizedString("Misc_Level", comment: "lv2"), 2)),
-        (3, String(format: NSLocalizedString("Misc_Level", comment: "lv3"), 3)),
-        (4, String(format: NSLocalizedString("Misc_Level", comment: "lv4"), 4)),
-        (5, String(format: NSLocalizedString("Misc_Level", comment: "lv5"), 5)),
+        (1, String.localizedStringWithFormat(NSLocalizedString("Misc_Level", comment: "lv1"), 1)),
+        (2, String.localizedStringWithFormat(NSLocalizedString("Misc_Level", comment: "lv2"), 2)),
+        (3, String.localizedStringWithFormat(NSLocalizedString("Misc_Level", comment: "lv3"), 3)),
+        (4, String.localizedStringWithFormat(NSLocalizedString("Misc_Level", comment: "lv4"), 4)),
+        (5, String.localizedStringWithFormat(NSLocalizedString("Misc_Level", comment: "lv5"), 5)),
     ]
 
     // 安全等级选项

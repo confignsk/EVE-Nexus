@@ -217,12 +217,59 @@ class MainViewModel: ObservableObject {
         }
     }
 
+    /// 计算当前正在训练技能的实际已学点数
+    /// 只计算当前正在训练的技能（如果队列未暂停）
+    /// - Parameter queue: 技能队列
+    /// - Returns: 正在训练技能已获得的技能点数
+    private func calculateCurrentlyTrainingSkillPoints(queue: [SkillQueueItem]) -> Int {
+        // 检查队列是否暂停（如果第一个技能没有start_date和finish_date，就是暂停的）
+        let isPaused = queue.first?.start_date == nil || queue.first?.finish_date == nil
+        if isPaused {
+            return 0
+        }
+
+        let now = Date()
+
+        // 找到正在训练的技能
+        guard let trainingSkill = queue.first(where: { $0.isCurrentlyTraining }),
+              let startDate = trainingSkill.start_date,
+              let finishDate = trainingSkill.finish_date,
+              let trainingStartSp = trainingSkill.training_start_sp,
+              let levelEndSp = trainingSkill.level_end_sp
+        else {
+            return 0
+        }
+
+        // 计算训练时间进度
+        let totalTrainingTime = finishDate.timeIntervalSince(startDate)
+        let trainedTime = now.timeIntervalSince(startDate)
+
+        guard totalTrainingTime > 0 else { return 0 }
+
+        // 计算时间进度（0.0 到 1.0）
+        let timeProgress = min(1.0, max(0.0, trainedTime / totalTrainingTime))
+
+        // 计算该等级需要训练的总技能点数
+        let totalSPForLevel = levelEndSp - trainingStartSp
+
+        // 计算已经获得的技能点数
+        let trainedSP = Int(Double(totalSPForLevel) * timeProgress)
+
+        return trainedSP
+    }
+
     private func processSkillInfo(skillsResponse: CharacterSkillsResponse, queue: [SkillQueueItem]) {
         cache.skills = CharacterSkills(
             total_sp: skillsResponse.total_sp,
             unallocated_sp: skillsResponse.unallocated_sp
         )
-        updateSkillPoints(skillsResponse.total_sp)
+
+        // 计算当前正在训练技能的实际已学点数（如果队列未暂停）
+        let currentlyTrainingSP = calculateCurrentlyTrainingSkillPoints(queue: queue)
+
+        // 将未分配的技能点数（free sp）和正在训练技能已获得的技能点数加到total_sp上
+        let totalSPWithTraining = skillsResponse.total_sp + skillsResponse.unallocated_sp + currentlyTrainingSP
+        updateSkillPoints(totalSPWithTraining)
 
         // 更新技能队列数量
         skillQueueCount = queue.count
@@ -287,11 +334,19 @@ class MainViewModel: ObservableObject {
     // MARK: - Public Methods
 
     func refreshAllBasicData(forceRefresh: Bool = false) async {
-        // 如果已有刷新任务在运行，等待其完成而不是创建新任务
+        // 如果已有刷新任务在运行
         if let existingTask = refreshTask {
-            Logger.info("刷新任务已在进行中，等待完成...")
-            await existingTask.value
-            return
+            if forceRefresh {
+                // 强制刷新时，取消现有任务并创建新任务
+                Logger.info("强制刷新：取消现有刷新任务并创建新任务")
+                existingTask.cancel()
+                refreshTask = nil
+            } else {
+                // 非强制刷新时，等待现有任务完成
+                Logger.info("刷新任务已在进行中，等待完成...")
+                await existingTask.value
+                return
+            }
         }
 
         // 创建新的刷新任务

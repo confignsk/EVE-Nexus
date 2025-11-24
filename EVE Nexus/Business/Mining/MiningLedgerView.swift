@@ -114,6 +114,18 @@ final class MiningLedgerViewModel: ObservableObject {
         // 加载可用角色列表
         availableCharacters = CharacterSkillsUtils.getAllCharacters()
 
+        // 过滤掉已保存但已不在可用角色列表中的角色ID
+        let availableCharacterIds = Set(availableCharacters.map { $0.id })
+        let validSelectedIds = selectedCharacterIds.intersection(availableCharacterIds)
+
+        // 如果有角色被过滤掉，更新 UserDefaults
+        if validSelectedIds.count != selectedCharacterIds.count {
+            selectedCharacterIds = validSelectedIds
+            UserDefaults.standard.set(
+                Array(selectedCharacterIds), forKey: "selectedCharacterIds_mining"
+            )
+        }
+
         // 如果没有选中的角色，默认选择当前角色
         if selectedCharacterIds.isEmpty {
             selectedCharacterIds.insert(characterId)
@@ -513,7 +525,7 @@ struct MiningLedgerView: View {
 
                     // 显示加载进度（如果有多人物模式且正在加载）
                     if let progress = viewModel.loadingProgress, progress.total > 1 {
-                        Text(String(format: NSLocalizedString("Mining_Loading_Progress", comment: "已加载人物 %d/%d"), progress.current, progress.total))
+                        Text(String.localizedStringWithFormat(NSLocalizedString("Mining_Loading_Progress", comment: "已加载人物 %d/%d"), progress.current, progress.total))
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }

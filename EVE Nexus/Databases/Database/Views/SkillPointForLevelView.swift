@@ -48,7 +48,7 @@ struct SkillPointForLevelView: View {
 
         if hours < 1 {
             let minutes = Int(hours * 60)
-            return String(format: NSLocalizedString("Time_Minutes", comment: "%dm"), minutes)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Minutes", comment: "%dm"), minutes)
         } else if hours < 24 {
             let intHours = Int(hours)
             let minutes = Int((hours - Double(intHours)) * 60)
@@ -58,7 +58,7 @@ struct SkillPointForLevelView: View {
                     minutes
                 )
             }
-            return String(format: NSLocalizedString("Time_Hours", comment: "%dh"), intHours)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Hours", comment: "%dh"), intHours)
         } else {
             let days = Int(hours / 24)
             let remainingHours = Int(hours.truncatingRemainder(dividingBy: 24))
@@ -68,7 +68,7 @@ struct SkillPointForLevelView: View {
                     remainingHours
                 )
             }
-            return String(format: NSLocalizedString("Time_Days", comment: "%dd"), days)
+            return String.localizedStringWithFormat(NSLocalizedString("Time_Days", comment: "%dd"), days)
         }
     }
 
@@ -107,7 +107,7 @@ struct SkillPointForLevelView: View {
                     }
                     Spacer()
                     Text(
-                        String(format: NSLocalizedString("Misc_Level_Short", comment: "lv%d"), 0)
+                        String.localizedStringWithFormat(NSLocalizedString("Misc_Level_Short", comment: "lv%d"), 0)
                             + " → "
                             + String(
                                 format: NSLocalizedString("Misc_Level_Short", comment: "lv%d"),

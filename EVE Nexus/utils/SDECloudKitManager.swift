@@ -362,7 +362,7 @@ class SDECloudKitManager: ObservableObject {
         operation.perRecordProgressBlock = { _, progress in
             Task { @MainActor in
                 progressHandler(progress)
-                Logger.info("[\(assetFieldName)] 下载进度: \(Int(progress * 100))%")
+                // Logger.info("[\(assetFieldName)] 下载进度: \(Int(progress * 100))%")
             }
         }
 

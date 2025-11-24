@@ -313,7 +313,7 @@ class SDEDownloader {
     // 解压图标包
     func extractIcons(progressCallback: @escaping (Double) -> Void) async throws {
         let iconsZipFile = getDownloadDirectory().appendingPathComponent("icons.zip")
-        let iconsDestination = getDocumentsDirectory().appendingPathComponent("Icons")
+        let iconsDestination = getDocumentsDirectory().appendingPathComponent("icons")
 
         Logger.info("Starting Icons extraction from: \(iconsZipFile.path)")
         Logger.info("Icons extraction destination: \(iconsDestination.path)")
