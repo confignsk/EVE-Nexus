@@ -137,8 +137,8 @@ class KillMailDataConverter {
                 killmailDict["time"] = timestamp
             }
 
-            // 价值（从 zkb 获取）
-            killmailDict["sumV"] = Int(zkb.totalValue)
+            // 价值（从 zkb 获取，使用默认值 0）
+            killmailDict["sumV"] = Int(zkb.totalValueValue)
 
             // 受害者信息
             var victDict: [String: Any] = [:]
@@ -226,19 +226,19 @@ class KillMailDataConverter {
                 ]
             }
 
-            // 保留原始 zkb 数据
+            // 保留原始 zkb 数据（使用默认值处理可选字段）
             killmailDict["zkb"] = [
-                "locationID": zkb.locationID,
+                "locationID": zkb.locationIDValue,
                 "hash": zkb.hash,
-                "fittedValue": zkb.fittedValue,
-                "droppedValue": zkb.droppedValue,
-                "destroyedValue": zkb.destroyedValue,
-                "totalValue": zkb.totalValue,
-                "points": zkb.points,
-                "npc": zkb.npc,
-                "solo": zkb.solo,
-                "awox": zkb.awox,
-                "labels": zkb.labels,
+                "fittedValue": zkb.fittedValueValue,
+                "droppedValue": zkb.droppedValueValue,
+                "destroyedValue": zkb.destroyedValueValue,
+                "totalValue": zkb.totalValueValue,
+                "points": zkb.pointsValue,
+                "npc": zkb.npcValue,
+                "solo": zkb.soloValue,
+                "awox": zkb.awoxValue,
+                "labels": zkb.labelsValue,
             ]
 
             result.append(killmailDict)

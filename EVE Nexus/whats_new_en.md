@@ -329,4 +329,11 @@ Fixes & Improvements:
 8. Move the calculation tools from the planetary industry feature to the dedicated calculator page.
 9. fix a bug that picker in skill category function may disappear.
 
+# v1.8.9 Dec 5, 2025
+
+1. Fix a bug in mail function when fetch invalid id.
+2. Fix a bug in killboard function when show combat record from in-game mail.
+3. Fix a bug when refresh killboard.
+4. Fix a bug in asset function that can not load the names of containers.
+
 

@@ -2,6 +2,17 @@ import Foundation
 import Pulse
 import SwiftUI
 
+// 修改缓存包装类为泛型
+class CachedData<T> {
+    let data: T
+    let timestamp: Date
+
+    init(data: T, timestamp: Date) {
+        self.data = data
+        self.timestamp = timestamp
+    }
+}
+
 // 频率限制信息结构
 struct RateLimitInfo {
     let group: String?
@@ -37,16 +48,24 @@ struct RateLimitInfo {
 }
 
 @NetworkManagerActor
-class NetworkManager: @unchecked Sendable {
+class NetworkManager: NSObject, @unchecked Sendable {
     static let shared = NetworkManager()
     private let retrier: RequestRetrier
     private let rateLimiter: RateLimiter
     private let session: any URLSessionProtocol
 
+    // 通用缓存（用于JSON数据）
+    private let dataCache = NSCache<NSString, CachedData<Any>>()
+    private var dataCacheKeys = Set<String>() // 跟踪数据缓存的键
+
+    // 图片缓存
+    private let imageCache = NSCache<NSString, CachedData<UIImage>>()
+    private var imageCacheKeys = Set<String>() // 跟踪图片缓存的键
+
     // 添加并发控制信号量
     private let concurrentSemaphore = DispatchSemaphore(value: 8)
 
-    private init() {
+    override private init() {
         retrier = RequestRetrier()
         rateLimiter = RateLimiter()
 
@@ -63,34 +82,20 @@ class NetworkManager: @unchecked Sendable {
         let loggerStore = Logger.shared.loggerStore
         let networkLogger = NetworkLogger(store: loggerStore, configuration: configuration)
 
-        // 创建自定义的 URLSessionConfiguration 以支持 HTTP 缓存
-        let sessionConfiguration = URLSessionConfiguration.default
-        // 确保使用共享的 URLCache，并设置足够的缓存大小
-        // 默认的 URLCache.shared 容量可能不够，需要确保有足够的空间
-        if sessionConfiguration.urlCache == nil {
-            // 设置 URLCache：内存 4MB，磁盘 20MB
-            sessionConfiguration.urlCache = URLCache(
-                memoryCapacity: 4 * 1024 * 1024,  // 4MB 内存缓存
-                diskCapacity: 20 * 1024 * 1024,  // 20MB 磁盘缓存
-                diskPath: "EVE_Nexus_HTTP_Cache"
-            )
-        } else {
-            // 如果已有缓存，确保容量足够
-            let existingCache = sessionConfiguration.urlCache!
-            if existingCache.memoryCapacity < 4 * 1024 * 1024 {
-                existingCache.memoryCapacity = 4 * 1024 * 1024
-            }
-            if existingCache.diskCapacity < 20 * 1024 * 1024 {
-                existingCache.diskCapacity = 20 * 1024 * 1024
-            }
-        }
-        // 设置请求缓存策略为使用协议默认策略（会遵循 HTTP 缓存头）
-        sessionConfiguration.requestCachePolicy = .useProtocolCachePolicy
-
         // 使用 URLSessionProxy 包装 URLSession
         // URLSessionProxy 会自动记录所有网络请求到 Pulse
         // 直接使用 URLSessionProxy 而不是它的 session 属性，这样才能正确拦截 async/await 方法
-        session = URLSessionProxy(configuration: sessionConfiguration, logger: networkLogger)
+        session = URLSessionProxy(configuration: .default, logger: networkLogger)
+
+        super.init()
+
+        // 设置缓存限制
+        dataCache.countLimit = 100
+        imageCache.countLimit = 200
+
+        // 设置缓存删除时的回调
+        dataCache.delegate = self
+        imageCache.delegate = self
     }
 
     // 通用的数据获取函数
@@ -124,16 +129,8 @@ class NetworkManager: @unchecked Sendable {
         var request = URLRequest(url: url)
         request.httpMethod = method
 
-        // 配置缓存策略
-        // 注意：.reloadRevalidatingCacheData 会始终向服务器验证，即使缓存有效也会发送请求
-        // 如果希望真正使用缓存而不发送请求，应该使用 .returnCacheDataElseLoad
         if forceRefresh {
-            // 强制刷新时，使用重新验证策略（会发送请求但可能返回304）
-            request.cachePolicy = .reloadRevalidatingCacheData
-        } else {
-            // 非强制刷新时，优先使用缓存，如果缓存过期或不存在才请求
-            // 这样可以真正避免不必要的网络请求
-            request.cachePolicy = .returnCacheDataElseLoad
+            request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         }
 
         // 添加基本请求头
@@ -178,8 +175,8 @@ class NetworkManager: @unchecked Sendable {
                     throw NetworkError.invalidResponse
                 }
 
-                // 检查成功状态码（200 OK, 201 Created, 204 No Content, 304 Not Modified）
-                guard [200, 201, 204, 304].contains(httpResponse.statusCode) else {
+                // 检查成功状态码（200 OK, 201 Created, 204 No Content）
+                guard [200, 201, 204].contains(httpResponse.statusCode) else {
                     // 添加错误日志记录
                     if let responseBody = String(data: data, encoding: .utf8) {
                         Logger.error("HTTP请求失败 - URL: \(url.absoluteString)")
@@ -209,6 +206,19 @@ class NetworkManager: @unchecked Sendable {
 
     // 清除所有缓存
     func clearAllCaches() async {
+        await withCheckedContinuation { continuation in
+            Task { @NetworkManagerActor in
+                // 清除内存缓存
+                dataCache.removeAllObjects()
+                dataCacheKeys.removeAll()
+
+                imageCache.removeAllObjects()
+                imageCacheKeys.removeAll()
+
+                continuation.resume()
+            }
+        }
+
         // 清除文件缓存
         await clearFileCaches()
     }
@@ -583,7 +593,7 @@ enum NetworkError: LocalizedError {
         case let .httpError(statusCode, message):
             if let message = message {
                 return
-                    "\(String.localizedStringWithFormat(NSLocalizedString("Network_Error_HTTP_Error", comment: ""), statusCode)): \(message)"
+                    "\(String(format: NSLocalizedString("Network_Error_HTTP_Error", comment: ""), statusCode)): \(message)"
             }
             return String(
                 format: NSLocalizedString("Network_Error_HTTP_Error", comment: ""), statusCode
@@ -606,6 +616,23 @@ enum NetworkError: LocalizedError {
             return "认证出错: \(reason)"
         case let .decodingError(error):
             return "解码响应数据失败: \(error)"
+        }
+    }
+}
+
+extension NetworkManager: NSCacheDelegate {
+    nonisolated func cache(_ cache: NSCache<AnyObject, AnyObject>, willEvictObject obj: Any) {
+        // 当缓存项被移除时，从对应的键集合中移除键
+        Task { @NetworkManagerActor in
+            if cache === self.dataCache {
+                if let key = obj as? NSString {
+                    self.dataCacheKeys.remove(key as String)
+                }
+            } else if cache === self.imageCache {
+                if let key = obj as? NSString {
+                    self.imageCacheKeys.remove(key as String)
+                }
+            }
         }
     }
 }

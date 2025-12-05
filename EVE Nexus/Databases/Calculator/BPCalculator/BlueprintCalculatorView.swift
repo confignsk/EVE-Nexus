@@ -58,7 +58,6 @@ struct BlueprintCalculatorView: View {
     @State private var showResult = false
     @State private var isCalculating = false
     @StateObject private var databaseManager = DatabaseManager.shared
-    @FocusState private var isInputFocused: Bool
 
     init(initParams: BlueprintCalculatorInitParams? = nil) {
         self.initParams = initParams
@@ -269,7 +268,6 @@ struct BlueprintCalculatorView: View {
                             .keyboardType(.numberPad)
                             .frame(width: 80)
                             .multilineTextAlignment(.leading)
-                            .focused($isInputFocused)
                             .onChange(of: runs) { _, newValue in
                                 // 确保流程数至少为1
                                 if newValue < 1 {
@@ -465,7 +463,6 @@ struct BlueprintCalculatorView: View {
                             .keyboardType(.decimalPad)
                             .frame(width: 60)
                             .multilineTextAlignment(.leading)
-                            .focused($isInputFocused)
                             .onChange(of: facilityTax) { _, newValue in
                                 // 确保设施税至少为0
                                 if newValue < 0 {
@@ -504,9 +501,6 @@ struct BlueprintCalculatorView: View {
                         }
                     }
                 }.listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
-            }
-            .onTapGesture {
-                isInputFocused = false
             }
 
             Button(action: {

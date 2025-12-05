@@ -252,7 +252,7 @@ public class CorporationAssetsJsonAPI {
             return (Set<Int64>(), [:])
         }
 
-        // 查询这些type_id的categoryID，只保留categoryID为6、22、65的容器
+        // 查询这些type_id的categoryID，只保留categoryID为2、6、22、65的容器
         let typeIds = Set(containerCandidates.map { $0.typeId })
         let typeIdList = typeIds.sorted().map { String($0) }.joined(separator: ",")
         let query = """
@@ -266,7 +266,7 @@ public class CorporationAssetsJsonAPI {
             for row in rows {
                 if let typeId = row["type_id"] as? Int,
                    let categoryID = row["categoryID"] as? Int,
-                   [6, 22, 65].contains(categoryID)
+                   [2, 6, 22, 65].contains(categoryID)
                 {
                     validTypeIds.insert(typeId)
                 }
@@ -284,7 +284,7 @@ public class CorporationAssetsJsonAPI {
             idToTypeId[container.itemId] = container.typeId
         }
 
-        Logger.debug("收集容器ID - 总候选数: \(containerCandidates.count), 符合categoryID(6,22,65)的数量: \(containerIds.count)")
+        Logger.debug("收集容器ID - 总候选数: \(containerCandidates.count), 符合categoryID(2,6,22,65)的数量: \(containerIds.count)")
 
         return (containerIds, idToTypeId)
     }

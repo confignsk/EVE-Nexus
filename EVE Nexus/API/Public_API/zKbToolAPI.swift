@@ -1,8 +1,8 @@
 import Foundation
 
 // 战斗记录数据处理类
-class KbEvetoolAPI {
-    static let shared = KbEvetoolAPI()
+class zKbToolAPI {
+    static let shared = zKbToolAPI()
     private init() {}
 
     // 格式化时间 为 UTC+0
@@ -75,7 +75,7 @@ class KbEvetoolAPI {
             FROM types
             WHERE (name LIKE ?1 OR en_name like ?1)
             AND published = 1
-            AND categoryID IN (6, 65, 87) -- evetools只支持这几个分类
+            AND categoryID IN (6, 65, 87)
             order by categoryID
             LIMIT 20
         """
@@ -106,7 +106,7 @@ class KbEvetoolAPI {
             let url = URL(string: "https://zkillboard.com/autocomplete/\(encodedText)/")
         else {
             throw NSError(
-                domain: "KbEvetoolAPI", code: -1, userInfo: [NSLocalizedDescriptionKey: "无效的搜索URL"]
+                domain: "zkillboard", code: -1, userInfo: [NSLocalizedDescriptionKey: "无效的搜索URL"]
             )
         }
 
@@ -125,7 +125,7 @@ class KbEvetoolAPI {
         // 解析 JSON 响应
         guard let zkbResults = try? JSONDecoder().decode([ZKBSearchResult].self, from: data) else {
             throw NSError(
-                domain: "KbEvetoolAPI", code: -2,
+                domain: "zkillboard", code: -2,
                 userInfo: [NSLocalizedDescriptionKey: "解析JSON失败: \(data)"]
             )
         }
@@ -182,7 +182,7 @@ class KbEvetoolAPI {
 
         guard let url = URL(string: urlString) else {
             throw NSError(
-                domain: "KbEvetoolAPI", code: -1,
+                domain: "zkillboard", code: -1,
                 userInfo: [NSLocalizedDescriptionKey: "无效的 URL: \(urlString)"]
             )
         }
@@ -201,15 +201,35 @@ class KbEvetoolAPI {
         )
         Logger.debug("收到 zkillboard 响应，数据大小: \(data.count) 字节")
 
-        // 解析 JSON 数据
+        // 解析 JSON 数据（过滤掉缺少必需字段的条目）
         do {
-            let entries = try JSONDecoder().decode([ZKBKillMailEntry].self, from: data)
-            Logger.debug("成功解析 \(entries.count) 个 killmail 条目")
-            return entries
+            // 先解析为 JSON 数组
+            guard let jsonArray = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+                throw NSError(
+                    domain: "zkillboard", code: -2,
+                    userInfo: [NSLocalizedDescriptionKey: "JSON 格式错误：不是数组"]
+                )
+            }
+
+            // 逐个解码并过滤掉无效条目
+            var validEntries: [ZKBKillMailEntry] = []
+            for (index, jsonDict) in jsonArray.enumerated() {
+                do {
+                    let jsonData = try JSONSerialization.data(withJSONObject: jsonDict)
+                    let entry = try JSONDecoder().decode(ZKBKillMailEntry.self, from: jsonData)
+                    validEntries.append(entry)
+                } catch {
+                    Logger.warning("跳过无效的 killmail 条目（索引 \(index)）: \(error.localizedDescription)")
+                    continue
+                }
+            }
+
+            Logger.debug("成功解析 \(validEntries.count) 个有效 killmail 条目（原始 \(jsonArray.count) 个）")
+            return validEntries
         } catch {
             Logger.error("解析 zkillboard JSON 失败: \(error)")
             throw NSError(
-                domain: "KbEvetoolAPI", code: -2,
+                domain: "zkillboard", code: -2,
                 userInfo: [NSLocalizedDescriptionKey: "解析JSON失败: \(error.localizedDescription)"]
             )
         }
@@ -251,7 +271,7 @@ class KbEvetoolAPI {
 
         guard let url = URL(string: urlString) else {
             throw NSError(
-                domain: "KbEvetoolAPI", code: -1,
+                domain: "zkillboard", code: -1,
                 userInfo: [NSLocalizedDescriptionKey: "无效的 URL: \(urlString)"]
             )
         }
@@ -270,15 +290,82 @@ class KbEvetoolAPI {
         )
         Logger.debug("收到 zkillboard 响应，数据大小: \(data.count) 字节")
 
-        // 解析 JSON 数据
+        // 解析 JSON 数据（过滤掉缺少必需字段的条目）
         do {
-            let entries = try JSONDecoder().decode([ZKBKillMailEntry].self, from: data)
-            Logger.debug("成功解析 \(entries.count) 个 killmail 条目")
-            return entries
+            // 先解析为 JSON 数组
+            guard let jsonArray = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+                throw NSError(
+                    domain: "zkillboard", code: -2,
+                    userInfo: [NSLocalizedDescriptionKey: "JSON 格式错误：不是数组"]
+                )
+            }
+
+            // 逐个解码并过滤掉无效条目
+            var validEntries: [ZKBKillMailEntry] = []
+            for (index, jsonDict) in jsonArray.enumerated() {
+                do {
+                    let jsonData = try JSONSerialization.data(withJSONObject: jsonDict)
+                    let entry = try JSONDecoder().decode(ZKBKillMailEntry.self, from: jsonData)
+                    validEntries.append(entry)
+                } catch {
+                    Logger.warning("跳过无效的 killmail 条目（索引 \(index)）: \(error.localizedDescription)")
+                    continue
+                }
+            }
+
+            Logger.debug("成功解析 \(validEntries.count) 个有效 killmail 条目（原始 \(jsonArray.count) 个）")
+            return validEntries
         } catch {
             Logger.error("解析 zkillboard JSON 失败: \(error)")
             throw NSError(
-                domain: "KbEvetoolAPI", code: -2,
+                domain: "zkillboard", code: -2,
+                userInfo: [NSLocalizedDescriptionKey: "解析JSON失败: \(error.localizedDescription)"]
+            )
+        }
+    }
+
+    // 根据 killmail ID 从 zkillboard 获取单个战斗日志信息（包含 hash）
+    func fetchZKBKillMailByID(killmailId: Int) async throws -> ZKBKillMailEntry {
+        Logger.debug("准备从 zkillboard 获取战斗日志 - killmail_id: \(killmailId)")
+
+        let urlString = "https://zkillboard.com/api/kills/killID/\(killmailId)/"
+
+        guard let url = URL(string: urlString) else {
+            throw NSError(
+                domain: "zkillboard", code: -1,
+                userInfo: [NSLocalizedDescriptionKey: "无效的 URL: \(urlString)"]
+            )
+        }
+
+        let headers = [
+            "Accept-Encoding": "gzip",
+            "Accept": "application/json",
+            "User-Agent": "Tritanium Maintainer: tritanium_support@icloud.com",
+        ]
+
+        Logger.debug("开始发送 zkillboard 网络请求...")
+        let data = try await NetworkManager.shared.fetchData(
+            from: url,
+            headers: headers,
+            timeouts: [3, 3, 5, 5, 10]
+        )
+        Logger.debug("收到 zkillboard 响应，数据大小: \(data.count) 字节")
+
+        // 解析 JSON 数据（返回的是数组，取第一个元素）
+        do {
+            let entries = try JSONDecoder().decode([ZKBKillMailEntry].self, from: data)
+            guard let entry = entries.first else {
+                throw NSError(
+                    domain: "zkillboard", code: -3,
+                    userInfo: [NSLocalizedDescriptionKey: "未找到 killmail_id: \(killmailId) 的数据"]
+                )
+            }
+            Logger.debug("成功获取 killmail 信息 - killmail_id: \(killmailId), hash: \(entry.zkb.hash)")
+            return entry
+        } catch {
+            Logger.error("解析 zkillboard JSON 失败: \(error)")
+            throw NSError(
+                domain: "zkillboard", code: -2,
                 userInfo: [NSLocalizedDescriptionKey: "解析JSON失败: \(error.localizedDescription)"]
             )
         }
@@ -289,18 +376,153 @@ class KbEvetoolAPI {
 struct ZKBKillMailEntry: Codable {
     let killmail_id: Int
     let zkb: ZKBInfo
+
+    // 自定义解码，确保 killmail_id 和 zkb.hash 存在
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        // killmail_id 必须存在
+        guard let killmailId = try? container.decode(Int.self, forKey: .killmail_id) else {
+            throw DecodingError.keyNotFound(
+                CodingKeys.killmail_id,
+                DecodingError.Context(
+                    codingPath: decoder.codingPath,
+                    debugDescription: "killmail_id 字段缺失"
+                )
+            )
+        }
+        killmail_id = killmailId
+
+        // zkb 必须存在
+        let zkbContainer = try container.nestedContainer(keyedBy: ZKBInfoCodingKeys.self, forKey: .zkb)
+
+        // hash 必须存在且不为空
+        guard let hash = try? zkbContainer.decode(String.self, forKey: .hash), !hash.isEmpty else {
+            throw DecodingError.keyNotFound(
+                ZKBInfoCodingKeys.hash,
+                DecodingError.Context(
+                    codingPath: decoder.codingPath + [CodingKeys.zkb],
+                    debugDescription: "zkb.hash 字段缺失或为空"
+                )
+            )
+        }
+
+        // 解码其他可选字段
+        zkb = ZKBInfo(
+            locationID: try? zkbContainer.decode(Int.self, forKey: .locationID),
+            hash: hash,
+            fittedValue: try? zkbContainer.decode(Double.self, forKey: .fittedValue),
+            droppedValue: try? zkbContainer.decode(Double.self, forKey: .droppedValue),
+            destroyedValue: try? zkbContainer.decode(Double.self, forKey: .destroyedValue),
+            totalValue: try? zkbContainer.decode(Double.self, forKey: .totalValue),
+            points: try? zkbContainer.decode(Int.self, forKey: .points),
+            npc: try? zkbContainer.decode(Bool.self, forKey: .npc),
+            solo: try? zkbContainer.decode(Bool.self, forKey: .solo),
+            awox: try? zkbContainer.decode(Bool.self, forKey: .awox),
+            labels: try? zkbContainer.decode([String].self, forKey: .labels)
+        )
+    }
+
+    // 定义 CodingKeys
+    enum CodingKeys: String, CodingKey {
+        case killmail_id
+        case zkb
+    }
+
+    // 定义 ZKBInfo 的 CodingKeys（用于嵌套解码）
+    enum ZKBInfoCodingKeys: String, CodingKey {
+        case locationID
+        case hash
+        case fittedValue
+        case droppedValue
+        case destroyedValue
+        case totalValue
+        case points
+        case npc
+        case solo
+        case awox
+        case labels
+    }
 }
 
 struct ZKBInfo: Codable {
-    let locationID: Int
+    let locationID: Int?
     let hash: String
-    let fittedValue: Double
-    let droppedValue: Double
-    let destroyedValue: Double
-    let totalValue: Double
-    let points: Int
-    let npc: Bool
-    let solo: Bool
-    let awox: Bool
-    let labels: [String]
+    let fittedValue: Double?
+    let droppedValue: Double?
+    let destroyedValue: Double?
+    let totalValue: Double?
+    let points: Int?
+    let npc: Bool?
+    let solo: Bool?
+    let awox: Bool?
+    let labels: [String]?
+
+    // 初始化方法（用于自定义解码）
+    init(
+        locationID: Int?,
+        hash: String,
+        fittedValue: Double?,
+        droppedValue: Double?,
+        destroyedValue: Double?,
+        totalValue: Double?,
+        points: Int?,
+        npc: Bool?,
+        solo: Bool?,
+        awox: Bool?,
+        labels: [String]?
+    ) {
+        self.locationID = locationID
+        self.hash = hash
+        self.fittedValue = fittedValue
+        self.droppedValue = droppedValue
+        self.destroyedValue = destroyedValue
+        self.totalValue = totalValue
+        self.points = points
+        self.npc = npc
+        self.solo = solo
+        self.awox = awox
+        self.labels = labels
+    }
+
+    // 提供默认值的计算属性，用于 UI 展示
+    var locationIDValue: Int {
+        locationID ?? 0
+    }
+
+    var fittedValueValue: Double {
+        fittedValue ?? 0
+    }
+
+    var droppedValueValue: Double {
+        droppedValue ?? 0
+    }
+
+    var destroyedValueValue: Double {
+        destroyedValue ?? 0
+    }
+
+    var totalValueValue: Double {
+        totalValue ?? 0
+    }
+
+    var pointsValue: Int {
+        points ?? 0
+    }
+
+    var npcValue: Bool {
+        npc ?? false
+    }
+
+    var soloValue: Bool {
+        solo ?? false
+    }
+
+    var awoxValue: Bool {
+        awox ?? false
+    }
+
+    var labelsValue: [String] {
+        labels ?? []
+    }
 }
