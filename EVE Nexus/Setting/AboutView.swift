@@ -1,15 +1,10 @@
 import SwiftUI
 
 struct AboutView: View {
+    @StateObject private var iconManager = AppIconManager.shared
+
     private var appIcon: UIImage? {
-        if let icons = Bundle.main.infoDictionary?["CFBundleIcons"] as? [String: Any],
-           let primaryIcon = icons["CFBundlePrimaryIcon"] as? [String: Any],
-           let iconFiles = primaryIcon["CFBundleIconFiles"] as? [String],
-           let lastIcon = iconFiles.last
-        {
-            return UIImage(named: lastIcon)
-        }
-        return UIImage(named: "DefaultAppIcon")
+        return AppIconConfig.composeAppIcon()
     }
 
     private var appName: String {
@@ -70,7 +65,7 @@ struct AboutView: View {
                                 .aspectRatio(contentMode: .fit)
                                 .frame(width: 80, height: 80)
                                 .cornerRadius(20)
-                                .shadow(radius: 5)
+                                .shadow(color: Color.primary, radius: 5)
                         }
 
                         Text(appName)
