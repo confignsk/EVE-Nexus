@@ -280,6 +280,22 @@
 "Main_Setting_Cache_Expiration_Minutes" = "剩余%d分钟";
 "Main_Setting_Cache_Expired" = "已过期";
 
+"Main_In_App_Purchase" = "赞助";
+"App_Icon_Selection" = "应用图标";
+"App_Icon_Description" = "选择您喜欢的应用图标";
+"App_Icon_Default" = "默认";
+"App_Icon_DED" = "DED";
+"App_Icon_Faction" = "势力";
+"App_Icon_Officer" = "官员";
+"App_Icon_T2" = "T2";
+"App_Icon_T3" = "T3";
+"App_Icon_Current" = "当前使用";
+"App_Icon_Error" = "图标切换失败";
+"App_Icon_Not_Supported" = "此设备不支持切换应用图标";
+"Icon_Tritanium" = "三钛合金";
+"Icon_TriDB" = "三神裔调查数据库";
+"Icon_OverseerBox" = "监察官的个人财产";
+"Icon_HyperCore" = "超核";
 "Main_About" = "关于";
 "Main_About_Database_Version" = "SDE 数据库";
 "Main_About_Database_BuiltIn" = "内置";
@@ -2782,3 +2798,15 @@
 "Insurance_Level_Bronze" = "青铜";
 "Insurance_Level_Standard" = "标准";
 "Insurance_Level_Basic" = "基础";
+
+// 内购相关
+"Purchase_Restore" = "恢复购买";
+"Purchase_Restore_Success" = "恢复购买成功";
+"Purchase_Alert_Title" = "提示";
+"Purchase_Alert_OK" = "确定";
+"Purchase_Product_Not_Found" = "产品未找到，请稍后再试";
+"Purchase_Success" = "购买成功";
+"Purchase_Cancelled" = "购买已取消";
+"Purchase_Price_Free" = "免费";
+"Purchase_Price_Loading" = "...";
+"Purchase_Badge_Unlocked" = "可用";

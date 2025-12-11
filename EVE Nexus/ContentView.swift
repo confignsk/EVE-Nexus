@@ -766,6 +766,8 @@ struct ContentView: View {
                             )
                         case "settings":
                             SettingView(databaseManager: databaseManager)
+                        case "in_app_purchase":
+                            InAppPurchaseView()
                         case "about":
                             AboutView()
                         case "update_history":
@@ -1058,6 +1060,7 @@ struct ContentView: View {
         // 其他功能
         FeatureConfig(id: "settings", requiresLogin: false, section: "other"),
         FeatureConfig(id: "update_history", requiresLogin: false, section: "other"),
+        FeatureConfig(id: "in_app_purchase", requiresLogin: false, section: "other"),
         FeatureConfig(id: "about", requiresLogin: false, section: "other"),
     ]
 
@@ -1231,6 +1234,8 @@ struct ContentView: View {
             return FeatureInfo(title: NSLocalizedString("Main_Setting", comment: ""), icon: "Settings", noteView: nil)
         case "update_history":
             return FeatureInfo(title: NSLocalizedString("Main_Update_History", comment: ""), icon: "log", noteView: nil)
+        case "in_app_purchase":
+            return FeatureInfo(title: NSLocalizedString("Main_In_App_Purchase", comment: ""), icon: "tipoftheday", noteView: nil)
         case "about":
             return FeatureInfo(title: NSLocalizedString("Main_About", comment: ""), icon: "info", noteView: nil)
         default:
@@ -1760,6 +1765,15 @@ struct ContentView: View {
                 title: NSLocalizedString("Main_Update_History", comment: "更新历史"),
                 icon: "log"
             )
+
+            // 只在 iOS 设备上显示赞助按钮，macOS 和 Catalyst 模式下隐藏
+            if !ProcessInfo.processInfo.isiOSAppOnMac {
+                customizableNavigationLink(
+                    value: "in_app_purchase",
+                    title: NSLocalizedString("Main_In_App_Purchase", comment: ""),
+                    icon: "tipoftheday"
+                )
+            }
 
             customizableNavigationLink(
                 value: "about",

@@ -256,6 +256,22 @@
 "Main_Database_Show_Important_Only" = "Important Attributes Only";
 "Main_Database_Show_Important_Only_Detail" = "Only show important attributes in database function";
 
+"Main_In_App_Purchase" = "Sponsor";
+"App_Icon_Selection" = "App Icon";
+"App_Icon_Description" = "Choose your favorite app icon";
+"App_Icon_Default" = "Default";
+"App_Icon_DED" = "DED";
+"App_Icon_Faction" = "Faction";
+"App_Icon_Officer" = "Officer";
+"App_Icon_T2" = "T2";
+"App_Icon_T3" = "T3";
+"App_Icon_Current" = "Current";
+"App_Icon_Error" = "Failed to Change Icon";
+"Icon_Tritanium" = "Tritanium";
+"Icon_TriDB" = "Triglavian Survey Database";
+"Icon_OverseerBox" = "Overseer's Personal Effects";
+"Icon_HyperCore" = "HyperCore";
+"App_Icon_Not_Supported" = "Alternate icons are not supported on this device";
 "Main_About" = "About";
 "Main_About_Database_Version" = "SDE";
 "Main_About_Database_BuiltIn" = "Built-in";
@@ -2746,3 +2762,15 @@
 "Insurance_Level_Bronze" = "Bronze";
 "Insurance_Level_Standard" = "Standard";
 "Insurance_Level_Basic" = "Basic";
+
+// In-App Purchase
+"Purchase_Restore" = "Restore Purchases";
+"Purchase_Restore_Success" = "Purchases restored successfully";
+"Purchase_Alert_Title" = "Notice";
+"Purchase_Alert_OK" = "OK";
+"Purchase_Product_Not_Found" = "Product not found, please try again later";
+"Purchase_Success" = "Purchase successful";
+"Purchase_Cancelled" = "Purchase cancelled";
+"Purchase_Price_Free" = "Free";
+"Purchase_Price_Loading" = "...";
+"Purchase_Badge_Unlocked" = "Unlocked";

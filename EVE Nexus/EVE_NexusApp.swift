@@ -94,6 +94,11 @@ struct EVE_NexusApp: App {
         Task { @MainActor in
             await SDEUpdateChecker.shared.checkForUpdates()
         }
+
+        // 初始化内购管理器并加载商品数据
+        Task { @MainActor in
+            await PurchaseManager.shared.loadProducts()
+        }
     }
 
     private func setupNotifications() {

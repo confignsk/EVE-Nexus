@@ -273,9 +273,11 @@ final class WalletJournalViewModel: ObservableObject {
                 // 首先检查交易类型（收入/支出）
                 if !selectedTransactionTypes.isEmpty {
                     var matches = false
-                    if selectedTransactionTypes.contains(.income), entry.amount > 0 {
+                    // 收入：amount > 0 或 amount == 0（0值交易默认视为收入）
+                    if selectedTransactionTypes.contains(.income), entry.amount >= 0 {
                         matches = true
                     }
+                    // 支出：amount < 0
                     if selectedTransactionTypes.contains(.expense), entry.amount < 0 {
                         matches = true
                     }
