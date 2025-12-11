@@ -25,6 +25,8 @@ final class CharacterOrdersViewModel: ObservableObject {
 
     // 添加一个标志，表示是否已经开始加载数据
     private var hasStartedLoading = false
+    // 添加一个标志，表示是否已经初始化过订单类型
+    private var hasInitializedOrderType = false
 
     private let characterId: Int64
     private let databaseManager: DatabaseManager
@@ -115,9 +117,12 @@ final class CharacterOrdersViewModel: ObservableObject {
 
                     if Task.isCancelled { return }
 
-                    // 初始化订单显示类型
+                    // 只在首次加载时初始化订单显示类型，刷新时保持用户当前选择
                     await MainActor.run {
-                        self.initializeOrderType()
+                        if !self.hasInitializedOrderType {
+                            self.initializeOrderType()
+                            self.hasInitializedOrderType = true
+                        }
                     }
 
                 } else {

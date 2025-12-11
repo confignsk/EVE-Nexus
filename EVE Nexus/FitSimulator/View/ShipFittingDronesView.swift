@@ -33,20 +33,15 @@ struct ShipFittingDronesView: View {
         return outputDrones.first(where: { $0.typeId == typeId })
     }
 
-    // 格式化距离显示（与舰载机页面保持一致）
+    // 格式化距离显示（与装备模块页面保持一致）
+    // 大于1000km时显示完整数字，不使用k km缩写
     private func formatDistance(_ distance: Double) -> String {
         let formatter = NumberFormatter()
         formatter.minimumFractionDigits = 0
         formatter.numberStyle = .decimal
 
-        if distance >= 1_000_000 {
-            // 大于等于1000km时，使用k km单位
-            let value = distance / 1_000_000.0
-            formatter.maximumFractionDigits = 1
-            let formattedValue = formatter.string(from: NSNumber(value: value)) ?? "0"
-            return "\(formattedValue)k km"
-        } else if distance >= 1000 {
-            // 大于等于1km时，使用km单位
+        if distance >= 1000 {
+            // 大于等于1km时，使用km单位，保留2位小数
             let value = distance / 1000.0
             formatter.maximumFractionDigits = 2
             let formattedValue = formatter.string(from: NSNumber(value: value)) ?? "0"

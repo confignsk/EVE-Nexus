@@ -186,7 +186,8 @@ struct CharacterMailDetailView: View {
                         characterId: characterId,
                         initialRecipients: getInitialRecipients(type: type, detail: detail),
                         initialSubject: getInitialSubject(type: type, detail: detail),
-                        initialBody: getInitialBody(type: type, detail: detail)
+                        initialBody: "",
+                        appendContent: getAppendContent(type: type, detail: detail)
                     )
                 }
                 .interactiveDismissDisabled()
@@ -239,7 +240,7 @@ struct CharacterMailDetailView: View {
         }
     }
 
-    private func getInitialBody(type: ComposeType, detail: MailDetailData) -> String {
+    private func getAppendContent(type: ComposeType, detail: MailDetailData) -> String {
         let dateString = mail.timestamp.formatDate()
 
         switch type {

@@ -861,7 +861,7 @@ struct MarketQuickbarView: View {
     }
 
     private func quickbarRowView(_ quickbar: MarketQuickbar) -> some View {
-        HStack {
+        HStack(alignment: .center, spacing: 12) {
             // 显示列表图标
             if !quickbar.items.isEmpty, let firstItem = quickbar.items.first {
                 // 直接查询并显示第一个物品的图标
@@ -869,19 +869,26 @@ struct MarketQuickbarView: View {
                 Image(uiImage: icon)
                     .resizable()
                     .frame(width: 32, height: 32)
-                    .cornerRadius(4)
-                    .padding(.trailing, 8)
+                    .cornerRadius(6)
             } else {
                 Image("Folder")
                     .resizable()
                     .frame(width: 32, height: 32)
-                    .cornerRadius(4)
-                    .padding(.trailing, 8)
+                    .cornerRadius(6)
             }
 
-            Text(quickbar.name)
-                .lineLimit(1)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(quickbar.name)
+                    .lineLimit(1)
+
+                Text(getMarketName(for: quickbar))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+            }
+
             Spacer()
+
             Text(
                 String(
                     format: NSLocalizedString("Main_Market_Watch_List_Items", comment: ""),
@@ -906,6 +913,39 @@ struct MarketQuickbarView: View {
         } else {
             // 如果找不到图标，返回一个默认图标
             return UIImage(named: "not_found") ?? UIImage()
+        }
+    }
+
+    // 获取市场名称的辅助函数
+    private func getMarketName(for quickbar: MarketQuickbar) -> String {
+        let regionID = quickbar.regionID
+
+        // 检查是否是建筑ID
+        if StructureMarketManager.isStructureId(regionID) {
+            // 是建筑ID，查找建筑名称
+            if let structureId = StructureMarketManager.getStructureId(from: regionID),
+               let structure = MarketStructureManager.shared.structures.first(where: { $0.structureId == Int(structureId) })
+            {
+                return structure.structureName
+            } else {
+                return "Unknown Structure"
+            }
+        } else {
+            // 是星域ID，查找星域名称
+            let query = """
+                SELECT r.regionName
+                FROM regions r
+                WHERE r.regionID = ?
+            """
+
+            if case let .success(rows) = databaseManager.executeQuery(query, parameters: [regionID]),
+               let row = rows.first,
+               let regionName = row["regionName"] as? String
+            {
+                return regionName
+            } else {
+                return "Unknown Region"
+            }
         }
     }
 

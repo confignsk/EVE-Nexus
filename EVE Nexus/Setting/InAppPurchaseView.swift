@@ -4,9 +4,8 @@ struct InAppPurchaseView: View {
     @StateObject private var iconManager = AppIconManager.shared
     @StateObject private var purchaseManager = PurchaseManager.shared
     @State private var changingIconId: String? = nil
-    @State private var showingPurchaseAlert = false
-    @State private var purchaseAlertMessage = ""
-    @State private var selectedBadgeForPurchase: String? = nil
+    @State private var showingErrorAlert = false
+    @State private var errorAlertMessage = ""
 
     // 使用统一配置
     private let iconList = AppIconConfig.iconList
@@ -37,6 +36,27 @@ struct InAppPurchaseView: View {
         VStack(spacing: 0) {
             // 图标选择列表
             List {
+                // 说明文本 Section
+                Section {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Image(systemName: "info.circle")
+                                .foregroundColor(.blue)
+                            Text(NSLocalizedString("IAP_Free_Icons_Badge_Charge", comment: ""))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        HStack {
+                            Image(systemName: "gift.fill")
+                                .foregroundColor(.orange)
+                            Text(NSLocalizedString("IAP_Sponsor_Gift", comment: ""))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+
                 Section {
                     ForEach(iconList, id: \.self) { iconName in
                         IconSelectionRow(
@@ -56,7 +76,6 @@ struct InAppPurchaseView: View {
                 selectedBadge: $selectedBadge,
                 purchaseManager: purchaseManager,
                 onPurchaseRequest: { badge in
-                    selectedBadgeForPurchase = badge
                     handlePurchaseRequest(for: badge)
                 }
             )
@@ -67,12 +86,12 @@ struct InAppPurchaseView: View {
                 Button(action: {
                     Task {
                         await purchaseManager.restorePurchases()
+                        // 只在发生错误时提示
                         if let error = purchaseManager.errorMessage {
-                            purchaseAlertMessage = error
-                            showingPurchaseAlert = true
-                        } else {
-                            purchaseAlertMessage = NSLocalizedString("Purchase_Restore_Success", comment: "")
-                            showingPurchaseAlert = true
+                            await MainActor.run {
+                                errorAlertMessage = error
+                                showingErrorAlert = true
+                            }
                         }
                     }
                 }) {
@@ -81,10 +100,10 @@ struct InAppPurchaseView: View {
                 .disabled(purchaseManager.isLoading)
             }
         }
-        .alert(isPresented: $showingPurchaseAlert) {
+        .alert(isPresented: $showingErrorAlert) {
             Alert(
                 title: Text(NSLocalizedString("Purchase_Alert_Title", comment: "")),
-                message: Text(purchaseAlertMessage),
+                message: Text(errorAlertMessage),
                 dismissButton: .default(Text(NSLocalizedString("Purchase_Alert_OK", comment: "")))
             )
         }
@@ -107,6 +126,14 @@ struct InAppPurchaseView: View {
             saveSelection()
             Task {
                 await applyIconChange()
+            }
+        }
+        .onChange(of: purchaseManager.purchasedRanks) { _, _ in
+            // 当购买状态变化时（如后台检测到退款），验证当前选中的角标
+            if !purchaseManager.isBadgeUnlocked(selectedBadge) {
+                // 如果当前角标失效，回退到第一个免费角标（T1）
+                Logger.info("[!] 检测到当前角标 \(selectedBadge) 已失效，自动回退到 T1")
+                selectedBadge = "T1"
             }
         }
     }
@@ -133,7 +160,15 @@ struct InAppPurchaseView: View {
         if let savedBadge = UserDefaults.standard.string(forKey: selectedBadgeKey),
            badgeList.contains(savedBadge)
         {
-            selectedBadge = savedBadge
+            // 检查该角标是否已解锁（T1/T2/T3 始终免费）
+            if purchaseManager.isBadgeUnlocked(savedBadge) {
+                selectedBadge = savedBadge
+            } else {
+                // 如果未解锁（可能是付费角标且已退款），回退到默认的 T1
+                Logger.info("[!] 已缓存的角标 \(savedBadge) 未解锁（可能已退款），回退到 T1")
+                selectedBadge = "T1"
+                saveSelection() // 更新缓存
+            }
         }
 
         // 如果 UserDefaults 中没有保存的值，尝试从 AppIconManager 解析当前图标ID
@@ -142,7 +177,15 @@ struct InAppPurchaseView: View {
         {
             let parsed = parseIconId(currentIconId)
             selectedIcon = parsed.icon
-            selectedBadge = parsed.badge
+
+            // 验证解析出的角标是否已解锁（T1/T2/T3 始终免费）
+            if purchaseManager.isBadgeUnlocked(parsed.badge) {
+                selectedBadge = parsed.badge
+            } else {
+                Logger.info("[!] 解析的角标 \(parsed.badge) 未解锁，回退到 T1")
+                selectedBadge = "T1"
+            }
+
             // 保存解析后的值，以便下次直接使用
             saveSelection()
         }
@@ -169,7 +212,7 @@ struct InAppPurchaseView: View {
         }
     }
 
-    // 处理购买请求
+    // 处理购买请求（赞助）
     private func handlePurchaseRequest(for badge: String) {
         guard !purchaseManager.isBadgeUnlocked(badge) else {
             // 已解锁，直接选择
@@ -186,24 +229,22 @@ struct InAppPurchaseView: View {
             guard let productID = purchaseManager.getProductID(for: badge),
                   let product = purchaseManager.products.first(where: { $0.id == productID })
             else {
+                // 找不到产品 - 这是关键错误，需要提示
                 await MainActor.run {
-                    purchaseAlertMessage = NSLocalizedString("Purchase_Product_Not_Found", comment: "")
-                    showingPurchaseAlert = true
+                    errorAlertMessage = NSLocalizedString("Purchase_Product_Not_Found", comment: "")
+                    showingErrorAlert = true
                 }
+                Logger.error("[x] 找不到产品ID: \(badge)")
                 return
             }
 
+            // 赞助流程：成功后会解锁所有付费角标
             let success = await purchaseManager.purchase(product, for: badge)
-            await MainActor.run {
-                if success {
-                    purchaseAlertMessage = NSLocalizedString("Purchase_Success", comment: "")
+            if success {
+                await MainActor.run {
+                    // 购买成功后，自动选择当前点击的角标
                     selectedBadge = badge
-                } else if let error = purchaseManager.errorMessage {
-                    purchaseAlertMessage = error
-                } else {
-                    purchaseAlertMessage = NSLocalizedString("Purchase_Cancelled", comment: "")
                 }
-                showingPurchaseAlert = true
             }
         }
     }
@@ -229,10 +270,16 @@ struct IconSelectionRow: View {
                             .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
                     )
 
-                // 右侧名称
-                Text(NSLocalizedString("Icon_\(iconName)", comment: ""))
-                    .foregroundColor(.primary)
-                    .font(.body)
+                // 右侧名称和描述
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(NSLocalizedString("Icon_\(iconName)", comment: ""))
+                        .foregroundColor(.primary)
+                        .font(.body)
+
+                    Text(NSLocalizedString("Icon_\(iconName)_Desc", comment: ""))
+                        .foregroundColor(.secondary)
+                        .font(.caption)
+                }
 
                 Spacer()
 
@@ -258,30 +305,133 @@ struct BottomSelectionView: View {
     @ObservedObject var purchaseManager: PurchaseManager
     let onPurchaseRequest: (String) -> Void
 
+    // 免费角标列表
+    private let freeBadges = ["T1", "T2", "T3"]
+    // 付费角标列表
+    private let paidBadges = ["Factions", "Deadspace", "Officers"]
+    
+    // 检查是否所有付费角标都已解锁
+    private var allPaidBadgesUnlocked: Bool {
+        paidBadges.allSatisfy { purchaseManager.isBadgeUnlocked($0) }
+    }
+    
+    // 获取赞助价格
+    private var sponsorPrice: String? {
+        purchaseManager.getPriceString(for: "Factions")
+    }
+    
+    // 是否正在赞助（检查是否有任何付费角标正在购买）
+    private var isSponsoring: Bool {
+        if let purchasingBadge = purchaseManager.purchasingBadge {
+            return paidBadges.contains(purchasingBadge)
+        }
+        return false
+    }
+
     var body: some View {
         VStack(spacing: 16) {
-            // 角标选择行
-            HStack(spacing: 10) {
-                ForEach(badgeList, id: \.self) { badge in
-                    BadgeSelectionCell(
-                        badgeName: badge,
-                        isSelected: selectedBadge == badge,
-                        isUnlocked: purchaseManager.isBadgeUnlocked(badge),
-                        price: purchaseManager.getPriceString(for: badge),
-                        isPurchasing: purchaseManager.purchasingBadge == badge
-                    ) {
-                        if purchaseManager.isBadgeUnlocked(badge) {
+            // 免费角标组
+            VStack(spacing: 8) {
+                HStack(spacing: 10) {
+                    ForEach(freeBadges, id: \.self) { badge in
+                        BadgeSelectionCell(
+                            badgeName: badge,
+                            isSelected: selectedBadge == badge,
+                            isUnlocked: true, // 始终解锁
+                            showPrice: false, // 不显示价格
+                            isPurchasing: false
+                        ) {
                             selectedBadge = badge
-                        } else {
-                            onPurchaseRequest(badge)
                         }
                     }
                 }
+                .frame(maxWidth: .infinity)
+                
+                // 免费标签
+                Text(NSLocalizedString("Purchase_Price_Free", comment: ""))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal)
+            
+            // 分隔线
+            Divider()
+                .padding(.vertical, 4)
+            
+            // 付费角标组
+            VStack(spacing: 8) {
+                HStack(spacing: 10) {
+                    ForEach(paidBadges, id: \.self) { badge in
+                        BadgeSelectionCell(
+                            badgeName: badge,
+                            isSelected: selectedBadge == badge,
+                            isUnlocked: purchaseManager.isBadgeUnlocked(badge),
+                            showPrice: false, // 不显示价格
+                            isPurchasing: false
+                        ) {
+                            if purchaseManager.isBadgeUnlocked(badge) {
+                                selectedBadge = badge
+                            }
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                
+                // 统一的赞助按钮
+                if allPaidBadgesUnlocked {
+                    // 已解锁：显示"已解锁"标签
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.caption)
+                            .foregroundColor(.green)
+                        Text(NSLocalizedString("Purchase_All_Badges_Unlocked", comment: ""))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                } else {
+                    // 未解锁：显示赞助按钮
+                    Button(action: {
+                        // 点击任意付费角标都会触发赞助
+                        onPurchaseRequest(paidBadges.first ?? "Factions")
+                    }) {
+                        HStack(spacing: 6) {
+                            if isSponsoring {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                            } else {
+                                Image(systemName: "gift.fill")
+                                    .font(.caption)
+                            }
+                            if let price = sponsorPrice, !isSponsoring {
+                                Text(NSLocalizedString("Purchase_Sponsor_Unlock_All", comment: ""))
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                                Text(price)
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                            } else if isSponsoring {
+                                Text(NSLocalizedString("Purchase_Processing", comment: ""))
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                            } else {
+                                Text(NSLocalizedString("Purchase_Sponsor_Unlock_All", comment: ""))
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                            }
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.orange)
+                        )
+                    }
+                    .disabled(isSponsoring)
+                }
+            }
         }
         .frame(maxWidth: .infinity)
+        .padding(.horizontal)
         .padding(.vertical)
         .background(Color(.systemBackground))
         .overlay(
@@ -299,7 +449,7 @@ struct BadgeSelectionCell: View {
     let badgeName: String
     let isSelected: Bool
     let isUnlocked: Bool
-    let price: String?
+    let showPrice: Bool // 是否显示价格标签
     let isPurchasing: Bool
     let action: () -> Void
 
@@ -346,29 +496,12 @@ struct BadgeSelectionCell: View {
                         RoundedRectangle(cornerRadius: 10)
                             .stroke(Color.accentColor, lineWidth: 2.5)
                     }
-
-                    // 加载指示器（仅显示在正在购买的角标上）
-                    if isPurchasing {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                    }
                 }
                 .frame(width: 50, height: 50)
             }
             .buttonStyle(PlainButtonStyle())
             .contentShape(Rectangle())
             .disabled(isPurchasing)
-
-            // 价格/状态标签
-            if isUnlocked {
-                Text(NSLocalizedString("Purchase_Badge_Unlocked", comment: ""))
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(.secondary)
-            } else if let price = price {
-                Text(price)
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(price == NSLocalizedString("Purchase_Price_Loading", comment: "") ? .secondary : .secondary)
-            }
         }
     }
 }

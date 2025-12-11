@@ -86,42 +86,26 @@ struct T3DModeSelectorView: View {
         }
     }
 
-    // 加载战术驱逐舰模式选项
+    // 加载模式选项（支持所有模式切换飞船）
     private func loadModeOptions() {
-        Logger.info("加载T3D模式选项，飞船ID: \(shipTypeID)")
+        Logger.info("加载模式选项，飞船ID: \(shipTypeID)")
 
-        let query = """
-            SELECT t.type_id, t.name, t.en_name, t.icon_filename, g.name as groupName
-            FROM types t
-            JOIN types s ON s.type_id = ?
-            JOIN groups g ON t.groupID = g.group_id
-            WHERE t.groupID = 1306
-              AND t.en_name LIKE '%' || s.en_name || '%'
-            ORDER BY t.name
-        """
+        // 使用新的工具函数获取模式选项
+        let modes = ModeSwitchingUtils.getModeOptions(
+            for: shipTypeID,
+            databaseManager: databaseManager
+        )
 
-        if case let .success(rows) = databaseManager.executeQuery(query, parameters: [shipTypeID]) {
-            modeInfos = rows.compactMap { row in
-                guard let typeId = row["type_id"] as? Int,
-                      let name = row["name"] as? String,
-                      let iconFileName = row["icon_filename"] as? String,
-                      let groupName = row["groupName"] as? String
-                else {
-                    return nil
-                }
-
-                return ModeInfo(
-                    typeId: typeId,
-                    name: name,
-                    iconFileName: iconFileName.isEmpty ? "not_found" : iconFileName,
-                    groupName: groupName
-                )
-            }
-
-            Logger.info("加载了 \(modeInfos.count) 个T3D模式选项")
-        } else {
-            Logger.error("加载T3D模式选项失败")
+        modeInfos = modes.map { mode in
+            ModeInfo(
+                typeId: mode.typeId,
+                name: mode.name,
+                iconFileName: mode.iconFileName,
+                groupName: "Mode" // 模式装备的组名
+            )
         }
+
+        Logger.info("加载了 \(modeInfos.count) 个模式选项")
     }
 }
 

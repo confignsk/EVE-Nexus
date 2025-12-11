@@ -375,7 +375,43 @@ struct CorporationIssuedContractsView: View {
                     }
                 }
 
-                if filteredContractGroups.isEmpty && !viewModel.isLoading {
+                // 显示错误信息
+                if let error = viewModel.errorMessage,
+                   !viewModel.isLoading && viewModel.contractGroups.isEmpty
+                {
+                    Section {
+                        HStack {
+                            Spacer()
+                            VStack(spacing: 12) {
+                                Image(systemName: "exclamationmark.triangle")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(.orange)
+                                Text(NSLocalizedString("Contract_Load_Error_Title", comment: ""))
+                                    .font(.headline)
+                                    .foregroundColor(.primary)
+                                Text(error)
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                                Button(action: {
+                                    Task {
+                                        await viewModel.loadContractsData(forceRefresh: true)
+                                    }
+                                }) {
+                                    Text(NSLocalizedString("ESI_Status_Retry", comment: ""))
+                                        .padding(.horizontal, 20)
+                                        .padding(.vertical, 8)
+                                        .background(Color.accentColor)
+                                        .foregroundColor(.white)
+                                        .cornerRadius(8)
+                                }
+                                .padding(.top, 8)
+                            }
+                            .padding()
+                            Spacer()
+                        }
+                    }
+                } else if filteredContractGroups.isEmpty && !viewModel.isLoading {
                     NoDataSection(text: NSLocalizedString("Misc_No_Matched_Data", comment: ""))
                 } else if !viewModel.isLoading || viewModel.isInitialized {
                     ForEach(filteredContractGroups) { group in
@@ -832,21 +868,6 @@ struct CorporationIssuedContractsView: View {
                 }) {
                     Image(systemName: "gear")
                 }
-            }
-        }
-        .alert(
-            NSLocalizedString("Contract_Load_Error_Title", comment: ""),
-            isPresented: .init(
-                get: { viewModel.errorMessage != nil },
-                set: { if !$0 { viewModel.errorMessage = nil } }
-            )
-        ) {
-            Button("OK", role: .cancel) {
-                viewModel.errorMessage = nil
-            }
-        } message: {
-            if let errorMessage = viewModel.errorMessage {
-                Text(errorMessage)
             }
         }
     }

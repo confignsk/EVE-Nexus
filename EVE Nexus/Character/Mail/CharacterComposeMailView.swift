@@ -5,6 +5,7 @@ struct CharacterComposeMailView: View {
     let initialRecipients: [MailRecipient]
     let initialSubject: String
     let initialBody: String
+    let appendContent: String // 需要附加但不显示在输入框的内容
 
     @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel = CharacterComposeMailViewModel()
@@ -12,6 +13,11 @@ struct CharacterComposeMailView: View {
     @State private var recipients: [MailRecipient]
     @State private var subject: String
     @State private var mailBody: String
+
+    // HUD状态
+    @State private var showHUD = false
+    @State private var hudSuccess = true
+    @State private var hudMessage = ""
 
     // 使用枚举来管理 sheet 状态
     private enum SheetType: Identifiable {
@@ -32,12 +38,14 @@ struct CharacterComposeMailView: View {
         characterId: Int,
         initialRecipients: [MailRecipient] = [],
         initialSubject: String = "",
-        initialBody: String = ""
+        initialBody: String = "",
+        appendContent: String = ""
     ) {
         self.characterId = characterId
         self.initialRecipients = initialRecipients
         self.initialSubject = initialSubject
         self.initialBody = initialBody
+        self.appendContent = appendContent
 
         let uniqueRecipients = Array(Set(initialRecipients))
         _recipients = State(initialValue: uniqueRecipients)
@@ -50,122 +58,146 @@ struct CharacterComposeMailView: View {
     }
 
     var body: some View {
-        Form {
-            Section {
-                // 收件人列表
-                ForEach(recipients) { recipient in
-                    HStack {
-                        if recipient.type != .mailingList {
-                            UniversePortrait(
-                                id: recipient.id, type: recipient.type, size: 64, displaySize: 32
-                            )
-                        }
-                        VStack(alignment: .leading) {
-                            Text(recipient.name)
-                            Text(recipient.type.rawValue)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        Spacer()
-                        Button {
-                            recipients.removeAll(where: { $0.id == recipient.id })
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.gray)
+        ZStack {
+            Form {
+                Section {
+                    // 收件人列表
+                    ForEach(recipients) { recipient in
+                        HStack {
+                            if recipient.type != .mailingList {
+                                UniversePortrait(
+                                    id: recipient.id, type: recipient.type, size: 64, displaySize: 32
+                                )
+                            }
+                            VStack(alignment: .leading) {
+                                Text(recipient.name)
+                                Text(recipient.type.rawValue)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            Spacer()
+                            Button {
+                                recipients.removeAll(where: { $0.id == recipient.id })
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.gray)
+                            }
                         }
                     }
-                }
 
-                // 添加收件人按钮
-                Button {
-                    activeSheet = .recipientPicker
-                } label: {
-                    HStack {
-                        Image(systemName: "plus.circle.fill")
-                        Text(NSLocalizedString("Main_EVE_Mail_Add_Recipient", comment: ""))
+                    // 添加收件人按钮
+                    Button {
+                        activeSheet = .recipientPicker
+                    } label: {
+                        HStack {
+                            Image(systemName: "plus.circle.fill")
+                            Text(NSLocalizedString("Main_EVE_Mail_Add_Recipient", comment: ""))
+                        }
                     }
-                }
 
-                // 添加邮件列表按钮
-                Button {
-                    activeSheet = .mailListPicker
-                } label: {
-                    HStack {
-                        Image(systemName: "list.bullet.circle.fill")
-                        Text(NSLocalizedString("Main_EVE_Mail_Add_Mailing_List", comment: ""))
+                    // 添加邮件列表按钮
+                    Button {
+                        activeSheet = .mailListPicker
+                    } label: {
+                        HStack {
+                            Image(systemName: "list.bullet.circle.fill")
+                            Text(NSLocalizedString("Main_EVE_Mail_Add_Mailing_List", comment: ""))
+                        }
                     }
+                } header: {
+                    Text(NSLocalizedString("Main_EVE_Mail_Recipients", comment: ""))
                 }
-            } header: {
-                Text(NSLocalizedString("Main_EVE_Mail_Recipients", comment: ""))
-            }
 
-            Section {
-                TextField(NSLocalizedString("Main_EVE_Mail_Subject", comment: ""), text: $subject)
-                    .textInputAutocapitalization(.none)
-            } header: {
-                Text(NSLocalizedString("Main_EVE_Mail_Subject", comment: ""))
-            }
+                Section {
+                    TextField(NSLocalizedString("Main_EVE_Mail_Subject", comment: ""), text: $subject)
+                        .textInputAutocapitalization(.none)
+                } header: {
+                    Text(NSLocalizedString("Main_EVE_Mail_Subject", comment: ""))
+                }
 
-            Section {
-                TextEditor(text: $mailBody)
-                    .frame(minHeight: 200)
-                    .textInputAutocapitalization(.none)
-            } header: {
-                Text(NSLocalizedString("Main_EVE_Mail_Body", comment: ""))
-            }
-        }
-        .navigationTitle(NSLocalizedString("Main_EVE_Mail_New", comment: ""))
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button(NSLocalizedString("Main_EVE_Mail_Cancel", comment: "")) {
-                    dismiss()
+                Section {
+                    TextEditor(text: $mailBody)
+                        .frame(minHeight: 200)
+                        .textInputAutocapitalization(.none)
+                } header: {
+                    Text(NSLocalizedString("Main_EVE_Mail_Body", comment: ""))
                 }
             }
-
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button(NSLocalizedString("Main_EVE_Mail_Send", comment: "")) {
-                    Task {
-                        await viewModel.sendMail(
-                            characterId: characterId,
-                            recipients: recipients,
-                            subject: subject,
-                            body: mailBody
-                        )
+            .navigationTitle(NSLocalizedString("Main_EVE_Mail_New", comment: ""))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(NSLocalizedString("Main_EVE_Mail_Cancel", comment: "")) {
                         dismiss()
                     }
                 }
-                .disabled(recipients.isEmpty || subject.isEmpty || mailBody.isEmpty)
-            }
-        }
-        .sheet(item: $activeSheet) { sheetType in
-            switch sheetType {
-            case .recipientPicker:
-                RecipientPickerView(
-                    characterId: characterId,
-                    onSelect: { recipient in
-                        if !recipients.contains(where: { $0.id == recipient.id }) {
-                            recipients.append(recipient)
-                        }
-                        activeSheet = nil
-                    }
-                )
 
-            case .mailListPicker:
-                MailListPickerView(
-                    characterId: characterId,
-                    onSelect: { mailList in
-                        if !recipients.contains(where: { $0.id == mailList.mailing_list_id }) {
-                            recipients.append(
-                                MailRecipient(
-                                    id: mailList.mailing_list_id,
-                                    name: mailList.name,
-                                    type: .mailingList
-                                ))
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(NSLocalizedString("Main_EVE_Mail_Send", comment: "")) {
+                        Task {
+                            // 将用户输入的内容和需要附加的内容拼接
+                            let finalBody = appendContent.isEmpty ? mailBody : mailBody + appendContent
+                            let success = await viewModel.sendMail(
+                                characterId: characterId,
+                                recipients: recipients,
+                                subject: subject,
+                                body: finalBody
+                            )
+
+                            // 显示结果HUD
+                            hudSuccess = success
+                            hudMessage = success
+                                ? NSLocalizedString("Main_EVE_Mail_Send_Success", comment: "")
+                                : NSLocalizedString("Main_EVE_Mail_Send_Failed", comment: "")
+
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                showHUD = true
+                            }
+
+                            // 延迟后关闭
+                            try? await Task.sleep(nanoseconds: 1_500_000_000)
+                            dismiss()
                         }
-                        activeSheet = nil
                     }
-                )
+                    .disabled(recipients.isEmpty || subject.isEmpty || mailBody.isEmpty || viewModel.isLoading)
+                }
+            }
+            .sheet(item: $activeSheet) { sheetType in
+                switch sheetType {
+                case .recipientPicker:
+                    RecipientPickerView(
+                        characterId: characterId,
+                        onSelect: { recipient in
+                            if !recipients.contains(where: { $0.id == recipient.id }) {
+                                recipients.append(recipient)
+                            }
+                            activeSheet = nil
+                        }
+                    )
+
+                case .mailListPicker:
+                    MailListPickerView(
+                        characterId: characterId,
+                        onSelect: { mailList in
+                            if !recipients.contains(where: { $0.id == mailList.mailing_list_id }) {
+                                recipients.append(
+                                    MailRecipient(
+                                        id: mailList.mailing_list_id,
+                                        name: mailList.name,
+                                        type: .mailingList
+                                    ))
+                            }
+                            activeSheet = nil
+                        }
+                    )
+                }
+            }
+
+            // HUD显示
+            if showHUD {
+                MailSendHUDView(success: hudSuccess, message: hudMessage)
+                    .transition(.scale.combined(with: .opacity))
+                    .zIndex(1)
             }
         }
     }
@@ -695,7 +727,7 @@ class CharacterComposeMailViewModel: ObservableObject {
     @Published var error: Error?
 
     func sendMail(characterId: Int, recipients: [MailRecipient], subject: String, body: String)
-        async
+        async -> Bool
     {
         isLoading = true
         defer { isLoading = false }
@@ -720,10 +752,37 @@ class CharacterComposeMailViewModel: ObservableObject {
                 body: body
             )
             Logger.info("邮件发送成功")
+            return true
         } catch {
             Logger.error("发送邮件失败: \(error)")
             self.error = error
+            return false
         }
+    }
+}
+
+// 邮件发送HUD视图
+struct MailSendHUDView: View {
+    let success: Bool
+    let message: String
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: success ? "checkmark.circle.fill" : "xmark.circle.fill")
+                .font(.system(size: 60))
+
+            Text(message)
+                .font(.headline)
+                .multilineTextAlignment(.center)
+        }
+        .padding(40)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(.ultraThinMaterial)
+        )
+        .shadow(radius: 20)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black.opacity(0.2))
     }
 }
 

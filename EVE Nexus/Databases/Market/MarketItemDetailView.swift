@@ -875,10 +875,30 @@ struct MarketItemDetailView: View {
         defer { isLoadingHistory = false }
 
         do {
+            // 确定用于获取历史价格的星域ID
+            let historyRegionID: Int
+
+            // 判断是否选择了建筑
+            if StructureMarketManager.isStructureId(selectedRegionID) {
+                // 选择了建筑，获取建筑所属的星域ID
+                guard let structureId = StructureMarketManager.getStructureId(from: selectedRegionID),
+                      let structure = getStructureById(structureId)
+                else {
+                    Logger.error("未找到建筑信息，无法获取历史价格: \(selectedRegionID)")
+                    marketHistory = []
+                    return
+                }
+                historyRegionID = structure.regionId
+                Logger.info("使用建筑 \(structure.structureName) 所属星域 \(historyRegionID) 获取历史价格")
+            } else {
+                // 选择了星域，直接使用星域ID
+                historyRegionID = selectedRegionID
+            }
+
             // 从 MarketHistoryAPI 获取数据
             let history = try await MarketHistoryAPI.shared.fetchMarketHistory(
                 typeID: itemID,
-                regionID: selectedRegionID,
+                regionID: historyRegionID,
                 forceRefresh: forceRefresh
             )
 

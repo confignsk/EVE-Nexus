@@ -336,4 +336,8 @@ Fixes & Improvements:
 3. Fix a bug when refresh killboard.
 4. Fix a bug in asset function that can not load the names of containers.
 
+# v1.9 Dec 12, 2025
 
+1. Fixed a bug that records with an amount of 0 were not displayed when filtering records in wallet transactions function.
+2. Added in-app purchases and the ability to change the app icon. Feel free to make a purchase!
+3. Update fitting function to support 2 new AT ships.

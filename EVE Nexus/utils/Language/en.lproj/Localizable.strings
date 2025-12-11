@@ -256,7 +256,7 @@
 "Main_Database_Show_Important_Only" = "Important Attributes Only";
 "Main_Database_Show_Important_Only_Detail" = "Only show important attributes in database function";
 
-"Main_In_App_Purchase" = "Sponsor";
+"Main_In_App_Purchase" = "Sponsor / Set App Icon";
 "App_Icon_Selection" = "App Icon";
 "App_Icon_Description" = "Choose your favorite app icon";
 "App_Icon_Default" = "Default";
@@ -271,6 +271,10 @@
 "Icon_TriDB" = "Triglavian Survey Database";
 "Icon_OverseerBox" = "Overseer's Personal Effects";
 "Icon_HyperCore" = "HyperCore";
+"Icon_Tritanium_Desc" = "The foundation of New Eden!";
+"Icon_TriDB_Desc" = "What's this even about?";
+"Icon_OverseerBox_Desc" = "Isn't this why you run DED?";
+"Icon_HyperCore_Desc" = "The house always wins, buddy...";
 "App_Icon_Not_Supported" = "Alternate icons are not supported on this device";
 "Main_About" = "About";
 "Main_About_Database_Version" = "SDE";
@@ -1017,6 +1021,8 @@
 "Main_EVE_Mail_Subject" = "Subject";
 "Main_EVE_Mail_Body" = "Body";
 "Main_EVE_Mail_Send" = "Send";
+"Main_EVE_Mail_Send_Success" = "Mail sent successfully";
+"Main_EVE_Mail_Send_Failed" = "Failed to send mail";
 "Main_EVE_Mail_Cancel" = "Cancel";
 "Main_EVE_Mail_Search_Recipients" = "Search characters, corporations or alliances";
 "Main_EVE_Mail_Min_Search_Length" = "Please enter at least 3 characters";
@@ -2594,9 +2600,9 @@
 
 // Language Map Settings
 "Language_Map_Settings_Title" = "Language Map Settings";
-"Language_Map_Settings_Description" = "Select languages to display in the language map. English is the default language, you need to select at least one other language.";
+"Language_Map_Settings_Description" = "Select languages to display in the language map. English is always included, you need to select at least one additional language.";
 "Language_Map_Settings_Select_Languages" = "Select Languages";
-"Language_Map_Settings_Minimum_Languages" = "Please select at least 2 languages";
+"Language_Map_Settings_Minimum_Languages" = "Please select at least 1 language";
 "Misc_Copy_All_Languages" = "Copy All Languages";
 
 // Star Map
@@ -2773,4 +2779,9 @@
 "Purchase_Cancelled" = "Purchase cancelled";
 "Purchase_Price_Free" = "Free";
 "Purchase_Price_Loading" = "...";
-"Purchase_Badge_Unlocked" = "Unlocked";
+"Purchase_Badge_Unlocked" = "Available";
+"Purchase_All_Badges_Unlocked" = "All unlocked";
+"Purchase_Sponsor_Unlock_All" = "Sponsor to unlock all";
+"Purchase_Processing" = "Processing...";
+"IAP_Free_Icons_Badge_Charge" = "You can use any icon and T2/T3 badges for free.";
+"IAP_Sponsor_Gift" = "By sponsoring, you'll receive Factions, Deadspace, and Officers badges as a gift. Thank you for your support!";

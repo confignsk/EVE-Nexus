@@ -957,6 +957,39 @@ struct CorpMemberListView: View {
                         }
                         .padding()
                         .listRowBackground(Color.clear)
+                    } else if let error = viewModel.error,
+                              !viewModel.isLoading && viewModel.allMembers.isEmpty
+                    {
+                        // 显示错误信息
+                        HStack {
+                            Spacer()
+                            VStack(spacing: 12) {
+                                Image(systemName: "exclamationmark.triangle")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(.orange)
+                                Text(NSLocalizedString("Common_Error", comment: ""))
+                                    .font(.headline)
+                                    .foregroundColor(.primary)
+                                Text(error.localizedDescription)
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                                Button(action: {
+                                    viewModel.loadMembers(forceRefresh: true)
+                                }) {
+                                    Text(NSLocalizedString("ESI_Status_Retry", comment: ""))
+                                        .padding(.horizontal, 20)
+                                        .padding(.vertical, 8)
+                                        .background(Color.accentColor)
+                                        .foregroundColor(.white)
+                                        .cornerRadius(8)
+                                }
+                                .padding(.top, 8)
+                            }
+                            .padding()
+                            Spacer()
+                        }
+                        .listRowBackground(Color.clear)
                     } else {
                         let filteredMembers = viewModel.members
                         if filteredMembers.isEmpty {
@@ -1082,17 +1115,6 @@ struct CorpMemberListView: View {
         }
         .onChange(of: viewModel.searchText) { _, _ in
             viewModel.updatePage()
-        }
-        .alert(isPresented: $viewModel.showError) {
-            Alert(
-                title: Text(NSLocalizedString("Common_Error", comment: "")),
-                message: Text(
-                    viewModel.error?.localizedDescription
-                        ?? NSLocalizedString("Common_Unknown_Error", comment: "")),
-                dismissButton: .default(Text(NSLocalizedString("Common_OK", comment: ""))) {
-                    dismiss()
-                }
-            )
         }
     }
 

@@ -5,8 +5,6 @@ struct CorpMoonMiningView: View {
     let characterId: Int
     @StateObject private var viewModel: CorpMoonMiningViewModel
     @Environment(\.dismiss) private var dismiss
-    @State private var error: Error?
-    @State private var showError = false
     @State private var isRefreshing = false
 
     init(characterId: Int) {
@@ -22,6 +20,48 @@ struct CorpMoonMiningView: View {
                     ProgressView()
                         .progressViewStyle(.circular)
                     Spacer()
+                }
+            } else if let error = viewModel.error,
+                      !viewModel.isLoading && viewModel.moonExtractions.isEmpty
+            {
+                // 显示错误信息
+                Section {
+                    HStack {
+                        Spacer()
+                        VStack(spacing: 12) {
+                            Image(systemName: "exclamationmark.triangle")
+                                .font(.system(size: 40))
+                                .foregroundColor(.orange)
+                            Text(NSLocalizedString("Common_Error", comment: ""))
+                                .font(.headline)
+                                .foregroundColor(.primary)
+                            Text(error.localizedDescription)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                            Button(action: {
+                                Task {
+                                    do {
+                                        try await viewModel.fetchMoonExtractions(forceRefresh: true)
+                                    } catch {
+                                        if !(error is CancellationError) {
+                                            Logger.error("重试加载月矿提取信息失败: \(error)")
+                                        }
+                                    }
+                                }
+                            }) {
+                                Text(NSLocalizedString("ESI_Status_Retry", comment: ""))
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 8)
+                                    .background(Color.accentColor)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(8)
+                            }
+                            .padding(.top, 8)
+                        }
+                        .padding()
+                        Spacer()
+                    }
                 }
             } else if viewModel.moonExtractions.isEmpty {
                 ContentUnavailableView {
@@ -68,8 +108,6 @@ struct CorpMoonMiningView: View {
                 try await viewModel.fetchMoonExtractions(forceRefresh: true)
             } catch {
                 if !(error is CancellationError) {
-                    self.error = error
-                    self.showError = true
                     Logger.error("刷新月矿提取信息失败: \(error)")
                 }
             }
@@ -90,17 +128,6 @@ struct CorpMoonMiningView: View {
                 .disabled(isRefreshing || viewModel.isLoading)
             }
         }
-        .alert(isPresented: $showError) {
-            Alert(
-                title: Text(NSLocalizedString("Common_Error", comment: "")),
-                message: Text(
-                    error?.localizedDescription
-                        ?? NSLocalizedString("Common_Unknown_Error", comment: "")),
-                dismissButton: .default(Text(NSLocalizedString("Common_OK", comment: ""))) {
-                    dismiss()
-                }
-            )
-        }
     }
 
     private func refreshData() {
@@ -111,8 +138,6 @@ struct CorpMoonMiningView: View {
                 try await viewModel.fetchMoonExtractions(forceRefresh: true)
             } catch {
                 if !(error is CancellationError) {
-                    self.error = error
-                    self.showError = true
                     Logger.error("刷新月矿提取信息失败: \(error)")
                 }
             }
@@ -206,6 +231,7 @@ class CorpMoonMiningViewModel: ObservableObject {
     @Published var moonExtractions: [MoonExtractionInfo] = []
     @Published var moonNames: [Int: String] = [:]
     @Published private(set) var isLoading = false
+    @Published var error: Error?
     private let characterId: Int
 
     init(characterId: Int) {
@@ -217,6 +243,7 @@ class CorpMoonMiningViewModel: ObservableObject {
             } catch {
                 if !(error is CancellationError) {
                     Logger.error("初始化加载月矿提取信息失败: \(error)")
+                    self.error = error
                 }
             }
         }
@@ -253,56 +280,63 @@ class CorpMoonMiningViewModel: ObservableObject {
     func fetchMoonExtractions(forceRefresh: Bool = false) async throws {
         guard !isLoading else { return }
         isLoading = true
+        error = nil
         defer { isLoading = false }
 
-        let extractions = try await CorpMoonExtractionAPI.shared.fetchMoonExtractions(
-            characterId: characterId,
-            forceRefresh: forceRefresh
-        )
+        do {
+            let extractions = try await CorpMoonExtractionAPI.shared.fetchMoonExtractions(
+                characterId: characterId,
+                forceRefresh: forceRefresh
+            )
 
-        // 获取当前时间
-        let now = Date()
-        let calendar = Calendar.current
+            // 获取当前时间
+            let now = Date()
+            let calendar = Calendar.current
 
-        // 过滤并排序月矿数据
-        moonExtractions =
-            extractions
-                .filter { extraction in
-                    guard let arrivalDate = FormatUtil.parseUTCDate(extraction.chunk_arrival_time)
-                    else {
-                        return false
+            // 过滤并排序月矿数据
+            moonExtractions =
+                extractions
+                    .filter { extraction in
+                        guard let arrivalDate = FormatUtil.parseUTCDate(extraction.chunk_arrival_time)
+                        else {
+                            return false
+                        }
+
+                        // 计算时间差（天数）
+                        let days = calendar.dateComponents([.day], from: now, to: arrivalDate).day ?? 0
+
+                        // 只保留未来36天内的数据
+                        return days >= -1 && days <= 36
+                    }
+                    .sorted { first, second in
+                        first.chunk_arrival_time < second.chunk_arrival_time
                     }
 
-                    // 计算时间差（天数）
-                    let days = calendar.dateComponents([.day], from: now, to: arrivalDate).day ?? 0
+            // 如果有数据，批量获取月球名称
+            if !moonExtractions.isEmpty {
+                // 对moon_id去重
+                let uniqueMoonIds = Set(moonExtractions.map { Int($0.moon_id) })
+                let moonIds = uniqueMoonIds.sorted().map { String($0) }.joined(separator: ",")
+                let query = "SELECT itemID, itemName FROM celestialNames WHERE itemID IN (\(moonIds))"
 
-                    // 只保留未来36天内的数据
-                    return days >= -1 && days <= 36
-                }
-                .sorted { first, second in
-                    first.chunk_arrival_time < second.chunk_arrival_time
-                }
-
-        // 如果有数据，批量获取月球名称
-        if !moonExtractions.isEmpty {
-            // 对moon_id去重
-            let uniqueMoonIds = Set(moonExtractions.map { Int($0.moon_id) })
-            let moonIds = uniqueMoonIds.sorted().map { String($0) }.joined(separator: ",")
-            let query = "SELECT itemID, itemName FROM celestialNames WHERE itemID IN (\(moonIds))"
-
-            if case let .success(rows) = DatabaseManager.shared.executeQuery(query) {
-                var names: [Int: String] = [:]
-                for row in rows {
-                    if let itemId = row["itemID"] as? Int,
-                       let name = row["itemName"] as? String
-                    {
-                        names[itemId] = name
+                if case let .success(rows) = DatabaseManager.shared.executeQuery(query) {
+                    var names: [Int: String] = [:]
+                    for row in rows {
+                        if let itemId = row["itemID"] as? Int,
+                           let name = row["itemName"] as? String
+                        {
+                            names[itemId] = name
+                        }
                     }
+                    moonNames = names
                 }
-                moonNames = names
+            } else {
+                moonNames.removeAll()
             }
-        } else {
-            moonNames.removeAll()
+        } catch {
+            Logger.error("加载月矿提取信息失败: \(error)")
+            self.error = error
+            throw error
         }
     }
 }

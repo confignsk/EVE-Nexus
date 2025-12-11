@@ -4,8 +4,6 @@ struct CorpStructureView: View {
     let characterId: Int
     @StateObject private var viewModel: CorpStructureViewModel
     @Environment(\.dismiss) private var dismiss
-    @State private var error: Error?
-    @State private var showError = false
     @State private var showSettings = false
     @AppStorage("structureFuelMonitorDays") private var fuelMonitorDays: Int = 7 {
         didSet {
@@ -26,6 +24,48 @@ struct CorpStructureView: View {
         List {
             if viewModel.isLoading {
                 loadingView
+            } else if let error = viewModel.error,
+                      !viewModel.isLoading && viewModel.structures.isEmpty
+            {
+                // 显示错误信息
+                Section {
+                    HStack {
+                        Spacer()
+                        VStack(spacing: 12) {
+                            Image(systemName: "exclamationmark.triangle")
+                                .font(.system(size: 40))
+                                .foregroundColor(.orange)
+                            Text(NSLocalizedString("Corp_Structure_Error", comment: ""))
+                                .font(.headline)
+                                .foregroundColor(.primary)
+                            Text(error.localizedDescription)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                            Button(action: {
+                                Task {
+                                    do {
+                                        try await viewModel.loadStructures(forceRefresh: true)
+                                    } catch {
+                                        if !(error is CancellationError) {
+                                            Logger.error("重试加载建筑信息失败: \(error)")
+                                        }
+                                    }
+                                }
+                            }) {
+                                Text(NSLocalizedString("ESI_Status_Retry", comment: ""))
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 8)
+                                    .background(Color.accentColor)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(8)
+                            }
+                            .padding(.top, 8)
+                        }
+                        .padding()
+                        Spacer()
+                    }
+                }
             } else if viewModel.structures.isEmpty {
                 emptyView
             } else {
@@ -64,8 +104,6 @@ struct CorpStructureView: View {
                 try await viewModel.loadStructures(forceRefresh: true)
             } catch {
                 if !(error is CancellationError) {
-                    self.error = error
-                    self.showError = true
                     Logger.error("刷新建筑信息失败: \(error)")
                 }
             }
@@ -182,17 +220,6 @@ struct CorpStructureView: View {
                 }
             }
         }
-        .alert(isPresented: $showError) {
-            Alert(
-                title: Text(NSLocalizedString("Corp_Structure_Error", comment: "")),
-                message: Text(
-                    error?.localizedDescription
-                        ?? NSLocalizedString("Corp_Structure_Unknown_Error", comment: "")),
-                dismissButton: .default(Text(NSLocalizedString("Corp_Structure_OK", comment: ""))) {
-                    dismiss()
-                }
-            )
-        }
     }
 
     private func refreshData() {
@@ -203,8 +230,6 @@ struct CorpStructureView: View {
                 try await viewModel.loadStructures(forceRefresh: true)
             } catch {
                 if !(error is CancellationError) {
-                    self.error = error
-                    self.showError = true
                     Logger.error("刷新建筑信息失败: \(error)")
                 }
             }
@@ -462,6 +487,7 @@ class CorpStructureViewModel: ObservableObject {
     @Published var structures: [[String: Any]] = []
     @Published private(set) var isLoading = false
     @Published private(set) var lowFuelStructuresCache: [[String: Any]] = []
+    @Published var error: Error?
     private var typeIcons: [Int: String] = [:]
     private var systemNames: [Int: String] = [:]
     private var regionNames: [Int: String] = [:]
@@ -484,6 +510,7 @@ class CorpStructureViewModel: ObservableObject {
             } catch {
                 if !(error is CancellationError) {
                     Logger.error("初始化加载建筑信息失败: \(error)")
+                    self.error = error
                 }
             }
         }
@@ -549,49 +576,56 @@ class CorpStructureViewModel: ObservableObject {
     func loadStructures(forceRefresh: Bool = false) async throws {
         guard !isLoading else { return }
         isLoading = true
+        error = nil
         defer { isLoading = false }
 
-        // 从API获取数据
-        let structures = try await CorpStructureAPI.shared.fetchStructures(
-            characterId: characterId,
-            forceRefresh: forceRefresh
-        )
+        do {
+            // 从API获取数据
+            let structures = try await CorpStructureAPI.shared.fetchStructures(
+                characterId: characterId,
+                forceRefresh: forceRefresh
+            )
 
-        // 将 StructureInfo 转换为字典
-        let structureDicts: [[String: Any]] = structures.map { structure in
-            var dict: [String: Any] = [
-                "structure_id": structure.structure_id,
-                "type_id": structure.type_id,
-                "system_id": structure.system_id,
-                "state": structure.state,
-                "name": structure.name ?? NSLocalizedString("Unknown", comment: ""),
-            ]
+            // 将 StructureInfo 转换为字典
+            let structureDicts: [[String: Any]] = structures.map { structure in
+                var dict: [String: Any] = [
+                    "structure_id": structure.structure_id,
+                    "type_id": structure.type_id,
+                    "system_id": structure.system_id,
+                    "state": structure.state,
+                    "name": structure.name ?? NSLocalizedString("Unknown", comment: ""),
+                ]
 
-            if let fuelExpires = structure.fuel_expires {
-                dict["fuel_expires"] = fuelExpires
+                if let fuelExpires = structure.fuel_expires {
+                    dict["fuel_expires"] = fuelExpires
+                }
+
+                if let services = structure.services {
+                    dict["services"] = services.map { ["name": $0.name, "state": $0.state] }
+                }
+
+                return dict
             }
 
-            if let services = structure.services {
-                dict["services"] = services.map { ["name": $0.name, "state": $0.state] }
-            }
+            // 收集所有需要查询的ID
+            let typeIds = Set(structureDicts.compactMap { $0["type_id"] as? Int })
+            let systemIds = Set(structureDicts.compactMap { $0["system_id"] as? Int })
 
-            return dict
+            // 查询类型图标
+            await loadTypeIcons(typeIds: Array(typeIds))
+
+            // 查询星系和星域信息
+            await loadLocationInfo(systemIds: Array(systemIds))
+
+            // 更新结构数据
+            self.structures = structureDicts
+            // 更新低燃料缓存，使用当前的监控天数
+            updateLowFuelStructures(within: currentMonitorDays)
+        } catch {
+            Logger.error("加载建筑信息失败: \(error)")
+            self.error = error
+            throw error
         }
-
-        // 收集所有需要查询的ID
-        let typeIds = Set(structureDicts.compactMap { $0["type_id"] as? Int })
-        let systemIds = Set(structureDicts.compactMap { $0["system_id"] as? Int })
-
-        // 查询类型图标
-        await loadTypeIcons(typeIds: Array(typeIds))
-
-        // 查询星系和星域信息
-        await loadLocationInfo(systemIds: Array(systemIds))
-
-        // 更新结构数据
-        self.structures = structureDicts
-        // 更新低燃料缓存，使用当前的监控天数
-        updateLowFuelStructures(within: currentMonitorDays)
     }
 
     private func loadTypeIcons(typeIds: [Int]) async {

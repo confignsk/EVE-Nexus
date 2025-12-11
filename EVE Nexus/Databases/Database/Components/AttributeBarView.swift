@@ -387,6 +387,11 @@ struct AttributeGroupView: View {
                     if let dps = getWeaponDPS() {
                         weaponDPSView(dps: dps).listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                     }
+
+                    // 如果没有507属性但有武器伤害属性，且可以计算射程，则显示射程
+                    if !hasMissileAttribute, let range = getMissileRange() {
+                        missileRangeView(range: range).listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+                    }
                 }
 
             } header: {
@@ -448,16 +453,41 @@ struct AttributeGroupView: View {
         return totalDamage / (rateOfFire / 1000.0) // 转换为秒
     }
 
-    // 计算导弹射程
+    // 计算导弹射程（通用方法，不依赖507属性）
     // 如果飞行时间(281)或飞行速度(37)查不到，返回nil，射程将不显示
     private func getMissileRange() -> Double? {
-        // 获取导弹信息
-        guard let missileInfo = getMissileInfo() else { return nil }
+        // 方法1：如果有507属性，尝试从导弹信息获取
+        if let missileInfo = getMissileInfo() {
+            // 获取导弹基础属性
+            // 如果飞行时间或飞行速度任何一个查不到，继续尝试方法2
+            if let baseFlightTime = missileInfo.flightTime,
+               let baseFlightSpeed = missileInfo.flightSpeed
+            {
+                // 获取物品属性加成（645是速度加成，646是飞行时间加成）
+                // 如果加成属性不存在，默认使用1.0（无加成）
+                let speedMultiplier = allAttributes[645] ?? 1.0
+                let timeMultiplier = allAttributes[646] ?? 1.0
 
-        // 获取导弹基础属性
-        // 如果飞行时间或飞行速度任何一个查不到，无法计算射程，返回nil
-        guard let baseFlightTime = missileInfo.flightTime,
-              let baseFlightSpeed = missileInfo.flightSpeed
+                // 计算实际飞行速度和飞行时间
+                let actualFlightSpeed = baseFlightSpeed * speedMultiplier // 米/秒
+                let actualFlightTime = baseFlightTime * timeMultiplier // 毫秒
+
+                // 计算射程：速度 × 时间（需要将毫秒转换为秒）
+                let range = actualFlightSpeed * (actualFlightTime / 1000.0) // 米
+
+                if range > 0 {
+                    return range
+                }
+            }
+        }
+
+        // 方法2：直接从属性中获取飞行时间和飞行速度（不依赖507属性）
+        // 属性281：飞行时间（毫秒）
+        // 属性37：飞行速度（米/秒）
+        guard let baseFlightTime = allAttributes[281],
+              let baseFlightSpeed = allAttributes[37],
+              baseFlightTime > 0,
+              baseFlightSpeed > 0
         else {
             return nil
         }
@@ -570,12 +600,34 @@ struct AttributeGroupView: View {
 
             Spacer()
 
-            Text("\(FormatUtil.format(range)) m")
+            Text(formatDistance(range))
                 .font(.body)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.trailing)
         }
         .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+    }
+
+    // 格式化距离显示（自动选择合适的单位：m或km）
+    // 大于等于1km时显示km单位，小于1km时显示m单位
+    // 大于1000km时显示完整数字，不使用k km缩写
+    private func formatDistance(_ distance: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.minimumFractionDigits = 0
+        formatter.numberStyle = .decimal
+
+        if distance >= 1000 {
+            // 大于等于1km时，使用km单位，保留2位小数
+            let value = distance / 1000.0
+            formatter.maximumFractionDigits = 2
+            let formattedValue = formatter.string(from: NSNumber(value: value)) ?? "0"
+            return "\(formattedValue) km"
+        } else {
+            // 小于1km时，使用m单位，不保留小数
+            formatter.maximumFractionDigits = 0
+            let formattedValue = formatter.string(from: NSNumber(value: distance)) ?? "0"
+            return "\(formattedValue) m"
+        }
     }
 }
 

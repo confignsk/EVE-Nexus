@@ -280,7 +280,7 @@
 "Main_Setting_Cache_Expiration_Minutes" = "剩余%d分钟";
 "Main_Setting_Cache_Expired" = "已过期";
 
-"Main_In_App_Purchase" = "赞助";
+"Main_In_App_Purchase" = "赞助 / 设置应用图标";
 "App_Icon_Selection" = "应用图标";
 "App_Icon_Description" = "选择您喜欢的应用图标";
 "App_Icon_Default" = "默认";
@@ -296,6 +296,10 @@
 "Icon_TriDB" = "三神裔调查数据库";
 "Icon_OverseerBox" = "监察官的个人财产";
 "Icon_HyperCore" = "超核";
+"Icon_Tritanium_Desc" = "新伊甸的基石！";
+"Icon_TriDB_Desc" = "这里面写的啥？";
+"Icon_OverseerBox_Desc" = "你打远征不就为了这个吗？";
+"Icon_HyperCore_Desc" = "久赌无胜家啊伙计……";
 "Main_About" = "关于";
 "Main_About_Database_Version" = "SDE 数据库";
 "Main_About_Database_BuiltIn" = "内置";
@@ -1031,6 +1035,8 @@
 "Main_EVE_Mail_Subject" = "主题";
 "Main_EVE_Mail_Body" = "正文";
 "Main_EVE_Mail_Send" = "发送";
+"Main_EVE_Mail_Send_Success" = "邮件发送成功";
+"Main_EVE_Mail_Send_Failed" = "邮件发送失败";
 "Main_EVE_Mail_Cancel" = "取消";
 "Main_EVE_Mail_Search_Recipients" = "搜索角色、军团或联盟";
 "Main_EVE_Mail_Min_Search_Length" = "请至少输入3个字符";
@@ -2630,9 +2636,9 @@
 
 // Language Map Settings
 "Language_Map_Settings_Title" = "语言映射设置";
-"Language_Map_Settings_Description" = "选择要在语言映射中显示的语言。英文是默认语言，您需要至少选择一种其他语言。";
+"Language_Map_Settings_Description" = "选择要在语言映射中显示的语言。英文默认包含，至少需要再选择一种语言。";
 "Language_Map_Settings_Select_Languages" = "选择语言";
-"Language_Map_Settings_Minimum_Languages" = "请至少选择2种语言";
+"Language_Map_Settings_Minimum_Languages" = "请至少选择1种语言";
 "Misc_Copy_All_Languages" = "复制所有语言";
 
 // Star Map
@@ -2810,3 +2816,8 @@
 "Purchase_Price_Free" = "免费";
 "Purchase_Price_Loading" = "...";
 "Purchase_Badge_Unlocked" = "可用";
+"Purchase_All_Badges_Unlocked" = "已全部解锁";
+"Purchase_Sponsor_Unlock_All" = "赞助解锁全部";
+"Purchase_Processing" = "处理中...";
+"IAP_Free_Icons_Badge_Charge" = "您可以免费使用任何一个图标和 T2/T3 角标";
+"IAP_Sponsor_Gift" = "通过赞助，您将收到 Factions、Deadspace 和 Officers 角标作为礼物。感谢您的支持！";

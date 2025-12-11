@@ -590,6 +590,42 @@ struct CorpIndustryView: View {
                     }
                 }
                 .padding()
+            } else if let error = viewModel.error,
+                      !viewModel.isLoading && viewModel.jobs.isEmpty
+            {
+                // 显示错误信息
+                Section {
+                    HStack {
+                        Spacer()
+                        VStack(spacing: 12) {
+                            Image(systemName: "exclamationmark.triangle")
+                                .font(.system(size: 40))
+                                .foregroundColor(.orange)
+                            Text(NSLocalizedString("Common_Error", comment: ""))
+                                .font(.headline)
+                                .foregroundColor(.primary)
+                            Text(error.localizedDescription)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                            Button(action: {
+                                Task {
+                                    await viewModel.loadJobs(forceRefresh: true)
+                                }
+                            }) {
+                                Text(NSLocalizedString("ESI_Status_Retry", comment: ""))
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 8)
+                                    .background(Color.accentColor)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(8)
+                            }
+                            .padding(.top, 8)
+                        }
+                        .padding()
+                        Spacer()
+                    }
+                }
             } else {
                 // 工业槽位统计 Section - 始终显示
                 Section(
@@ -777,17 +813,6 @@ struct CorpIndustryView: View {
                     await viewModel.loadJobs()
                 }
             }
-        }
-        .alert(isPresented: $viewModel.showError) {
-            Alert(
-                title: Text(NSLocalizedString("Common_Error", comment: "")),
-                message: Text(
-                    viewModel.error?.localizedDescription
-                        ?? NSLocalizedString("Common_Unknown_Error", comment: "")),
-                dismissButton: .default(Text(NSLocalizedString("Common_OK", comment: ""))) {
-                    dismiss()
-                }
-            )
         }
     }
 }

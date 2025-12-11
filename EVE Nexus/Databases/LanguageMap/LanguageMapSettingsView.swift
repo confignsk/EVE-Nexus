@@ -30,7 +30,7 @@ struct LanguageMapSettingsView: View {
                 }
 
                 Section {
-                    ForEach(Array(availableLanguages.keys).sorted(), id: \.self) { langCode in
+                    ForEach(Array(availableLanguages.keys).filter { $0 != "en" }.sorted(), id: \.self) { langCode in
                         HStack {
                             Text(availableLanguages[langCode] ?? langCode)
                             Spacer()
@@ -49,10 +49,10 @@ struct LanguageMapSettingsView: View {
                         NSLocalizedString("Language_Map_Settings_Select_Languages", comment: "选择语言")
                     )
                 } footer: {
-                    if selectedLanguages.count < 2 {
+                    if selectedLanguages.filter({ $0 != "en" }).isEmpty {
                         Text(
                             NSLocalizedString(
-                                "Language_Map_Settings_Minimum_Languages", comment: "请至少选择2种语言"
+                                "Language_Map_Settings_Minimum_Languages", comment: "请至少选择1种语言"
                             )
                         )
                         .foregroundColor(.red)
@@ -72,26 +72,22 @@ struct LanguageMapSettingsView: View {
                     Button(NSLocalizedString("Common_Done", comment: "完成")) {
                         dismiss()
                     }
-                    .disabled(selectedLanguages.count < 2)
+                    .disabled(selectedLanguages.filter { $0 != "en" }.isEmpty)
                 }
             }
         }
     }
 
     private func toggleLanguage(_ langCode: String) {
-        if langCode == "en" {
-            // 英文不能取消选择
-            return
-        }
-
         if selectedLanguages.contains(langCode) {
-            // 如果只有2种语言，不允许取消选择
-            if selectedLanguages.count <= 2 {
-                return
-            }
             selectedLanguages.removeAll { $0 == langCode }
         } else {
             selectedLanguages.append(langCode)
+        }
+
+        // 确保英语始终存在
+        if !selectedLanguages.contains("en") {
+            selectedLanguages.append("en")
         }
 
         // 保存到UserDefaults

@@ -281,36 +281,20 @@ class FitConvert {
                 $0.flag != .droneBay && $0.flag != .cargo && $0.flag != .fighterBay
             }
 
-            // 检查是否为T3D战术驱逐舰（groupID=1305），如果是则添加默认模式
+            // 检查是否为模式切换飞船，如果是则添加默认模式
             let shipTypeId = online.ship_type_id
 
-            // 1. 检查飞船是否为战术驱逐舰
-            let shipQuery = "SELECT groupID FROM types WHERE type_id = ?"
-            if case let .success(rows) = databaseManager.executeQuery(
-                shipQuery, parameters: [shipTypeId]
-            ),
-                let firstRow = rows.first,
-                let groupId = firstRow["groupID"] as? Int,
-                groupId == 1305
-            {
-                // 2. 如果是T3D战术驱逐舰，查询默认模式
-                let modeQuery = """
-                    SELECT t.type_id
-                    FROM types t
-                    JOIN types s ON s.type_id = ?
-                    WHERE t.groupID = 1306
-                      AND t.en_name LIKE '%' || s.en_name || '%'
-                    ORDER BY t.name
-                    LIMIT 1
-                """
-
-                if case let .success(modeRows) = databaseManager.executeQuery(
-                    modeQuery, parameters: [shipTypeId]
-                ),
-                    let firstModeRow = modeRows.first,
-                    let defaultModeId = firstModeRow["type_id"] as? Int
-                {
-                    // 3. 直接将T3D模式作为模块添加到装备列表中
+            // 使用新的工具函数检查飞船是否支持模式切换
+            if ModeSwitchingUtils.isModeSwitchingShip(
+                shipTypeId: shipTypeId,
+                databaseManager: databaseManager
+            ) {
+                // 获取默认模式ID
+                if let defaultModeId = ModeSwitchingUtils.getDefaultModeId(
+                    for: shipTypeId,
+                    databaseManager: databaseManager
+                ) {
+                    // 将模式作为模块添加到装备列表中
                     let modeItem = FittingItem(
                         flag: .t3dModeSlot0,
                         quantity: 1,
@@ -320,7 +304,7 @@ class FitConvert {
                     // 添加模式到装备列表
                     equipmentItems.append(modeItem)
                     if AppConfiguration.Fitting.showDebug {
-                        Logger.info("在线配置导入: 为战术驱逐舰(ID: \(shipTypeId))添加默认模式模块: \(defaultModeId)")
+                        Logger.info("在线配置导入: 为模式切换飞船(ID: \(shipTypeId))添加默认模式模块: \(defaultModeId)")
                     }
                 }
             }
@@ -579,42 +563,33 @@ class FitConvert {
         shipBaseAttributes[161] = shipInfo.volume
         shipBaseAttributesByName["volume"] = shipInfo.volume
 
-        // T3D模式处理 - 检查是否是战术驱逐舰
-        // 查找当前模块列表中是否有T3D模式模块
-        let t3dModeModule = localFitting.items.first { item in
+        // 模式切换处理 - 检查是否是模式切换飞船
+        // 查找当前模块列表中是否有模式模块
+        let modeModule = localFitting.items.first { item in
             item.flag == .t3dModeSlot0
         }
 
-        // 获取T3D模式ID（如果有）- 仅用于日志记录
-        if let modeModule = t3dModeModule {
+        // 获取模式ID（如果有）- 仅用于日志记录
+        if let modeModule = modeModule {
             if AppConfiguration.Fitting.showDebug {
-                Logger.info("从现有配置中检测到T3D模式模块: \(modeModule.type_id)")
+                Logger.info("从现有配置中检测到模式模块: \(modeModule.type_id)")
             }
-        } else if shipGroupID == 1305 {
-            // 是T3D战术驱逐舰但没有模式模块，尝试自动选择默认模式
+        } else if ModeSwitchingUtils.isModeSwitchingShip(
+            shipTypeId: shipTypeId,
+            databaseManager: databaseManager
+        ) {
+            // 是模式切换飞船但没有模式模块，尝试自动选择默认模式
             if AppConfiguration.Fitting.showDebug {
-                Logger.info("检测到战术驱逐舰(ID: \(shipTypeId))但未设置模式，尝试自动选择默认模式")
+                Logger.info("检测到模式切换飞船(ID: \(shipTypeId))但未设置模式，尝试自动选择默认模式")
             }
 
-            // 查询该战术驱逐舰的模式选项
-            let modeQuery = """
-                SELECT t.type_id
-                FROM types t
-                JOIN types s ON s.type_id = ?
-                WHERE t.groupID = 1306
-                  AND t.en_name LIKE '%' || s.en_name || '%'
-                ORDER BY t.name
-                LIMIT 1
-            """
-
-            if case let .success(rows) = databaseManager.executeQuery(
-                modeQuery, parameters: [shipTypeId]
-            ),
-                let firstRow = rows.first,
-                let defaultModeId = firstRow["type_id"] as? Int
-            {
+            // 获取默认模式ID
+            if let defaultModeId = ModeSwitchingUtils.getDefaultModeId(
+                for: shipTypeId,
+                databaseManager: databaseManager
+            ) {
                 if AppConfiguration.Fitting.showDebug {
-                    Logger.info("为战术驱逐舰自动选择默认模式: \(defaultModeId)")
+                    Logger.info("为模式切换飞船自动选择默认模式: \(defaultModeId)")
                 }
 
                 // 添加模式模块到modules列表
@@ -630,11 +605,11 @@ class FitConvert {
                     )
                     moduleItems.append(modeItem)
                     if AppConfiguration.Fitting.showDebug {
-                        Logger.info("已添加T3D模式模块到配置项中: \(modeInfo.name)")
+                        Logger.info("已添加模式模块到配置项中: \(modeInfo.name)")
                     }
                 }
             } else {
-                Logger.error("无法为战术驱逐舰找到默认模式")
+                Logger.error("无法为模式切换飞船找到默认模式")
             }
         }
 
