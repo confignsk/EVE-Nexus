@@ -1901,7 +1901,7 @@
 "Main_Founded" = "成立时间";
 
 // Attribute Compare Tool
-"Main_Attribute_Compare" = "对比工具";
+"Main_Attribute_Compare" = "属性对比";
 "Main_Attribute_Compare_Empty" = "暂无对比项目";
 "Main_Attribute_Compare_Add" = "添加对比列表";
 "Main_Attribute_Compare_Name" = "对比列表名称";

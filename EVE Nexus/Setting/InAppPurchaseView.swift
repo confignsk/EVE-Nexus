@@ -309,17 +309,17 @@ struct BottomSelectionView: View {
     private let freeBadges = ["T1", "T2", "T3"]
     // 付费角标列表
     private let paidBadges = ["Factions", "Deadspace", "Officers"]
-    
+
     // 检查是否所有付费角标都已解锁
     private var allPaidBadgesUnlocked: Bool {
         paidBadges.allSatisfy { purchaseManager.isBadgeUnlocked($0) }
     }
-    
+
     // 获取赞助价格
     private var sponsorPrice: String? {
         purchaseManager.getPriceString(for: "Factions")
     }
-    
+
     // 是否正在赞助（检查是否有任何付费角标正在购买）
     private var isSponsoring: Bool {
         if let purchasingBadge = purchaseManager.purchasingBadge {
@@ -346,17 +346,17 @@ struct BottomSelectionView: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
-                
+
                 // 免费标签
                 Text(NSLocalizedString("Purchase_Price_Free", comment: ""))
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
-            
+
             // 分隔线
             Divider()
                 .padding(.vertical, 4)
-            
+
             // 付费角标组
             VStack(spacing: 8) {
                 HStack(spacing: 10) {
@@ -375,7 +375,7 @@ struct BottomSelectionView: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
-                
+
                 // 统一的赞助按钮
                 if allPaidBadgesUnlocked {
                     // 已解锁：显示"已解锁"标签

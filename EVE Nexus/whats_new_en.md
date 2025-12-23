@@ -341,3 +341,7 @@ Fixes & Improvements:
 1. Fixed a bug that records with an amount of 0 were not displayed when filtering records in wallet transactions function.
 2. Added in-app purchases and the ability to change the app icon. Feel free to make a purchase!
 3. Update fitting function to support 2 new AT ships.
+
+# v1.9.1 Dec 23, 2025
+
+1. Optimized database stability to reduce crashes.

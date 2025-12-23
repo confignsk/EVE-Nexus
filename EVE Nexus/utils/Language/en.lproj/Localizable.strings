@@ -1865,7 +1865,7 @@
 "Main_Founded" = "Founded";
 
 // Attribute Compare Tool
-"Main_Attribute_Compare" = "Compare Tool";
+"Main_Attribute_Compare" = "Attribute Compare";
 "Main_Attribute_Compare_Empty" = "No items to compare";
 "Main_Attribute_Compare_Add" = "Add Compare List";
 "Main_Attribute_Compare_Name" = "Compare List Name";

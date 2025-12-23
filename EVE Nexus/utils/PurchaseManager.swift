@@ -13,10 +13,10 @@ class PurchaseManager: ObservableObject {
 
     // 产品ID定义 - 只保留一个赞助产品ID，购买后解锁 Factions/Deadspace/Officers
     private let sponsorProductID = "com.evenexus.badge.rank_officer"
-    
+
     // 免费角标的rank列表（T1, T2, T3）
     private let freeRanks: Set<Int> = [1, 2, 3]
-    
+
     // 赞助后解锁的rank列表（Factions, Deadspace, Officers）
     private let sponsorUnlockedRanks: Set<Int> = [4, 5, 6]
 

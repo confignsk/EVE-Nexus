@@ -11,34 +11,25 @@ class SQLiteManager {
     // 单例模式
     static let shared = SQLiteManager()
     private var db: OpaquePointer?
+    private let dbAccessQueue = DispatchQueue(label: "com.eve.nexus.sqlite.access", attributes: .concurrent)
 
-    // 查询缓存
+    // 查询缓存（NSCache 本身是线程安全的）
     private let queryCache: NSCache<NSString, NSArray> = {
         let cache = NSCache<NSString, NSArray>()
         cache.countLimit = 2000 // 设置最大缓存条数
         return cache
     }()
 
-    // 查询日志和同步机制
+    // 查询日志（仅用于调试）
     private let logsQueue = DispatchQueue(label: "com.eve.nexus.sqlite.logs")
     private var queryLogs: [(query: String, parameters: [Any], timestamp: Date)] = []
-
-    // 数据库操作队列
-    private let dbQueue = DispatchQueue(label: "com.eve.nexus.sqlite.db")
-    private let dbLock = NSLock()
-
-    // 正在执行的查询计数器（用于防止在查询执行时关闭数据库连接）
-    private var activeQueryCount: Int = 0
-    private let queryCountLock = NSLock()
 
     private init() {}
 
     // 打开数据库连接
     func openDatabase(withName name: String) -> Bool {
-        return dbQueue.sync {
-            dbLock.lock()
-            defer { dbLock.unlock() }
-
+        // 使用 barrier 确保打开数据库时没有其他读写操作
+        return dbAccessQueue.sync(flags: .barrier) {
             // 使用StaticResourceManager获取数据库路径
             guard let finalDatabasePath = StaticResourceManager.shared.getDatabasePath(name: name) else {
                 let pathError = "[SQLite] 数据库文件不存在: \(name).sqlite"
@@ -47,52 +38,23 @@ class SQLiteManager {
             }
 
             // 关闭旧数据库连接（如果存在）
-            // 先检查是否有正在执行的查询，等待它们完成
-            queryCountLock.lock()
-            let hasActiveQueries = activeQueryCount > 0
-            queryCountLock.unlock()
-
-            if hasActiveQueries {
-                Logger.warning("检测到 \(activeQueryCount) 个正在执行的查询，等待完成后再关闭连接...")
-                // 等待查询完成，最多等待3秒
-                var waitCount = 0
-                let maxWaitCount = 300 // 300 * 10ms = 3秒
-
-                while waitCount < maxWaitCount {
-                    queryCountLock.lock()
-                    let count = activeQueryCount
-                    queryCountLock.unlock()
-
-                    if count == 0 {
-                        Logger.info("所有查询已完成，可以安全关闭旧连接")
-                        break
-                    }
-
-                    // 等待10毫秒
-                    Thread.sleep(forTimeInterval: 0.01)
-                    waitCount += 1
-                }
-
-                queryCountLock.lock()
-                let finalCount = activeQueryCount
-                queryCountLock.unlock()
-
-                if finalCount > 0 {
-                    Logger.warning("仍有 \(finalCount) 个查询在执行，但继续关闭旧连接（可能导致崩溃）")
-                }
-            }
-
+            // 使用 sqlite3_close_v2 而不是 sqlite3_close，可以自动处理未 finalize 的 statement
             if let oldDb = db {
-                sqlite3_close(oldDb)
+                sqlite3_close_v2(oldDb)
                 db = nil
             }
 
             // 清理查询缓存，确保使用新数据库时不会使用旧缓存
             clearCache()
 
-            let result = sqlite3_open(finalDatabasePath, &db)
+            // 使用 sqlite3_open_v2 并启用完全互斥模式（FULLMUTEX）
+            // SQLITE_OPEN_READONLY: 只读模式
+            // SQLITE_OPEN_FULLMUTEX: SQLite 内部会处理所有线程同步，确保线程安全
+            let flags = SQLITE_OPEN_READONLY | SQLITE_OPEN_FULLMUTEX
+            let result = sqlite3_open_v2(finalDatabasePath, &db, flags, nil)
+
             if result == SQLITE_OK {
-                Logger.info("数据库连接成功: \(finalDatabasePath)")
+                Logger.info("数据库连接成功 (只读+完全互斥模式): \(finalDatabasePath)")
                 return true
             } else {
                 let errorMessage = String(cString: sqlite3_errmsg(db))
@@ -125,44 +87,36 @@ class SQLiteManager {
     func executeQuery(_ query: String, parameters: [Any] = [], useCache: Bool = true)
         -> SQLiteResult
     {
-        return dbQueue.sync {
-            dbLock.lock()
-            defer { dbLock.unlock() }
-
-            // 对参数进行排序以生成一致的缓存键
-            let sortedParameters: [Any]
-            if parameters.count > 1 {
-                // 对参数进行排序，确保相同参数集合但顺序不同的查询能够使用相同的缓存
-                sortedParameters = parameters.sorted {
-                    let str1 = String(describing: $0)
-                    let str2 = String(describing: $1)
-                    return str1 < str2
-                }
-            } else {
-                sortedParameters = parameters
+        // 对参数进行排序以生成一致的缓存键
+        let sortedParameters: [Any]
+        if parameters.count > 1 {
+            // 对参数进行排序，确保相同参数集合但顺序不同的查询能够使用相同的缓存
+            sortedParameters = parameters.sorted {
+                let str1 = String(describing: $0)
+                let str2 = String(describing: $1)
+                return str1 < str2
             }
+        } else {
+            sortedParameters = parameters
+        }
 
-            // 生成缓存键
-            let cacheKey = generateCacheKey(query: query, parameters: sortedParameters) as NSString
+        // 生成缓存键
+        let cacheKey = generateCacheKey(query: query, parameters: sortedParameters) as NSString
 
-            // 如果启用缓存且缓存中存在结果，直接返回
-            if useCache, let cachedResult = queryCache.object(forKey: cacheKey) as? [[String: Any]] {
-                // Logger.debug("从缓存中获取 \(cacheKey) 的结果: \(cachedResult.count)行")
-                return .success(cachedResult)
-            }
+        // 如果启用缓存且缓存中存在结果，直接返回（无需加锁，NSCache 本身线程安全）
+        if useCache, let cachedResult = queryCache.object(forKey: cacheKey) as? [[String: Any]] {
+            // Logger.debug("从缓存中获取 \(cacheKey) 的结果: \(cachedResult.count)行")
+            return .success(cachedResult)
+        }
 
-            // 检查数据库连接是否有效（在需要访问数据库之前检查）
+        // 使用并发队列读取数据库（SQLite FULLMUTEX 模式会处理内部同步）
+        return dbAccessQueue.sync {
+            // 检查数据库连接是否有效
             guard let db = self.db else {
                 let connectionError = "[SQLite] 数据库连接未打开 - SQL: \(query)"
                 Logger.error(connectionError)
                 return .error(connectionError)
             }
-
-            // 增加正在执行的查询计数（防止连接被关闭）
-            queryCountLock.lock()
-            activeQueryCount += 1
-            let currentDb = db // 保存当前数据库连接的引用
-            queryCountLock.unlock()
 
             // 记录开始时间
             let startTime = CFAbsoluteTimeGetCurrent()
@@ -174,15 +128,11 @@ class SQLiteManager {
             var statement: OpaquePointer?
             var results: [[String: Any]] = []
 
-            // 准备语句（使用保存的连接引用）
-            if sqlite3_prepare_v2(currentDb, query, -1, &statement, nil) != SQLITE_OK {
-                let errorMessage = String(cString: sqlite3_errmsg(currentDb))
+            // 准备语句
+            if sqlite3_prepare_v2(db, query, -1, &statement, nil) != SQLITE_OK {
+                let errorMessage = String(cString: sqlite3_errmsg(db))
                 let detailedError = "[SQLite] 准备语句失败 - SQL: \(query) - 错误: \(errorMessage)"
                 Logger.error(detailedError)
-                // 减少查询计数
-                queryCountLock.lock()
-                activeQueryCount -= 1
-                queryCountLock.unlock()
                 return .error(detailedError)
             }
 
@@ -197,8 +147,10 @@ class SQLiteManager {
                 case let value as Double:
                     bindResult = sqlite3_bind_double(statement, parameterIndex, value)
                 case let value as String:
+                    // 使用 SQLITE_TRANSIENT 让 SQLite 拷贝字符串，防止内存提前释放
+                    let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
                     bindResult = sqlite3_bind_text(
-                        statement, parameterIndex, (value as NSString).utf8String, -1, nil
+                        statement, parameterIndex, (value as NSString).utf8String, -1, SQLITE_TRANSIENT
                     )
                 case let value as Data:
                     value.withUnsafeBytes { bytes in
@@ -210,10 +162,6 @@ class SQLiteManager {
                     bindResult = sqlite3_bind_null(statement, parameterIndex)
                 default:
                     sqlite3_finalize(statement)
-                    // 减少查询计数
-                    queryCountLock.lock()
-                    activeQueryCount -= 1
-                    queryCountLock.unlock()
                     let typeError =
                         "[SQLite] 不支持的参数类型: \(type(of: parameter)) - 参数索引: \(index) - SQL: \(query)"
                     Logger.error(typeError)
@@ -222,15 +170,11 @@ class SQLiteManager {
 
                 // 检查参数绑定是否成功
                 if bindResult != SQLITE_OK {
-                    let errorMessage = String(cString: sqlite3_errmsg(currentDb))
+                    let errorMessage = String(cString: sqlite3_errmsg(db))
                     let bindError =
                         "[SQLite] 参数绑定失败 - 参数索引: \(index), 参数值: \(parameter), 错误: \(errorMessage) - SQL: \(query)"
                     Logger.error(bindError)
                     sqlite3_finalize(statement)
-                    // 减少查询计数
-                    queryCountLock.lock()
-                    activeQueryCount -= 1
-                    queryCountLock.unlock()
                     return .error(bindError)
                 }
             }
@@ -255,25 +199,16 @@ class SQLiteManager {
 
             // 检查 SQL 执行是否出错
             if stepResult != SQLITE_DONE {
-                let errorMessage = String(cString: sqlite3_errmsg(currentDb))
+                let errorMessage = String(cString: sqlite3_errmsg(db))
                 let executionError =
                     "[SQLite] SQL执行失败 - 错误代码: \(stepResult), 错误信息: \(errorMessage) - SQL: \(query) - 参数: \(parameters)"
                 Logger.error(executionError)
                 sqlite3_finalize(statement)
-                // 减少查询计数
-                queryCountLock.lock()
-                activeQueryCount -= 1
-                queryCountLock.unlock()
                 return .error(executionError)
             }
 
             // 释放语句
             sqlite3_finalize(statement)
-
-            // 减少查询计数（查询成功完成）
-            queryCountLock.lock()
-            activeQueryCount -= 1
-            queryCountLock.unlock()
 
             // 计算查询耗时
             let endTime = CFAbsoluteTimeGetCurrent()
@@ -284,7 +219,7 @@ class SQLiteManager {
                 Logger.warning("查询完成: \(results.count)行, 耗时过长: \(String(format: "%.2f", elapsedTime))ms")
             }
 
-            // 缓存结果
+            // 缓存结果（NSCache 本身线程安全）
             if useCache {
                 // Logger.info("记录到缓存中: \(cacheKey)")
                 queryCache.setObject(results as NSArray, forKey: cacheKey)

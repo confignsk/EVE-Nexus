@@ -5,7 +5,8 @@ import UIKit
 // MARK: - 数据模型
 
 struct SettingItem: Identifiable {
-    let id = UUID()
+    // 使用 title 作为 ID，避免每次重建
+    var id: String { title }
     let title: String
     let detail: String?
     let icon: String?
@@ -41,7 +42,8 @@ struct SettingItem: Identifiable {
 // MARK: - 设置组
 
 struct SettingGroup: Identifiable {
-    let id = UUID()
+    // 使用 header 作为 ID，避免每次重建
+    var id: String { header }
     let header: String
     let items: [SettingItem]
 }
@@ -277,11 +279,17 @@ struct SettingView: View {
     @State private var showingLogsBrowserView = false
     @State private var showingMarketStructureView = false
     @State private var showingEVEStatusIncidentsView = false
+    @State private var isCalculatingCache = false // 缓存计算状态
 
     // MARK: - 数据更新函数
 
     private func updateAllData() {
         Task {
+            // 标记开始计算
+            await MainActor.run {
+                isCalculatingCache = true
+            }
+
             // 目录统计信息结构
             struct DirectoryStats {
                 let name: String
@@ -313,23 +321,24 @@ struct SettingView: View {
                 {
                     while let fileURL = enumerator.nextObject() as? URL {
                         do {
+                            // 使用 resourceValues 一次性获取所有需要的信息
                             let resourceValues = try fileURL.resourceValues(forKeys: [
+                                .fileSizeKey,
                                 .isRegularFileKey,
                             ])
                             // 只统计文件，跳过目录
                             if resourceValues.isRegularFile == true {
-                                let attributes = try fileManager.attributesOfItem(
-                                    atPath: fileURL.path)
-                                if let fileSize = attributes[.size] as? Int64 {
-                                    totalSize += fileSize
+                                if let fileSize = resourceValues.fileSize {
+                                    let size = Int64(fileSize)
+                                    totalSize += size
                                     fileCount += 1
                                     dirStats.fileCount += 1
-                                    dirStats.totalSize += fileSize
+                                    dirStats.totalSize += size
 
                                     // 只有当文件大小超过10MB时才记录警告
-                                    if fileSize > largeFileThreshold {
+                                    if size > largeFileThreshold {
                                         Logger.warning(
-                                            "大文件: \(fileURL.path) - \(FormatUtil.formatFileSize(fileSize))"
+                                            "大文件: \(fileURL.path) - \(FormatUtil.formatFileSize(size))"
                                         )
                                     }
                                 }
@@ -367,6 +376,7 @@ struct SettingView: View {
             await MainActor.run {
                 let formattedSize = FormatUtil.formatFileSize(totalSize)
                 self.cacheSize = formattedSize
+                self.isCalculatingCache = false
                 self.updateSettingGroups()
             }
         }
@@ -598,7 +608,11 @@ struct SettingView: View {
                 detail: cacheSize,
                 icon: isCleaningCache ? "arrow.triangle.2.circlepath" : "trash",
                 iconColor: .orange,
-                action: { showingCleanCacheAlert = true }
+                action: {
+                    if !isCalculatingCache, !isCleaningCache {
+                        showingCleanCacheAlert = true
+                    }
+                }
             ),
         ]
 
@@ -610,7 +624,11 @@ struct SettingView: View {
                     detail: NSLocalizedString("Main_Setting_Clean_Character_Database_Detail", comment: ""),
                     icon: isCleaningCharacterDatabase ? "arrow.triangle.2.circlepath" : "person.crop.circle.badge.minus",
                     iconColor: .red,
-                    action: { showingCleanCharacterDatabaseAlert = true }
+                    action: {
+                        if !isCleaningCharacterDatabase {
+                            showingCleanCharacterDatabaseAlert = true
+                        }
+                    }
                 )
             )
         }
@@ -652,6 +670,7 @@ struct SettingView: View {
         let isCleaningCache: Bool
         let isCleaningCharacterDatabase: Bool
         let showingLoadingView: Bool
+        let isCalculatingCache: Bool
 
         var body: some View {
             if let customView = item.customView {
@@ -664,7 +683,17 @@ struct SettingView: View {
                             Text(item.title)
                                 .font(.system(size: 16))
                                 .foregroundColor(.primary)
-                            if let detail = item.detail {
+
+                            // 如果是清理缓存按钮且正在计算缓存，显示加载指示器
+                            if item.title == NSLocalizedString("Main_Setting_Clean_Cache", comment: "") && isCalculatingCache {
+                                HStack(spacing: 4) {
+                                    ProgressView()
+                                        .scaleEffect(0.8)
+                                    Text(item.detail ?? "")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.gray)
+                                }
+                            } else if let detail = item.detail {
                                 Text(detail)
                                     .font(.system(size: 12))
                                     .foregroundColor(.gray)
@@ -686,7 +715,10 @@ struct SettingView: View {
                         }
                     }
                 }
-                .disabled(isCleaningCache || isCleaningCharacterDatabase || showingLoadingView)
+                .disabled(
+                    isCleaningCache || isCleaningCharacterDatabase || showingLoadingView ||
+                        (item.title == NSLocalizedString("Main_Setting_Clean_Cache", comment: "") && isCalculatingCache)
+                )
             }
         }
     }
@@ -702,7 +734,8 @@ struct SettingView: View {
                             item: item,
                             isCleaningCache: isCleaningCache,
                             isCleaningCharacterDatabase: isCleaningCharacterDatabase,
-                            showingLoadingView: showingLoadingView
+                            showingLoadingView: showingLoadingView,
+                            isCalculatingCache: isCalculatingCache
                         )
                     }
                 } header: {
@@ -784,7 +817,10 @@ struct SettingView: View {
             Text(NSLocalizedString("SDE_Reset_Success_Message", comment: ""))
         }
         .onAppear {
-            updateAllData() // 首次加载时异步计算并更新缓存大小
+            // 立即显示骨架界面（此时 cacheSize 是 "计算中..."）
+            updateSettingGroups()
+            // 在后台异步计算缓存大小
+            updateAllData()
         }
         .onReceive(
             NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)
