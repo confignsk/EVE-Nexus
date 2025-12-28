@@ -93,6 +93,7 @@
 "Industry_Settings_Multi_Character_Description" = "Aggregate industry job data from multiple characters";
 "Industry_Settings_Select_Characters" = "Select Characters";
 "Industry_Loading_Progress" = "Loading characters %d/%d";
+"Industry_Loading_Skills_Progress" = "Loaded skills %d/%d";
 
 // Mining Settings
 "Mining_Settings_Title" = "Settings";
@@ -858,6 +859,48 @@
 "Date_Format_Month_Day" = "MMM d";
 
 "Main_Mining_Ledger" = "Mining Ledger";
+"Main_Structure_Market" = "Structure Market";
+"Structure_Market_Orders_Overview" = "Structure Orders";
+"Structure_Market_Empty_Title" = "No Structures";
+"Structure_Market_Empty_Message" = "Tap the plus button in the top right corner to add market structures";
+"Structure_Market_Refresh" = "Refresh";
+"Structure_Market_Cache_Valid_No_Refresh" = "Cache valid, no refresh needed";
+"Structure_Market_Cache_Valid_Refresh" = "Cache valid, refresh available";
+"Structure_Market_Cache_Invalid_Refresh" = "Cache expired, refresh available";
+"Structure_Market_Buy_Orders_Count" = "Buy Orders";
+"Structure_Market_Sell_Orders_Count" = "Sell Orders";
+"Structure_Market_Item_Types_Count" = "Item Types";
+"Structure_Market_Just_Updated" = "Just updated";
+"Structure_Market_Minutes_Ago" = "%d minutes ago";
+"Structure_Market_Loading" = "Loading";
+"Structure_Market_Cooldown_Message" = "Update interval too short, please try again in 20 minutes";
+"Structure_Market_Sell_Orders_Data" = "Top 10 Sell Orders";
+"Structure_Market_Top_Sell_Categories" = "Top Sell Order Categories";
+"Structure_Market_No_Items" = "No Items";
+"Structure_Market_Top_Sell_Items" = "Top 10 Items by Sell Orders";
+"Structure_Market_Top_Premium_Items" = "Top 10 Items by Premium Rate";
+"Structure_Market_Premium" = "Premium";
+"Structure_Market_Orders_Unit" = "orders";
+"Structure_Market_Orders_Count" = "Orders";
+"Structure_Market_Items_Count" = "Items";
+"Structure_Market_Top_Sell_Orders" = "Top Sell Orders";
+"Structure_Market_Top_Buy_Orders" = "Top Buy Orders";
+"Structure_Market_Category_Distribution" = "Category Distribution";
+"Structure_Market_Other" = "Other";
+"Structure_Market_All_Categories" = "All Categories (orders)";
+"Structure_Market_Group_Distribution" = "Group Distribution";
+"Structure_Market_All_Groups" = "All Groups (orders)";
+"Structure_Market_Top_Items" = "Top 10 Items";
+"Structure_Market_Lowest_Price" = "Lowest Price";
+"Structure_Market_Highest_Price" = "Highest Price";
+"Structure_Market_Structure_Price" = "Current Price";
+"Structure_Market_Structure_Price_Buy" = "Current Buy Order";
+"Structure_Market_Structure_Price_Sell" = "Current Sell Order";
+"Structure_Market_Jita_Price" = "Jita Price";
+"Structure_Market_Jita_Price_Buy" = "Jita Buy Order";
+"Structure_Market_Jita_Price_Sell" = "Jita Sell Order";
+"Structure_Market_No_Price" = "No Price";
+"Structure_Market_Loading_Jita_Price_Progress" = "Loading Jita Price %d/%d";
 "Mining_No_Records" = "No Mining Records";
 "Mining_Loading" = "Loading Mining Records...";
 "Mining_Error_Loading" = "Failed to Load";
@@ -928,6 +971,10 @@
 "Main_Skills_Running" = "Running";
 "Main_Skills_Empty" = "Empty Queue";
 "Main_Skills_number" = "Skills";
+"Main_Skills_Queue_In_Queue" = "In Queue: %d";
+"Main_Skills_In_Queue" = "In Queue";
+"Main_Skills_Queue_Count" = "%d in Queue";
+"Main_Skills_Training" = "Training";
 
 // Time Format
 "Time_Days_Hours_Minutes" = "%dd %dh %dm";
@@ -2224,6 +2271,7 @@
 
 // Ship Misc Stats View
 "Fitting_stat_misc" = "Misc Stats";
+"Fitting_stat_cargo" = "Cargos";
 "Fitting_max_targets" = "Targets";
 "Fitting_lock_range" = "Range";
 "Fitting_scan_resolution" = "Scan Res.";

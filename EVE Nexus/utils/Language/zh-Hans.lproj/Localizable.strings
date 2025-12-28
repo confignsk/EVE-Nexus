@@ -95,6 +95,7 @@
 "Industry_Settings_Multi_Character_Description" = "聚合显示多个角色的工业项目数据";
 "Industry_Settings_Select_Characters" = "选择角色";
 "Industry_Loading_Progress" = "已加载人物 %d/%d";
+"Industry_Loading_Skills_Progress" = "已加载技能 %d/%d";
 
 // 挖矿设置相关
 "Mining_Settings_Title" = "设置";
@@ -855,6 +856,48 @@
 "Date_Format_Month_Day" = "MM月dd日";
 
 "Main_Mining_Ledger" = "采矿记录";
+"Main_Structure_Market" = "建筑市场";
+"Structure_Market_Orders_Overview" = "建筑订单总览";
+"Structure_Market_Empty_Title" = "暂无建筑";
+"Structure_Market_Empty_Message" = "点击右上角的加号按钮添加市场建筑";
+"Structure_Market_Refresh" = "刷新";
+"Structure_Market_Cache_Valid_No_Refresh" = "缓存有效，无需刷新";
+"Structure_Market_Cache_Valid_Refresh" = "缓存有效，可刷新";
+"Structure_Market_Cache_Invalid_Refresh" = "缓存失效，可刷新";
+"Structure_Market_Buy_Orders_Count" = "买单总数";
+"Structure_Market_Sell_Orders_Count" = "卖单总数";
+"Structure_Market_Item_Types_Count" = "物品类别";
+"Structure_Market_Just_Updated" = "刚刚更新";
+"Structure_Market_Minutes_Ago" = "%d分钟前更新";
+"Structure_Market_Loading" = "加载中";
+"Structure_Market_Cooldown_Message" = "更新间隔太短，请20分钟后再试";
+"Structure_Market_Sell_Orders_Data" = "卖单数据 Top 10";
+"Structure_Market_Top_Sell_Categories" = "卖单最多的物品类别";
+"Structure_Market_No_Items" = "暂无物品";
+"Structure_Market_Top_Sell_Items" = "卖单最多的物品 Top 10";
+"Structure_Market_Top_Premium_Items" = "溢价最严重的物品 Top 10";
+"Structure_Market_Premium" = "溢价";
+"Structure_Market_Orders_Unit" = "个订单";
+"Structure_Market_Orders_Count" = "订单数";
+"Structure_Market_Items_Count" = "物品数";
+"Structure_Market_Top_Sell_Orders" = "最多卖单";
+"Structure_Market_Top_Buy_Orders" = "最多买单";
+"Structure_Market_Category_Distribution" = "目录分布";
+"Structure_Market_Other" = "其他";
+"Structure_Market_All_Categories" = "所有目录 (订单数)";
+"Structure_Market_Group_Distribution" = "分组分布";
+"Structure_Market_All_Groups" = "所有分组 (订单数)";
+"Structure_Market_Top_Items" = "Top 10 物品";
+"Structure_Market_Lowest_Price" = "最低价";
+"Structure_Market_Highest_Price" = "最高价";
+"Structure_Market_Structure_Price" = "当前价格";
+"Structure_Market_Structure_Price_Buy" = "当前买单";
+"Structure_Market_Structure_Price_Sell" = "当前卖单";
+"Structure_Market_Jita_Price" = "Jita价格";
+"Structure_Market_Jita_Price_Buy" = "Jita买单";
+"Structure_Market_Jita_Price_Sell" = "Jita卖单";
+"Structure_Market_No_Price" = "无价格";
+"Structure_Market_Loading_Jita_Price_Progress" = "正在加载 Jita 价格 %d/%d";
 "Industry_In_Progress" = "进行中的任务";
 "Industry_In_Progress_Count" = "共 %d 个进行中项目";
 "Mining_No_Records" = "暂无采矿记录";
@@ -928,6 +971,10 @@
 "Main_Skills_Running" = "进行中";
 "Main_Skills_Empty" = "空队列";
 "Main_Skills_number" = "个技能";
+"Main_Skills_Queue_In_Queue" = "队列中：%d";
+"Main_Skills_In_Queue" = "队列中";
+"Main_Skills_Queue_Count" = "队列中 %d 个";
+"Main_Skills_Training" = "训练中";
 
 // 时间显示
 "Time_Days" = "%d天";
@@ -2259,6 +2306,7 @@
 
 // Ship Misc Stats View
 "Fitting_stat_misc" = "其他属性";
+"Fitting_stat_cargo" = "货仓属性";
 "Fitting_max_targets" = "锁定数";
 "Fitting_lock_range" = "锁定距离";
 "Fitting_scan_resolution" = "分辨率";

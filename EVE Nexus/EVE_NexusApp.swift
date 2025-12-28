@@ -90,11 +90,6 @@ struct EVE_NexusApp: App {
         BackgroundTaskManager.shared.scheduleIndustryRefresh()
         BackgroundTaskManager.shared.scheduleWalletRefresh()
 
-        // 后台检查SDE更新
-        Task { @MainActor in
-            await SDEUpdateChecker.shared.checkForUpdates()
-        }
-
         // 初始化内购管理器并加载商品数据
         Task { @MainActor in
             await PurchaseManager.shared.loadProducts()
@@ -308,6 +303,11 @@ struct EVE_NexusApp: App {
                 }
 
                 isInitialized = true
+            }
+
+            // 在数据库加载完成后检查SDE更新
+            Task { @MainActor in
+                await SDEUpdateChecker.shared.checkForUpdates()
             }
         }
     }

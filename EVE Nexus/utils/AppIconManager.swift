@@ -6,16 +6,6 @@ class AppIconManager: ObservableObject {
 
     @Published var currentIconName: String? = nil
 
-    // 所有可用的备用图标
-    let availableIcons: [AppIcon] = [
-        AppIcon(id: nil, name: "Default", displayName: NSLocalizedString("App_Icon_Default", comment: "")),
-        AppIcon(id: "AppIcon_DED", name: "DED", displayName: NSLocalizedString("App_Icon_DED", comment: "")),
-        AppIcon(id: "AppIcon_Faction", name: "Faction", displayName: NSLocalizedString("App_Icon_Faction", comment: "")),
-        AppIcon(id: "AppIcon_Officer", name: "Officer", displayName: NSLocalizedString("App_Icon_Office", comment: "")),
-        AppIcon(id: "AppIcon_T2", name: "T2", displayName: NSLocalizedString("App_Icon_T2", comment: "")),
-        AppIcon(id: "AppIcon_T3", name: "T3", displayName: NSLocalizedString("App_Icon_T3", comment: "")),
-    ]
-
     private let iconKey = "selectedAppIcon"
 
     private init() {
@@ -58,14 +48,6 @@ class AppIconManager: ObservableObject {
             Logger.error("错误详情: \(error)")
             throw error
         }
-    }
-
-    // 获取当前图标信息
-    func getCurrentIcon() -> AppIcon? {
-        if let current = currentIconName {
-            return availableIcons.first { $0.id == current }
-        }
-        return availableIcons.first { $0.id == nil }
     }
 }
 

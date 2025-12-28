@@ -30,16 +30,6 @@ class PurchaseManager: ObservableObject {
         "Officers": 6,
     ]
 
-    // rank到角标的映射
-    let rankToBadge: [Int: String] = [
-        1: "T1",
-        2: "T2",
-        3: "T3",
-        4: "Factions",
-        5: "Deadspace",
-        6: "Officers",
-    ]
-
     private let purchasedRanksKey = "purchasedBadgeRanks"
 
     private init() {
@@ -153,24 +143,9 @@ class PurchaseManager: ObservableObject {
         return purchasedRanks.contains(rank)
     }
 
-    // 检查rank是否已解锁
-    func isRankUnlocked(_ rank: Int) -> Bool {
-        return purchasedRanks.contains(rank)
-    }
-
     // 获取角标对应的产品ID（只有付费角标需要产品ID）
     func getProductID(for badge: String) -> String? {
         guard let rank = badgeToRank[badge] else { return nil }
-        // 免费角标不需要产品ID
-        if freeRanks.contains(rank) {
-            return nil
-        }
-        // 所有付费角标使用同一个赞助产品ID
-        return sponsorProductID
-    }
-
-    // 获取rank对应的产品ID
-    func getProductID(for rank: Int) -> String? {
         // 免费角标不需要产品ID
         if freeRanks.contains(rank) {
             return nil

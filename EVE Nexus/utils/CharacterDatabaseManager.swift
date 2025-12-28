@@ -380,9 +380,16 @@ class CharacterDatabaseManager: ObservableObject, @unchecked Sendable {
                 owner_id INTEGER NOT NULL,
                 solar_system_id INTEGER NOT NULL,
                 type_id INTEGER NOT NULL,
-                timestamp INTEGER NOT NULL
+                timestamp TEXT NOT NULL
             );
             CREATE INDEX IF NOT EXISTS idx_structure_cache_timestamp ON structure_cache(timestamp);
+
+            -- 建筑物禁止访问缓存表（用于缓存无权访问的建筑ID，避免反复查询）
+            CREATE TABLE IF NOT EXISTS structure_forbidden_cache (
+                structure_id INTEGER PRIMARY KEY,
+                timestamp TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_structure_forbidden_cache_timestamp ON structure_forbidden_cache(timestamp);
 
             -- 挖矿记录表
             CREATE TABLE IF NOT EXISTS mining_ledger (

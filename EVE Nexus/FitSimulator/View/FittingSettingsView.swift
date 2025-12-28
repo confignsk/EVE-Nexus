@@ -514,6 +514,9 @@ struct FittingSettingsView: View {
 
                         // 其他属性
                         ShipMiscStatsView(viewModel: viewModel)
+
+                        // 货仓属性
+                        ShipAllCargoView(viewModel: viewModel)
                     }
                     .padding(.horizontal)
 

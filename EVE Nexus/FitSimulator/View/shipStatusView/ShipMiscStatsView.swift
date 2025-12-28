@@ -12,6 +12,13 @@ struct ShipMiscStatsView: View {
         return numberString + (unit.isEmpty ? "" : " " + unit)
     }
 
+    // 格式化锁定距离，设置300km上限
+    private func formatLockRange(_ rangeInMeters: Double) -> String {
+        let rangeInKm = rangeInMeters / 1000
+        let cappedRange = min(rangeInKm, 300)
+        return formatValue(cappedRange, unit: "km")
+    }
+
     // 计算飞船朝向时间
     private func calculateAlignTime(mass: Double, agility: Double) -> Double {
         // 公式: -ln(0.25) * agility * mass / 1000000
@@ -64,7 +71,7 @@ struct ShipMiscStatsView: View {
 
                         StatRow(
                             label: NSLocalizedString("Fitting_lock_range", comment: "锁定距离"),
-                            value: formatValue(maxTargetRange / 1000, unit: "km")
+                            value: formatLockRange(maxTargetRange)
                         )
 
                         StatRow(

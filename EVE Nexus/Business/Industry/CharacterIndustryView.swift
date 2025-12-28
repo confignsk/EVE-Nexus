@@ -45,6 +45,23 @@ actor IndustryProgressActor {
     }
 }
 
+// 技能加载进度更新 Actor（用于线程安全地更新技能加载进度）
+actor SkillProgressActor {
+    private var current: Int = 0
+    private let total: Int
+    private let onUpdate: (Int, Int) -> Void
+
+    init(total: Int, onUpdate: @escaping (Int, Int) -> Void) {
+        self.total = total
+        self.onUpdate = onUpdate
+    }
+
+    func increment() {
+        current += 1
+        onUpdate(current, total)
+    }
+}
+
 // 工业项目倒计时组件 - 使用SwiftUI原生TimelineView
 struct IndustryCountdownView: View {
     let endDate: Date
@@ -196,7 +213,8 @@ class CharacterIndustryViewModel: ObservableObject {
     @Published var isFiltering = false // 新增：过滤刷新状态
     @Published var errorMessage: String?
     @Published var showError = false
-    @Published var loadingProgress: (current: Int, total: Int)? = nil // 加载进度 (已加载/总数)
+    @Published var loadingProgress: (current: Int, total: Int)? = nil // 工业项目加载进度 (已加载/总数)
+    @Published var skillLoadingProgress: (current: Int, total: Int)? = nil // 技能加载进度 (已加载/总数)
     @Published var itemNames: [Int: String] = [:]
     @Published var locationInfoCache: [Int64: LocationInfoDetail] = [:]
     @Published var itemIcons: [Int: String] = [:]
@@ -861,47 +879,106 @@ class CharacterIndustryViewModel: ObservableObject {
             characterIdsToCalculate = [characterId]
         }
 
-        var details: [CharacterSlotDetail] = []
+        // 初始化技能加载进度
+        let totalCharacters = characterIdsToCalculate.count
+        await MainActor.run {
+            self.skillLoadingProgress = (current: 0, total: totalCharacters)
+        }
 
-        for charId in characterIdsToCalculate {
-            // 每个角色的基础槽位数
-            var manufacturingSlots = 1
-            var researchSlots = 1
-            var reactionSlots = 1
-            var manufacturingRange = 0
-            var researchRange = 0
-            var reactionRange = 0
+        // 使用 Actor 来线程安全地更新进度
+        let progressActor = SkillProgressActor(total: totalCharacters) { current, total in
+            Task { @MainActor in
+                self.skillLoadingProgress = (current: current, total: total)
+            }
+        }
 
-            // 获取角色名称
-            let characterName = availableCharacters.first(where: { $0.id == charId })?.name ?? "Unknown"
+        // 技能数据结果结构（仅包含需要并发获取的数据）
+        struct SkillData {
+            let characterId: Int
+            let manufacturingSlots: Int
+            let researchSlots: Int
+            let reactionSlots: Int
+            let manufacturingRange: Int
+            let researchRange: Int
+            let reactionRange: Int
+        }
 
-            // 使用 CharacterSkillsAPI 获取角色技能数据
-            do {
-                let skillsResponse = try await CharacterSkillsAPI.shared.fetchCharacterSkills(
-                    characterId: charId,
-                    forceRefresh: forceRefresh
-                )
+        var skillDataResults: [SkillData] = []
 
-                // 遍历技能槽位加成，从技能映射中查找对应技能
-                for (skillId, bonus) in skillSlotBonuses {
-                    if let skill = skillsResponse.skillsMap[skillId] {
-                        let level = skill.trained_skill_level
-                        manufacturingSlots += bonus.manufacturing * level
-                        researchSlots += bonus.research * level
-                        reactionSlots += bonus.reaction * level
+        // 并发获取所有角色的技能数据（仅网络请求部分）
+        await withTaskGroup(of: SkillData?.self) { group in
+            for charId in characterIdsToCalculate {
+                group.addTask {
+                    // 每个角色的基础槽位数
+                    var manufacturingSlots = 1
+                    var researchSlots = 1
+                    var reactionSlots = 1
+                    var manufacturingRange = 0
+                    var researchRange = 0
+                    var reactionRange = 0
+
+                    // 使用 CharacterSkillsAPI 获取角色技能数据
+                    do {
+                        let skillsResponse = try await CharacterSkillsAPI.shared.fetchCharacterSkills(
+                            characterId: charId,
+                            forceRefresh: forceRefresh
+                        )
+
+                        // 遍历技能槽位加成，从技能映射中查找对应技能
+                        for (skillId, bonus) in skillSlotBonuses {
+                            if let skill = skillsResponse.skillsMap[skillId] {
+                                let level = skill.trained_skill_level
+                                manufacturingSlots += bonus.manufacturing * level
+                                researchSlots += bonus.research * level
+                                reactionSlots += bonus.reaction * level
+                            }
+                        }
+
+                        // 计算操作范围
+                        manufacturingRange = (skillsResponse.skillsMap[24268]?.trained_skill_level ?? 0) * 5
+                        researchRange = (skillsResponse.skillsMap[24270]?.trained_skill_level ?? 0) * 5
+                        reactionRange = (skillsResponse.skillsMap[45750]?.trained_skill_level ?? 0) * 5
+
+                        // 更新技能加载进度
+                        await progressActor.increment()
+                    } catch {
+                        Logger.error("获取角色\(charId)技能数据失败: \(error)")
+                        // 即使失败也要更新进度
+                        await progressActor.increment()
+                        return nil
                     }
-                }
 
-                // 计算操作范围
-                manufacturingRange = (skillsResponse.skillsMap[24268]?.trained_skill_level ?? 0) * 5
-                researchRange = (skillsResponse.skillsMap[24270]?.trained_skill_level ?? 0) * 5
-                reactionRange = (skillsResponse.skillsMap[45750]?.trained_skill_level ?? 0) * 5
-            } catch {
-                Logger.error("获取角色\(charId)技能数据失败: \(error)")
+                    return SkillData(
+                        characterId: charId,
+                        manufacturingSlots: manufacturingSlots,
+                        researchSlots: researchSlots,
+                        reactionSlots: reactionSlots,
+                        manufacturingRange: manufacturingRange,
+                        researchRange: researchRange,
+                        reactionRange: reactionRange
+                    )
+                }
             }
 
+            // 收集结果
+            for await skillData in group {
+                if let skillData = skillData {
+                    skillDataResults.append(skillData)
+                }
+            }
+        }
+
+        // 在并发任务外处理本地数据（角色名称和已用槽位数）
+        let availableCharactersSnapshot = await MainActor.run { self.availableCharacters }
+        let jobsWithOwnerSnapshot = await MainActor.run { self.jobsWithOwner }
+
+        var details: [CharacterSlotDetail] = []
+        for skillData in skillDataResults {
+            // 获取角色名称
+            let characterName = availableCharactersSnapshot.first(where: { $0.id == skillData.characterId })?.name ?? "Unknown"
+
             // 计算该角色的已用槽位数
-            let characterJobs = jobsWithOwner.filter { $0.ownerId == charId }.map { $0.job }
+            let characterJobs = jobsWithOwnerSnapshot.filter { $0.ownerId == skillData.characterId }.map { $0.job }
             let activeJobs = characterJobs.filter { job in
                 (job.status == "active" && job.end_date > Date()) // 正在进行中
                     || job.status == "ready" // 已完成但未交付
@@ -913,18 +990,26 @@ class CharacterIndustryViewModel: ObservableObject {
             let reactionUsed = activeJobs.filter { $0.activity_id == 9 }.count
 
             details.append(CharacterSlotDetail(
-                characterId: charId,
+                characterId: skillData.characterId,
                 characterName: characterName,
-                manufacturingSlots: manufacturingSlots,
-                researchSlots: researchSlots,
-                reactionSlots: reactionSlots,
-                manufacturingRange: manufacturingRange,
-                researchRange: researchRange,
-                reactionRange: reactionRange,
+                manufacturingSlots: skillData.manufacturingSlots,
+                researchSlots: skillData.researchSlots,
+                reactionSlots: skillData.reactionSlots,
+                manufacturingRange: skillData.manufacturingRange,
+                researchRange: skillData.researchRange,
+                reactionRange: skillData.reactionRange,
                 manufacturingUsed: manufacturingUsed,
                 researchUsed: researchUsed,
                 reactionUsed: reactionUsed
             ))
+        }
+
+        // 按角色ID排序，保持一致性
+        details.sort { $0.characterId < $1.characterId }
+
+        // 清除技能加载进度
+        await MainActor.run {
+            self.skillLoadingProgress = nil
         }
 
         return details
@@ -1162,9 +1247,16 @@ struct CharacterIndustryView: View {
                     ProgressView()
                         .progressViewStyle(.circular)
 
-                    // 显示加载进度（如果有多人物模式且正在加载）
+                    // 显示工业项目加载进度（如果有多人物模式且正在加载）
                     if let progress = viewModel.loadingProgress, progress.total > 1 {
                         Text(String.localizedStringWithFormat(NSLocalizedString("Industry_Loading_Progress", comment: "已加载人物 %d/%d"), progress.current, progress.total))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    // 显示技能加载进度
+                    if let skillProgress = viewModel.skillLoadingProgress, skillProgress.total > 0 {
+                        Text(String.localizedStringWithFormat(NSLocalizedString("Industry_Loading_Skills_Progress", comment: "正在加载技能数据 %d/%d"), skillProgress.current, skillProgress.total))
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }

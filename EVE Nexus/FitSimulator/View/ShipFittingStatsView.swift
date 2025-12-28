@@ -23,6 +23,9 @@ struct ShipFittingStatsView: View {
             // 杂项部分
             ShipMiscStatsView(viewModel: viewModel)
 
+            // 货仓属性部分
+            ShipAllCargoView(viewModel: viewModel)
+
             // 价格统计部分
             ShipFittingPriceView(viewModel: viewModel)
         }

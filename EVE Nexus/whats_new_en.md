@@ -345,3 +345,12 @@ Fixes & Improvements:
 # v1.9.1 Dec 23, 2025
 
 1. Optimized database stability to reduce crashes.
+
+# v1.9.2 Dec 30, 2025
+
+1. Add construction market features and specific data visualization.
+2. Fix missing attributes bug in attribute comparison.
+3. Add special warehouse attribute display in assembly simulation.
+4. Update SDE.
+5. Fix issues when check sde update and unzip icons.
+6. Happy new year!

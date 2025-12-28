@@ -477,7 +477,6 @@ struct ContentView: View {
     @AppStorage("selectedTheme") private var selectedTheme: String = "system"
     @AppStorage("showCorporationAffairs") private var showCorporationAffairs: Bool = false
     @AppStorage("lastVersion") private var lastVersion: String = ""
-    @AppStorage("enableLogging") private var enableLogging: Bool = false
 
     // 功能自定义相关状态
     @AppStorage("hiddenFeatures") private var hiddenFeaturesData: Data = .init()
@@ -720,6 +719,8 @@ struct ContentView: View {
                             } else {
                                 CharacterPlanetaryView(characterId: nil)
                             }
+                        case "structure_market":
+                            StructureMarketView()
                         case "corporation_wallet":
                             if let character = viewModel.selectedCharacter {
                                 CorpWalletView(characterId: character.CharacterID)
@@ -1050,6 +1051,7 @@ struct ContentView: View {
         FeatureConfig(id: "industry_jobs", requiresLogin: true, section: "business"),
         FeatureConfig(id: "mining_ledger", requiresLogin: true, section: "business"),
         FeatureConfig(id: "planetary", requiresLogin: true, section: "business"),
+        FeatureConfig(id: "structure_market", requiresLogin: false, section: "business"),
 
         // 战斗功能
         FeatureConfig(id: "killboard", requiresLogin: true, section: "battle"),
@@ -1226,6 +1228,8 @@ struct ContentView: View {
             return FeatureInfo(title: NSLocalizedString("Main_Mining_Ledger", comment: ""), icon: "miningledger", noteView: nil)
         case "planetary":
             return FeatureInfo(title: NSLocalizedString("Main_Planetary", comment: ""), icon: "planets", noteView: nil)
+        case "structure_market":
+            return FeatureInfo(title: NSLocalizedString("Main_Structure_Market", comment: ""), icon: "Structurebrowser", noteView: nil)
         case "killboard":
             return FeatureInfo(title: NSLocalizedString("Main_Killboard", comment: ""), icon: "killreport", noteView: nil)
         case "fitting":
@@ -1706,6 +1710,12 @@ struct ContentView: View {
                 icon: "planets"
             )
             .isHidden(currentCharacterId == 0 && !isCustomizeMode)
+
+            customizableNavigationLink(
+                value: "structure_market",
+                title: NSLocalizedString("Main_Structure_Market", comment: ""),
+                icon: "Structurebrowser"
+            )
         } header: {
             Text(NSLocalizedString("Main_Business", comment: ""))
                 .fontWeight(.semibold)

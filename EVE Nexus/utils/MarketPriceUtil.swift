@@ -129,6 +129,7 @@ enum MarketPriceUtil {
         // 默认使用Jita市场
         let regionID = 10_000_002 // The Forge (Jita所在星域)
         let systemID = 30_000_142 // Jita星系ID
+        let stationID = 60_003_760 // Jita 4-4 空间站 ID
 
         // 使用通用工具类并发获取市场订单
         let marketOrders = await MarketOrdersUtil.loadRegionOrders(
@@ -143,7 +144,8 @@ enum MarketPriceUtil {
                 from: orders,
                 orderType: .sell,
                 quantity: nil,
-                systemId: systemID
+                systemId: systemID,
+                stationID: stationID
             ).price
             return (price ?? 0) > 0 ? price : nil
         }

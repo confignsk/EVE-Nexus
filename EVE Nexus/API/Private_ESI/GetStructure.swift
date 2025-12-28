@@ -34,7 +34,13 @@ public class UniverseStructureAPI {
     ) async throws
         -> UniverseStructureInfo
     {
-        // 1. 检查数据库缓存
+        // 1. 检查禁止访问缓存（优先检查，避免反复查询无权访问的建筑）
+        if !forceRefresh, isStructureForbidden(structureId: structureId) {
+            Logger.info("建筑物在禁止访问缓存中 - 建筑物ID: \(structureId)")
+            throw NetworkError.httpError(statusCode: 403, message: "Forbidden")
+        }
+
+        // 2. 检查数据库缓存
         if !forceRefresh,
            let cachedStructure = loadStructureFromCache(
                structureId: structureId, cacheTimeOut: cacheTimeOut
@@ -44,7 +50,7 @@ public class UniverseStructureAPI {
             return cachedStructure
         }
 
-        // 2. 从API获取
+        // 3. 从API获取
         return try await fetchFromAPI(structureId: structureId, characterId: characterId)
     }
 
@@ -80,6 +86,14 @@ public class UniverseStructureAPI {
 
         } catch {
             Logger.error("获取建筑物信息失败 - 建筑物ID: \(structureId), 错误: \(error)")
+
+            // 检查是否是Forbidden错误（403状态码或包含"Forbidden"消息）
+            if isForbiddenError(error) {
+                // 缓存Forbidden结果，避免反复查询无权访问的建筑ID
+                saveForbiddenStructureToCache(structureId: structureId)
+                Logger.info("建筑物访问被禁止，已缓存结果 - 建筑物ID: \(structureId)")
+            }
+
             throw error
         }
     }
@@ -160,6 +174,62 @@ public class UniverseStructureAPI {
         case let .error(error):
             Logger.error("批量保存建筑物缓存失败: \(error)")
         }
+    }
+
+    // MARK: - Forbidden Cache Methods
+
+    /// 检查建筑物是否在禁止访问缓存中（1天有效期）
+    private func isStructureForbidden(structureId: Int64) -> Bool {
+        let sql = """
+            SELECT structure_id
+            FROM structure_forbidden_cache
+            WHERE structure_id = ?
+            AND timestamp > datetime('now', '-24 hour')
+        """
+
+        let result = databaseManager.executeQuery(sql, parameters: [structureId])
+
+        switch result {
+        case let .success(rows):
+            return !rows.isEmpty
+        case let .error(error):
+            Logger.error("检查禁止访问缓存失败 - 建筑物ID: \(structureId), 错误: \(error)")
+            return false
+        }
+    }
+
+    /// 保存禁止访问的建筑物ID到缓存
+    private func saveForbiddenStructureToCache(structureId: Int64) {
+        let sql = """
+            INSERT OR REPLACE INTO structure_forbidden_cache (
+                structure_id,
+                timestamp
+            ) VALUES (?, datetime('now'))
+        """
+
+        let result = databaseManager.executeQuery(sql, parameters: [structureId])
+
+        switch result {
+        case .success:
+            Logger.info("成功保存禁止访问的建筑物ID到缓存 - 建筑物ID: \(structureId)")
+        case let .error(error):
+            Logger.error("保存禁止访问缓存失败 - 建筑物ID: \(structureId), 错误: \(error)")
+        }
+    }
+
+    /// 检查错误是否是Forbidden错误
+    private func isForbiddenError(_ error: Error) -> Bool {
+        // 检查是否是HTTP 403错误
+        if case let NetworkError.httpError(statusCode, message) = error {
+            if statusCode == 403 {
+                return true
+            }
+            // 检查错误消息中是否包含"Forbidden"
+            if let errorMessage = message, errorMessage.contains("Forbidden") {
+                return true
+            }
+        }
+        return false
     }
 
     // MARK: - Helper Methods

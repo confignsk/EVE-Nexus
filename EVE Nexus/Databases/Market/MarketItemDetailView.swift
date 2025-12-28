@@ -352,46 +352,48 @@ struct MarketRegionPickerView: View {
                     }
                 }
 
-                // 市场建筑 Section
-                Section(
-                    header: Text(
-                        NSLocalizedString("Main_Setting_Market_Structure_Select", comment: ""))
-                ) {
-                    if !structureManager.structures.isEmpty {
-                        ForEach(structureManager.structures) { structure in
-                            MarketStructureRow(
-                                structure: structure,
-                                isSelected: selectedRegionID == -Int(structure.structureId), // 使用负数ID标识建筑
-                                onSelect: {
-                                    // 选择建筑时使用负数ID
-                                    selectedRegionID = -Int(structure.structureId)
-                                    selectedRegionName = structure.structureName
-                                    if saveSelection {
-                                        let defaults = UserDefaultsManager.shared
-                                        defaults.selectedRegionID = selectedRegionID
+                // 市场建筑 Section（编辑模式时隐藏）
+                if !isEditMode {
+                    Section(
+                        header: Text(
+                            NSLocalizedString("Main_Setting_Market_Structure_Select", comment: ""))
+                    ) {
+                        if !structureManager.structures.isEmpty {
+                            ForEach(structureManager.structures) { structure in
+                                MarketStructureRow(
+                                    structure: structure,
+                                    isSelected: selectedRegionID == -Int(structure.structureId), // 使用负数ID标识建筑
+                                    onSelect: {
+                                        // 选择建筑时使用负数ID
+                                        selectedRegionID = -Int(structure.structureId)
+                                        selectedRegionName = structure.structureName
+                                        if saveSelection {
+                                            let defaults = UserDefaultsManager.shared
+                                            defaults.selectedRegionID = selectedRegionID
+                                        }
+                                        if !isEditMode {
+                                            dismiss()
+                                        }
                                     }
-                                    if !isEditMode {
-                                        dismiss()
-                                    }
-                                }
-                            )
-                        }
-                    } else {
-                        // 没有建筑时显示设置按钮
-                        NavigationLink(destination: MarketStructureSettingsView()) {
-                            HStack {
-                                Image(systemName: "gear")
-                                    .foregroundColor(.blue)
-                                    .font(.title2)
-
-                                Text(
-                                    NSLocalizedString(
-                                        "Main_Market_Setup_Structure", comment: "设置建筑市场"
-                                    )
                                 )
-                                .foregroundColor(.primary)
+                            }
+                        } else {
+                            // 没有建筑时显示设置按钮
+                            NavigationLink(destination: MarketStructureSettingsView()) {
+                                HStack {
+                                    Image(systemName: "gear")
+                                        .foregroundColor(.blue)
+                                        .font(.title2)
 
-                                Spacer()
+                                    Text(
+                                        NSLocalizedString(
+                                            "Main_Market_Setup_Structure", comment: "设置建筑市场"
+                                        )
+                                    )
+                                    .foregroundColor(.primary)
+
+                                    Spacer()
+                                }
                             }
                         }
                     }

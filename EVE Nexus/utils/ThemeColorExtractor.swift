@@ -28,16 +28,6 @@ struct ThemeColor {
     var primaryColor: Color {
         Color(primary)
     }
-
-    /// 次要颜色（SwiftUI，可选）
-    var secondaryColor: Color? {
-        secondary.map { Color($0) }
-    }
-
-    /// 背景颜色（SwiftUI，可选）
-    var backgroundColor: Color? {
-        background.map { Color($0) }
-    }
 }
 
 // MARK: - 主题色计算函数

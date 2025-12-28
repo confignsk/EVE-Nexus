@@ -20,6 +20,13 @@ class IconManager {
     private func setupIconsDirectory() {
         let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let iconsDir = documentsURL.appendingPathComponent("icons")
+        let oldIconsDir = documentsURL.appendingPathComponent("Icons") // 旧的大写目录名
+
+        // 如果存在旧的大写目录，删除它
+        if fileManager.fileExists(atPath: oldIconsDir.path) {
+            Logger.info("Found old 'Icons' directory, removing it...")
+            try? fileManager.removeItem(at: oldIconsDir)
+        }
 
         // 如果图标目录不存在，创建它
         if !fileManager.fileExists(atPath: iconsDir.path) {

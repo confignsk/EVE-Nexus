@@ -4,9 +4,17 @@ struct SkillLevelIndicator: View {
     let currentLevel: Int
     let trainingLevel: Int
     let isTraining: Bool
+    let queuedLevels: Set<Int> // 队列中的等级集合
 
     // 动画状态
     @State private var isBlinking = false
+
+    init(currentLevel: Int, trainingLevel: Int, isTraining: Bool, queuedLevels: Set<Int> = []) {
+        self.currentLevel = currentLevel
+        self.trainingLevel = trainingLevel
+        self.isTraining = isTraining
+        self.queuedLevels = queuedLevels
+    }
 
     // 常量定义
     private let frameWidth: CGFloat = 55.5 // 37 * 1.5
@@ -18,6 +26,7 @@ struct SkillLevelIndicator: View {
     // 颜色定义
     private let darkGray = Color.primary.opacity(0.8)
     private let lightGray = Color.secondary.opacity(0.6)
+    private let cyanColor = Color.cyan.opacity(0.8) // 队列中的等级使用青色
     private let borderColor = Color.primary.opacity(0.8)
 
     var body: some View {
@@ -53,6 +62,13 @@ struct SkillLevelIndicator: View {
 
     // 确定方块颜色
     private func blockColor(for index: Int) -> Color {
+        let level = index + 1 // index是0-4，对应等级1-5
+
+        // 如果等级在队列中，使用青色
+        if queuedLevels.contains(level) {
+            return cyanColor
+        }
+
         if index < currentLevel {
             return darkGray
         } else if index < trainingLevel {
@@ -78,6 +94,8 @@ struct SkillLevelIndicator: View {
         SkillLevelIndicator(currentLevel: 2, trainingLevel: 3, isTraining: true)
         SkillLevelIndicator(currentLevel: 3, trainingLevel: 4, isTraining: true)
         SkillLevelIndicator(currentLevel: 4, trainingLevel: 5, isTraining: true)
+        // 预览队列中的等级
+        SkillLevelIndicator(currentLevel: 2, trainingLevel: 2, isTraining: false, queuedLevels: [3, 4])
     }
     .padding()
 }

@@ -845,12 +845,32 @@ struct AttributeCompareSection: View {
 
     // 格式化属性值和单位
     private func getFormattedValue(_ valueInfo: AttributeCompareUtil.AttributeValueInfo) -> String {
-        // 使用新的AttributeValueFormatter格式化属性值
-        return AttributeValueFormatter.format(
-            value: valueInfo.value,
-            unitID: valueInfo.unitID,
-            attributeID: Int(attributeID)
+        // 使用 AttributeDisplayConfig.transformValue 进行格式化，与 AttributeBarView 保持一致
+        guard let attributeIDInt = Int(attributeID) else {
+            return FormatUtil.format(valueInfo.value)
+        }
+
+        // 创建包含当前属性值的字典
+        var allAttributes: [Int: Double] = [:]
+        allAttributes[attributeIDInt] = valueInfo.value
+
+        // 使用 AttributeDisplayConfig 进行转换
+        let result = AttributeDisplayConfig.transformValue(
+            attributeIDInt, allAttributes: allAttributes, unitID: valueInfo.unitID
         )
+
+        // 处理不同的转换结果类型
+        switch result {
+        case let .number(value, unit):
+            // 如果有单位，拼接值和单位（百分号不添加空格，其他单位添加空格）
+            return unit.map { "\(FormatUtil.format(value))\($0)" } ?? FormatUtil.format(value)
+        case let .text(str):
+            // 直接返回格式化好的文本
+            return str
+        case let .resistance(resistances):
+            // 抗性值在对比视图中格式化为百分比字符串
+            return resistances.map { "\(FormatUtil.format($0))%" }.joined(separator: ", ")
+        }
     }
 
     // 计算每个物品的颜色
@@ -1096,7 +1116,7 @@ extension AttributeCompareUtil {
                 dogmaAttributes
             WHERE 
                 attribute_id IN (\(attributeIDsString))
-            AND unitID NOT IN (115, 116, 119)  -- typeid类的属性值不看
+            AND (unitID IS NULL OR unitID NOT IN (115, 116, 119))  -- typeid类的属性值不看，NULL值也包含在内
         """
 
         // 已发布属性信息 (有display_name的)

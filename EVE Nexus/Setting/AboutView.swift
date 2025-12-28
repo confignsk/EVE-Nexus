@@ -1,8 +1,6 @@
 import SwiftUI
 
 struct AboutView: View {
-    @StateObject private var iconManager = AppIconManager.shared
-
     private var appIcon: UIImage? {
         return AppIconConfig.composeAppIcon()
     }

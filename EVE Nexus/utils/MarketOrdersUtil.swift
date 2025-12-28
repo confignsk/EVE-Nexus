@@ -41,6 +41,88 @@ enum OrderType {
 /// - 矿石精炼器：计算产出价值
 /// - 合同估价：评估合同价值
 enum MarketOrdersUtil {
+    // MARK: - Jita 买单筛选配置
+
+    /// Jita 星系ID常量
+    private static let jitaSystemId = 30_000_142
+
+    /// Jita 4-4 空间站ID常量
+    private static let jitaStationId = 60_003_760
+
+    /// Jita Forge 范围配置缓存（懒加载）
+    private static var jitaForgeRangeCache: [String: [Int]]?
+
+    /// 加载 Jita Forge 范围配置
+    /// - Returns: [范围: 星系列表] 字典，如果加载失败返回空字典
+    private static func loadJitaForgeRange() -> [String: [Int]] {
+        // 如果已缓存，直接返回
+        if let cached = jitaForgeRangeCache {
+            return cached
+        }
+
+        // 从 Bundle 加载 JSON 文件
+        guard let url = Bundle.main.url(forResource: "jita_forge_range", withExtension: "json") else {
+            Logger.error("未找到 jita_forge_range.json 配置文件，将回退到 solarsystem 筛选逻辑")
+            jitaForgeRangeCache = [:]
+            return [:]
+        }
+
+        do {
+            let data = try Data(contentsOf: url)
+            // JSON 文件中的键是字符串，值是整数数组
+            let jsonObject = try JSONSerialization.jsonObject(with: data) as? [String: [Int]] ?? [:]
+            jitaForgeRangeCache = jsonObject
+            Logger.info("成功加载 Jita Forge 范围配置，包含 \(jsonObject.count) 个范围级别")
+            return jsonObject
+        } catch {
+            Logger.error("加载 jita_forge_range.json 失败: \(error)，将回退到 solarsystem 筛选逻辑")
+            jitaForgeRangeCache = [:]
+            return [:]
+        }
+    }
+
+    /// Jita 买单筛选函数 - 根据订单的 range 字段筛选符合条件的买单
+    ///
+    /// 筛选逻辑：
+    /// - `station`: 检查 locationId 是否为 60003760（Jita 4-4 空间站）
+    /// - `region`: 所有买单都符合（整个星域范围）
+    /// - `solarsystem`: 检查 systemId 是否为 30000142（Jita 星系）
+    /// - 数字范围（1, 2, 3, 4, 5, 10, 20, 30, 40）: 从配置文件中查找对应的星系列表，只有这些星系的买单符合要求
+    /// - 未知的 range 值或配置文件加载失败: 回退到 solarsystem 筛选逻辑（检查 systemId 是否为 30000142），确保始终有数据可显示
+    ///
+    /// - Parameter order: 市场订单
+    /// - Returns: 是否符合 Jita 买单筛选条件
+    private static func filterJitaBuyOrder(_ order: MarketOrder) -> Bool {
+        let range = order.range.lowercased()
+
+        switch range {
+        case "station":
+            // 检查是否为 Jita 4-4 空间站
+            return order.locationId == Int64(jitaStationId)
+
+        case "region":
+            // 整个星域范围，所有买单都符合
+            return true
+
+        case "solarsystem":
+            // 检查是否为 Jita 星系
+            return order.systemId == jitaSystemId
+
+        default:
+            // 数字范围：从配置文件中查找
+            let rangeConfig = loadJitaForgeRange()
+            if let allowedSystems = rangeConfig[order.range], !allowedSystems.isEmpty {
+                // 如果配置文件中找到对应的范围，检查订单的 systemId 是否在允许的星系列表中
+                return allowedSystems.contains(order.systemId)
+            } else {
+                // 如果配置文件中没有对应的范围或加载失败，回退到 solarsystem 筛选逻辑
+                // 这样即使 range 字段不合法或配置文件加载失败，也能显示 Jita 本地的订单数据
+                Logger.warning("未找到 range=\(order.range) 的配置或配置文件加载失败，回退到 solarsystem 筛选逻辑")
+                return order.systemId == jitaSystemId
+            }
+        }
+    }
+
     // MARK: - 批量加载订单（原始数据）
 
     /// 批量加载市场订单（自动判断星域/建筑）- 推荐使用此方法
@@ -326,15 +408,28 @@ enum MarketOrdersUtil {
         from orders: [MarketOrder],
         orderType: OrderType,
         quantity: Int64? = nil,
-        systemId: Int? = nil
+        systemId: Int? = nil,
+        stationID: Int? = nil
     ) -> (price: Double?, insufficientStock: Bool) {
         guard !orders.isEmpty else { return (nil, true) }
+
+        // 判断是否需要使用 Jita 买单筛选
+        let useJitaBuyFilter = (systemId == jitaSystemId) && (orderType == .buy)
 
         // 过滤订单类型和星系
         var filteredOrders = orders.filter { order in
             let matchesType = (orderType == .buy) ? order.isBuyOrder : !order.isBuyOrder
+            if !matchesType { return false }
+
+            // 如果是 Jita 买单，使用专门的筛选函数
+            if useJitaBuyFilter {
+                return filterJitaBuyOrder(order)
+            }
+
+            // 否则使用常规筛选逻辑
             let matchesSystem = (systemId == nil) || (order.systemId == systemId!)
-            return matchesType && matchesSystem
+            let matchesStation = (stationID == nil) || (order.locationId == stationID!)
+            return matchesSystem && matchesStation
         }
 
         // 排序：买单从高到低，卖单从低到高
