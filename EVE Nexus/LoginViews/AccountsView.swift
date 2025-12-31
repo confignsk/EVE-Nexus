@@ -587,17 +587,24 @@ struct AccountsView: View {
                 NSLocalizedString("Account_Remove_Confirm_Remove", comment: ""), role: .destructive
             ) {
                 if let character = characterToRemove {
+                    let characterId = character.CharacterID
+
+                    // 清除所有 token（包括 access token 和 refresh token）
+                    Task {
+                        await AuthTokenManager.shared.clearAllTokens(for: characterId)
+                    }
+
                     viewModel.removeCharacter(character)
                     // 发送通知，通知其他视图角色已被删除
                     NotificationCenter.default.post(
                         name: Notification.Name("CharacterRemoved"),
                         object: nil,
-                        userInfo: ["characterId": character.CharacterID]
+                        userInfo: ["characterId": characterId]
                     )
                     // 清除该角色的 RefreshTokenExpired 状态
-                    EVELogin.shared.resetRefreshTokenExpired(characterId: character.CharacterID)
+                    EVELogin.shared.resetRefreshTokenExpired(characterId: characterId)
                     // 从过期token集合中移除该角色
-                    expiredTokenCharacters.remove(character.CharacterID)
+                    expiredTokenCharacters.remove(characterId)
                     characterToRemove = nil
                 }
             }

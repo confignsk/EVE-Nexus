@@ -231,6 +231,7 @@
 "Insurance_Cost" = "Cost";
 "Insurance_Payout" = "Payout";
 "Insurance_Net_Profit" = "Net Profit";
+"Item_View_Model" = "View Model";
 "Insurance_No_Data" = "No insurance data available for this ship";
 "Insurance_Info_Tip" = "Insurance payout is issued when the ship is destroyed";
 
@@ -268,10 +269,12 @@
 "App_Icon_T3" = "T3";
 "App_Icon_Current" = "Current";
 "App_Icon_Error" = "Failed to Change Icon";
+"Icon_Tritanium_basic" = "Starlit";
 "Icon_Tritanium" = "Tritanium";
 "Icon_TriDB" = "Triglavian Survey Database";
 "Icon_OverseerBox" = "Overseer's Personal Effects";
 "Icon_HyperCore" = "HyperCore";
+"Icon_Tritanium_basic_Desc" = "I can't find the EVE Gate, what should I do?";
 "Icon_Tritanium_Desc" = "The foundation of New Eden!";
 "Icon_TriDB_Desc" = "What's this even about?";
 "Icon_OverseerBox_Desc" = "Isn't this why you run DED?";
@@ -2614,6 +2617,7 @@
 "LP_Store_View" = "View LP Store";
 "LP_Store_No_Data" = "No LP Store Data";
 "LP_Store_Loading" = "Loading LP Store data...";
+"LP_Copy_Required_Materials" = "Copy Materials";
 
 // App Update Alert
 "App_Updated_Title" = "App Updated";

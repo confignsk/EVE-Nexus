@@ -317,7 +317,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "HyperCore_Deadspace HyperCore_Factions HyperCore_Officers HyperCore_T2 HyperCore_T3 HyperCore OverseerBox_Deadspace OverseerBox_Factions OverseerBox_Officers OverseerBox_T2 OverseerBox_T3 OverseerBox TriDB_Deadspace TriDB_Factions TriDB_Officers TriDB_T2 TriDB_T3 TriDB Tritanium_Deadspace Tritanium_Factions Tritanium_Officers Tritanium_T2 Tritanium_T3 Tritanium";
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "HyperCore_Deadspace HyperCore_Factions HyperCore_Officers HyperCore_T2 HyperCore_T3 HyperCore OverseerBox_Deadspace OverseerBox_Factions OverseerBox_Officers OverseerBox_T2 OverseerBox_T3 OverseerBox TriDB_Deadspace TriDB_Factions TriDB_Officers TriDB_T2 TriDB_T3 TriDB Tritanium_Deadspace Tritanium_Factions Tritanium_Officers Tritanium_T2 Tritanium_T3 Tritanium Tritanium_basic Tritanium_basic_T2 Tritanium_basic_T3 Tritanium_basic_Deadspace Tritanium_basic_Factions Tritanium_basic_Officers";
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
@@ -384,7 +384,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "HyperCore_Deadspace HyperCore_Factions HyperCore_Officers HyperCore_T2 HyperCore_T3 HyperCore OverseerBox_Deadspace OverseerBox_Factions OverseerBox_Officers OverseerBox_T2 OverseerBox_T3 OverseerBox TriDB_Deadspace TriDB_Factions TriDB_Officers TriDB_T2 TriDB_T3 TriDB Tritanium_Deadspace Tritanium_Factions Tritanium_Officers Tritanium_T2 Tritanium_T3 Tritanium";
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "HyperCore_Deadspace HyperCore_Factions HyperCore_Officers HyperCore_T2 HyperCore_T3 HyperCore OverseerBox_Deadspace OverseerBox_Factions OverseerBox_Officers OverseerBox_T2 OverseerBox_T3 OverseerBox TriDB_Deadspace TriDB_Factions TriDB_Officers TriDB_T2 TriDB_T3 TriDB Tritanium_Deadspace Tritanium_Factions Tritanium_Officers Tritanium_T2 Tritanium_T3 Tritanium Tritanium_basic Tritanium_basic_T2 Tritanium_basic_T3 Tritanium_basic_Deadspace Tritanium_basic_Factions Tritanium_basic_Officers";
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
@@ -442,7 +442,7 @@
 		C6417FE92CF80C4F0032F75C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "HyperCore_Deadspace HyperCore_Factions HyperCore_Officers HyperCore_T2 HyperCore_T3 HyperCore OverseerBox_Deadspace OverseerBox_Factions OverseerBox_Officers OverseerBox_T2 OverseerBox_T3 OverseerBox TriDB_Deadspace TriDB_Factions TriDB_Officers TriDB_T2 TriDB_T3 TriDB Tritanium_Deadspace Tritanium_Factions Tritanium_Officers Tritanium_T2 Tritanium_T3 Tritanium";
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "HyperCore_Deadspace HyperCore_Factions HyperCore_Officers HyperCore_T2 HyperCore_T3 HyperCore OverseerBox_Deadspace OverseerBox_Factions OverseerBox_Officers OverseerBox_T2 OverseerBox_T3 OverseerBox TriDB_Deadspace TriDB_Factions TriDB_Officers TriDB_T2 TriDB_T3 TriDB Tritanium_Deadspace Tritanium_Factions Tritanium_Officers Tritanium_T2 Tritanium_T3 Tritanium Tritanium_basic Tritanium_basic_T2 Tritanium_basic_T3 Tritanium_basic_Deadspace Tritanium_basic_Factions Tritanium_basic_Officers";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
@@ -474,7 +474,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.9.2;
+				MARKETING_VERSION = 1.10;
 				PRODUCT_BUNDLE_IDENTIFIER = "secgg.EVE-Nexus";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -491,7 +491,7 @@
 		C6417FEA2CF80C4F0032F75C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "HyperCore_Deadspace HyperCore_Factions HyperCore_Officers HyperCore_T2 HyperCore_T3 HyperCore OverseerBox_Deadspace OverseerBox_Factions OverseerBox_Officers OverseerBox_T2 OverseerBox_T3 OverseerBox TriDB_Deadspace TriDB_Factions TriDB_Officers TriDB_T2 TriDB_T3 TriDB Tritanium_Deadspace Tritanium_Factions Tritanium_Officers Tritanium_T2 Tritanium_T3 Tritanium";
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "HyperCore_Deadspace HyperCore_Factions HyperCore_Officers HyperCore_T2 HyperCore_T3 HyperCore OverseerBox_Deadspace OverseerBox_Factions OverseerBox_Officers OverseerBox_T2 OverseerBox_T3 OverseerBox TriDB_Deadspace TriDB_Factions TriDB_Officers TriDB_T2 TriDB_T3 TriDB Tritanium_Deadspace Tritanium_Factions Tritanium_Officers Tritanium_T2 Tritanium_T3 Tritanium Tritanium_basic Tritanium_basic_T2 Tritanium_basic_T3 Tritanium_basic_Deadspace Tritanium_basic_Factions Tritanium_basic_Officers";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
@@ -523,7 +523,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.9.2;
+				MARKETING_VERSION = 1.10;
 				PRODUCT_BUNDLE_IDENTIFIER = "secgg.EVE-Nexus";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -586,7 +586,7 @@
 		C6417FEF2CF80C4F0032F75C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "HyperCore_Deadspace HyperCore_Factions HyperCore_Officers HyperCore_T2 HyperCore_T3 HyperCore OverseerBox_Deadspace OverseerBox_Factions OverseerBox_Officers OverseerBox_T2 OverseerBox_T3 OverseerBox TriDB_Deadspace TriDB_Factions TriDB_Officers TriDB_T2 TriDB_T3 TriDB Tritanium_Deadspace Tritanium_Factions Tritanium_Officers Tritanium_T2 Tritanium_T3 Tritanium";
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "HyperCore_Deadspace HyperCore_Factions HyperCore_Officers HyperCore_T2 HyperCore_T3 HyperCore OverseerBox_Deadspace OverseerBox_Factions OverseerBox_Officers OverseerBox_T2 OverseerBox_T3 OverseerBox TriDB_Deadspace TriDB_Factions TriDB_Officers TriDB_T2 TriDB_T3 TriDB Tritanium_Deadspace Tritanium_Factions Tritanium_Officers Tritanium_T2 Tritanium_T3 Tritanium Tritanium_basic Tritanium_basic_T2 Tritanium_basic_T3 Tritanium_basic_Deadspace Tritanium_basic_Factions Tritanium_basic_Officers";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
@@ -609,7 +609,7 @@
 		C6417FF02CF80C4F0032F75C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "HyperCore_Deadspace HyperCore_Factions HyperCore_Officers HyperCore_T2 HyperCore_T3 HyperCore OverseerBox_Deadspace OverseerBox_Factions OverseerBox_Officers OverseerBox_T2 OverseerBox_T3 OverseerBox TriDB_Deadspace TriDB_Factions TriDB_Officers TriDB_T2 TriDB_T3 TriDB Tritanium_Deadspace Tritanium_Factions Tritanium_Officers Tritanium_T2 Tritanium_T3 Tritanium";
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "HyperCore_Deadspace HyperCore_Factions HyperCore_Officers HyperCore_T2 HyperCore_T3 HyperCore OverseerBox_Deadspace OverseerBox_Factions OverseerBox_Officers OverseerBox_T2 OverseerBox_T3 OverseerBox TriDB_Deadspace TriDB_Factions TriDB_Officers TriDB_T2 TriDB_T3 TriDB Tritanium_Deadspace Tritanium_Factions Tritanium_Officers Tritanium_T2 Tritanium_T3 Tritanium Tritanium_basic Tritanium_basic_T2 Tritanium_basic_T3 Tritanium_basic_Deadspace Tritanium_basic_Factions Tritanium_basic_Officers";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;

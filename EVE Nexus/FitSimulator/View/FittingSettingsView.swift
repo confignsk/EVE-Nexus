@@ -12,10 +12,19 @@ struct FittingSettingsView: View {
     @ObservedObject var viewModel: FittingEditorViewModel
     let onDelete: (() -> Void)?
 
-    @AppStorage("skillsModePreference") private var skillsMode = "current_char"
     @AppStorage("currentCharacterId") private var currentCharacterId: Int = 0
-    @State private var selectedCharacterId: Int? = nil
     var onSkillModeChanged: (() -> Void)?
+
+    // 从 viewModel 中读取和保存技能选择状态
+    private var skillsMode: String {
+        get { viewModel.currentSkillsMode }
+        nonmutating set { viewModel.currentSkillsMode = newValue }
+    }
+
+    private var selectedCharacterId: Int? {
+        get { viewModel.currentSelectedCharacterId }
+        nonmutating set { viewModel.currentSelectedCharacterId = newValue }
+    }
 
     // 添加UI状态管理
     @State private var isExportingToESI = false
@@ -45,34 +54,43 @@ struct FittingSettingsView: View {
     }
 
     private var skillModeText: String {
-        if skillsMode == "current_char" {
-            // 获取当前角色名称
-            if currentCharacterId != 0 {
-                if let character = EVELogin.shared.getCharacterByID(currentCharacterId)?.character {
-                    return character.CharacterName
-                }
+        switch skillsMode {
+        case "current_char":
+            if currentCharacterId != 0,
+               let character = EVELogin.shared.getCharacterByID(currentCharacterId)?.character
+            {
+                return character.CharacterName
             }
-            skillsMode = "all5"
-        } else if skillsMode == "all5" {
             return String.localizedStringWithFormat(NSLocalizedString("Fitting_All_Skills", comment: "全5级"), 5)
-        } else if skillsMode == "all4" {
+        case "all5":
+            return String.localizedStringWithFormat(NSLocalizedString("Fitting_All_Skills", comment: "全5级"), 5)
+        case "all4":
             return String.localizedStringWithFormat(NSLocalizedString("Fitting_All_Skills", comment: ""), 4)
-        } else if skillsMode == "all3" {
+        case "all3":
             return String.localizedStringWithFormat(NSLocalizedString("Fitting_All_Skills", comment: ""), 3)
-        } else if skillsMode == "all2" {
+        case "all2":
             return String.localizedStringWithFormat(NSLocalizedString("Fitting_All_Skills", comment: ""), 2)
-        } else if skillsMode == "all1" {
+        case "all1":
             return String.localizedStringWithFormat(NSLocalizedString("Fitting_All_Skills", comment: ""), 1)
-        } else if skillsMode == "all0" {
+        case "all0":
             return String.localizedStringWithFormat(NSLocalizedString("Fitting_All_Skills", comment: ""), 0)
-        } else if skillsMode == "character" {
-            let charId = UserDefaults.standard.integer(forKey: "selectedSkillCharacterId")
-            let chars = CharacterSkillsUtils.getAllCharacters(excludeCurrentCharacter: false)
-            if let character = chars.first(where: { $0.id == charId }) {
-                return character.name
+        case "character":
+            if let charId = selectedCharacterId {
+                let chars = CharacterSkillsUtils.getAllCharacters(excludeCurrentCharacter: false)
+                Logger.debug("skillModeText - 查找角色 \(charId)，可用角色数: \(chars.count)")
+                if let character = chars.first(where: { $0.id == charId }) {
+                    Logger.debug("skillModeText - 找到角色: \(character.name)")
+                    return character.name
+                } else {
+                    Logger.warning("skillModeText - 未找到角色 \(charId)")
+                }
+            } else {
+                Logger.warning("skillModeText - selectedCharacterId 为 nil")
             }
+            return String.localizedStringWithFormat(NSLocalizedString("Fitting_All_Skills", comment: "全5级"), 5)
+        default:
+            return String.localizedStringWithFormat(NSLocalizedString("Fitting_All_Skills", comment: "全5级"), 5)
         }
-        return NSLocalizedString("Fitting_Unknown_Skills", comment: "未知技能模式")
     }
 
     var body: some View {
@@ -109,7 +127,7 @@ struct FittingSettingsView: View {
                 NavigationLink {
                     CharacterSkillsSelectorView(
                         databaseManager: databaseManager,
-                        onSelectSkills: { _, skillModeName, characterId in
+                        onSelectSkills: { skills, skillModeName, characterId in
                             // 更新技能模式
                             if characterId == 0 {
                                 // 虚拟角色情况 (All 5/4/3/2/1/0)
@@ -135,10 +153,32 @@ struct FittingSettingsView: View {
                                 // 其他角色情况
                                 skillsMode = "character"
                                 selectedCharacterId = characterId
-                                UserDefaults.standard.set(
-                                    characterId, forKey: "selectedSkillCharacterId"
-                                )
                             }
+
+                            // 确定技能类型
+                            var skillType: CharacterSkillsType
+                            if characterId == 0 {
+                                if skillModeName.contains("5") {
+                                    skillType = .all5
+                                } else if skillModeName.contains("4") {
+                                    skillType = .all4
+                                } else if skillModeName.contains("3") {
+                                    skillType = .all3
+                                } else if skillModeName.contains("2") {
+                                    skillType = .all2
+                                } else if skillModeName.contains("1") {
+                                    skillType = .all1
+                                } else {
+                                    skillType = .all0
+                                }
+                            } else if characterId == currentCharacterId {
+                                skillType = .current_char
+                            } else {
+                                skillType = .character(characterId)
+                            }
+
+                            // 更新视图模型中的技能数据
+                            viewModel.updateCharacterSkills(skills: skills, sourceType: skillType)
 
                             // 执行技能模式更改回调
                             onSkillModeChanged?()
@@ -330,11 +370,6 @@ struct FittingSettingsView: View {
             )
             if let item = items.first {
                 shipItem = item
-            }
-
-            if skillsMode == "character" {
-                selectedCharacterId = UserDefaults.standard.integer(
-                    forKey: "selectedSkillCharacterId")
             }
         }
     }

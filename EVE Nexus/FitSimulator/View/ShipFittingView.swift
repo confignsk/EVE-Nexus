@@ -136,44 +136,7 @@ struct ShipFittingView: View {
                         }
                     },
                     onSkillModeChanged: {
-                        // 从UserDefaults获取当前选择的技能模式
-                        let skillsMode =
-                            UserDefaults.standard.string(forKey: "skillsModePreference")
-                                ?? "current_char"
-
-                        // 根据技能模式获取对应的技能类型
-                        var skillType: CharacterSkillsType
-
-                        switch skillsMode {
-                        case "all5":
-                            skillType = .all5
-                        case "all4":
-                            skillType = .all4
-                        case "all3":
-                            skillType = .all3
-                        case "all2":
-                            skillType = .all2
-                        case "all1":
-                            skillType = .all1
-                        case "all0":
-                            skillType = .all0
-                        case "character":
-                            // 指定角色的情况，获取保存的角色ID
-                            let charId = UserDefaults.standard.integer(
-                                forKey: "selectedSkillCharacterId")
-                            skillType = .character(charId)
-                        default:
-                            // 默认为当前角色
-                            skillType = .current_char
-                        }
-
-                        // 获取技能数据
-                        let skills = CharacterSkillsUtils.getCharacterSkills(type: skillType)
-
-                        // 更新视图模型中的技能数据
-                        viewModel.updateCharacterSkills(skills: skills, sourceType: skillType)
-
-                        Logger.info("技能模式更改为\(skillsMode)，已重新计算属性")
+                        Logger.info("技能模式已更改")
                     },
                     viewModel: viewModel,
                     onDelete: {

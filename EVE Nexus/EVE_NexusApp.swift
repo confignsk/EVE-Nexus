@@ -144,18 +144,30 @@ struct EVE_NexusApp: App {
     private func validateRefreshTokens() {
         // 获取所有有效的 token
         let characterIdsWithValidRefreshToken = SecureStorage.shared.listValidRefreshTokens()
-        Logger.info("App初始化: 找到 \(characterIdsWithValidRefreshToken.count) 个有效的 refresh token")
+        Logger.info("App初始化: 找到 \(characterIdsWithValidRefreshToken.count) 个不为空的 refresh token")
 
         // 获取当前保存的所有角色
         let characters = EVELogin.shared.loadCharacters()
-        Logger.info("App初始化: UserDefaults 中保存了 \(characters.count) 个角色")
+        let characterIds = characters.map { $0.character.CharacterID }
+        Logger.info("App初始化: UserDefaults 中保存了 \(characters.count) 个角色，ID列表: \(characterIds)")
+
+        // 清理不存在于角色列表中的 token（孤儿 token）
+        let validCharacterIds = Set(characterIds)
+        for tokenCharacterId in characterIdsWithValidRefreshToken {
+            if !validCharacterIds.contains(tokenCharacterId) {
+                Logger.warning("App初始化: 发现孤儿 token (角色ID: \(tokenCharacterId))，该角色已不在登录列表，正在清理...")
+                Task {
+                    await AuthTokenManager.shared.clearAllTokens(for: tokenCharacterId)
+                }
+            }
+        }
 
         // 打印详细信息
         for character in characters {
             let characterId = character.character.CharacterID
             let hasValidRefreshToken = characterIdsWithValidRefreshToken.contains(characterId)
             Logger.info(
-                "App初始化: 角色 \(character.character.CharacterName) (\(characterId)) - \(hasValidRefreshToken ? "有效 refresh token" : "无效 refresh token")"
+                "App初始化: 角色 \(character.character.CharacterName) (\(characterId)) - \(hasValidRefreshToken ? "有 refresh token" : "无 refresh token")"
             )
 
             // 如果没有有效的 token，标记为过期
@@ -283,6 +295,15 @@ struct EVE_NexusApp: App {
                     _ = try await InsurancePricesAPI.shared.fetchInsurancePrices()
                 } catch {
                     Logger.error("后台加载保险价格数据失败: \(error)")
+                }
+            }
+
+            // 异步加载可用模型列表，不阻塞主进程
+            Task.detached(priority: .background) {
+                do {
+                    _ = try await AvailableModelsAPI.shared.fetchAvailableModels()
+                } catch {
+                    Logger.error("后台加载可用模型列表失败: \(error)")
                 }
             }
 

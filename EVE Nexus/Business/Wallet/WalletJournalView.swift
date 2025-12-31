@@ -683,6 +683,16 @@ struct WalletJournalEntryRow: View {
         )
     }
 
+    // ESI数据修正补丁：修正特定情况下的描述文本
+    private func patchDescription(_ description: String) -> String {
+        // 修正 market_escrow 的负数交易描述
+        if entry.ref_type.lowercased() == "market_escrow" && entry.amount <= 0 {
+            let language = selectedLanguage == "zh-Hans" ? "zh" : "en"
+            return language == "zh" ? "授权的市场契约金" : "Authorized Market Escrow"
+        }
+        return description
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack {
@@ -699,7 +709,7 @@ struct WalletJournalEntryRow: View {
             Text(
                 LocalizationManager.shared.processJournalMessage(
                     for: entry.ref_type.lowercased(),
-                    esiText: entry.description,
+                    esiText: patchDescription(entry.description),
                     language: selectedLanguage == "zh-Hans" ? "zh" : "en"
                 )
             )
@@ -731,7 +741,7 @@ struct WalletJournalEntryRow: View {
             Button {
                 let processedDescription = LocalizationManager.shared.processJournalMessage(
                     for: entry.ref_type.lowercased(),
-                    esiText: entry.description,
+                    esiText: patchDescription(entry.description),
                     language: selectedLanguage == "zh-Hans" ? "zh" : "en"
                 )
                 let sign = entry.amount >= 0 ? "+" : ""

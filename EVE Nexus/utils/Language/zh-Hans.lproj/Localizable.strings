@@ -293,10 +293,12 @@
 "App_Icon_Current" = "当前使用";
 "App_Icon_Error" = "图标切换失败";
 "App_Icon_Not_Supported" = "此设备不支持切换应用图标";
+"Icon_Tritanium_basic" = "繁星";
 "Icon_Tritanium" = "三钛合金";
 "Icon_TriDB" = "三神裔调查数据库";
 "Icon_OverseerBox" = "监察官的个人财产";
 "Icon_HyperCore" = "超核";
+"Icon_Tritanium_basic_Desc" = "我找不到EVE之门了，怎么办？";
 "Icon_Tritanium_Desc" = "新伊甸的基石！";
 "Icon_TriDB_Desc" = "这里面写的啥？";
 "Icon_OverseerBox_Desc" = "你打远征不就为了这个吗？";
@@ -2068,6 +2070,7 @@
 "Insurance_Cost" = "保险费用";
 "Insurance_Payout" = "赔付金额";
 "Insurance_Net_Profit" = "净收益";
+"Item_View_Model" = "查看模型";
 "Insurance_No_Data" = "该飞船暂无保险数据";
 "Insurance_Info_Tip" = "保险赔付在飞船被摧毁时发放";
 "Jump_Navigation_Start_Point" = "起点";
@@ -2650,6 +2653,7 @@
 "LP_Store_View" = "查看LP商店";
 "LP_Store_No_Data" = "无LP商店数据";
 "LP_Store_Loading" = "加载LP商店数据...";
+"LP_Copy_Required_Materials" = "复制所需材料";
 
 // App Update Alert
 "App_Updated_Title" = "App已更新";

@@ -10,6 +10,10 @@ class FittingEditorViewModel: ObservableObject {
     // 新的计算结果（使用输出结构）
     @Published private(set) var simulationOutput: SimulationOutput?
 
+    // 技能选择状态（在配置生命周期内保持，但不持久化到文件）
+    @Published var currentSkillsMode: String = "all5"
+    @Published var currentSelectedCharacterId: Int? = nil
+
     // 元数据
     @Published var shipInfo: (name: String, iconFileName: String)
     @Published var isNewFitting: Bool
@@ -2283,7 +2287,30 @@ class FittingEditorViewModel: ObservableObject {
         case "character":
             // 指定角色的情况，获取保存的角色ID
             let charId = UserDefaults.standard.integer(forKey: "selectedSkillCharacterId")
-            skillType = .character(charId)
+
+            // 【修复3】检查角色是否还在已登录列表中，且 token 未过期
+            if charId != 0,
+               let characterAuth = EVELogin.shared.getCharacterByID(charId),
+               !characterAuth.character.refreshTokenExpired
+            {
+                // 角色存在且 token 有效
+                skillType = .character(charId)
+                Logger.info("【getSkillsFromPreferences】使用指定角色技能 - 角色ID: \(charId)")
+            } else {
+                // 角色不存在、已删除或 token 已过期
+                if charId != 0 {
+                    if EVELogin.shared.getCharacterByID(charId) == nil {
+                        Logger.warning("【getSkillsFromPreferences】角色不存在或已删除 (ID: \(charId))，自动切换为 all5")
+                    } else {
+                        Logger.warning("【getSkillsFromPreferences】角色 token 已过期 (ID: \(charId))，自动切换为 all5 避免阻塞主线程")
+                    }
+                }
+                // 自动修正为 all5，避免阻塞主线程等待网络请求
+                UserDefaults.standard.removeObject(forKey: "selectedSkillCharacterId")
+                UserDefaults.standard.set("all5", forKey: "skillsModePreference")
+                UserDefaults.standard.synchronize()
+                skillType = .all5
+            }
         default:
             // 默认为当前角色
             skillType = .current_char

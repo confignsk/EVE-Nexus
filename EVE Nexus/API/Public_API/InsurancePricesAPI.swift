@@ -48,7 +48,7 @@ actor InsurancePricesAPI {
     private let baseURL = "https://esi.evetech.net/latest/insurance/prices/"
     private let cacheDirectory: URL
     private let cacheFileName = "insurance_prices.json"
-    private let cacheValidityDuration: TimeInterval = 3600 // 1小时
+    private let cacheValidityDuration: TimeInterval = 3600 * 8 // 8小时
 
     private var cachedData: [InsurancePriceItem]?
     private var lastFetchTime: Date?

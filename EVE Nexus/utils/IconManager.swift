@@ -22,10 +22,13 @@ class IconManager {
         let iconsDir = documentsURL.appendingPathComponent("icons")
         let oldIconsDir = documentsURL.appendingPathComponent("Icons") // 旧的大写目录名
 
-        // 如果存在旧的大写目录，删除它
-        if fileManager.fileExists(atPath: oldIconsDir.path) {
-            Logger.info("Found old 'Icons' directory, removing it...")
-            try? fileManager.removeItem(at: oldIconsDir)
+        // 通过列出父目录内容来精确检查是否存在真正的 "Icons" 目录（区分大小写）
+        if let contents = try? fileManager.contentsOfDirectory(atPath: documentsURL.path) {
+            // 如果存在 "Icons" 且不存在 "icons"，说明是旧的大写目录，删除它
+            if contents.contains("Icons"), !contents.contains("icons") {
+                Logger.info("Found old 'Icons' directory, removing it...")
+                try? fileManager.removeItem(at: oldIconsDir)
+            }
         }
 
         // 如果图标目录不存在，创建它

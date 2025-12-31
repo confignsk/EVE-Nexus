@@ -16,7 +16,7 @@ struct InAppPurchaseView: View {
     // 选中的图标和角标（从保存的值初始化）
     @State private var selectedIcon: String = {
         if let savedIcon = UserDefaults.standard.string(forKey: "selectedAppIconName"),
-           ["Tritanium", "TriDB", "OverseerBox", "HyperCore"].contains(savedIcon)
+           ["Tritanium_basic", "Tritanium", "TriDB", "OverseerBox", "HyperCore"].contains(savedIcon)
         {
             return savedIcon
         }

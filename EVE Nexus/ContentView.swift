@@ -1051,7 +1051,7 @@ struct ContentView: View {
         FeatureConfig(id: "industry_jobs", requiresLogin: true, section: "business"),
         FeatureConfig(id: "mining_ledger", requiresLogin: true, section: "business"),
         FeatureConfig(id: "planetary", requiresLogin: true, section: "business"),
-        FeatureConfig(id: "structure_market", requiresLogin: false, section: "business"),
+        FeatureConfig(id: "structure_market", requiresLogin: true, section: "business"),
 
         // 战斗功能
         FeatureConfig(id: "killboard", requiresLogin: true, section: "battle"),
@@ -1716,6 +1716,7 @@ struct ContentView: View {
                 title: NSLocalizedString("Main_Structure_Market", comment: ""),
                 icon: "Structurebrowser"
             )
+            .isHidden(currentCharacterId == 0 && !isCustomizeMode)
         } header: {
             Text(NSLocalizedString("Main_Business", comment: ""))
                 .fontWeight(.semibold)

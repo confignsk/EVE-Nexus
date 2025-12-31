@@ -354,3 +354,11 @@ Fixes & Improvements:
 4. Update SDE.
 5. Fix issues when check sde update and unzip icons.
 6. Happy new year!
+
+# 1.10 Jan 3, 2026
+
+1. Restored the old app icon.
+2. Fix a bug that could cause the fitting function page to be inaccessible.
+3. Fix a bug when calculate jump range
+4. Add long press button "Copy material" in LP store
+5. Add model viewer (for ships) in database

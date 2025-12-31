@@ -2,7 +2,7 @@ import Foundation
 
 class JumpNavigationHandler {
     // 光年转换常量
-    private static let LY_CONVERSION: Double = 1.0 / 9_460_528_400_000_000.0
+    private static let LY_CONVERSION: Double = 1.0 / 9_460_000_000_000_000.0
 
     // 计算两点之间的距离（光年）
     static func calculateDistanceLY(

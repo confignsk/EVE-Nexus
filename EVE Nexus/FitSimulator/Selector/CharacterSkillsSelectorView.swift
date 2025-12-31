@@ -305,13 +305,15 @@ struct CharacterSkillsSelectorView: View {
         Task {
             do {
                 // 预加载角色的技能数据
-                _ = try await CharacterSkillsAPI.shared.fetchCharacterSkills(
+                let skillsResponse = try await CharacterSkillsAPI.shared.fetchCharacterSkills(
                     characterId: characterId,
                     forceRefresh: false
                 )
 
-                // 获取技能数据
-                let skills = CharacterSkillsUtils.getCharacterSkills(type: .character(characterId))
+                var skills: [Int: Int] = [:]
+                for skill in skillsResponse.skills {
+                    skills[skill.skill_id] = skill.trained_skill_level
+                }
 
                 // 更新UI并关闭页面
                 await MainActor.run {
@@ -325,7 +327,7 @@ struct CharacterSkillsSelectorView: View {
                     dismiss()
                 }
             } catch {
-                Logger.error("预加载角色技能数据失败: \(error)")
+                Logger.error("加载角色技能数据失败: \(error)")
 
                 // 错误处理：重置加载状态
                 await MainActor.run {

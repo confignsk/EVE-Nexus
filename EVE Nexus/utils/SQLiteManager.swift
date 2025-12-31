@@ -225,6 +225,10 @@ class SQLiteManager {
                 queryCache.setObject(results as NSArray, forKey: cacheKey)
             }
 
+            // 记录执行成功日志
+            let sqlPreview = query.count > 50 ? String(query.prefix(50)) + "..." : query
+            Logger.info("[SQLite] \(sqlPreview) - 成功")
+
             return .success(results)
         }
     }

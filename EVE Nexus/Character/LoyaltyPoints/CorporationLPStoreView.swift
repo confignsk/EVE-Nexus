@@ -104,6 +104,22 @@ struct LPStoreOfferView: View {
                     systemImage: "doc.on.doc"
                 )
             }
+
+            if !offer.requiredItems.isEmpty {
+                Button {
+                    let sortedItems = offer.requiredItems.sorted { $0.typeId < $1.typeId }
+                    let materialsText = sortedItems.compactMap { item -> String? in
+                        guard let info = requiredItemInfos[item.typeId] else { return nil }
+                        return "\(info.name)\t\(item.quantity)"
+                    }.joined(separator: "\n")
+                    UIPasteboard.general.string = materialsText
+                } label: {
+                    Label(
+                        NSLocalizedString("LP_Copy_Required_Materials", comment: ""),
+                        systemImage: "list.bullet.rectangle"
+                    )
+                }
+            }
         }
     }
 }

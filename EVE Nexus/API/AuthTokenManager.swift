@@ -217,7 +217,7 @@ class SecureStorage {
             }
         }
 
-        Logger.success("SecureStorage: 共找到 \(validCharacterIds.count) 个有效的 refresh token")
+        Logger.success("SecureStorage: 共找到 \(validCharacterIds.count) 个不为空的 refresh token")
         return validCharacterIds
     }
 }
