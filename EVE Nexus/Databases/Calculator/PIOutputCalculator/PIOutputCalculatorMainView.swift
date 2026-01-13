@@ -34,9 +34,6 @@ struct PIOutputCalculatorView: View {
 
     init(characterId: Int?) {
         self.characterId = characterId
-
-        // 预加载资源缓存
-        PIResourceCache.shared.preloadResourceInfo()
     }
 
     var body: some View {

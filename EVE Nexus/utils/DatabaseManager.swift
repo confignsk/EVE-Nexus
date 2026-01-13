@@ -16,14 +16,6 @@ class DatabaseManager: ObservableObject {
 
         // 使用 SQLiteManager 打开数据库
         if sqliteManager.openDatabase(withName: databaseName) {
-            // 初始化技能树
-            SkillTreeManager.shared.initialize(databaseManager: self)
-            Logger.info("技能树初始化完成")
-
-            // 初始化物品分类缓存
-            ItemInfoMap.initializeCache(databaseManager: self)
-            Logger.info("物品分类缓存初始化完成")
-
             databaseUpdated.toggle()
         }
     }
@@ -2003,7 +1995,7 @@ class DatabaseManager: ObservableObject {
             FROM dynamic_item_mappings m
             LEFT JOIN types t ON m.type_id = t.type_id
             WHERE m.applicable_type = ?
-            ORDER BY t.name
+            ORDER BY m.type_id
         """
 
         if case let .success(rows) = executeQuery(query, parameters: [typeID]) {
@@ -2016,6 +2008,28 @@ class DatabaseManager: ObservableObject {
             }
         }
         return []
+    }
+
+    /// 根据原始装备typeID和突变质体ID获取突变后的typeID
+    /// - Parameters:
+    ///   - applicableTypeID: 原始装备的typeID
+    ///   - mutaplasmidID: 突变质体的typeID
+    /// - Returns: 突变后的typeID，如果不存在则返回nil
+    func getMutatedTypeID(applicableTypeID: Int, mutaplasmidID: Int) -> Int? {
+        let query = """
+            SELECT resulting_type
+            FROM dynamic_item_mappings
+            WHERE applicable_type = ? AND type_id = ?
+            LIMIT 1
+        """
+
+        if case let .success(rows) = executeQuery(query, parameters: [applicableTypeID, mutaplasmidID]),
+           let row = rows.first,
+           let resultingType = row["resulting_type"] as? Int
+        {
+            return resultingType
+        }
+        return nil
     }
 
     // 获取突变来源信息

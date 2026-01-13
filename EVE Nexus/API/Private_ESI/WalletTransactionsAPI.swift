@@ -343,8 +343,8 @@ class WalletTransactionsAPI {
             return 0
         }
 
-        guard totalCountValue >= 1000 else {
-            Logger.info("钱包交易记录总记录数(\(totalCountValue))少于1000条，跳过清理")
+        guard totalCountValue >= 100_000 else {
+            Logger.info("钱包交易记录总记录数(\(totalCountValue))少于100000条，跳过清理")
             return 0
         }
 

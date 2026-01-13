@@ -3,11 +3,9 @@ import SwiftUI
 struct ContractAppraisalView: View {
     let contract: ContractInfo
     let items: [ContractItemInfo]
-    @State private var isLoadingJanice = false
     @State private var isLoadingESI = false
     @State private var errorMessage: String?
     @State private var showError = false
-    @State private var janiceResult: JaniceResult?
     @State private var esiResult: ESIAppraisalResult?
     @State private var showFullAmount: Bool = true
     @State private var discountPercentage: Double = 100
@@ -32,23 +30,6 @@ struct ContractAppraisalView: View {
         List {
             // 估价选项部分
             Section {
-                // Janice估价选项
-                Button(action: {
-                    Task {
-                        await performJaniceAppraisal()
-                    }
-                }) {
-                    HStack {
-                        Text(NSLocalizedString("Contract_Appraisal_Via_Janice", comment: ""))
-                        Spacer()
-                        if isLoadingJanice {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                        }
-                    }
-                }
-                .disabled(isLoadingJanice || isLoadingESI)
-
                 // ESI估价选项
                 Button(action: {
                     Task {
@@ -64,7 +45,7 @@ struct ContractAppraisalView: View {
                         }
                     }
                 }
-                .disabled(isLoadingJanice || isLoadingESI)
+                .disabled(isLoadingESI)
             }
 
             // 显示设置部分
@@ -131,102 +112,6 @@ struct ContractAppraisalView: View {
                 }
             } header: {
                 Text(NSLocalizedString("Contract_Appraisal_Display_Settings", comment: ""))
-            }
-
-            // Janice估价结果部分
-            if let result = janiceResult {
-                let buy_price = formatPrice(
-                    result.immediatePrices.totalBuyPrice
-                        * min(safeDiscountPercentage, discountPercentage) / 100)
-                let split_price = formatPrice(
-                    result.immediatePrices.totalSplitPrice
-                        * min(safeDiscountPercentage, discountPercentage) / 100)
-                let sell_price = formatPrice(
-                    result.immediatePrices.totalSellPrice
-                        * min(safeDiscountPercentage, discountPercentage) / 100)
-                Section {
-                    // 买入价格行
-                    HStack {
-                        Text(NSLocalizedString("Contract_Appraisal_Buy_Price", comment: ""))
-                        Spacer()
-                        Text(buy_price)
-                            .foregroundColor(.red)
-                            .contextMenu {
-                                Button {
-                                    UIPasteboard.general.string = buy_price
-                                } label: {
-                                    Label(
-                                        NSLocalizedString("Misc_Copy", comment: ""),
-                                        systemImage: "doc.on.doc"
-                                    )
-                                }
-                            }
-                            .font(.system(.body, design: .monospaced))
-                    }
-
-                    // 中间价格行
-                    HStack {
-                        Text(NSLocalizedString("Contract_Appraisal_Middle_Price", comment: ""))
-                        Spacer()
-                        Text(split_price)
-                            .foregroundColor(.orange)
-                            .contextMenu {
-                                Button {
-                                    UIPasteboard.general.string = split_price
-                                } label: {
-                                    Label(
-                                        NSLocalizedString("Misc_Copy", comment: ""),
-                                        systemImage: "doc.on.doc"
-                                    )
-                                }
-                            }
-                            .font(.system(.body, design: .monospaced))
-                    }
-
-                    // 卖出价格行
-                    HStack {
-                        Text(NSLocalizedString("Contract_Appraisal_Sell_Price", comment: ""))
-                        Spacer()
-                        Text(sell_price)
-                            .foregroundColor(.green)
-                            .contextMenu {
-                                Button {
-                                    UIPasteboard.general.string = sell_price
-                                } label: {
-                                    Label(
-                                        NSLocalizedString("Misc_Copy", comment: ""),
-                                        systemImage: "doc.on.doc"
-                                    )
-                                }
-                            }
-                            .font(.system(.body, design: .monospaced))
-                    }
-
-                    // 查看详情按钮
-                    Button(action: {
-                        if let url = URL(string: "https://janice.e-351.com/a/\(result.code)") {
-                            UIApplication.shared.open(url)
-                        }
-                    }) {
-                        HStack {
-                            Text(NSLocalizedString("Contract_Appraisal_View_Details", comment: ""))
-                            Image(systemName: "arrow.up.right.square")
-                        }
-                        .frame(maxWidth: .infinity)
-                    }
-                } header: {
-                    Text(
-                        result.name
-                            ?? String(
-                                format: NSLocalizedString("Contract_Appraisal_Result", comment: ""),
-                                result.pricerMarket.name
-                            ))
-                } footer: {
-                    if hasBlueprint {
-                        Text(NSLocalizedString("Contract_Appraisal_Blueprint_Warning", comment: ""))
-                            .foregroundColor(.red)
-                    }
-                }
             }
 
             // ESI估价结果部分
@@ -354,44 +239,6 @@ struct ContractAppraisalView: View {
             return count > 0
         }
         return false
-    }
-
-    private func performJaniceAppraisal() async {
-        isLoadingJanice = true
-        defer { isLoadingJanice = false }
-
-        // 检查是否包含蓝图
-        hasBlueprint = checkForBlueprints()
-
-        // 构建物品字典，合并相同type_id的数量
-        var itemsDict: [String: Int] = [:]
-        for item in items {
-            let typeIdStr = String(item.type_id)
-            itemsDict[typeIdStr] = (itemsDict[typeIdStr] ?? 0) + item.quantity
-        }
-
-        do {
-            let result = try await JaniceMarketAPI.shared.createAppraisal(items: itemsDict)
-            if let janiceResponse = try? JSONDecoder().decode(JaniceResponse.self, from: result) {
-                await MainActor.run {
-                    self.janiceResult = janiceResponse.result
-                }
-            } else {
-                throw NSError(
-                    domain: "JaniceMarketAPI", code: -1,
-                    userInfo: [
-                        NSLocalizedDescriptionKey: String(
-                            format: NSLocalizedString(
-                                "Contract_Appraisal_Parse_Failed", comment: ""
-                            ), "\(result)"
-                        ),
-                    ]
-                )
-            }
-        } catch {
-            errorMessage = error.localizedDescription
-            showError = true
-        }
     }
 
     private func performESIAppraisal() async {

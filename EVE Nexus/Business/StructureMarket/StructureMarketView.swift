@@ -32,12 +32,10 @@ struct StructureMarketView: View {
             } else {
                 // 建筑列表
                 ForEach(manager.structures) { structure in
-                    NavigationLink(destination: StructureMarketDetailView(structure: structure)) {
-                        StructureMarketRowView(
-                            structure: structure,
-                            allianceIconLoader: allianceIconLoader
-                        )
-                    }
+                    StructureMarketRowViewWithNavigation(
+                        structure: structure,
+                        allianceIconLoader: allianceIconLoader
+                    )
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                         Button(role: .destructive) {
                             manager.removeStructure(structure)
@@ -75,6 +73,13 @@ struct StructureMarketView: View {
 struct StructureMarketRowView: View {
     let structure: MarketStructure
     @ObservedObject var allianceIconLoader: AllianceIconLoader
+    @Binding var isAccessDenied: Bool // 标记建筑是否无法访问
+
+    init(structure: MarketStructure, allianceIconLoader: AllianceIconLoader, isAccessDenied: Binding<Bool> = .constant(false)) {
+        self.structure = structure
+        self.allianceIconLoader = allianceIconLoader
+        _isAccessDenied = isAccessDenied
+    }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -122,6 +127,18 @@ struct StructureMarketRowView: View {
                         .foregroundColor(.secondary)
                         .font(.caption)
                 }
+
+                // 如果建筑无法访问，显示提示
+                if isAccessDenied {
+                    HStack(spacing: 4) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.red)
+                            .font(.caption2)
+                        Text(NSLocalizedString("Structure_Market_Access_Denied", comment: "无法访问此建筑"))
+                            .foregroundColor(.red)
+                            .font(.caption2)
+                    }
+                }
             }
 
             Spacer()
@@ -130,10 +147,43 @@ struct StructureMarketRowView: View {
             StructureOwnerIconView(
                 structureId: Int64(structure.structureId),
                 characterId: structure.characterId,
-                allianceIconLoader: allianceIconLoader
+                allianceIconLoader: allianceIconLoader,
+                onAccessDenied: {
+                    isAccessDenied = true
+                }
             )
         }
         .padding(.vertical, 4)
+    }
+}
+
+// MARK: - 带导航链接的建筑行视图（根据访问状态决定是否可点击）
+
+struct StructureMarketRowViewWithNavigation: View {
+    let structure: MarketStructure
+    @ObservedObject var allianceIconLoader: AllianceIconLoader
+    @State private var isAccessDenied = false
+
+    var body: some View {
+        Group {
+            if isAccessDenied {
+                // 建筑无法访问，禁用跳转
+                StructureMarketRowView(
+                    structure: structure,
+                    allianceIconLoader: allianceIconLoader,
+                    isAccessDenied: $isAccessDenied
+                )
+            } else {
+                // 建筑可访问，允许跳转
+                NavigationLink(destination: StructureMarketDetailView(structure: structure)) {
+                    StructureMarketRowView(
+                        structure: structure,
+                        allianceIconLoader: allianceIconLoader,
+                        isAccessDenied: $isAccessDenied
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -144,10 +194,14 @@ struct StructureOwnerIconView: View {
     let characterId: Int
     @ObservedObject var allianceIconLoader: AllianceIconLoader
 
+    // 回调：当检测到建筑无法访问时通知父视图
+    var onAccessDenied: (() -> Void)? = nil
+
     // 拥有者信息
     @State private var ownerInfo: OwnerInfo? = nil
     @State private var corporationLogo: UIImage? = nil
     @State private var isLoadingOwner = false
+    @State private var isAccessDenied = false // 标记建筑是否无法访问
 
     struct OwnerInfo {
         let corporationId: Int
@@ -156,7 +210,10 @@ struct StructureOwnerIconView: View {
 
     var body: some View {
         Group {
-            if let info = ownerInfo {
+            if isAccessDenied {
+                // 建筑无法访问，显示错误图标
+                errorIconView()
+            } else if let info = ownerInfo {
                 // 已获取拥有者信息
                 if let allianceId = info.allianceId {
                     // 有联盟，显示联盟图标
@@ -218,6 +275,16 @@ struct StructureOwnerIconView: View {
             .cornerRadius(6)
     }
 
+    private func errorIconView() -> some View {
+        Image(systemName: "xmark.circle.fill")
+            .resizable()
+            .scaledToFit()
+            .frame(width: 32, height: 32)
+            .foregroundColor(.red)
+            .background(Color.white)
+            .cornerRadius(6)
+    }
+
     // MARK: - 数据加载
 
     private func loadOwnerInfo() async {
@@ -261,9 +328,14 @@ struct StructureOwnerIconView: View {
             }
         } catch {
             Logger.error("加载建筑拥有者信息失败 - 建筑ID: \(structureId), 错误: \(error)")
+
+            // 任何错误都视为建筑无法访问
             await MainActor.run {
+                isAccessDenied = true
                 isLoadingOwner = false
             }
+            // 通知父视图建筑无法访问
+            onAccessDenied?()
         }
     }
 

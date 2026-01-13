@@ -802,7 +802,9 @@ struct SpecificItemOfferView: View {
                         LPStoreOfferView(
                             offer: offer,
                             itemInfo: itemInfo,
-                            requiredItemInfos: requiredItemInfos
+                            requiredItemInfos: requiredItemInfos,
+                            marketPrices: [:],
+                            isLoadingPrices: false
                         )
                     }
                     .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))

@@ -123,7 +123,7 @@ enum MarketPriceUtil {
     ///   - typeIds: 物品ID数组
     ///   - forceRefresh: 是否强制刷新缓存，默认false（使用3小时缓存）
     /// - Returns: [物品ID: Jita卖价]，无订单的物品不会包含在结果中
-    static func getMarketOrderPrices(typeIds: [Int], forceRefresh: Bool = false) async -> [Int:
+    static func getJitaOrderPrices(typeIds: [Int], forceRefresh: Bool = false) async -> [Int:
         Double]
     {
         // 默认使用Jita市场

@@ -106,48 +106,46 @@ class PIResourceCache {
         // 如果已经加载过，直接返回
         guard !isPreloaded else { return }
 
-        DispatchQueue.global(qos: .userInitiated).async {
-            // 预加载所有P0-P4资源信息
-            let query = """
-                SELECT type_id, name, icon_filename, marketGroupID
-                FROM types
-                WHERE marketGroupID IN (1333, 1334, 1335, 1336, 1337)
-            """
+        // 预加载所有P0-P4资源信息
+        let query = """
+            SELECT type_id, name, icon_filename, marketGroupID
+            FROM types
+            WHERE marketGroupID IN (1333, 1334, 1335, 1336, 1337)
+        """
 
-            if case let .success(rows) = DatabaseManager.shared.executeQuery(query) {
-                for row in rows {
-                    if let typeId = row["type_id"] as? Int,
-                       let name = row["name"] as? String,
-                       let iconFileName = row["icon_filename"] as? String,
-                       let marketGroupId = row["marketGroupID"] as? Int
-                    {
-                        // 缓存资源基本信息
-                        self.resourceInfoCache[typeId] = (
-                            name: name,
-                            iconFileName: iconFileName.isEmpty ? "not_found" : iconFileName,
-                            marketGroupId: marketGroupId
-                        )
+        if case let .success(rows) = DatabaseManager.shared.executeQuery(query) {
+            for row in rows {
+                if let typeId = row["type_id"] as? Int,
+                   let name = row["name"] as? String,
+                   let iconFileName = row["icon_filename"] as? String,
+                   let marketGroupId = row["marketGroupID"] as? Int
+                {
+                    // 缓存资源基本信息
+                    resourceInfoCache[typeId] = (
+                        name: name,
+                        iconFileName: iconFileName.isEmpty ? "not_found" : iconFileName,
+                        marketGroupId: marketGroupId
+                    )
 
-                        // 缓存资源等级
-                        if let level = self.determineResourceLevel(marketGroupId: marketGroupId) {
-                            self.resourceLevelCache[typeId] = level
+                    // 缓存资源等级
+                    if let level = determineResourceLevel(marketGroupId: marketGroupId) {
+                        resourceLevelCache[typeId] = level
 
-                            // 同时更新P0资源缓存
-                            if level == .p0 {
-                                self.p0ResourceCache[typeId] = true
-                            }
+                        // 同时更新P0资源缓存
+                        if level == .p0 {
+                            p0ResourceCache[typeId] = true
                         }
                     }
                 }
             }
-
-            // 预加载配方信息
-            self.preloadSchematicInfo()
-
-            // 标记为已加载
-            self.isPreloaded = true
-            Logger.info("PIResourceCache: 资源信息预加载完成")
         }
+
+        // 预加载配方信息
+        preloadSchematicInfo()
+
+        // 标记为已加载
+        isPreloaded = true
+        Logger.info("PIResourceCache: 资源信息预加载完成")
     }
 
     // 根据marketGroupId确定资源等级

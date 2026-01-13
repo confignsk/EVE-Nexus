@@ -26,7 +26,7 @@ public class InjectorPriceManager {
         )
 
         // 获取大型和小型注入器的价格
-        let prices = await MarketPriceUtil.getMarketOrderPrices(typeIds: [
+        let prices = await MarketPriceUtil.getJitaOrderPrices(typeIds: [
             SkillInjectorCalculator.largeInjectorTypeId,
             SkillInjectorCalculator.smallInjectorTypeId,
         ])

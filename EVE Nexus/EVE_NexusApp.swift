@@ -311,8 +311,17 @@ struct EVE_NexusApp: App {
                 databaseManager.loadDatabase()
                 CharacterDatabaseManager.shared.loadDatabase()
 
-                // 预加载行星资源缓存（在数据库加载完成后）
+                // 步骤1：初始化技能树
+                SkillTreeManager.shared.initialize(databaseManager: databaseManager)
+                Logger.info("技能树初始化完成")
+
+                // 步骤2：初始化物品分类缓存
+                ItemInfoMap.initializeCache(databaseManager: databaseManager)
+                Logger.info("物品分类缓存初始化完成")
+
+                // 步骤3：预加载行星资源缓存
                 PIResourceCache.shared.preloadResourceInfo()
+                Logger.info("行星资源缓存初始化完成")
 
                 // 清理钱包旧数据（在后台线程执行，不阻塞初始化）
                 Task.detached(priority: .background) {

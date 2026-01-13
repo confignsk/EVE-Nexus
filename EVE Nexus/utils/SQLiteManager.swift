@@ -54,7 +54,7 @@ class SQLiteManager {
             let result = sqlite3_open_v2(finalDatabasePath, &db, flags, nil)
 
             if result == SQLITE_OK {
-                Logger.info("数据库连接成功 (只读+完全互斥模式): \(finalDatabasePath)")
+                Logger.info("数据库连接成功: \(finalDatabasePath)")
                 return true
             } else {
                 let errorMessage = String(cString: sqlite3_errmsg(db))

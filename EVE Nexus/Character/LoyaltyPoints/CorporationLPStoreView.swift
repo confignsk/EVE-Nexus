@@ -18,6 +18,9 @@ struct LPStoreOfferView: View {
     let offer: LPStoreOffer
     let itemInfo: LPStoreItemInfo
     let requiredItemInfos: [Int: LPStoreItemInfo]
+    let marketPrices: [Int: Double] // 所需物品的市场价格字典
+    let isLoadingPrices: Bool // 是否正在加载价格
+    @State private var selectedItemID: Int?
 
     var body: some View {
         NavigationLink(
@@ -46,6 +49,7 @@ struct LPStoreOfferView: View {
                         if offer.lpCost > 0 {
                             Text("\(offer.lpCost) LP")
                                 .foregroundColor(.blue)
+                                .fontWeight(.semibold)
                         }
 
                         if offer.lpCost > 0 && offer.iskCost > 0 {
@@ -55,6 +59,7 @@ struct LPStoreOfferView: View {
                         if offer.iskCost > 0 {
                             Text("\(FormatUtil.formatISK(Double(offer.iskCost)))")
                                 .foregroundColor(.green)
+                                .fontWeight(.semibold)
                         }
                     }
                     .font(.subheadline)
@@ -62,9 +67,25 @@ struct LPStoreOfferView: View {
                     // 所需物品（如果有）
                     if !offer.requiredItems.isEmpty {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(NSLocalizedString("Main_LP_Required_Items", comment: ""))
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                            HStack(spacing: 4) {
+                                Text(NSLocalizedString("Main_LP_Required_Items", comment: ""))
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+
+                                if isLoadingPrices {
+                                    ProgressView()
+                                        .scaleEffect(0.7)
+                                        .frame(width: 12, height: 12)
+                                } else {
+                                    let totalPrice = calculateTotalRequiredItemsPrice()
+                                    if totalPrice > 0 {
+                                        Text("(\(FormatUtil.formatISK(totalPrice)))")
+                                            .font(.caption)
+                                            .fontWeight(.semibold)
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+                            }
 
                             let sortedItems = offer.requiredItems.sorted { $0.typeId < $1.typeId }
                             ForEach(sortedItems, id: \.typeId) { item in
@@ -106,8 +127,9 @@ struct LPStoreOfferView: View {
             }
 
             if !offer.requiredItems.isEmpty {
+                let sortedItems = offer.requiredItems.sorted { $0.typeId < $1.typeId }
+
                 Button {
-                    let sortedItems = offer.requiredItems.sorted { $0.typeId < $1.typeId }
                     let materialsText = sortedItems.compactMap { item -> String? in
                         guard let info = requiredItemInfos[item.typeId] else { return nil }
                         return "\(info.name)\t\(item.quantity)"
@@ -119,8 +141,42 @@ struct LPStoreOfferView: View {
                         systemImage: "list.bullet.rectangle"
                     )
                 }
+
+                // 分割线
+                Divider()
+
+                // 所需物品的"查看 xxx"按钮
+                ForEach(sortedItems, id: \.typeId) { item in
+                    if let info = requiredItemInfos[item.typeId] {
+                        Button {
+                            selectedItemID = item.typeId
+                        } label: {
+                            Label(
+                                "\(NSLocalizedString("View", comment: "")) \(info.name)",
+                                systemImage: "info.circle"
+                            )
+                        }
+                    }
+                }
             }
         }
+        .navigationDestination(item: $selectedItemID) { itemID in
+            ItemInfoMap.getItemInfoView(
+                itemID: itemID,
+                databaseManager: DatabaseManager.shared
+            )
+        }
+    }
+
+    // 计算所需物品的总价格
+    private func calculateTotalRequiredItemsPrice() -> Double {
+        var totalPrice: Double = 0
+        for requiredItem in offer.requiredItems {
+            if let price = marketPrices[requiredItem.typeId], price > 0 {
+                totalPrice += price * Double(requiredItem.quantity)
+            }
+        }
+        return totalPrice
     }
 }
 
@@ -129,6 +185,8 @@ struct LPStoreGroupView: View {
     let offers: [LPStoreOffer]
     let itemInfos: [Int: LPStoreItemInfo]
     @State private var searchText = ""
+    @State private var marketPrices: [Int: Double] = [:]
+    @State private var isLoadingPrices = false
 
     private var filteredOffers: [LPStoreOffer] {
         if searchText.isEmpty {
@@ -161,7 +219,9 @@ struct LPStoreGroupView: View {
                             LPStoreOfferView(
                                 offer: offer,
                                 itemInfo: itemInfo,
-                                requiredItemInfos: itemInfos
+                                requiredItemInfos: itemInfos,
+                                marketPrices: marketPrices,
+                                isLoadingPrices: isLoadingPrices
                             )
                         }
                     }
@@ -175,6 +235,34 @@ struct LPStoreGroupView: View {
             placement: .navigationBarDrawer(displayMode: .always),
             prompt: NSLocalizedString("Main_Search_Placeholder", comment: "")
         )
+        .task {
+            await loadMarketPrices()
+        }
+    }
+
+    // 收集所有所需物品并一次性获取价格
+    private func loadMarketPrices() async {
+        // 收集所有所需物品的 typeId（去重）
+        var typeIds = Set<Int>()
+        for offer in offers {
+            for requiredItem in offer.requiredItems {
+                typeIds.insert(requiredItem.typeId)
+            }
+        }
+
+        guard !typeIds.isEmpty else { return }
+
+        await MainActor.run {
+            isLoadingPrices = true
+        }
+
+        // 一次性获取所有价格
+        let prices = await MarketPriceUtil.getJitaOrderPrices(typeIds: Array(typeIds))
+
+        await MainActor.run {
+            self.marketPrices = prices
+            self.isLoadingPrices = false
+        }
     }
 }
 
@@ -194,6 +282,8 @@ struct CorporationLPStoreView: View {
     @State private var error: Error?
     @State private var hasLoadedData = false
     @State private var searchText = ""
+    @State private var marketPrices: [Int: Double] = [:]
+    @State private var isLoadingPrices = false
 
     private var filteredOffers: [LPStoreOffer] {
         if searchText.isEmpty {
@@ -269,7 +359,9 @@ struct CorporationLPStoreView: View {
                                     LPStoreOfferView(
                                         offer: offer,
                                         itemInfo: itemInfo,
-                                        requiredItemInfos: itemInfos
+                                        requiredItemInfos: itemInfos,
+                                        marketPrices: marketPrices,
+                                        isLoadingPrices: isLoadingPrices
                                     )
                                 }
                             }
@@ -319,6 +411,7 @@ struct CorporationLPStoreView: View {
         .task {
             if !hasLoadedData {
                 await loadOffers()
+                await loadMarketPrices()
             }
         }
     }
@@ -446,6 +539,31 @@ struct CorporationLPStoreView: View {
         } catch {
             self.error = error
             isLoading = false
+        }
+    }
+
+    // 收集所有所需物品并一次性获取价格
+    private func loadMarketPrices() async {
+        // 收集所有所需物品的 typeId（去重）
+        var typeIds = Set<Int>()
+        for offer in offers {
+            for requiredItem in offer.requiredItems {
+                typeIds.insert(requiredItem.typeId)
+            }
+        }
+
+        guard !typeIds.isEmpty else { return }
+
+        await MainActor.run {
+            isLoadingPrices = true
+        }
+
+        // 一次性获取所有价格
+        let prices = await MarketPriceUtil.getJitaOrderPrices(typeIds: Array(typeIds))
+
+        await MainActor.run {
+            self.marketPrices = prices
+            self.isLoadingPrices = false
         }
     }
 }

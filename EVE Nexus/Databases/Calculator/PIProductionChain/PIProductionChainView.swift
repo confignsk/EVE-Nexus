@@ -356,10 +356,6 @@ struct PIProductionChainView: View {
             }
         }
         .navigationTitle(NSLocalizedString("PI_Chain_Title", comment: "生产链分析"))
-        .onAppear {
-            // 预加载资源缓存
-            PIResourceCache.shared.preloadResourceInfo()
-        }
     }
 }
 
