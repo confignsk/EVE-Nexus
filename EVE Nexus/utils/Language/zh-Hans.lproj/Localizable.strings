@@ -877,13 +877,26 @@
 "Structure_Market_Top_Sell_Categories" = "卖单最多的物品类别";
 "Structure_Market_No_Items" = "暂无物品";
 "Structure_Market_Top_Sell_Items" = "卖单最多的物品 Top 10";
-"Structure_Market_Top_Premium_Items" = "溢价最严重的物品 Top 10";
+"Structure_Market_Top_Premium_Items" = "所有物品 (溢价比例)";
+"Structure_Market_Top_Premium_Items_Buy" = "所有物品 (买单溢价比例)";
+"Structure_Market_Top_Premium_Items_Sell" = "所有物品 (卖单溢价比例)";
+"Structure_Market_Search_Placeholder" = "搜索物品名称（至少2个字符）";
+"Structure_Market_Search_Results" = "搜索结果";
+"Structure_Market_Search_Results_Buy" = "搜索结果 (买单溢价)";
+"Structure_Market_Search_Results_Sell" = "搜索结果 (卖单溢价)";
+"Structure_Market_Top_Premium" = "最高溢价";
 "Structure_Market_Premium" = "溢价";
 "Structure_Market_Orders_Unit" = "个订单";
 "Structure_Market_Orders_Count" = "订单数";
 "Structure_Market_Items_Count" = "物品数";
 "Structure_Market_Top_Sell_Orders" = "最多卖单";
 "Structure_Market_Top_Buy_Orders" = "最多买单";
+"Structure_Market_Fuzzwork_Unavailable" = "Fuzzwork不可达，请重试";
+"Loading_Premium_Items" = "正在加载溢价物品...";
+"Structure_Market_No_Premium_Items" = "暂无溢价物品";
+"Structure_Market_Jita_Prices" = "伏尔戈市场价格";
+"Loading_Jita_Prices" = "正在加载市场价格...";
+"Structure_Market_View_More" = "查看更多";
 "Structure_Market_Category_Distribution" = "目录分布";
 "Structure_Market_Other" = "其他";
 "Structure_Market_All_Categories" = "所有目录 (订单数)";
@@ -2717,11 +2730,12 @@
 "Structure_Orders_Reload_Cancel" = "取消";
 "Structure_Orders_Reload_Confirm" = "确认";
 "Structure_Orders_Just_Updated" = "刚刚更新";
-"Structure_Orders_Minutes_Ago" = "%d分钟前更新";
-"Structure_Orders_Hours_Ago" = "%d小时前更新";
-"Structure_Orders_Days_Ago" = "%d天前更新";
+"Structure_Orders_Minutes_Ago" = "%d 分钟前更新";
+"Structure_Orders_Hours_Ago" = "%d 小时前更新";
+"Structure_Orders_Days_Ago" = "%d 天前更新";
 "Structure_Orders_No_Cache" = "无缓存";
-"Structure_Orders_Statistics" = "%d个订单; %d种物资";
+"Structure_Orders_Count" = "%d 个订单";
+"Structure_Orders_Item_Types" = "%d 种物资";
 
 // Corporation Industry
 "Loading_Corp_Industry_Jobs" = "正在加载军团工业项目...";

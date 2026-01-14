@@ -14,13 +14,35 @@ struct MarketPriceData {
 ///
 /// 价格数据来源：
 /// - EIV价格：来自 https://esi.evetech.net/markets/prices/（CCP官方统计数据）
-/// - 市场订单价格：来自实时市场订单数据
+/// - 市场订单价格：来自实时市场订单数据或 Fuzzwork API
 ///
 /// 使用场景：
 /// - 精炼税费计算：使用 adjustedPrice
 /// - 合同估价：使用实时订单价格
 /// - 技能注入器价格：使用Jita卖价
 enum MarketPriceUtil {
+    // MARK: - Fuzzwork 可用性缓存
+
+    /// Fuzzwork 可用性缓存结构
+    private struct FuzzworkAvailabilityCache {
+        let isAvailable: Bool
+        let timestamp: Date
+
+        /// 检查缓存是否有效（不可达状态保持 4 小时）
+        var isValid: Bool {
+            if isAvailable {
+                // 如果可达，不缓存，每次都检查
+                return false
+            } else {
+                // 如果不可达，4 小时内有效
+                return Date().timeIntervalSince(timestamp) < 4 * 60 * 60
+            }
+        }
+    }
+
+    /// Fuzzwork 可用性缓存（线程安全）
+    private static var fuzzworkAvailabilityCache: FuzzworkAvailabilityCache?
+    private static let cacheQueue = DispatchQueue(label: "com.eve.nexus.fuzzwork.cache")
     /// 获取多个物品的EIV价格数据（CCP官方估价）
     ///
     /// 使用场景：
@@ -87,46 +109,110 @@ enum MarketPriceUtil {
         }
     }
 
-    /// 获取多个物品的Jita市场卖出价格（实时订单数据）- 便捷方法
+    /// 获取多个物品的Jita市场价格（实时订单数据）- 便捷方法
+    ///
+    /// 优先使用 Fuzzwork API（如果可用），否则使用 ESI 市场订单数据
     ///
     /// 使用场景：
     /// - 技能注入器价格查询：获取大型/小型注入器的Jita卖价
     /// - 装配价格计算：计算整套装配在Jita的卖价
     /// - 物品属性对比：显示多个物品的Jita市场价格
+    /// - 买单价格查询：获取Jita买单的最高价格
     ///
     /// 示例：
     /// ```swift
-    /// // 场景1: 获取技能注入器价格
-    /// let prices = await MarketPriceUtil.getMarketOrderPrices(
-    ///     typeIds: [40520, 45635]  // 大型、小型注入器
+    /// // 场景1: 获取技能注入器卖价
+    /// let sellPrices = await MarketPriceUtil.getJitaOrderPrices(
+    ///     typeIds: [40520, 45635],  // 大型、小型注入器
+    ///     orderType: .sell  // 默认值，可省略
     /// )
-    /// let largePrice = prices[40520]  // 大型注入器Jita卖价
-    /// let smallPrice = prices[45635]  // 小型注入器Jita卖价
+    /// let largePrice = sellPrices[40520]  // 大型注入器Jita卖价
     ///
-    /// // 场景2: 计算装配价格
+    /// // 场景2: 获取买单价格
+    /// let buyPrices = await MarketPriceUtil.getJitaOrderPrices(
+    ///     typeIds: [40520, 45635],
+    ///     orderType: .buy
+    /// )
+    /// let largeBuyPrice = buyPrices[40520]  // 大型注入器Jita买价
+    ///
+    /// // 场景3: 计算装配价格（卖价）
     /// let fitItemIds = [12076, 2048, 519]  // 装配中的模块ID
-    /// let itemPrices = await MarketPriceUtil.getMarketOrderPrices(typeIds: fitItemIds)
+    /// let itemPrices = await MarketPriceUtil.getJitaOrderPrices(typeIds: fitItemIds)
     /// let totalValue = itemPrices.values.reduce(0, +)
     /// ```
     ///
     /// 数据特点：
-    /// - 固定市场：Jita星域（10000002）的Jita星系（30000142）
-    /// - 订单类型：只返回卖单的最低价格
-    /// - 缓存时间：3小时（通过MarketOrdersAPI）
-    /// - 实时性强：反映当前市场实际价格
+    /// - 固定市场：Jita 4-4 空间站（60003760）
+    /// - 订单类型：根据 orderType 参数返回卖单最低价（.sell）或买单最高价（.buy）
+    /// - 数据源：优先使用 Fuzzwork API，不可用时使用 ESI 市场订单
+    /// - 缓存策略：Fuzzwork 不可达状态缓存 4 小时，可达状态每次检查
     ///
     /// 注意：
     /// - 如果需要其他星域/星系，请使用 MarketOrdersUtil.loadOrders() + calculatePrice()
-    /// - 如果需要买单价格，请使用 MarketOrdersUtil.calculatePrice()
     ///
     /// - Parameters:
     ///   - typeIds: 物品ID数组
+    ///   - orderType: 订单类型，.sell 返回卖单最低价，.buy 返回买单最高价，默认 .sell
     ///   - forceRefresh: 是否强制刷新缓存，默认false（使用3小时缓存）
-    /// - Returns: [物品ID: Jita卖价]，无订单的物品不会包含在结果中
-    static func getJitaOrderPrices(typeIds: [Int], forceRefresh: Bool = false) async -> [Int:
-        Double]
-    {
-        // 默认使用Jita市场
+    /// - Returns: [物品ID: Jita价格]，无订单的物品不会包含在结果中
+    static func getJitaOrderPrices(
+        typeIds: [Int],
+        orderType: OrderType = .sell,
+        forceRefresh: Bool = false
+    ) async -> [Int: Double] {
+        // 默认使用Jita空间站（60003760 = Jita 4-4 空间站）
+        let jitaStationID = 60_003_760 // Jita 4-4 空间站 ID
+
+        // 检查 Fuzzwork 可用性
+        let shouldUseFuzzwork = await checkFuzzworkAvailability()
+
+        if shouldUseFuzzwork {
+            // 使用 Fuzzwork API
+            do {
+                let aggregates = try await FuzzworkMarketAPI.shared.fetchMarketAggregates(
+                    regionId: jitaStationID,
+                    typeIds: typeIds
+                )
+
+                // 根据 orderType 选择对应的价格
+                let result = aggregates.compactMapValues { (buy: Double, sell: Double) -> Double? in
+                    let price = orderType == .buy ? buy : sell
+                    return price > 0 ? price : nil
+                }
+
+                Logger.debug("使用 Fuzzwork API 获取 \(result.count)/\(typeIds.count) 个物品的\(orderType == .buy ? "买" : "卖")价")
+                return result
+            } catch {
+                Logger.warning("Fuzzwork API 请求失败，回退到 ESI: \(error.localizedDescription)")
+                // 回退到 ESI
+                return await getJitaOrderPricesFromESI(
+                    typeIds: typeIds,
+                    orderType: orderType,
+                    forceRefresh: forceRefresh
+                )
+            }
+        } else {
+            // 使用 ESI
+            return await getJitaOrderPricesFromESI(
+                typeIds: typeIds,
+                orderType: orderType,
+                forceRefresh: forceRefresh
+            )
+        }
+    }
+
+    /// 从 ESI 获取 Jita 市场订单价格（内部方法）
+    ///
+    /// - Parameters:
+    ///   - typeIds: 物品ID数组
+    ///   - orderType: 订单类型，.sell 返回卖单最低价，.buy 返回买单最高价
+    ///   - forceRefresh: 是否强制刷新缓存
+    /// - Returns: [物品ID: Jita价格]，无订单的物品不会包含在结果中
+    private static func getJitaOrderPricesFromESI(
+        typeIds: [Int],
+        orderType: OrderType,
+        forceRefresh: Bool
+    ) async -> [Int: Double] {
         let regionID = 10_000_002 // The Forge (Jita所在星域)
         let systemID = 30_000_142 // Jita星系ID
         let stationID = 60_003_760 // Jita 4-4 空间站 ID
@@ -142,12 +228,63 @@ enum MarketPriceUtil {
         return marketOrders.compactMapValues { orders in
             let price = MarketOrdersUtil.calculatePrice(
                 from: orders,
-                orderType: .sell,
+                orderType: orderType,
                 quantity: nil,
                 systemId: systemID,
                 stationID: stationID
             ).price
             return (price ?? 0) > 0 ? price : nil
         }
+    }
+
+    /// 检查 Fuzzwork 可用性（带缓存）
+    ///
+    /// - Returns: 如果应该使用 Fuzzwork API 则返回 true，否则返回 false
+    private static func checkFuzzworkAvailability() async -> Bool {
+        // 检查缓存（同步操作，不需要 await）
+        let shouldCheck = cacheQueue.sync { () -> Bool in
+            if let cache = fuzzworkAvailabilityCache, cache.isValid {
+                // 缓存有效且不可达，直接返回 false（不使用 Fuzzwork）
+                if !cache.isAvailable {
+                    let remainingMinutes = Int((4 * 60 * 60 - Date().timeIntervalSince(cache.timestamp)) / 60)
+                    Logger.debug("Fuzzwork API 不可达（缓存有效，剩余时间: \(remainingMinutes) 分钟），使用 ESI")
+                    return false // 不需要检查，直接返回 false
+                }
+                // 可达状态不缓存，所以这里不会执行到
+            }
+            // 缓存无效或不存在，需要检查
+            return true // 需要检查
+        }
+
+        if !shouldCheck {
+            return false // 缓存有效且不可达，直接返回 false
+        }
+
+        // 执行可用性检查
+        return await performFuzzworkAvailabilityCheck()
+    }
+
+    /// 执行 Fuzzwork 可用性检查并更新缓存
+    private static func performFuzzworkAvailabilityCheck() async -> Bool {
+        Logger.debug("检查 Fuzzwork API 可用性...")
+        let isAvailable = await FuzzworkMarketAPI.shared.FuzzAvailable()
+
+        // 更新缓存（DispatchQueue.async 不是 Swift async/await，不需要 await）
+        cacheQueue.async {
+            if isAvailable {
+                Logger.success("Fuzzwork API 可用，将使用 Fuzzwork API 获取价格")
+                // 可达状态不缓存，每次都检查
+                fuzzworkAvailabilityCache = nil
+            } else {
+                Logger.warning("Fuzzwork API 不可达，将使用 ESI，状态缓存 4 小时")
+                // 不可达状态缓存 4 小时
+                fuzzworkAvailabilityCache = FuzzworkAvailabilityCache(
+                    isAvailable: false,
+                    timestamp: Date()
+                )
+            }
+        }
+
+        return isAvailable
     }
 }

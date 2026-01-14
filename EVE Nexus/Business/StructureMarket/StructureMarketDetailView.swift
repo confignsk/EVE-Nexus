@@ -19,9 +19,18 @@ struct StructureMarketDetailView: View {
     @State private var systemAllianceMap: [Int: Int] = [:] // 星系ID -> 联盟ID
     @State private var topSellItems: [ItemOrderInfo] = [] // 最多卖单的物品（Top 3）
     @State private var topBuyItems: [ItemOrderInfo] = [] // 最多买单的物品（Top 3）
+    @State private var topPremiumItems: [PremiumItemInfo] = [] // 最高溢价的物品（Top 3）
+    @State private var allPremiumItems: [PremiumItemInfo] = [] // 所有溢价物品（用于传递给子视图）
+    @State private var premiumSellOrders: [StructureMarketOrder] = [] // 溢价物品的卖单（用于传递给子视图）
+    @State private var isLoadingPremium = false // 是否正在加载溢价数据
+    @State private var isFuzzworkUnavailable = false // Fuzzwork API 是否不可用
+    @State private var hasInitialized = false // 是否已初始化，避免从子页面返回时重复加载
 
     // 刷新冷却时间：20分钟
     private let refreshCooldownInterval: TimeInterval = 20 * 60 // 20分钟
+
+    // 允许计算溢价的物品类别
+    private let allowedCategories: Set<Int> = [2, 4, 6, 7, 8, 9, 17, 18, 20, 22, 24, 25, 32, 34, 35, 41, 42, 43, 46, 49, 65, 66, 87]
 
     var body: some View {
         List {
@@ -187,6 +196,117 @@ struct StructureMarketDetailView: View {
                     }.listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
                 }
             }
+
+            // Section 4: 最高溢价（始终显示）
+            Section(header: Text(NSLocalizedString("Structure_Market_Top_Premium", comment: "最高溢价"))) {
+                if isFuzzworkUnavailable {
+                    // Fuzzwork API 不可用
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle")
+                            .foregroundColor(.orange)
+                        Text(NSLocalizedString("Structure_Market_Fuzzwork_Unavailable", comment: "Fuzzwork不可达，请重试"))
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Button(NSLocalizedString("Main_Setting_Reset", comment: "重试")) {
+                            Task {
+                                await loadPremiumItems()
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                    .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+                } else if isLoadingPremium {
+                    // 正在加载
+                    HStack {
+                        Spacer()
+                        ProgressView()
+                            .scaleEffect(0.7)
+                        Text(NSLocalizedString("Loading_Premium_Items", comment: "正在加载溢价物品..."))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                    }
+                    .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+                } else if topPremiumItems.isEmpty {
+                    // 没有溢价物品
+                    HStack {
+                        Spacer()
+                        Text(NSLocalizedString("Structure_Market_No_Premium_Items", comment: "暂无溢价物品"))
+                            .foregroundColor(.secondary)
+                        Spacer()
+                    }
+                    .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+                } else {
+                    // 显示溢价物品列表
+                    ForEach(topPremiumItems) { item in
+                        NavigationLink(destination: StructureItemOrdersView(
+                            structureId: Int64(structure.structureId),
+                            characterId: structure.characterId,
+                            itemID: item.typeId,
+                            itemName: item.name,
+                            orderType: .sell,
+                            databaseManager: DatabaseManager.shared
+                        )) {
+                            HStack(spacing: 12) {
+                                // 物品图标
+                                IconManager.shared.loadImage(for: item.iconFileName)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 32, height: 32)
+                                    .cornerRadius(6)
+
+                                // 物品名称
+                                Text(item.name)
+                                    .font(.body)
+                                    .foregroundColor(.primary)
+                                    .contextMenu {
+                                        Button {
+                                            UIPasteboard.general.string = item.name
+                                        } label: {
+                                            Label(
+                                                NSLocalizedString("Misc_Copy_Item_Name", comment: ""),
+                                                systemImage: "doc.on.doc"
+                                            )
+                                        }
+                                    }
+
+                                Spacer()
+
+                                // 溢价百分比
+                                VStack(alignment: .trailing, spacing: 2) {
+                                    Text("\(String(format: "%.1f", item.sellPremiumPercentage))%")
+                                        .font(.system(.body, design: .monospaced))
+                                        .foregroundColor(item.sellPremiumPercentage > 0 ? .red : .green)
+                                        .fontWeight(.semibold)
+                                    Text("\(FormatUtil.formatISK(item.structureSellPrice))")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                        }
+                    }
+                    .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+
+                    // 查看更多按钮（只有当去重后的 typeid 数量超过 10 个时才显示）
+                    let uniqueTypeIdsCount = Set(premiumSellOrders.map { $0.typeId }).count
+                    if !topPremiumItems.isEmpty && uniqueTypeIdsCount > 10 {
+                        NavigationLink(destination: PremiumItemsView(
+                            structureId: Int64(structure.structureId),
+                            characterId: structure.characterId,
+                            allPremiumItems: allPremiumItems,
+                            sellOrders: premiumSellOrders
+                        )) {
+                            HStack {
+                                Spacer()
+                                Text(NSLocalizedString("Structure_Market_View_More", comment: "查看更多"))
+                                    .foregroundColor(.blue)
+                                Spacer()
+                            }
+                        }
+                        .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+                    }
+                }
+            }
         }
         .listStyle(.insetGrouped)
         .navigationTitle(NSLocalizedString("Structure_Market_Orders_Overview", comment: "建筑订单总览"))
@@ -196,11 +316,28 @@ struct StructureMarketDetailView: View {
             await handlePullToRefresh()
         }
         .onAppear {
+            // 更新缓存状态（每次都需要更新，用于显示刷新状态）
             updateCacheStatus()
-            // 加载本地订单统计信息
+
+            // 只在首次初始化时加载数据，从子页面返回时不会重新加载
+            guard !hasInitialized else {
+                // 已初始化，只启动定时器（如果还没有启动）
+                if updateTimer == nil {
+                    updateTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { _ in
+                        updateCacheStatus()
+                    }
+                }
+                return
+            }
+
+            // 首次加载数据
             Task {
                 await loadLocalOrdersStatistics()
                 await loadTopOrderItems()
+            }
+            // 加载溢价数据
+            Task {
+                await loadPremiumItems()
             }
             // 加载主权数据
             Task {
@@ -210,6 +347,8 @@ struct StructureMarketDetailView: View {
             updateTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { _ in
                 updateCacheStatus()
             }
+
+            hasInitialized = true
         }
         .onDisappear {
             updateTimer?.invalidate()
@@ -594,5 +733,318 @@ struct StructureMarketDetailView: View {
         }
 
         return (topSellItems, topBuyItems)
+    }
+
+    // 加载最高溢价的物品
+    private func loadPremiumItems() async {
+        await MainActor.run {
+            isLoadingPremium = true
+            isFuzzworkUnavailable = false
+            topPremiumItems = []
+        }
+
+        // 先检查 Fuzzwork API 是否可用
+        let isFuzzworkAvailable = await FuzzworkMarketAPI.shared.FuzzAvailable()
+        guard isFuzzworkAvailable else {
+            Logger.debug("Fuzzwork API 不可用，跳过溢价计算")
+            await MainActor.run {
+                isFuzzworkUnavailable = true
+                isLoadingPremium = false
+                topPremiumItems = []
+            }
+            return
+        }
+
+        do {
+            // 1. 获取建筑市场的所有订单
+            let hasLocal = await StructureMarketManager.shared.hasLocalOrders(structureId: Int64(structure.structureId))
+            guard hasLocal else {
+                await MainActor.run {
+                    topPremiumItems = []
+                    isLoadingPremium = false
+                    isFuzzworkUnavailable = false
+                }
+                return
+            }
+
+            let orders = try await StructureMarketManager.shared.getStructureOrders(
+                structureId: Int64(structure.structureId),
+                characterId: structure.characterId,
+                forceRefresh: false
+            )
+
+            // 2. 分离买单和卖单
+            let sellOrders = orders.filter { !$0.isBuyOrder }
+            let buyOrders = orders.filter { $0.isBuyOrder }
+
+            guard !sellOrders.isEmpty else {
+                await MainActor.run {
+                    topPremiumItems = []
+                    isLoadingPremium = false
+                    isFuzzworkUnavailable = false
+                }
+                return
+            }
+
+            // 3. 收集所有卖单的 typeId，并获取每个物品的最低价格（建筑卖价）
+            var structureSellPrices: [Int: Double] = [:] // typeId -> 最低卖价
+            var typeIds = Set<Int>()
+
+            for order in sellOrders {
+                let currentPrice = structureSellPrices[order.typeId] ?? Double.infinity
+                if order.price < currentPrice {
+                    structureSellPrices[order.typeId] = order.price
+                }
+                typeIds.insert(order.typeId)
+            }
+
+            // 3.5. 收集所有买单的 typeId，并获取每个物品的最高价格（建筑买价）
+            var structureBuyPrices: [Int: Double] = [:] // typeId -> 最高买价
+
+            for order in buyOrders {
+                let currentPrice = structureBuyPrices[order.typeId] ?? 0.0
+                if order.price > currentPrice {
+                    structureBuyPrices[order.typeId] = order.price
+                }
+                typeIds.insert(order.typeId)
+            }
+
+            // 4. 查询这些物品的 category，只保留允许的类别
+            let typeIdsArray = Array(typeIds)
+            guard !typeIdsArray.isEmpty else {
+                await MainActor.run {
+                    topPremiumItems = []
+                    isLoadingPremium = false
+                    isFuzzworkUnavailable = false
+                }
+                return
+            }
+
+            let placeholders = String(repeating: "?,", count: typeIdsArray.count).dropLast()
+            let categoryQuery = """
+                SELECT type_id, categoryID
+                FROM types
+                WHERE type_id IN (\(placeholders))
+            """
+
+            var allowedTypeIds = Set<Int>()
+            if case let .success(rows) = DatabaseManager.shared.executeQuery(categoryQuery, parameters: typeIdsArray) {
+                for row in rows {
+                    guard let typeId = row["type_id"] as? Int,
+                          let categoryId = row["categoryID"] as? Int,
+                          allowedCategories.contains(categoryId)
+                    else {
+                        continue
+                    }
+                    allowedTypeIds.insert(typeId)
+                }
+            }
+
+            guard !allowedTypeIds.isEmpty else {
+                await MainActor.run {
+                    topPremiumItems = []
+                    isLoadingPremium = false
+                    isFuzzworkUnavailable = false
+                }
+                return
+            }
+
+            // 5. 使用 Fuzzwork API 获取 Jita 空间站价格
+            let jitaPrices = try await FuzzworkMarketAPI.shared.fetchMarketAggregates(
+                regionId: 60_003_760, // Jita 4-4 空间站 ID
+                typeIds: Array(allowedTypeIds)
+            )
+
+            // 6. 计算价格比例（建筑价格 / Jita 价格）
+            var premiumItems: [PremiumItemInfo] = []
+
+            for typeId in allowedTypeIds {
+                guard let structureSellPrice = structureSellPrices[typeId],
+                      let jitaData = jitaPrices[typeId],
+                      jitaData.sell > 0 // Jita 有卖价
+                else {
+                    continue
+                }
+
+                let jitaSellPrice = jitaData.sell
+                // 计算卖价价格比例
+                let sellPriceRatio = structureSellPrice / jitaSellPrice
+                // 计算卖价溢价百分比（用于显示）
+                let sellPremiumPercentage = (sellPriceRatio - 1.0) * 100
+
+                // 计算买价溢价（如果存在）
+                var structureBuyPrice: Double? = structureBuyPrices[typeId]
+                var jitaBuyPrice: Double? = jitaData.buy > 0 ? jitaData.buy : nil
+                var buyPremiumPercentage: Double? = nil
+
+                if let buyPrice = structureBuyPrice, let jitaBuy = jitaBuyPrice, jitaBuy > 0 {
+                    // 计算买价价格比例
+                    let buyPriceRatio = buyPrice / jitaBuy
+                    // 计算买价溢价百分比
+                    buyPremiumPercentage = (buyPriceRatio - 1.0) * 100
+                } else {
+                    structureBuyPrice = nil
+                    jitaBuyPrice = nil
+                }
+
+                premiumItems.append(
+                    PremiumItemInfo(
+                        typeId: typeId,
+                        structureSellPrice: structureSellPrice,
+                        jitaSellPrice: jitaSellPrice,
+                        sellPremiumPercentage: sellPremiumPercentage,
+                        structureBuyPrice: structureBuyPrice,
+                        jitaBuyPrice: jitaBuyPrice,
+                        buyPremiumPercentage: buyPremiumPercentage
+                    )
+                )
+            }
+
+            // 7. 保存所有溢价物品（用于传递给子视图）
+            // 按价格比例与1的差值绝对值降序排序（偏离Jita价格越远的排在前面）
+            let allPremiumItemsSorted = premiumItems
+                .sorted { abs($0.sellPremiumPercentage) > abs($1.sellPremiumPercentage) }
+
+            // 8. 按溢价百分比降序排序，取 Top 10
+            let topPremium = allPremiumItemsSorted.prefix(10)
+
+            // 9. 查询 Top 10 物品的详细信息
+            let topTypeIds = Array(topPremium.map { $0.typeId })
+            guard !topTypeIds.isEmpty else {
+                await MainActor.run {
+                    topPremiumItems = []
+                    isLoadingPremium = false
+                    isFuzzworkUnavailable = false
+                }
+                return
+            }
+
+            let itemPlaceholders = String(repeating: "?,", count: topTypeIds.count).dropLast()
+            let itemQuery = """
+                SELECT type_id, name, icon_filename
+                FROM types
+                WHERE type_id IN (\(itemPlaceholders))
+            """
+
+            var itemInfoMap: [Int: (name: String, iconFileName: String)] = [:]
+
+            if case let .success(rows) = DatabaseManager.shared.executeQuery(itemQuery, parameters: topTypeIds) {
+                for row in rows {
+                    guard let typeId = row["type_id"] as? Int,
+                          let name = row["name"] as? String,
+                          let iconFileName = row["icon_filename"] as? String
+                    else {
+                        continue
+                    }
+                    itemInfoMap[typeId] = (
+                        name: name,
+                        iconFileName: iconFileName.isEmpty ? DatabaseConfig.defaultItemIcon : iconFileName
+                    )
+                }
+            }
+
+            // 10. 构建 Top 10 最终结果
+            let finalItems = topPremium.compactMap { premiumItem -> PremiumItemInfo? in
+                guard let itemInfo = itemInfoMap[premiumItem.typeId] else {
+                    return nil
+                }
+                var item = premiumItem
+                item.name = itemInfo.name
+                item.iconFileName = itemInfo.iconFileName
+                return item
+            }
+
+            // 11. 查询所有溢价物品的详细信息（用于传递给子视图）
+            let allPremiumTypeIds = Array(allPremiumItemsSorted.map { $0.typeId })
+            let allItemPlaceholders = String(repeating: "?,", count: allPremiumTypeIds.count).dropLast()
+            let allItemQuery = """
+                SELECT type_id, name, icon_filename
+                FROM types
+                WHERE type_id IN (\(allItemPlaceholders))
+            """
+
+            var allItemInfoMap: [Int: (name: String, iconFileName: String)] = [:]
+            if case let .success(allRows) = DatabaseManager.shared.executeQuery(allItemQuery, parameters: allPremiumTypeIds) {
+                for row in allRows {
+                    guard let typeId = row["type_id"] as? Int,
+                          let name = row["name"] as? String,
+                          let iconFileName = row["icon_filename"] as? String
+                    else {
+                        continue
+                    }
+                    allItemInfoMap[typeId] = (
+                        name: name,
+                        iconFileName: iconFileName.isEmpty ? DatabaseConfig.defaultItemIcon : iconFileName
+                    )
+                }
+            }
+
+            // 12. 构建所有溢价物品的最终结果
+            let allFinalItems = allPremiumItemsSorted.compactMap { premiumItem -> PremiumItemInfo? in
+                guard let itemInfo = allItemInfoMap[premiumItem.typeId] else {
+                    return nil
+                }
+                var item = premiumItem
+                item.name = itemInfo.name
+                item.iconFileName = itemInfo.iconFileName
+                return item
+            }
+
+            await MainActor.run {
+                topPremiumItems = finalItems
+                allPremiumItems = allFinalItems
+                premiumSellOrders = sellOrders
+                isLoadingPremium = false
+                isFuzzworkUnavailable = false
+            }
+
+            Logger.info("成功计算 \(finalItems.count) 个最高溢价物品")
+        } catch {
+            Logger.error("加载溢价物品失败: \(error)")
+            await MainActor.run {
+                topPremiumItems = []
+                isLoadingPremium = false
+                isFuzzworkUnavailable = false
+            }
+        }
+    }
+}
+
+// MARK: - 溢价物品信息模型
+
+struct PremiumItemInfo: Identifiable {
+    let id: Int
+    let typeId: Int
+    var name: String = ""
+    var iconFileName: String = ""
+    let structureSellPrice: Double // 建筑市场卖价（最低价）
+    let jitaSellPrice: Double // Jita 卖价
+    let sellPremiumPercentage: Double // 卖价溢价百分比
+    let structureBuyPrice: Double? // 建筑市场买价（最高价，可选）
+    let jitaBuyPrice: Double? // Jita 买价（可选）
+    let buyPremiumPercentage: Double? // 买价溢价百分比（可选）
+
+    // 为了向后兼容，保留旧的属性名（映射到sell）
+    var structurePrice: Double { structureSellPrice }
+    var jitaPrice: Double { jitaSellPrice }
+    var premiumPercentage: Double { sellPremiumPercentage }
+
+    init(
+        typeId: Int,
+        structureSellPrice: Double,
+        jitaSellPrice: Double,
+        sellPremiumPercentage: Double,
+        structureBuyPrice: Double? = nil,
+        jitaBuyPrice: Double? = nil,
+        buyPremiumPercentage: Double? = nil
+    ) {
+        id = typeId
+        self.typeId = typeId
+        self.structureSellPrice = structureSellPrice
+        self.jitaSellPrice = jitaSellPrice
+        self.sellPremiumPercentage = sellPremiumPercentage
+        self.structureBuyPrice = structureBuyPrice
+        self.jitaBuyPrice = jitaBuyPrice
+        self.buyPremiumPercentage = buyPremiumPercentage
     }
 }

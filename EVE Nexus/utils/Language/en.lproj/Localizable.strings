@@ -881,8 +881,21 @@
 "Structure_Market_Top_Sell_Categories" = "Top Sell Order Categories";
 "Structure_Market_No_Items" = "No Items";
 "Structure_Market_Top_Sell_Items" = "Top 10 Items by Sell Orders";
-"Structure_Market_Top_Premium_Items" = "Top 10 Items by Premium Rate";
-"Structure_Market_Premium" = "Premium";
+"Structure_Market_Top_Premium_Items" = "All Items (Overprice)";
+"Structure_Market_Top_Premium_Items_Buy" = "All Items (Buy Overprice)";
+"Structure_Market_Top_Premium_Items_Sell" = "All Items (Sell Overprice)";
+"Structure_Market_Search_Placeholder" = "Search item name (at least 2 char)";
+"Structure_Market_Search_Results" = "Search Results";
+"Structure_Market_Search_Results_Buy" = "Search Results (Buy Overprice)";
+"Structure_Market_Search_Results_Sell" = "Search Results (Sell Overprice)";
+"Structure_Market_Top_Premium" = "Top Overprice";
+"Structure_Market_Premium" = "Overprice";
+"Structure_Market_Fuzzwork_Unavailable" = "Fuzzwork unavailable, please retry";
+"Loading_Premium_Items" = "Loading items price...";
+"Structure_Market_No_Premium_Items" = "No items price";
+"Structure_Market_Jita_Prices" = "Market Prices in The Forge";
+"Loading_Jita_Prices" = "Loading prices in The Forge...";
+"Structure_Market_View_More" = "View More";
 "Structure_Market_Orders_Unit" = "orders";
 "Structure_Market_Orders_Count" = "Orders";
 "Structure_Market_Items_Count" = "Items";
@@ -2685,7 +2698,8 @@
 "Structure_Orders_Hours_Ago" = "%d hours ago";
 "Structure_Orders_Days_Ago" = "%d days ago";
 "Structure_Orders_No_Cache" = "No cache";
-"Structure_Orders_Statistics" = "%d orders; %d item types";
+"Structure_Orders_Count" = "%d orders";
+"Structure_Orders_Item_Types" = "%d item types";
 
 // Corporation Industry
 "Loading_Corp_Industry_Jobs" = "Loading corporation industry jobs...";

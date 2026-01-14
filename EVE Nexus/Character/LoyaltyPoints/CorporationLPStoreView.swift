@@ -20,7 +20,6 @@ struct LPStoreOfferView: View {
     let requiredItemInfos: [Int: LPStoreItemInfo]
     let marketPrices: [Int: Double] // 所需物品的市场价格字典
     let isLoadingPrices: Bool // 是否正在加载价格
-    @State private var selectedItemID: Int?
 
     var body: some View {
         NavigationLink(
@@ -148,9 +147,12 @@ struct LPStoreOfferView: View {
                 // 所需物品的"查看 xxx"按钮
                 ForEach(sortedItems, id: \.typeId) { item in
                     if let info = requiredItemInfos[item.typeId] {
-                        Button {
-                            selectedItemID = item.typeId
-                        } label: {
+                        NavigationLink(
+                            destination: ItemInfoMap.getItemInfoView(
+                                itemID: item.typeId,
+                                databaseManager: DatabaseManager.shared
+                            )
+                        ) {
                             Label(
                                 "\(NSLocalizedString("View", comment: "")) \(info.name)",
                                 systemImage: "info.circle"
@@ -159,12 +161,6 @@ struct LPStoreOfferView: View {
                     }
                 }
             }
-        }
-        .navigationDestination(item: $selectedItemID) { itemID in
-            ItemInfoMap.getItemInfoView(
-                itemID: itemID,
-                databaseManager: DatabaseManager.shared
-            )
         }
     }
 
@@ -187,6 +183,7 @@ struct LPStoreGroupView: View {
     @State private var searchText = ""
     @State private var marketPrices: [Int: Double] = [:]
     @State private var isLoadingPrices = false
+    @State private var hasLoadedPrices = false
 
     private var filteredOffers: [LPStoreOffer] {
         if searchText.isEmpty {
@@ -236,12 +233,19 @@ struct LPStoreGroupView: View {
             prompt: NSLocalizedString("Main_Search_Placeholder", comment: "")
         )
         .task {
+            // 只在首次加载时获取价格，从子页面返回时不会重新加载
+            guard !hasLoadedPrices else { return }
             await loadMarketPrices()
         }
     }
 
     // 收集所有所需物品并一次性获取价格
     private func loadMarketPrices() async {
+        // 如果已经加载过，直接返回
+        if hasLoadedPrices {
+            return
+        }
+
         // 收集所有所需物品的 typeId（去重）
         var typeIds = Set<Int>()
         for offer in offers {
@@ -250,7 +254,13 @@ struct LPStoreGroupView: View {
             }
         }
 
-        guard !typeIds.isEmpty else { return }
+        guard !typeIds.isEmpty else {
+            // 即使没有所需物品，也标记为已加载，避免重复检查
+            await MainActor.run {
+                hasLoadedPrices = true
+            }
+            return
+        }
 
         await MainActor.run {
             isLoadingPrices = true
@@ -262,6 +272,7 @@ struct LPStoreGroupView: View {
         await MainActor.run {
             self.marketPrices = prices
             self.isLoadingPrices = false
+            self.hasLoadedPrices = true
         }
     }
 }
@@ -281,6 +292,8 @@ struct CorporationLPStoreView: View {
     @State private var isLoading = true
     @State private var error: Error?
     @State private var hasLoadedData = false
+    @State private var hasLoadedPrices = false
+    @State private var hasInitialized = false
     @State private var searchText = ""
     @State private var marketPrices: [Int: Double] = [:]
     @State private var isLoadingPrices = false
@@ -409,10 +422,17 @@ struct CorporationLPStoreView: View {
         //     prompt: NSLocalizedString("Main_Search_Placeholder", comment: "")
         // )
         .task {
+            // 只在首次初始化时加载数据，从子页面返回时不会重新加载
+            guard !hasInitialized else { return }
+
             if !hasLoadedData {
                 await loadOffers()
+            }
+            if !hasLoadedPrices {
                 await loadMarketPrices()
             }
+
+            hasInitialized = true
         }
     }
 
@@ -544,6 +564,11 @@ struct CorporationLPStoreView: View {
 
     // 收集所有所需物品并一次性获取价格
     private func loadMarketPrices() async {
+        // 如果已经加载过，直接返回
+        if hasLoadedPrices {
+            return
+        }
+
         // 收集所有所需物品的 typeId（去重）
         var typeIds = Set<Int>()
         for offer in offers {
@@ -552,7 +577,13 @@ struct CorporationLPStoreView: View {
             }
         }
 
-        guard !typeIds.isEmpty else { return }
+        guard !typeIds.isEmpty else {
+            // 即使没有所需物品，也标记为已加载，避免重复检查
+            await MainActor.run {
+                hasLoadedPrices = true
+            }
+            return
+        }
 
         await MainActor.run {
             isLoadingPrices = true
@@ -564,6 +595,7 @@ struct CorporationLPStoreView: View {
         await MainActor.run {
             self.marketPrices = prices
             self.isLoadingPrices = false
+            self.hasLoadedPrices = true
         }
     }
 }

@@ -125,9 +125,10 @@ struct GroupItemsView: View {
             }
 
             if orderType == .sell {
-                // 卖单：获取Jita卖价
+                // 卖单：获取Jita空间站卖价
                 let regionID = 10_000_002 // The Forge (Jita所在星域)
                 let systemID = 30_000_142 // Jita星系ID
+                let stationID = 60_003_760 // Jita 4-4 空间站 ID
 
                 var loadedCount = 0
                 let marketOrders = await MarketOrdersUtil.loadRegionOrders(
@@ -149,16 +150,18 @@ struct GroupItemsView: View {
                             from: orders,
                             orderType: .sell,
                             quantity: nil,
-                            systemId: systemID
+                            systemId: systemID,
+                            stationID: stationID
                         ).price
                         items[index].jitaPrice = price
                     }
                     items[index].structureId = structureId
                 }
             } else {
-                // 买单：获取Jita买价
+                // 买单：获取Jita空间站买价
                 let regionID = 10_000_002 // The Forge (Jita所在星域)
                 let systemID = 30_000_142 // Jita星系ID
+                let stationID = 60_003_760 // Jita 4-4 空间站 ID
 
                 var loadedCount = 0
                 let marketOrders = await MarketOrdersUtil.loadRegionOrders(
@@ -180,7 +183,8 @@ struct GroupItemsView: View {
                             from: orders,
                             orderType: .buy,
                             quantity: nil,
-                            systemId: systemID
+                            systemId: systemID,
+                            stationID: stationID
                         ).price
                         items[index].jitaPrice = price
                     }

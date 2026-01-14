@@ -17,6 +17,10 @@ struct StructureItemOrdersView: View {
     @State private var itemDetails: ItemDetails?
     @State private var lastLoadedItemID: Int? = nil // 跟踪上次加载的 itemID
     @State private var lastLoadedOrderType: MarketOrderType? = nil // 跟踪上次加载的 orderType
+    @State private var jitaPrices: (buy: Double, sell: Double)? = nil // Jita 空间站市场价格
+    @State private var isLoadingJitaPrices = false // 是否正在加载 Jita 价格
+    @State private var hasLoadedJitaPrices = false // 是否已加载过 Jita 价格
+    @State private var showJitaMarket = false // 显示 Jita 市场
     let locationInfoLoader: LocationInfoLoader
 
     init(
@@ -48,16 +52,96 @@ struct StructureItemOrdersView: View {
                 // 物品信息 Section
                 if let details = itemDetails {
                     Section {
-                        ItemInfoView(itemDetails: details)
+                        NavigationLink(destination: MarketItemDetailView(
+                            databaseManager: databaseManager,
+                            itemID: details.typeId
+                        )) {
+                            ItemInfoView(itemDetails: details)
+                        }
+                    }
+                }
+
+                // Jita 市场价格 Section
+                if let prices = jitaPrices {
+                    Section(header: Text(NSLocalizedString("Structure_Market_Jita_Prices", comment: "Jita 市场价格"))) {
+                        // 买入价格（买单最高价）
+                        HStack {
+                            Text(NSLocalizedString("Main_Market_Order_Buy", comment: "买单"))
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            HStack(spacing: 4) {
+                                Text(FormatUtil.formatISK(prices.buy))
+                                    .font(.system(.body, design: .monospaced))
+                                    .foregroundColor(.blue)
+                                Image(systemName: "chevron.right")
+                                    .font(.caption2)
+                                    .foregroundColor(.blue)
+                            }
+                            .contextMenu {
+                                Button {
+                                    UIPasteboard.general.string = FormatUtil.formatISK(prices.buy)
+                                } label: {
+                                    Label(
+                                        NSLocalizedString("Misc_Copy", comment: ""),
+                                        systemImage: "doc.on.doc"
+                                    )
+                                }
+                            }
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            showJitaMarket = true
+                        }
+
+                        // 卖出价格（卖单最低价）
+                        HStack {
+                            Text(NSLocalizedString("Main_Market_Order_Sell", comment: "卖单"))
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            HStack(spacing: 4) {
+                                Text(FormatUtil.formatISK(prices.sell))
+                                    .font(.system(.body, design: .monospaced))
+                                    .foregroundColor(.green)
+                                Image(systemName: "chevron.right")
+                                    .font(.caption2)
+                                    .foregroundColor(.green)
+                            }
+                            .contextMenu {
+                                Button {
+                                    UIPasteboard.general.string = FormatUtil.formatISK(prices.sell)
+                                } label: {
+                                    Label(
+                                        NSLocalizedString("Misc_Copy", comment: ""),
+                                        systemImage: "doc.on.doc"
+                                    )
+                                }
+                            }
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            showJitaMarket = true
+                        }
+                    }
+                } else if isLoadingJitaPrices {
+                    Section(header: Text(NSLocalizedString("Structure_Market_Jita_Prices", comment: "Jita 市场价格"))) {
+                        HStack {
+                            Spacer()
+                            ProgressView()
+                                .scaleEffect(0.7)
+                            Text(NSLocalizedString("Loading_Jita_Prices", comment: "正在加载 Jita 价格..."))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Spacer()
+                        }
                     }
                 }
 
                 // 订单列表 Section
-                if orders.isEmpty && !isLoadingOrders {
+                if sortedOrders.isEmpty && !isLoadingOrders {
                     Section {
                         NoDataSection()
                     }
-                } else {
+                } else if !sortedOrders.isEmpty {
                     Section(header: Text(orderType == .buy
                             ? NSLocalizedString("Main_Market_Order_Buy", comment: "买单")
                             : NSLocalizedString("Main_Market_Order_Sell", comment: "卖单")))
@@ -97,6 +181,23 @@ struct StructureItemOrdersView: View {
         .navigationTitle(itemName)
         .navigationBarTitleDisplayMode(.inline)
         .ignoresSafeArea(edges: .bottom)
+        .sheet(isPresented: $showJitaMarket) {
+            NavigationStack {
+                MarketItemDetailView(
+                    databaseManager: databaseManager,
+                    itemID: itemID,
+                    selectedRegionID: 10_000_002
+                )
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button(NSLocalizedString("Common_Done", comment: "完成")) {
+                            showJitaMarket = false
+                        }
+                    }
+                }
+            }
+        }
         .task {
             // 检查参数是否改变
             let needsReload = lastLoadedItemID != itemID || lastLoadedOrderType != orderType
@@ -111,6 +212,8 @@ struct StructureItemOrdersView: View {
                     await MainActor.run {
                         orders = []
                         locationInfos = [:]
+                        jitaPrices = nil
+                        hasLoadedJitaPrices = false // 重置 Jita 价格加载标志
                     }
                 }
 
@@ -125,6 +228,11 @@ struct StructureItemOrdersView: View {
 
             // 加载位置信息
             await loadLocationInfo()
+
+            // 加载 Jita 价格（只在首次加载或 itemID 改变时加载）
+            if needsReload || !hasLoadedJitaPrices {
+                await loadJitaPrices()
+            }
         }
     }
 
@@ -346,5 +454,71 @@ struct StructureItemOrdersView: View {
                 return "\(formattedFullPrice) ISK"
             }
         }
+    }
+
+    // MARK: - Jita 价格加载
+
+    private func loadJitaPrices() async {
+        // 如果已经加载过，直接返回
+        if hasLoadedJitaPrices {
+            return
+        }
+
+        await MainActor.run {
+            isLoadingJitaPrices = true
+        }
+
+        // 使用 ESI 获取 Jita 空间站市场价格
+        let regionID = 10_000_002 // The Forge (Jita所在星域)
+        let systemID = 30_000_142 // Jita星系ID
+        let stationID = 60_003_760 // Jita 4-4 空间站 ID
+
+        // 加载市场订单
+        let marketOrders = await MarketOrdersUtil.loadRegionOrders(
+            typeIds: [itemID],
+            regionID: regionID,
+            forceRefresh: false
+        )
+
+        guard let orders = marketOrders[itemID] else {
+            await MainActor.run {
+                jitaPrices = nil
+                isLoadingJitaPrices = false
+                hasLoadedJitaPrices = true
+            }
+            return
+        }
+
+        // 计算卖价（卖单最低价，限制在 Jita 空间站）
+        let sellPriceResult = MarketOrdersUtil.calculatePrice(
+            from: orders,
+            orderType: .sell,
+            quantity: nil,
+            systemId: systemID,
+            stationID: stationID
+        )
+        let sellPrice = sellPriceResult.price ?? 0
+
+        // 计算买价（买单最高价，限制在 Jita 空间站）
+        let buyPriceResult = MarketOrdersUtil.calculatePrice(
+            from: orders,
+            orderType: .buy,
+            quantity: nil,
+            systemId: systemID,
+            stationID: stationID
+        )
+        let buyPrice = buyPriceResult.price ?? 0
+
+        await MainActor.run {
+            if buyPrice > 0 || sellPrice > 0 {
+                jitaPrices = (buy: buyPrice, sell: sellPrice)
+            } else {
+                jitaPrices = nil
+            }
+            isLoadingJitaPrices = false
+            hasLoadedJitaPrices = true
+        }
+
+        Logger.debug("成功加载物品 \(itemID) 的 Jita 空间站价格（ESI）: buy=\(buyPrice), sell=\(sellPrice)")
     }
 }
