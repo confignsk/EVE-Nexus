@@ -890,7 +890,7 @@
 "Structure_Market_Search_Results_Sell" = "Search Results (Sell Overprice)";
 "Structure_Market_Top_Premium" = "Top Overprice";
 "Structure_Market_Premium" = "Overprice";
-"Structure_Market_Fuzzwork_Unavailable" = "Fuzzwork unavailable, please retry";
+"Structure_Market_GitHub_API_Unavailable" = "GitHub API unavailable, please retry";
 "Loading_Premium_Items" = "Loading items price...";
 "Structure_Market_No_Premium_Items" = "No items price";
 "Structure_Market_Jita_Prices" = "Market Prices in The Forge";

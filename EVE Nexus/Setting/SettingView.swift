@@ -84,6 +84,7 @@ class CacheManager {
         "CharWallet", // 个人钱包
         "CorpWallet", // 军团钱包
         "image_cache", // 图片缓存（ImageCacheManager）
+        "github_market_cache", // Jita 订单汇总缓存
     ]
 
     // 获取缓存目录列表

@@ -23,7 +23,7 @@ struct StructureMarketDetailView: View {
     @State private var allPremiumItems: [PremiumItemInfo] = [] // 所有溢价物品（用于传递给子视图）
     @State private var premiumSellOrders: [StructureMarketOrder] = [] // 溢价物品的卖单（用于传递给子视图）
     @State private var isLoadingPremium = false // 是否正在加载溢价数据
-    @State private var isFuzzworkUnavailable = false // Fuzzwork API 是否不可用
+    @State private var isGitHubAPIUnavailable = false // GitHub Market Price API 是否不可用
     @State private var hasInitialized = false // 是否已初始化，避免从子页面返回时重复加载
 
     // 刷新冷却时间：20分钟
@@ -35,278 +35,16 @@ struct StructureMarketDetailView: View {
     var body: some View {
         List {
             // Section 1: 建筑基本信息
-            Section {
-                // 行1: 建筑图标、名称、地点
-                StructureInfoRowView(
-                    structure: structure,
-                    lastUpdateDate: lastUpdateDate,
-                    allianceIconLoader: allianceIconLoader,
-                    systemAllianceMap: systemAllianceMap,
-                    isLoading: isLoadingOrders,
-                    progress: structureOrdersProgress
-                )
-
-                // 订单统计信息
-                if buyOrdersCount != nil || sellOrdersCount != nil || itemTypesCount != nil {
-                    // 买单总数
-                    if let buyCount = buyOrdersCount {
-                        if buyCount > 0 {
-                            NavigationLink(destination: MarketOrdersVisualizationView(
-                                structureId: Int64(structure.structureId),
-                                characterId: structure.characterId,
-                                orderType: .buy,
-                                title: NSLocalizedString("Structure_Market_Buy_Orders_Count", comment: "买单总数")
-                            )) {
-                                OrdersStatisticsRowView(
-                                    title: NSLocalizedString("Structure_Market_Buy_Orders_Count", comment: "买单总数"),
-                                    value: "\(buyCount)"
-                                )
-                            }
-                        } else {
-                            OrdersStatisticsRowView(
-                                title: NSLocalizedString("Structure_Market_Buy_Orders_Count", comment: "买单总数"),
-                                value: "\(buyCount)"
-                            )
-                        }
-                    }
-
-                    // 卖单总数
-                    if let sellCount = sellOrdersCount {
-                        if sellCount > 0 {
-                            NavigationLink(destination: MarketOrdersVisualizationView(
-                                structureId: Int64(structure.structureId),
-                                characterId: structure.characterId,
-                                orderType: .sell,
-                                title: NSLocalizedString("Structure_Market_Sell_Orders_Count", comment: "卖单总数")
-                            )) {
-                                OrdersStatisticsRowView(
-                                    title: NSLocalizedString("Structure_Market_Sell_Orders_Count", comment: "卖单总数"),
-                                    value: "\(sellCount)"
-                                )
-                            }
-                        } else {
-                            OrdersStatisticsRowView(
-                                title: NSLocalizedString("Structure_Market_Sell_Orders_Count", comment: "卖单总数"),
-                                value: "\(sellCount)"
-                            )
-                        }
-                    }
-
-                    // 物品类别
-                    if let typesCount = itemTypesCount {
-                        OrdersStatisticsRowView(
-                            title: NSLocalizedString("Structure_Market_Item_Types_Count", comment: "物品类别"),
-                            value: "\(typesCount)"
-                        )
-                    }
-                }
-            }
+            structureInfoSection
 
             // Section 2: 最多卖单
-            if !topSellItems.isEmpty {
-                Section(header: Text(NSLocalizedString("Structure_Market_Top_Sell_Orders", comment: "最多卖单"))) {
-                    ForEach(topSellItems) { item in
-                        NavigationLink(destination: StructureItemOrdersView(
-                            structureId: Int64(structure.structureId),
-                            characterId: structure.characterId,
-                            itemID: item.typeId,
-                            itemName: item.name,
-                            orderType: item.orderType,
-                            databaseManager: DatabaseManager.shared
-                        )) {
-                            HStack(spacing: 12) {
-                                // 物品图标
-                                IconManager.shared.loadImage(for: item.iconFileName)
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 32, height: 32)
-                                    .cornerRadius(6)
-
-                                // 物品名称
-                                Text(item.name)
-                                    .font(.body)
-                                    .foregroundColor(.primary)
-                                    .contextMenu {
-                                        Button {
-                                            UIPasteboard.general.string = item.name
-                                        } label: {
-                                            Label(
-                                                NSLocalizedString("Misc_Copy_Item_Name", comment: ""),
-                                                systemImage: "doc.on.doc"
-                                            )
-                                        }
-                                    }
-
-                                Spacer()
-
-                                // 订单数
-                                Text("\(item.orderCount)")
-                                    .font(.system(.body, design: .monospaced))
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                    }
-                    .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
-                }
-            }
+            topSellItemsSection
 
             // Section 3: 最多买单
-            if !topBuyItems.isEmpty {
-                Section(header: Text(NSLocalizedString("Structure_Market_Top_Buy_Orders", comment: "最多买单"))) {
-                    ForEach(topBuyItems) { item in
-                        NavigationLink(destination: StructureItemOrdersView(
-                            structureId: Int64(structure.structureId),
-                            characterId: structure.characterId,
-                            itemID: item.typeId,
-                            itemName: item.name,
-                            orderType: item.orderType,
-                            databaseManager: DatabaseManager.shared
-                        )) {
-                            HStack(spacing: 12) {
-                                // 物品图标
-                                IconManager.shared.loadImage(for: item.iconFileName)
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 32, height: 32)
-                                    .cornerRadius(6)
-
-                                // 物品名称
-                                Text(item.name)
-                                    .font(.body)
-                                    .foregroundColor(.primary)
-                                    .contextMenu {
-                                        Button {
-                                            UIPasteboard.general.string = item.name
-                                        } label: {
-                                            Label(
-                                                NSLocalizedString("Misc_Copy_Item_Name", comment: ""),
-                                                systemImage: "doc.on.doc"
-                                            )
-                                        }
-                                    }
-
-                                Spacer()
-
-                                // 订单数
-                                Text("\(item.orderCount)")
-                                    .font(.system(.body, design: .monospaced))
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                    }.listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
-                }
-            }
+            topBuyItemsSection
 
             // Section 4: 最高溢价（始终显示）
-            Section(header: Text(NSLocalizedString("Structure_Market_Top_Premium", comment: "最高溢价"))) {
-                if isFuzzworkUnavailable {
-                    // Fuzzwork API 不可用
-                    HStack {
-                        Image(systemName: "exclamationmark.triangle")
-                            .foregroundColor(.orange)
-                        Text(NSLocalizedString("Structure_Market_Fuzzwork_Unavailable", comment: "Fuzzwork不可达，请重试"))
-                            .foregroundColor(.secondary)
-                        Spacer()
-                        Button(NSLocalizedString("Main_Setting_Reset", comment: "重试")) {
-                            Task {
-                                await loadPremiumItems()
-                            }
-                        }
-                        .buttonStyle(.bordered)
-                    }
-                    .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
-                } else if isLoadingPremium {
-                    // 正在加载
-                    HStack {
-                        Spacer()
-                        ProgressView()
-                            .scaleEffect(0.7)
-                        Text(NSLocalizedString("Loading_Premium_Items", comment: "正在加载溢价物品..."))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Spacer()
-                    }
-                    .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
-                } else if topPremiumItems.isEmpty {
-                    // 没有溢价物品
-                    HStack {
-                        Spacer()
-                        Text(NSLocalizedString("Structure_Market_No_Premium_Items", comment: "暂无溢价物品"))
-                            .foregroundColor(.secondary)
-                        Spacer()
-                    }
-                    .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
-                } else {
-                    // 显示溢价物品列表
-                    ForEach(topPremiumItems) { item in
-                        NavigationLink(destination: StructureItemOrdersView(
-                            structureId: Int64(structure.structureId),
-                            characterId: structure.characterId,
-                            itemID: item.typeId,
-                            itemName: item.name,
-                            orderType: .sell,
-                            databaseManager: DatabaseManager.shared
-                        )) {
-                            HStack(spacing: 12) {
-                                // 物品图标
-                                IconManager.shared.loadImage(for: item.iconFileName)
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 32, height: 32)
-                                    .cornerRadius(6)
-
-                                // 物品名称
-                                Text(item.name)
-                                    .font(.body)
-                                    .foregroundColor(.primary)
-                                    .contextMenu {
-                                        Button {
-                                            UIPasteboard.general.string = item.name
-                                        } label: {
-                                            Label(
-                                                NSLocalizedString("Misc_Copy_Item_Name", comment: ""),
-                                                systemImage: "doc.on.doc"
-                                            )
-                                        }
-                                    }
-
-                                Spacer()
-
-                                // 溢价百分比
-                                VStack(alignment: .trailing, spacing: 2) {
-                                    Text("\(String(format: "%.1f", item.sellPremiumPercentage))%")
-                                        .font(.system(.body, design: .monospaced))
-                                        .foregroundColor(item.sellPremiumPercentage > 0 ? .red : .green)
-                                        .fontWeight(.semibold)
-                                    Text("\(FormatUtil.formatISK(item.structureSellPrice))")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                        }
-                    }
-                    .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
-
-                    // 查看更多按钮（只有当去重后的 typeid 数量超过 10 个时才显示）
-                    let uniqueTypeIdsCount = Set(premiumSellOrders.map { $0.typeId }).count
-                    if !topPremiumItems.isEmpty && uniqueTypeIdsCount > 10 {
-                        NavigationLink(destination: PremiumItemsView(
-                            structureId: Int64(structure.structureId),
-                            characterId: structure.characterId,
-                            allPremiumItems: allPremiumItems,
-                            sellOrders: premiumSellOrders
-                        )) {
-                            HStack {
-                                Spacer()
-                                Text(NSLocalizedString("Structure_Market_View_More", comment: "查看更多"))
-                                    .foregroundColor(.blue)
-                                Spacer()
-                            }
-                        }
-                        .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
-                    }
-                }
-            }
+            topPremiumItemsSection
         }
         .listStyle(.insetGrouped)
         .navigationTitle(NSLocalizedString("Structure_Market_Orders_Overview", comment: "建筑订单总览"))
@@ -355,6 +93,218 @@ struct StructureMarketDetailView: View {
             updateTimer = nil
             allianceIconLoader.cancelAllTasks()
         }
+    }
+
+    // MARK: - 子视图组件
+
+    // 建筑基本信息 Section
+    @ViewBuilder
+    private var structureInfoSection: some View {
+        Section {
+            // 行1: 建筑图标、名称、地点
+            StructureInfoRowView(
+                structure: structure,
+                lastUpdateDate: lastUpdateDate,
+                allianceIconLoader: allianceIconLoader,
+                systemAllianceMap: systemAllianceMap,
+                isLoading: isLoadingOrders,
+                progress: structureOrdersProgress
+            )
+
+            // 订单统计信息
+            ordersStatisticsView
+        }
+    }
+
+    // 订单统计信息视图
+    @ViewBuilder
+    private var ordersStatisticsView: some View {
+        if buyOrdersCount != nil || sellOrdersCount != nil || itemTypesCount != nil {
+            // 买单总数
+            if let buyCount = buyOrdersCount {
+                if buyCount > 0 {
+                    NavigationLink(destination: MarketOrdersVisualizationView(
+                        structureId: Int64(structure.structureId),
+                        characterId: structure.characterId,
+                        orderType: .buy,
+                        title: NSLocalizedString("Structure_Market_Buy_Orders_Count", comment: "买单总数")
+                    )) {
+                        OrdersStatisticsRowView(
+                            title: NSLocalizedString("Structure_Market_Buy_Orders_Count", comment: "买单总数"),
+                            value: "\(buyCount)"
+                        )
+                    }
+                } else {
+                    OrdersStatisticsRowView(
+                        title: NSLocalizedString("Structure_Market_Buy_Orders_Count", comment: "买单总数"),
+                        value: "\(buyCount)"
+                    )
+                }
+            }
+
+            // 卖单总数
+            if let sellCount = sellOrdersCount {
+                if sellCount > 0 {
+                    NavigationLink(destination: MarketOrdersVisualizationView(
+                        structureId: Int64(structure.structureId),
+                        characterId: structure.characterId,
+                        orderType: .sell,
+                        title: NSLocalizedString("Structure_Market_Sell_Orders_Count", comment: "卖单总数")
+                    )) {
+                        OrdersStatisticsRowView(
+                            title: NSLocalizedString("Structure_Market_Sell_Orders_Count", comment: "卖单总数"),
+                            value: "\(sellCount)"
+                        )
+                    }
+                } else {
+                    OrdersStatisticsRowView(
+                        title: NSLocalizedString("Structure_Market_Sell_Orders_Count", comment: "卖单总数"),
+                        value: "\(sellCount)"
+                    )
+                }
+            }
+
+            // 物品类别
+            if let typesCount = itemTypesCount {
+                OrdersStatisticsRowView(
+                    title: NSLocalizedString("Structure_Market_Item_Types_Count", comment: "物品类别"),
+                    value: "\(typesCount)"
+                )
+            }
+        }
+    }
+
+    // 最多卖单 Section
+    @ViewBuilder
+    private var topSellItemsSection: some View {
+        if !topSellItems.isEmpty {
+            Section(header: Text(NSLocalizedString("Structure_Market_Top_Sell_Orders", comment: "最多卖单"))) {
+                ForEach(topSellItems) { item in
+                    TopOrderItemRowView(
+                        item: item,
+                        structureId: Int64(structure.structureId),
+                        characterId: structure.characterId
+                    )
+                }
+                .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+            }
+        }
+    }
+
+    // 最多买单 Section
+    @ViewBuilder
+    private var topBuyItemsSection: some View {
+        if !topBuyItems.isEmpty {
+            Section(header: Text(NSLocalizedString("Structure_Market_Top_Buy_Orders", comment: "最多买单"))) {
+                ForEach(topBuyItems) { item in
+                    TopOrderItemRowView(
+                        item: item,
+                        structureId: Int64(structure.structureId),
+                        characterId: structure.characterId
+                    )
+                }
+                .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+            }
+        }
+    }
+
+    // 最高溢价 Section
+    @ViewBuilder
+    private var topPremiumItemsSection: some View {
+        Section(header: Text(NSLocalizedString("Structure_Market_Top_Premium", comment: "最高溢价"))) {
+            if isGitHubAPIUnavailable {
+                premiumAPIUnavailableView
+            } else if isLoadingPremium {
+                premiumLoadingView
+            } else if topPremiumItems.isEmpty {
+                premiumEmptyView
+            } else {
+                premiumItemsListView
+            }
+        }
+    }
+
+    // GitHub API 不可用视图
+    @ViewBuilder
+    private var premiumAPIUnavailableView: some View {
+        HStack {
+            Image(systemName: "exclamationmark.triangle")
+                .foregroundColor(.orange)
+            Text(NSLocalizedString("Structure_Market_GitHub_API_Unavailable", comment: "GitHub API不可达，请重试"))
+                .foregroundColor(.secondary)
+            Spacer()
+            Button(NSLocalizedString("Main_Setting_Reset", comment: "重试")) {
+                Task {
+                    await loadPremiumItems()
+                }
+            }
+            .buttonStyle(.bordered)
+        }
+        .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+    }
+
+    // 溢价加载中视图
+    @ViewBuilder
+    private var premiumLoadingView: some View {
+        HStack {
+            Spacer()
+            ProgressView()
+                .scaleEffect(0.7)
+            Text(NSLocalizedString("Loading_Premium_Items", comment: "正在加载溢价物品..."))
+                .font(.caption)
+                .foregroundColor(.secondary)
+            Spacer()
+        }
+        .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+    }
+
+    // 溢价空状态视图
+    @ViewBuilder
+    private var premiumEmptyView: some View {
+        HStack {
+            Spacer()
+            Text(NSLocalizedString("Structure_Market_No_Premium_Items", comment: "暂无溢价物品"))
+                .foregroundColor(.secondary)
+            Spacer()
+        }
+        .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+    }
+
+    // 溢价物品列表视图
+    @ViewBuilder
+    private var premiumItemsListView: some View {
+        ForEach(topPremiumItems) { item in
+            PremiumItemRowView(
+                item: item,
+                structureId: Int64(structure.structureId),
+                characterId: structure.characterId
+            )
+        }
+        .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+
+        // 查看更多按钮
+        if shouldShowViewMoreButton {
+            NavigationLink(destination: PremiumItemsView(
+                structureId: Int64(structure.structureId),
+                characterId: structure.characterId,
+                allPremiumItems: allPremiumItems,
+                sellOrders: premiumSellOrders
+            )) {
+                HStack {
+                    Spacer()
+                    Text(NSLocalizedString("Structure_Market_View_More", comment: "查看更多"))
+                        .foregroundColor(.blue)
+                    Spacer()
+                }
+            }
+            .listRowInsets(EdgeInsets(top: 4, leading: 18, bottom: 4, trailing: 18))
+        }
+    }
+
+    // 是否显示"查看更多"按钮
+    private var shouldShowViewMoreButton: Bool {
+        let uniqueTypeIdsCount = Set(premiumSellOrders.map { $0.typeId }).count
+        return !topPremiumItems.isEmpty && uniqueTypeIdsCount > 10
     }
 
     // 更新缓存状态
@@ -739,41 +689,45 @@ struct StructureMarketDetailView: View {
     private func loadPremiumItems() async {
         await MainActor.run {
             isLoadingPremium = true
-            isFuzzworkUnavailable = false
+            isGitHubAPIUnavailable = false
             topPremiumItems = []
         }
 
-        // 先检查 Fuzzwork API 是否可用
-        let isFuzzworkAvailable = await FuzzworkMarketAPI.shared.FuzzAvailable()
-        guard isFuzzworkAvailable else {
-            Logger.debug("Fuzzwork API 不可用，跳过溢价计算")
-            await MainActor.run {
-                isFuzzworkUnavailable = true
-                isLoadingPremium = false
-                topPremiumItems = []
-            }
-            return
-        }
-
         do {
-            // 1. 获取建筑市场的所有订单
-            let hasLocal = await StructureMarketManager.shared.hasLocalOrders(structureId: Int64(structure.structureId))
-            guard hasLocal else {
-                await MainActor.run {
-                    topPremiumItems = []
-                    isLoadingPremium = false
-                    isFuzzworkUnavailable = false
-                }
-                return
-            }
-
-            let orders = try await StructureMarketManager.shared.getStructureOrders(
+            // 步骤1: 并行加载建筑订单和预加载 GitHub 市场数据
+            // 注意：不检查 hasLocal，直接调用 getStructureOrders，它会自动处理缓存和 API 获取
+            // 预加载时不传 typeIds，会先检查缓存，如果有缓存会立即返回
+            async let ordersTask = StructureMarketManager.shared.getStructureOrders(
                 structureId: Int64(structure.structureId),
                 characterId: structure.characterId,
                 forceRefresh: false
             )
+            async let gitHubPricesTask: Task<[Int: (buy: Double, sell: Double)], Error> = Task {
+                // 预加载所有 GitHub 市场数据（不传 typeIds，会先检查缓存）
+                try await GitHubMarketPriceAPI.shared.fetchMarketPrices(
+                    typeIds: nil, // 不传 typeIds，获取所有数据（或从缓存加载）
+                    forceRefresh: false
+                )
+            }
 
-            // 2. 分离买单和卖单
+            // 等待建筑订单完成
+            let orders = try await ordersTask
+            
+            // 尝试获取 GitHub 价格数据，如果失败则跳过溢价计算
+            let gitHubPrices: [Int: (buy: Double, sell: Double)]
+            do {
+                gitHubPrices = try await gitHubPricesTask.value
+            } catch {
+                Logger.debug("GitHub Market Price API 不可用，跳过溢价计算: \(error.localizedDescription)")
+                await MainActor.run {
+                    isGitHubAPIUnavailable = true
+                    isLoadingPremium = false
+                    topPremiumItems = []
+                }
+                return
+            }
+
+            // 步骤3: 处理订单数据
             let sellOrders = orders.filter { !$0.isBuyOrder }
             let buyOrders = orders.filter { $0.isBuyOrder }
 
@@ -781,13 +735,14 @@ struct StructureMarketDetailView: View {
                 await MainActor.run {
                     topPremiumItems = []
                     isLoadingPremium = false
-                    isFuzzworkUnavailable = false
+                    isGitHubAPIUnavailable = false
                 }
                 return
             }
 
-            // 3. 收集所有卖单的 typeId，并获取每个物品的最低价格（建筑卖价）
-            var structureSellPrices: [Int: Double] = [:] // typeId -> 最低卖价
+            // 收集价格数据
+            var structureSellPrices: [Int: Double] = [:]
+            var structureBuyPrices: [Int: Double] = [:]
             var typeIds = Set<Int>()
 
             for order in sellOrders {
@@ -798,9 +753,6 @@ struct StructureMarketDetailView: View {
                 typeIds.insert(order.typeId)
             }
 
-            // 3.5. 收集所有买单的 typeId，并获取每个物品的最高价格（建筑买价）
-            var structureBuyPrices: [Int: Double] = [:] // typeId -> 最高买价
-
             for order in buyOrders {
                 let currentPrice = structureBuyPrices[order.typeId] ?? 0.0
                 if order.price > currentPrice {
@@ -809,13 +761,13 @@ struct StructureMarketDetailView: View {
                 typeIds.insert(order.typeId)
             }
 
-            // 4. 查询这些物品的 category，只保留允许的类别
+            // 步骤4: 查询允许的类别
             let typeIdsArray = Array(typeIds)
             guard !typeIdsArray.isEmpty else {
                 await MainActor.run {
                     topPremiumItems = []
                     isLoadingPremium = false
-                    isFuzzworkUnavailable = false
+                    isGitHubAPIUnavailable = false
                 }
                 return
             }
@@ -844,18 +796,22 @@ struct StructureMarketDetailView: View {
                 await MainActor.run {
                     topPremiumItems = []
                     isLoadingPremium = false
-                    isFuzzworkUnavailable = false
+                    isGitHubAPIUnavailable = false
                 }
                 return
             }
 
-            // 5. 使用 Fuzzwork API 获取 Jita 空间站价格
-            let jitaPrices = try await FuzzworkMarketAPI.shared.fetchMarketAggregates(
-                regionId: 60_003_760, // Jita 4-4 空间站 ID
-                typeIds: Array(allowedTypeIds)
-            )
+            // 步骤5: 过滤出需要的 typeIds 的价格
+            let allJitaPrices = gitHubPrices
+            // 过滤出我们需要的 typeIds 的价格
+            var jitaPrices: [Int: (buy: Double, sell: Double)] = [:]
+            for typeId in allowedTypeIds {
+                if let price = allJitaPrices[typeId] {
+                    jitaPrices[typeId] = price
+                }
+            }
 
-            // 6. 计算价格比例（建筑价格 / Jita 价格）
+            // 步骤6: 计算溢价（所有数据已就绪）
             var premiumItems: [PremiumItemInfo] = []
 
             for typeId in allowedTypeIds {
@@ -914,7 +870,7 @@ struct StructureMarketDetailView: View {
                 await MainActor.run {
                     topPremiumItems = []
                     isLoadingPremium = false
-                    isFuzzworkUnavailable = false
+                    isGitHubAPIUnavailable = false
                 }
                 return
             }
@@ -995,7 +951,7 @@ struct StructureMarketDetailView: View {
                 allPremiumItems = allFinalItems
                 premiumSellOrders = sellOrders
                 isLoadingPremium = false
-                isFuzzworkUnavailable = false
+                isGitHubAPIUnavailable = false
             }
 
             Logger.info("成功计算 \(finalItems.count) 个最高溢价物品")
@@ -1004,7 +960,7 @@ struct StructureMarketDetailView: View {
             await MainActor.run {
                 topPremiumItems = []
                 isLoadingPremium = false
-                isFuzzworkUnavailable = false
+                isGitHubAPIUnavailable = false
             }
         }
     }
@@ -1012,7 +968,7 @@ struct StructureMarketDetailView: View {
 
 // MARK: - 溢价物品信息模型
 
-struct PremiumItemInfo: Identifiable {
+struct PremiumItemInfo: Identifiable, Equatable {
     let id: Int
     let typeId: Int
     var name: String = ""
@@ -1046,5 +1002,125 @@ struct PremiumItemInfo: Identifiable {
         self.structureBuyPrice = structureBuyPrice
         self.jitaBuyPrice = jitaBuyPrice
         self.buyPremiumPercentage = buyPremiumPercentage
+    }
+
+    // Equatable 实现
+    static func == (lhs: PremiumItemInfo, rhs: PremiumItemInfo) -> Bool {
+        return lhs.id == rhs.id &&
+            lhs.typeId == rhs.typeId &&
+            lhs.name == rhs.name &&
+            lhs.iconFileName == rhs.iconFileName &&
+            lhs.structureSellPrice == rhs.structureSellPrice &&
+            lhs.jitaSellPrice == rhs.jitaSellPrice &&
+            lhs.sellPremiumPercentage == rhs.sellPremiumPercentage &&
+            lhs.structureBuyPrice == rhs.structureBuyPrice &&
+            lhs.jitaBuyPrice == rhs.jitaBuyPrice &&
+            lhs.buyPremiumPercentage == rhs.buyPremiumPercentage
+    }
+}
+
+// MARK: - 顶部订单物品行视图
+
+struct TopOrderItemRowView: View {
+    let item: ItemOrderInfo
+    let structureId: Int64
+    let characterId: Int
+
+    var body: some View {
+        NavigationLink(destination: StructureItemOrdersView(
+            structureId: structureId,
+            characterId: characterId,
+            itemID: item.typeId,
+            itemName: item.name,
+            orderType: item.orderType,
+            databaseManager: DatabaseManager.shared
+        )) {
+            HStack(spacing: 12) {
+                // 物品图标
+                IconManager.shared.loadImage(for: item.iconFileName)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 32, height: 32)
+                    .cornerRadius(6)
+
+                // 物品名称
+                Text(item.name)
+                    .font(.body)
+                    .foregroundColor(.primary)
+                    .contextMenu {
+                        Button {
+                            UIPasteboard.general.string = item.name
+                        } label: {
+                            Label(
+                                NSLocalizedString("Misc_Copy_Item_Name", comment: ""),
+                                systemImage: "doc.on.doc"
+                            )
+                        }
+                    }
+
+                Spacer()
+
+                // 订单数
+                Text("\(item.orderCount)")
+                    .font(.system(.body, design: .monospaced))
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+}
+
+// MARK: - 溢价物品行视图
+
+struct PremiumItemRowView: View {
+    let item: PremiumItemInfo
+    let structureId: Int64
+    let characterId: Int
+
+    var body: some View {
+        NavigationLink(destination: StructureItemOrdersView(
+            structureId: structureId,
+            characterId: characterId,
+            itemID: item.typeId,
+            itemName: item.name,
+            orderType: .sell,
+            databaseManager: DatabaseManager.shared
+        )) {
+            HStack(spacing: 12) {
+                // 物品图标
+                IconManager.shared.loadImage(for: item.iconFileName)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 32, height: 32)
+                    .cornerRadius(6)
+
+                // 物品名称
+                Text(item.name)
+                    .font(.body)
+                    .foregroundColor(.primary)
+                    .contextMenu {
+                        Button {
+                            UIPasteboard.general.string = item.name
+                        } label: {
+                            Label(
+                                NSLocalizedString("Misc_Copy_Item_Name", comment: ""),
+                                systemImage: "doc.on.doc"
+                            )
+                        }
+                    }
+
+                Spacer()
+
+                // 溢价百分比
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("\(String(format: "%.1f", item.sellPremiumPercentage))%")
+                        .font(.system(.body, design: .monospaced))
+                        .foregroundColor(item.sellPremiumPercentage > 0 ? .red : .green)
+                        .fontWeight(.semibold)
+                    Text("\(FormatUtil.formatISK(item.structureSellPrice))")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
     }
 }

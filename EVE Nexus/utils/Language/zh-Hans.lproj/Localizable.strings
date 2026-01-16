@@ -891,7 +891,7 @@
 "Structure_Market_Items_Count" = "物品数";
 "Structure_Market_Top_Sell_Orders" = "最多卖单";
 "Structure_Market_Top_Buy_Orders" = "最多买单";
-"Structure_Market_Fuzzwork_Unavailable" = "Fuzzwork不可达，请重试";
+"Structure_Market_GitHub_API_Unavailable" = "GitHub API不可达，请重试";
 "Loading_Premium_Items" = "正在加载溢价物品...";
 "Structure_Market_No_Premium_Items" = "暂无溢价物品";
 "Structure_Market_Jita_Prices" = "伏尔戈市场价格";

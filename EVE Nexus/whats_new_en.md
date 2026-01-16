@@ -370,3 +370,7 @@ Fixes & Improvements:
 3. Allow customizing implant presets in fitting function.
 4. In Structure market function, support viewing the overprice rate of each item.
 5. Update to the latest sde.
+
+# v1.11.1 Jan 20, 2026
+
+1. Adjust the market API configuration to alleviate the pressure on third-party APIs.
