@@ -326,6 +326,9 @@
 "Misc_Copy" = "Copy";
 "Misc_Copied" = "Copied";
 "Misc_Show_Detail" = "Show Info";
+"Misc_Show_More" = "Show More";
+"Misc_Show_More_Count" = "+%d more";
+"Misc_Collapse" = "Collapse";
 "Misc_Delete" = "Delete";
 "Misc_Rename" = "Rename";
 "Misc_Name" = "Name";
@@ -2450,6 +2453,13 @@
 "Main_Setting_Enable_Logging_Detail" = "View App log by PulseUI";
 "Main_Setting_View_Logs" = "View Debug Logs";
 "Main_Setting_View_Logs_Detail" = "Browse and view debug log files";
+"Main_Setting_View_Token_Scopes" = "View Token Scopes";
+"Main_Setting_View_Token_Scopes_Detail" = "View token scopes for all saved characters";
+"Token_Scopes_Count" = "%d scopes";
+"Token_Scopes_Not_Found" = "Token scopes not found";
+"Token_Scopes_Search_Placeholder" = "Search scopes...";
+"Token_Scopes_No_Results" = "No matching scopes found";
+"Token_Scopes_Filtered_Count" = "%d matching scopes (of %d total)";
 "Main_Setting_Logs_Browser_Title" = "Log Browser";
 "Main_Setting_Logs_Loading" = "Loading log files...";
 "Main_Setting_Logs_Load_Failed" = "Failed to load";

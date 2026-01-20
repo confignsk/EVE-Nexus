@@ -5,6 +5,8 @@ struct MailDetailData {
     let content: EVEMailContent
     let senderName: String
     let recipientNames: [Int: String]
+    let senderCategory: String
+    let recipientCategories: [Int: String]
 }
 
 struct CharacterMailDetailView: View {
@@ -15,6 +17,8 @@ struct CharacterMailDetailView: View {
     @State private var composeType: ComposeType?
     @ObservedObject var databaseManager = DatabaseManager.shared
     @State private var hasInitialized = false // 追踪是否已执行初始化
+    @State private var showingSenderDetail = false // 控制显示发件人详情的sheet
+    @State private var isRecipientsExpanded = false // 控制收件人列表展开/折叠
 
     enum ComposeType {
         case reply, replyAll, forward
@@ -35,6 +39,26 @@ struct CharacterMailDetailView: View {
     private func handleComposeButton(type: ComposeType) {
         composeType = type
         showingComposeView = true
+    }
+
+    // 导航辅助方法：根据类型返回对应的详情视图
+    @ViewBuilder
+    private func navigationDestination(for id: Int, category: String) -> some View {
+        if let characterAuth = EVELogin.shared.getCharacterByID(characterId) {
+            switch category {
+            case "character":
+                CharacterDetailView(characterId: id, character: characterAuth.character)
+            case "corporation":
+                CorporationDetailView(corporationId: id, character: characterAuth.character)
+            case "alliance":
+                AllianceDetailView(allianceId: id, character: characterAuth.character)
+            default:
+                // 默认尝试作为人物处理
+                CharacterDetailView(characterId: id, character: characterAuth.character)
+            }
+        } else {
+            EmptyView()
+        }
     }
 
     var body: some View {
@@ -62,11 +86,18 @@ struct CharacterMailDetailView: View {
                             .font(.headline)
                             .padding(.bottom, 4)
 
-                        // 发件人、时间和收件人信息
+                        // 发件人信息
                         VStack(alignment: .leading, spacing: 8) {
                             // 发件人和时间信息
                             HStack {
-                                CharacterPortrait(characterId: detail.content.from, size: 32)
+                                // 根据类型显示对应的头像
+                                if viewModel.getSenderCategory(detail.content.from) == "corporation" {
+                                    UniversePortrait(id: detail.content.from, type: .corporation, size: 32, displaySize: 32)
+                                } else if viewModel.getSenderCategory(detail.content.from) == "alliance" {
+                                    UniversePortrait(id: detail.content.from, type: .alliance, size: 32, displaySize: 32)
+                                } else {
+                                    CharacterPortrait(characterId: detail.content.from, size: 32)
+                                }
                                 VStack(alignment: .leading) {
                                     Text(detail.senderName)
                                         .font(.subheadline)
@@ -75,53 +106,81 @@ struct CharacterMailDetailView: View {
                                         .foregroundColor(.secondary)
                                 }
                                 Spacer()
-                            }
 
-                            // 收件人信息
-                            if !detail.content.recipients.isEmpty {
-                                let recipientsString = detail.content.recipients.compactMap {
-                                    recipient in
-                                    detail.recipientNames[recipient.recipient_id]
-                                        ?? NSLocalizedString(
-                                            "Main_EVE_Mail_Unknown_Recipient", comment: ""
-                                        )
-                                }.joined(separator: ", ")
-
-                                (Text(NSLocalizedString("Main_EVE_Mail_To", comment: ""))
-                                    .foregroundColor(.secondary)
-                                    + Text(recipientsString))
-                                    .font(.subheadline)
+                                // 信息图标按钮
+                                Button {
+                                    showingSenderDetail = true
+                                } label: {
+                                    Image(systemName: "info.circle")
+                                        .foregroundColor(.blue)
+                                        .font(.system(size: 18))
+                                }
                             }
                         }
-                        .contextMenu {
-                            Button {
-                                UIPasteboard.general.string = detail.senderName
-                            } label: {
-                                Label(
-                                    NSLocalizedString(
-                                        "Main_EVE_Mail_Copy_Sender", comment: "Copy Sender"
-                                    ),
-                                    systemImage: "person"
-                                )
-                            }
 
-                            if !detail.content.recipients.isEmpty {
-                                Button {
-                                    let recipientsString = detail.content.recipients.compactMap {
-                                        recipient in
-                                        detail.recipientNames[recipient.recipient_id]
+                        // 收件人信息（单独一行，支持折叠）
+                        if !detail.content.recipients.isEmpty {
+                            VStack(alignment: .leading, spacing: 4) {
+                                // 第一个收件人（始终显示）
+                                if let firstRecipient = detail.content.recipients.first {
+                                    HStack {
+                                        Text(NSLocalizedString("Main_EVE_Mail_To", comment: ""))
+                                            .foregroundColor(.secondary)
+                                            .font(.subheadline)
+                                        Text(detail.recipientNames[firstRecipient.recipient_id]
                                             ?? NSLocalizedString(
                                                 "Main_EVE_Mail_Unknown_Recipient", comment: ""
-                                            )
-                                    }.joined(separator: ", ")
-                                    UIPasteboard.general.string = recipientsString
-                                } label: {
-                                    Label(
-                                        NSLocalizedString(
-                                            "Main_EVE_Mail_Copy_Recipients",
-                                            comment: "Copy Recipients"
-                                        ), systemImage: "person.2"
-                                    )
+                                            ))
+                                            .font(.subheadline)
+                                        Spacer()
+
+                                        // 如果有多个收件人，显示展开/折叠按钮
+                                        if detail.content.recipients.count > 1 {
+                                            Button {
+                                                withAnimation {
+                                                    isRecipientsExpanded.toggle()
+                                                }
+                                            } label: {
+                                                HStack(spacing: 4) {
+                                                    if isRecipientsExpanded {
+                                                        Text(NSLocalizedString("Misc_Collapse", comment: "收起"))
+                                                            .font(.caption)
+                                                            .foregroundColor(.blue)
+                                                    } else {
+                                                        let moreCount = detail.content.recipients.count - 1
+                                                        Text(moreCount > 1
+                                                            ? String(format: NSLocalizedString("Misc_Show_More_Count", comment: "+%d more"), moreCount)
+                                                            : NSLocalizedString("Misc_Show_More", comment: "显示更多"))
+                                                            .font(.caption)
+                                                            .foregroundColor(.blue)
+                                                    }
+                                                    Image(systemName: isRecipientsExpanded ? "chevron.up" : "chevron.down")
+                                                        .font(.caption2)
+                                                        .foregroundColor(.blue)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // 其他收件人（折叠时隐藏）
+                                if isRecipientsExpanded && detail.content.recipients.count > 1 {
+                                    ForEach(Array(detail.content.recipients.enumerated()), id: \.offset) { index, recipient in
+                                        if index > 0 {
+                                            HStack {
+                                                Text(NSLocalizedString("Main_EVE_Mail_To", comment: ""))
+                                                    .foregroundColor(.secondary)
+                                                    .font(.subheadline)
+                                                    .opacity(0) // 占位，保持对齐
+                                                Text(detail.recipientNames[recipient.recipient_id]
+                                                    ?? NSLocalizedString(
+                                                        "Main_EVE_Mail_Unknown_Recipient", comment: ""
+                                                    ))
+                                                    .font(.subheadline)
+                                                Spacer()
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -193,6 +252,23 @@ struct CharacterMailDetailView: View {
                 .interactiveDismissDisabled()
             }
         }
+        .sheet(isPresented: $showingSenderDetail) {
+            if let detail = viewModel.mailDetail {
+                NavigationStack {
+                    navigationDestination(
+                        for: detail.content.from,
+                        category: viewModel.getSenderCategory(detail.content.from)
+                    )
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button(NSLocalizedString("Common_Done", comment: "完成")) {
+                                showingSenderDetail = false
+                            }
+                        }
+                    }
+                }
+            }
+        }
         .onAppear {
             loadInitialDataIfNeeded()
         }
@@ -204,24 +280,46 @@ struct CharacterMailDetailView: View {
     }
 
     private func getInitialRecipients(type: ComposeType, detail: MailDetailData) -> [MailRecipient] {
+        // 辅助方法：根据 category 获取 MailRecipient.RecipientType
+        func getRecipientTypeFromCategory(_ category: String) -> MailRecipient.RecipientType {
+            switch category {
+            case "character": return .character
+            case "corporation": return .corporation
+            case "alliance": return .alliance
+            default: return .character
+            }
+        }
+
         switch type {
         case .reply:
             // 只回复给原发件人
             return [
-                MailRecipient(id: detail.content.from, name: detail.senderName, type: .character),
+                MailRecipient(
+                    id: detail.content.from,
+                    name: detail.senderName,
+                    type: getRecipientTypeFromCategory(detail.senderCategory)
+                ),
             ]
         case .replyAll:
             // 回复给原发件人和所有收件人
             var recipients = [
-                MailRecipient(id: detail.content.from, name: detail.senderName, type: .character),
+                MailRecipient(
+                    id: detail.content.from,
+                    name: detail.senderName,
+                    type: getRecipientTypeFromCategory(detail.senderCategory)
+                ),
             ]
             recipients.append(
                 contentsOf: detail.content.recipients.map { recipient in
-                    MailRecipient(
+                    // 优先使用 category，如果没有则使用 recipient_type
+                    let category = detail.recipientCategories[recipient.recipient_id] ?? recipient.recipient_type
+                    return MailRecipient(
                         id: recipient.recipient_id,
                         name: detail.recipientNames[recipient.recipient_id]
                             ?? NSLocalizedString("Unknown", comment: ""),
-                        type: getRecipientType(from: recipient.recipient_type)
+                        type: category == "mailing_list"
+                            ? .mailingList
+                            : getRecipientTypeFromCategory(category)
                     )
                 })
             return recipients
@@ -313,6 +411,14 @@ class CharacterMailDetailViewModel: ObservableObject {
     @Published var isLoading = true
     @Published var error: Error?
 
+    func getSenderCategory(_: Int) -> String {
+        return mailDetail?.senderCategory ?? "character"
+    }
+
+    func getRecipientCategory(_ id: Int) -> String {
+        return mailDetail?.recipientCategories[id] ?? "character"
+    }
+
     func loadMailContent(characterId: Int, mailId: Int) async {
         isLoading = true
         error = nil
@@ -323,37 +429,79 @@ class CharacterMailDetailViewModel: ObservableObject {
                 characterId: characterId, mailId: mailId
             )
 
-            // 2. 获取发件人名称
-            var senderName = NSLocalizedString("Unknown", comment: "")
-            if let nameInfo = try await UniverseAPI.shared.getNamesWithFallback(ids: [content.from]
-            )[content.from] {
-                senderName = nameInfo.name
+            // 2. 批量获取发件人和收件人名称
+            // 收集所有需要从API获取名称的ID（发件人 + character/corporation/alliance类型的收件人）
+            var entityIds: [Int] = [content.from]
+            var entityRecipients: [(recipient: EVEMailRecipient, type: String)] = []
+
+            for recipient in content.recipients {
+                if recipient.recipient_type == "character" ||
+                    recipient.recipient_type == "corporation" ||
+                    recipient.recipient_type == "alliance"
+                {
+                    entityIds.append(recipient.recipient_id)
+                    entityRecipients.append((recipient: recipient, type: recipient.recipient_type))
+                }
             }
 
-            // 3. 获取所有收件人名称
+            // 去重（发件人可能也在收件人列表中）
+            let uniqueEntityIds = Array(Set(entityIds))
+
+            // 批量获取所有实体名称（一次性API调用）
+            // UniverseAPI内部已处理批量请求失败时的并发回退策略
+            let namesMap: [Int: (name: String, category: String)]
+            do {
+                namesMap = try await UniverseAPI.shared.getNamesWithFallback(ids: uniqueEntityIds)
+            } catch {
+                Logger.warning("批量获取实体名称失败，使用并发回退策略: \(error)")
+                namesMap = await UniverseAPI.shared.fetchNamesWithConcurrentFallback(ids: uniqueEntityIds)
+            }
+
+            // 获取发件人名称和类型
+            var senderName = NSLocalizedString("Unknown", comment: "")
+            var senderCategory = "character"
+            if let nameInfo = namesMap[content.from] {
+                senderName = nameInfo.name
+                senderCategory = nameInfo.category
+            }
+
+            // 3. 处理收件人名称和类型
             var recipientNames: [Int: String] = [:]
-            for recipient in content.recipients {
-                switch recipient.recipient_type {
-                case "mailing_list":
-                    if let listName = try await CharacterMailAPI.shared.loadMailListsFromDatabase(
-                        characterId: characterId
-                    )
-                    .first(where: { $0.mailing_list_id == recipient.recipient_id })?.name {
+            var recipientCategories: [Int: String] = [:]
+
+            // 先处理需要从API获取的收件人（character/corporation/alliance）
+            for (recipient, type) in entityRecipients {
+                if let nameInfo = namesMap[recipient.recipient_id] {
+                    recipientNames[recipient.recipient_id] = nameInfo.name
+                    recipientCategories[recipient.recipient_id] = nameInfo.category
+                } else {
+                    recipientNames[recipient.recipient_id] =
+                        "\(NSLocalizedString("Unknown", comment: "")) \(getRecipientTypeText(type))"
+                    recipientCategories[recipient.recipient_id] = type
+                }
+            }
+
+            // 处理 mailing_list 类型的收件人（需要从数据库加载）
+            let mailingListRecipients = content.recipients.filter { $0.recipient_type == "mailing_list" }
+            if !mailingListRecipients.isEmpty {
+                // 一次性加载所有邮件列表（避免重复查询）
+                let mailLists = try await CharacterMailAPI.shared.loadMailListsFromDatabase(
+                    characterId: characterId
+                )
+
+                for recipient in mailingListRecipients {
+                    if let listName = mailLists.first(where: { $0.mailing_list_id == recipient.recipient_id })?.name {
                         recipientNames[recipient.recipient_id] = "[\(listName)]"
                     } else {
                         recipientNames[recipient.recipient_id] =
                             "[\(NSLocalizedString("Main_EVE_Mail_List", comment: ""))#\(recipient.recipient_id)]"
                     }
-                case "character", "corporation", "alliance":
-                    if let nameInfo = try await UniverseAPI.shared.getNamesWithFallback(ids: [
-                        recipient.recipient_id,
-                    ])[recipient.recipient_id] {
-                        recipientNames[recipient.recipient_id] = nameInfo.name
-                    } else {
-                        recipientNames[recipient.recipient_id] =
-                            "\(NSLocalizedString("Unknown", comment: "")) \(getRecipientTypeText(recipient.recipient_type))"
-                    }
-                default:
+                }
+            }
+
+            // 处理其他类型的收件人（只处理尚未处理的）
+            for recipient in content.recipients {
+                if recipientNames[recipient.recipient_id] == nil {
                     recipientNames[recipient.recipient_id] = NSLocalizedString(
                         "Unknown", comment: ""
                     )
@@ -364,7 +512,9 @@ class CharacterMailDetailViewModel: ObservableObject {
             let mailDetailData = MailDetailData(
                 content: content,
                 senderName: senderName,
-                recipientNames: recipientNames
+                recipientNames: recipientNames,
+                senderCategory: senderCategory,
+                recipientCategories: recipientCategories
             )
 
             // 5. 更新视图数据

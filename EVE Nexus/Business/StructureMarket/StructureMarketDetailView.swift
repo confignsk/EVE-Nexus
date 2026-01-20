@@ -712,7 +712,7 @@ struct StructureMarketDetailView: View {
 
             // 等待建筑订单完成
             let orders = try await ordersTask
-            
+
             // 尝试获取 GitHub 价格数据，如果失败则跳过溢价计算
             let gitHubPrices: [Int: (buy: Double, sell: Double)]
             do {

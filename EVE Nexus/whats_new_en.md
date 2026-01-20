@@ -374,3 +374,8 @@ Fixes & Improvements:
 # v1.11.1 Jan 20, 2026
 
 1. Adjust the market API configuration to alleviate the pressure on third-party APIs.
+
+# v1.11.2 Jan 21, 2026
+
+1. Email feature optimization: click to view sender information.
+2. Fix missing scopes for POS viewer. (require refresh scopes and re-login char)

@@ -281,6 +281,7 @@ struct SettingView: View {
     @State private var showingMarketStructureView = false
     @State private var showingEVEStatusIncidentsView = false
     @State private var isCalculatingCache = false // 缓存计算状态
+    @State private var showingTokenScopesView = false // 显示 token scopes sheet
 
     // MARK: - 数据更新函数
 
@@ -583,7 +584,7 @@ struct SettingView: View {
             },
         ]
 
-        // 只有在启用日志时才显示"查看日志"按钮
+        // 只有在启用日志时才显示"查看日志"和"查看 token scopes"按钮
         if enableLogging {
             items.append(
                 SettingItem(
@@ -592,6 +593,15 @@ struct SettingView: View {
                     icon: "doc.text.magnifyingglass",
                     iconColor: .blue,
                     action: { showingLogsBrowserView = true }
+                )
+            )
+            items.append(
+                SettingItem(
+                    title: NSLocalizedString("Main_Setting_View_Token_Scopes", comment: "查看 token scopes"),
+                    detail: NSLocalizedString("Main_Setting_View_Token_Scopes_Detail", comment: "查看所有已保存人物的 token scopes"),
+                    icon: "key.fill",
+                    iconColor: .blue,
+                    action: { showingTokenScopesView = true }
                 )
             )
         }
@@ -764,6 +774,9 @@ struct SettingView: View {
         }
         .navigationDestination(isPresented: $showingEVEStatusIncidentsView) {
             EVEStatusIncidentsView()
+        }
+        .sheet(isPresented: $showingTokenScopesView) {
+            TokenScopesListView()
         }
         .alert(
             NSLocalizedString("Main_Setting_Clean_Cache_Title", comment: ""),
@@ -1220,6 +1233,225 @@ struct SDEUpdateDetailView: View {
                 .listStyle(.insetGrouped)
                 .navigationTitle(NSLocalizedString("SDE_Update_Details", comment: "SDE更新详情"))
                 .navigationBarTitleDisplayMode(.inline)
+            }
+        }
+    }
+}
+
+// MARK: - Token Scopes 列表视图
+
+struct TokenScopesListView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var characters: [CharacterAuth] = []
+    @State private var characterPortraits: [Int: UIImage] = [:]
+    @State private var isLoading = true
+    @State private var selectedCharacter: CharacterAuth?
+    @State private var showingDetailView = false
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if isLoading {
+                    ProgressView()
+                } else if characters.isEmpty {
+                    ContentUnavailableView {
+                        Label(
+                            NSLocalizedString("Misc_No_Data", comment: "无数据"),
+                            systemImage: "person.slash"
+                        )
+                    }
+                } else {
+                    List {
+                        ForEach(characters, id: \.character.CharacterID) { characterAuth in
+                            Button {
+                                selectedCharacter = characterAuth
+                                showingDetailView = true
+                            } label: {
+                                HStack(spacing: 12) {
+                                    // 人物头像
+                                    if let portrait = characterPortraits[characterAuth.character.CharacterID] {
+                                        Image(uiImage: portrait)
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 44, height: 44)
+                                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    } else {
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(Color.gray.opacity(0.3))
+                                            .frame(width: 44, height: 44)
+                                            .overlay(
+                                                ProgressView()
+                                                    .scaleEffect(0.7)
+                                            )
+                                    }
+
+                                    // 人物名称
+                                    Text(characterAuth.character.CharacterName)
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.primary)
+
+                                    Spacer()
+
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationTitle(NSLocalizedString("Main_Setting_View_Token_Scopes", comment: "查看 token scopes"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(NSLocalizedString("Common_Done", comment: "完成")) {
+                        dismiss()
+                    }
+                }
+            }
+            .task {
+                await loadCharacters()
+            }
+            .navigationDestination(isPresented: $showingDetailView) {
+                if let character = selectedCharacter {
+                    TokenScopesDetailView(character: character)
+                }
+            }
+        }
+    }
+
+    private func loadCharacters() async {
+        isLoading = true
+
+        // 获取所有已保存的人物
+        let allCharacters = EVELogin.shared.loadCharacters()
+        await MainActor.run {
+            characters = allCharacters
+        }
+
+        // 加载所有人物头像
+        for characterAuth in allCharacters {
+            let characterId = characterAuth.character.CharacterID
+            do {
+                let portrait = try await CharacterAPI.shared.fetchCharacterPortrait(
+                    characterId: characterId,
+                    catchImage: false
+                )
+                await MainActor.run {
+                    characterPortraits[characterId] = portrait
+                }
+            } catch {
+                Logger.error("加载人物头像失败 (ID: \(characterId)): \(error)")
+            }
+        }
+
+        await MainActor.run {
+            isLoading = false
+        }
+    }
+}
+
+// MARK: - Token Scopes 详情视图
+
+struct TokenScopesDetailView: View {
+    let character: CharacterAuth
+    @State private var scopes: [String] = []
+    @State private var isLoading = true
+    @State private var error: String?
+    @State private var searchText: String = ""
+
+    var body: some View {
+        List {
+            if isLoading {
+                Section {
+                    HStack {
+                        Spacer()
+                        ProgressView()
+                        Spacer()
+                    }
+                }
+            } else if let error = error {
+                Section {
+                    HStack {
+                        Spacer()
+                        VStack(spacing: 8) {
+                            Image(systemName: "exclamationmark.triangle")
+                                .font(.largeTitle)
+                                .foregroundColor(.red)
+                            Text(error)
+                                .multilineTextAlignment(.center)
+                        }
+                        Spacer()
+                    }
+                }
+            } else if scopes.isEmpty {
+                Section {
+                    HStack {
+                        Spacer()
+                        Text(NSLocalizedString("Misc_No_Data", comment: "无数据"))
+                            .foregroundColor(.secondary)
+                        Spacer()
+                    }
+                }
+            } else {
+                Section {
+                    ForEach(scopes.filter { searchText.isEmpty || $0.localizedCaseInsensitiveContains(searchText) }, id: \.self) { scope in
+                        Text(scope)
+                            .font(.system(.caption, design: .monospaced))
+                            .textSelection(.enabled)
+                    }
+                } header: {
+                    Text(String(format: NSLocalizedString("Token_Scopes_Count", comment: "共 %d 个权限"), scopes.count))
+                        .fontWeight(.semibold)
+                        .font(.system(size: 18))
+                        .foregroundColor(.primary)
+                        .textCase(nil)
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .navigationTitle(character.character.CharacterName)
+        .navigationBarTitleDisplayMode(.inline)
+        .searchable(text: $searchText, prompt: NSLocalizedString("Token_Scopes_Search_Placeholder", comment: "搜索权限..."))
+        .task {
+            await loadScopes()
+        }
+    }
+
+    private func loadScopes() async {
+        isLoading = true
+        error = nil
+
+        do {
+            // 方法1: 尝试从 JWT token 中解析 scopes
+            if let accessToken = try? await AuthTokenManager.shared.getAccessToken(for: character.character.CharacterID) {
+                if let characterInfo = JWTTokenValidator.shared.parseToken(accessToken) {
+                    let scopesString = characterInfo.Scopes
+                    let scopesArray = scopesString.components(separatedBy: " ").filter { !$0.isEmpty }
+                    await MainActor.run {
+                        self.scopes = scopesArray.sorted()
+                        self.isLoading = false
+                    }
+                    return
+                }
+            }
+
+            // 方法2: 从保存的 character 信息中获取 scopes
+            let scopesString = character.character.Scopes
+            if !scopesString.isEmpty {
+                let scopesArray = scopesString.components(separatedBy: " ").filter { !$0.isEmpty }
+                await MainActor.run {
+                    self.scopes = scopesArray.sorted()
+                    self.isLoading = false
+                }
+                return
+            }
+
+            // 如果都没有，显示错误
+            await MainActor.run {
+                self.error = NSLocalizedString("Token_Scopes_Not_Found", comment: "未找到 token scopes")
+                self.isLoading = false
             }
         }
     }

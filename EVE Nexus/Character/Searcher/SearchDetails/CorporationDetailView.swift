@@ -261,6 +261,37 @@ struct CorporationDetailView: View {
                     }
                 }
 
+                // 添加外部链接按钮
+                Section {
+                    Button(action: {
+                        if let url = URL(string: "https://evewho.com/corporation/\(corporationId)") {
+                            UIApplication.shared.open(url)
+                        }
+                    }) {
+                        HStack {
+                            Text("Eve Who")
+                                .foregroundColor(.primary)
+                            Spacer()
+                            Image(systemName: "arrow.up.right.square")
+                                .foregroundColor(.blue)
+                        }
+                    }
+
+                    Button(action: {
+                        if let url = URL(string: "https://zkillboard.com/corporation/\(corporationId)/") {
+                            UIApplication.shared.open(url)
+                        }
+                    }) {
+                        HStack {
+                            Text("zKillboard")
+                                .foregroundColor(.primary)
+                            Spacer()
+                            Image(systemName: "arrow.up.right.square")
+                                .foregroundColor(.blue)
+                        }
+                    }
+                }
+
                 // 军团描述
                 if !corporationInfo.description.isEmpty {
                     let description = TextProcessingUtil.processDescription(

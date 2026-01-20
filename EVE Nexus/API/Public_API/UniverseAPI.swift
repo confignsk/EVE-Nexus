@@ -262,13 +262,28 @@ class UniverseAPI {
                 // 只对有效范围内的缺失ID发送API请求
                 if !validMissingIds.isEmpty {
                     Logger.debug("Fetch from api. Missing IDs count: \(validMissingIds.count)")
-                    let result = try await fetchAndSaveNames(ids: validMissingIds)
-                    if result > 0 {
-                        // 获取新保存的数据
-                        let newNames = try await getNamesFromDatabase(ids: validMissingIds)
-                        // 合并API返回的结果（agents表的结果优先级更高，不会被覆盖）
-                        for (id, info) in newNames {
-                            // 如果agents表中没有这个ID，才使用API返回的结果
+
+                    // 尝试批量请求，如果失败则使用并发回退策略
+                    do {
+                        let result = try await fetchAndSaveNames(ids: validMissingIds)
+                        if result > 0 {
+                            // 获取新保存的数据
+                            let newNames = try await getNamesFromDatabase(ids: validMissingIds)
+                            // 合并API返回的结果（agents表的结果优先级更高，不会被覆盖）
+                            for (id, info) in newNames {
+                                // 如果agents表中没有这个ID，才使用API返回的结果
+                                if !agentNamesMap.keys.contains(id) {
+                                    allNamesMap[id] = info
+                                }
+                            }
+                        }
+                    } catch {
+                        // 批量请求失败，使用并发回退策略
+                        Logger.warning("批量获取实体名称失败，使用回退策略（10个并发单ID请求）: \(error)")
+                        let fallbackResults = await fetchNamesWithConcurrentFallback(ids: validMissingIds)
+                        // 合并回退策略的结果（agents表的结果优先级更高，不会被覆盖）
+                        for (id, info) in fallbackResults {
+                            // 如果agents表中没有这个ID，才使用回退策略的结果
                             if !agentNamesMap.keys.contains(id) {
                                 allNamesMap[id] = info
                             }
@@ -288,5 +303,81 @@ class UniverseAPI {
         }
 
         return allNamesMap
+    }
+
+    /// 并发回退策略：使用10个并发对每个ID逐一调用API
+    /// 当批量POST请求失败时，使用此方法作为回退策略
+    /// - Parameter ids: 要查询的ID数组（这些ID已经在主流程中确认数据库中不存在且已过滤有效性）
+    /// - Returns: ID到名称和类型的映射
+    func fetchNamesWithConcurrentFallback(ids: [Int]) async -> [Int: (name: String, category: String)] {
+        guard !ids.isEmpty else { return [:] }
+
+        let maxConcurrency = min(10, ids.count)
+        Logger.info("开始使用并发回退策略 - 总数: \(ids.count), 并发数: \(maxConcurrency)")
+
+        var pendingIds = ids
+        var completedIds: [Int] = []
+
+        // 使用10个并发，对每个ID逐一调用API
+        await withTaskGroup(of: Int?.self) { group in
+            var inProgressCount = 0
+
+            // 初始添加并发数量的任务
+            while !pendingIds.isEmpty, inProgressCount < maxConcurrency {
+                let id = pendingIds.removeFirst()
+                group.addTask(priority: .userInitiated) { @NetworkManagerActor in
+                    do {
+                        _ = try await self.fetchAndSaveNames(ids: [id])
+                        return id
+                    } catch {
+                        Logger.error("并发回退策略：获取实体名称失败 (ID: \(id)): \(error)")
+                        return nil
+                    }
+                }
+                inProgressCount += 1
+            }
+
+            // 处理结果并添加新任务
+            while let taskResult = await group.next() {
+                if let id = taskResult {
+                    completedIds.append(id)
+                }
+
+                // 如果还有待处理的ID，添加新任务
+                if !pendingIds.isEmpty {
+                    let nextId = pendingIds.removeFirst()
+                    group.addTask(priority: .userInitiated) { @NetworkManagerActor in
+                        do {
+                            _ = try await self.fetchAndSaveNames(ids: [nextId])
+                            return nextId
+                        } catch {
+                            Logger.error("并发回退策略：获取实体名称失败 (ID: \(nextId)): \(error)")
+                            return nil
+                        }
+                    }
+                }
+            }
+        }
+
+        // 批量从数据库读取所有成功保存的结果
+        var results: [Int: (name: String, category: String)] = [:]
+        if !completedIds.isEmpty {
+            do {
+                let savedNames = try await getNamesFromDatabase(ids: completedIds)
+                results = savedNames
+            } catch {
+                Logger.error("并发回退策略：从数据库读取结果失败: \(error)")
+            }
+        }
+
+        // 对于失败的ID，使用默认值
+        for id in ids {
+            if results[id] == nil {
+                results[id] = (name: NSLocalizedString("Unknown", comment: ""), category: "unknown")
+            }
+        }
+
+        Logger.info("并发回退策略完成 - 成功获取 \(results.count) 个实体名称")
+        return results
     }
 }

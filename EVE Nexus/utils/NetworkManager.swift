@@ -419,7 +419,7 @@ class NetworkManager: NSObject, @unchecked Sendable {
             }.value
         }
     }
-    
+
     /// 公共API请求，返回响应头中的页数信息（不需要token）
     func fetchDataWithPages(
         from url: URL,
@@ -430,7 +430,7 @@ class NetworkManager: NSObject, @unchecked Sendable {
         // 创建请求
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-        
+
         // 添加基本请求头
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue("tranquility", forHTTPHeaderField: "datasource")
@@ -439,7 +439,7 @@ class NetworkManager: NSObject, @unchecked Sendable {
             "Tritanium_v\(AppConfiguration.Version.fullVersion)",
             forHTTPHeaderField: "User-Agent"
         )
-        
+
         // 添加自定义请求头
         headers?.forEach { key, value in
             request.setValue(value, forHTTPHeaderField: key)
@@ -630,7 +630,7 @@ class NetworkManager: NSObject, @unchecked Sendable {
         Logger.info("数据获取完成，共\(allItems.count)个项目")
         return allItems
     }
-    
+
     /// 处理公共API分页数据的通用方法（不需要token）
     /// - Parameters:
     ///   - baseUrl: 基础URL，不包含页码参数

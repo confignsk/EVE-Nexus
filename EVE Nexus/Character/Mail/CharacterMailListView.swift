@@ -247,6 +247,7 @@ class CharacterMailListViewModel: ObservableObject {
 
         do {
             // 使用getNamesWithFallback一次性获取所有名称信息
+            // UniverseAPI内部已处理批量请求失败时的并发回退策略
             let names = try await UniverseAPI.shared.getNamesWithFallback(ids: Array(senderIds))
 
             // 更新视图数据
@@ -258,6 +259,13 @@ class CharacterMailListViewModel: ObservableObject {
             Logger.success("成功获取 \(names.count) 个发件人的信息")
         } catch {
             Logger.error("获取发件人信息失败: \(error)")
+            // 如果仍然失败，使用并发回退策略作为最后的保障
+            let fallbackNames = await UniverseAPI.shared.fetchNamesWithConcurrentFallback(ids: Array(senderIds))
+            for (id, info) in fallbackNames {
+                senderNames[id] = info.name
+                senderCategories[id] = info.category
+            }
+            Logger.info("使用并发回退策略获取了 \(fallbackNames.count) 个发件人信息")
         }
     }
 

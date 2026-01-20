@@ -344,6 +344,9 @@
 "Misc_Copy" = "复制";
 "Misc_Copied" = "已复制";
 "Misc_Show_Detail" = "查看详情";
+"Misc_Show_More" = "显示更多";
+"Misc_Show_More_Count" = "+%d 更多";
+"Misc_Collapse" = "收起";
 "Misc_Delete" = "删除";
 "Misc_Rename" = "重命名";
 "Misc_Name" = "名称";
@@ -2485,6 +2488,13 @@
 "Main_Setting_Enable_Logging_Detail" = "通过 PulseUI 查看 APP 运行日志";
 "Main_Setting_View_Logs" = "查看调试日志";
 "Main_Setting_View_Logs_Detail" = "浏览和查看调试日志文件";
+"Main_Setting_View_Token_Scopes" = "查看 token scopes";
+"Main_Setting_View_Token_Scopes_Detail" = "查看所有已保存人物的 token scopes";
+"Token_Scopes_Count" = "共 %d 个权限";
+"Token_Scopes_Not_Found" = "未找到 token scopes";
+"Token_Scopes_Search_Placeholder" = "搜索权限...";
+"Token_Scopes_No_Results" = "未找到匹配的权限";
+"Token_Scopes_Filtered_Count" = "找到 %d 个匹配的权限（共 %d 个）";
 "Main_Setting_Logs_Browser_Title" = "日志浏览器";
 "Main_Setting_Logs_Loading" = "加载日志文件...";
 "Main_Setting_Logs_Load_Failed" = "加载失败";

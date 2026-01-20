@@ -432,6 +432,9 @@ struct ContractDetailView: View {
     @State private var isRefreshing = false
     @State private var hasLoadedInitialData = false
     @State private var currentCharacter: EVECharacterInfo?
+    @State private var showingDetailSheet = false
+    @State private var detailId: Int?
+    @State private var detailCategory: String = ""
 
     // 添加日期格式化器作为实例属性
     private let dateFormatter: DateFormatter = {
@@ -678,10 +681,10 @@ struct ContractDetailView: View {
                             if !viewModel.issuerName.isEmpty && !viewModel.issuerCategory.isEmpty
                                 && currentCharacter != nil
                             {
-                                NavigationLink {
-                                    navigationDestination(
-                                        for: contract.issuer_id, category: viewModel.issuerCategory
-                                    )
+                                Button {
+                                    detailId = contract.issuer_id
+                                    detailCategory = viewModel.issuerCategory
+                                    showingDetailSheet = true
                                 } label: {
                                     Label(
                                         NSLocalizedString("Misc_Show_Detail", comment: ""),
@@ -736,10 +739,10 @@ struct ContractDetailView: View {
                                     && !viewModel.assigneeCategory.isEmpty,
                                     let assigneeId = contract.assignee_id, currentCharacter != nil
                                 {
-                                    NavigationLink {
-                                        navigationDestination(
-                                            for: assigneeId, category: viewModel.assigneeCategory
-                                        )
+                                    Button {
+                                        detailId = assigneeId
+                                        detailCategory = viewModel.assigneeCategory
+                                        showingDetailSheet = true
                                     } label: {
                                         Label(
                                             NSLocalizedString("Misc_Show_Detail", comment: ""),
@@ -796,10 +799,10 @@ struct ContractDetailView: View {
                                     && !viewModel.acceptorCategory.isEmpty,
                                     let acceptorId = contract.acceptor_id, currentCharacter != nil
                                 {
-                                    NavigationLink {
-                                        navigationDestination(
-                                            for: acceptorId, category: viewModel.acceptorCategory
-                                        )
+                                    Button {
+                                        detailId = acceptorId
+                                        detailCategory = viewModel.acceptorCategory
+                                        showingDetailSheet = true
                                     } label: {
                                         Label(
                                             NSLocalizedString("Misc_Show_Detail", comment: ""),
@@ -1023,6 +1026,31 @@ struct ContractDetailView: View {
         } message: {
             if let errorMessage = viewModel.errorMessage {
                 Text(errorMessage)
+            }
+        }
+        .sheet(isPresented: $showingDetailSheet) {
+            if let id = detailId, let character = currentCharacter {
+                NavigationStack {
+                    Group {
+                        switch detailCategory {
+                        case "character":
+                            CharacterDetailView(characterId: id, character: character)
+                        case "corporation":
+                            CorporationDetailView(corporationId: id, character: character)
+                        case "alliance":
+                            AllianceDetailView(allianceId: id, character: character)
+                        default:
+                            EmptyView()
+                        }
+                    }
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button(NSLocalizedString("Common_Done", comment: "完成")) {
+                                showingDetailSheet = false
+                            }
+                        }
+                    }
+                }
             }
         }
     }

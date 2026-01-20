@@ -183,12 +183,19 @@ struct SearcherView: View {
                         } else if viewModel.error != nil {
                             HStack {
                                 Spacer()
-                                VStack {
+                                VStack(spacing: 8) {
                                     Image(systemName: "exclamationmark.triangle")
                                         .font(.largeTitle)
                                         .foregroundColor(.red)
                                     Text(NSLocalizedString("Main_Search_Failed", comment: ""))
                                         .foregroundColor(.secondary)
+                                    if let error = viewModel.error {
+                                        Text(String(describing: error))
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                            .multilineTextAlignment(.center)
+                                            .padding(.horizontal)
+                                    }
                                 }
                                 Spacer()
                             }

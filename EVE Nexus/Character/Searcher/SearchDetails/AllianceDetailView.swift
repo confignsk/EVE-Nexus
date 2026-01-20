@@ -423,6 +423,37 @@ struct AllianceDetailView: View {
                     }
                 }
 
+                // 添加外部链接按钮
+                Section {
+                    Button(action: {
+                        if let url = URL(string: "https://evewho.com/alliance/\(allianceId)") {
+                            UIApplication.shared.open(url)
+                        }
+                    }) {
+                        HStack {
+                            Text("Eve Who")
+                                .foregroundColor(.primary)
+                            Spacer()
+                            Image(systemName: "arrow.up.right.square")
+                                .foregroundColor(.blue)
+                        }
+                    }
+
+                    Button(action: {
+                        if let url = URL(string: "https://zkillboard.com/alliance/\(allianceId)/") {
+                            UIApplication.shared.open(url)
+                        }
+                    }) {
+                        HStack {
+                            Text("zKillboard")
+                                .foregroundColor(.primary)
+                            Spacer()
+                            Image(systemName: "arrow.up.right.square")
+                                .foregroundColor(.blue)
+                        }
+                    }
+                }
+
                 // 声望信息
                 Section {
                     AllianceStandingsView(

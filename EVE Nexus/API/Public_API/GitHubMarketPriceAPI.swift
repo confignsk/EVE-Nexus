@@ -24,7 +24,7 @@ class GitHubMarketPriceAPI {
     private let downloadURL = "https://github.com/EstamelGG/EVE_MarketPrice_Fetch/releases/download/market-prices/market_prices.json"
     private let cacheTimeoutInterval: TimeInterval = 0.5 * 60 * 60 // 0.5小时缓存有效期（GitHub数据）
     private let esiCacheTimeoutInterval: TimeInterval = 4 * 60 * 60 // 4小时缓存有效期（ESI构造数据）
-    
+
     // ESI相关配置
     private let targetRegionID = 10_000_002 // The Forge
     private let targetSystemID = 30_000_142 // Jita
@@ -61,7 +61,7 @@ class GitHubMarketPriceAPI {
     private var cacheFilePath: URL {
         return cacheDirectory.appendingPathComponent("market_prices.json")
     }
-    
+
     // ESI构造数据的缓存文件路径
     private var esiCacheFilePath: URL {
         return cacheDirectory.appendingPathComponent("market_prices_esi.json")
@@ -92,7 +92,7 @@ class GitHubMarketPriceAPI {
             } catch {
                 Logger.debug("GitHub缓存不可用: \(error.localizedDescription)")
             }
-            
+
             // 再尝试ESI缓存
             do {
                 if let cachedData = try await loadESICachedData() {
@@ -115,7 +115,7 @@ class GitHubMarketPriceAPI {
             return filterPrices(result, typeIds: typeIds)
         } catch {
             Logger.warning("从GitHub获取失败，尝试从ESI构造: \(error.localizedDescription)")
-            
+
             // GitHub失败，尝试从ESI构造
             do {
                 let result = try await fetchFromESI()
@@ -130,7 +130,7 @@ class GitHubMarketPriceAPI {
                     code: -5,
                     userInfo: [
                         NSLocalizedDescriptionKey: "无法获取市场价格数据：GitHub和ESI均失败",
-                        NSUnderlyingErrorKey: error
+                        NSUnderlyingErrorKey: error,
                     ]
                 )
             }
@@ -175,7 +175,7 @@ class GitHubMarketPriceAPI {
     /// - Throws: 解析错误
     private func parseMarketPriceData(from data: Data) throws -> [Int: (buy: Double, sell: Double)] {
         let marketPriceDict = try JSONDecoder().decode(GitHubMarketPriceData.self, from: data)
-        
+
         var result: [Int: (buy: Double, sell: Double)] = [:]
         for (typeIdString, priceValue) in marketPriceDict {
             // 将字符串类型的typeId转换为Int
@@ -183,17 +183,17 @@ class GitHubMarketPriceAPI {
                 Logger.warning("无法解析typeId: \(typeIdString)，跳过")
                 continue
             }
-            
+
             // 处理缺失字段：如果b或s为nil，则默认为0
             let buyPrice = priceValue.b ?? 0.0
             let sellPrice = priceValue.s ?? 0.0
-            
+
             // 只包含有有效价格的数据（至少有一个价格大于0）
             if buyPrice > 0 || sellPrice > 0 {
                 result[typeId] = (buy: buyPrice, sell: sellPrice)
             }
         }
-        
+
         return result
     }
 
@@ -263,24 +263,24 @@ class GitHubMarketPriceAPI {
             Logger.error("保存缓存文件失败: \(error.localizedDescription)")
         }
     }
-    
+
     // MARK: - ESI 构造方法
-    
+
     /// 从 ESI 获取订单并构造市场价格数据
     ///
     /// - Returns: 解析后的价格数据
     /// - Throws: 网络错误或解析错误
     private func fetchFromESI() async throws -> [Int: (buy: Double, sell: Double)] {
         Logger.info("开始从 ESI 获取市场订单数据")
-        
+
         // 1. 获取所有页面的订单数据
         let allOrders = try await fetchAllOrdersFromESI()
         Logger.debug("从 ESI 获取到 \(allOrders.count) 条订单")
-        
+
         // 2. 处理订单数据
         let processedData = processOrdersFromESI(allOrders)
         Logger.debug("处理后的价格数据包含 \(processedData.count) 种物品")
-        
+
         // 3. 转换为返回格式
         var result: [Int: (buy: Double, sell: Double)] = [:]
         for (typeIdString, priceValue) in processedData {
@@ -288,21 +288,21 @@ class GitHubMarketPriceAPI {
                 Logger.warning("无法解析typeId: \(typeIdString)，跳过")
                 continue
             }
-            
+
             let buyPrice = priceValue.b ?? 0.0
             let sellPrice = priceValue.s ?? 0.0
-            
+
             if buyPrice > 0 || sellPrice > 0 {
                 result[typeId] = (buy: buyPrice, sell: sellPrice)
             }
         }
-        
+
         // 4. 保存到ESI缓存
         await saveESIToCache(data: processedData)
-        
+
         return result
     }
-    
+
     /// 从 ESI 获取所有页面的订单数据
     ///
     /// - Returns: 所有订单数据
@@ -310,7 +310,7 @@ class GitHubMarketPriceAPI {
     private func fetchAllOrdersFromESI() async throws -> [MarketOrder] {
         // 构建基础URL
         let baseURL = URL(string: "\(esiBaseURL)/\(targetRegionID)/orders?order_type=all&datasource=tranquility")!
-        
+
         // 使用 NetworkManager 的分页获取功能
         let allOrders = try await NetworkManager.shared.fetchPaginatedDataPublic(
             from: baseURL,
@@ -322,10 +322,10 @@ class GitHubMarketPriceAPI {
                 Logger.debug("ESI订单获取进度: \(currentPage)/\(totalPages)")
             }
         )
-        
+
         return allOrders
     }
-    
+
     /// 处理 ESI 订单数据，过滤并计算价格
     ///
     /// - Parameter orders: 订单列表
@@ -334,45 +334,45 @@ class GitHubMarketPriceAPI {
         // 1. 过滤 system_id = targetSystemID 的订单
         let filteredOrders = orders.filter { $0.systemId == targetSystemID }
         Logger.debug("过滤后剩余 \(filteredOrders.count) 条订单（system_id=\(targetSystemID)）")
-        
+
         // 2. 按 type_id 分组
         var ordersByType: [Int: [MarketOrder]] = [:]
         for order in filteredOrders {
             ordersByType[order.typeId, default: []].append(order)
         }
-        
+
         Logger.debug("共 \(ordersByType.count) 种不同的 type_id")
-        
+
         // 3. 对每个 type_id，计算最高买价和最低卖价
         var result: GitHubMarketPriceData = [:]
-        
+
         for (typeId, typeOrders) in ordersByType {
             let buyOrders = typeOrders.filter { $0.isBuyOrder }
             let sellOrders = typeOrders.filter { !$0.isBuyOrder }
-            
+
             // 计算最高买价（买单中价格最高的）
             let maxBuyPrice = buyOrders.map { $0.price }.max() ?? 0.0
-            
+
             // 计算最低卖价（卖单中价格最低的）
             let minSellPrice = sellOrders.map { $0.price }.min() ?? 0.0
-            
+
             // 如果两者都为0，则跳过该条目
             if maxBuyPrice == 0 && minSellPrice == 0 {
                 continue
             }
-            
+
             // 构建结果对象，只包含非0的字段
             let buyPrice: Double? = maxBuyPrice > 0 ? maxBuyPrice : nil
             let sellPrice: Double? = minSellPrice > 0 ? minSellPrice : nil
             let item = MarketPriceValue(b: buyPrice, s: sellPrice)
-            
+
             // 将typeId转换为字符串作为key
             result[String(typeId)] = item
         }
-        
+
         return result
     }
-    
+
     /// 从ESI缓存加载数据
     ///
     /// - Returns: 缓存的价格数据，如果缓存不存在或已过期则返回nil
@@ -408,7 +408,7 @@ class GitHubMarketPriceAPI {
         Logger.debug("从ESI缓存 \(filePath) 加载了 \(result.count) 个物品的价格数据")
         return result
     }
-    
+
     /// 保存ESI数据到缓存
     ///
     /// - Parameter data: 要保存的数据字典
