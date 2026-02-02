@@ -2001,6 +2001,12 @@
 "Main_Database_Mutation_Attribute" = "突变属性";
 "Main_Database_Mutation_Source" = "突变来源";
 "Main_Database_Mutation_Results" = "突变产出";
+"Abyssal_Item_Detail" = "物品详情";
+"Abyssal_Created_By" = "制作者";
+"Abyssal_Source_Item" = "来源物品";
+"Abyssal_Mutaplasmid_Used" = "使用的突变质体";
+"Abyssal_Loading" = "正在加载深渊属性…";
+"Abyssal_Load_Error" = "加载失败";
 "Main_Database_Required_Mutaplasmids" = "所需突变质体";
 "Main_Database_Applicable_Blueprints" = "适用于";
 "Main_Database_Applicable_Blueprints_info" = "需要此物品的蓝图";

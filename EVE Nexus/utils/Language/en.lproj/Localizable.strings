@@ -1963,6 +1963,12 @@
 "Main_Database_Mutation_Attribute" = "Mutation";
 "Main_Database_Mutation_Source" = "Mutation Source";
 "Main_Database_Mutation_Results" = "Mutation Output";
+"Abyssal_Item_Detail" = "Item Detail";
+"Abyssal_Created_By" = "Created By";
+"Abyssal_Source_Item" = "Source Item";
+"Abyssal_Mutaplasmid_Used" = "Mutaplasmid Used";
+"Abyssal_Loading" = "Loading abyssal properties…";
+"Abyssal_Load_Error" = "Load Failed";
 "Main_Database_Required_Mutaplasmids" = "Required Mutaplasmids";
 "Main_Database_Applicable_Blueprints" = "Required for";
 "Main_Database_Applicable_Blueprints_info" = "Blueprints that require this item";

@@ -6,24 +6,6 @@ private enum IconSize {
     static let location: CGFloat = 36
 }
 
-// 共用的图标视图
-private struct AssetIconView: View {
-    let iconName: String
-    let size: CGFloat
-
-    init(iconName: String, size: CGFloat = IconSize.standard) {
-        self.iconName = iconName
-        self.size = size
-    }
-
-    var body: some View {
-        IconManager.shared.loadImage(for: iconName)
-            .resizable()
-            .frame(width: size, height: size)
-            .cornerRadius(6)
-    }
-}
-
 // 位置行视图
 private struct LocationRowView: View {
     let location: AssetTreeNode
