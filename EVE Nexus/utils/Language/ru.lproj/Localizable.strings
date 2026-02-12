@@ -18,34 +18,34 @@
 "Main_Character" = "Пилот";
 "Main_Character_Sheet" = "Подробно о пилоте";
 "Main_Jump_Clones" = "Джамп клоны";
-"Main_Jump_Clones_Available" = "Jump Clones Available: ";
+"Main_Jump_Clones_Available" = "Доступные джамп клоны: ";
 "Main_Skills" = "Навыки";
-"Main_Skills_Ponits" = "%@ SP";
+"Main_Skills_Ponits" = "%@ СП";
 "Main_Skills_Points" = "Очки навыков (СП)";
 "Main_Skills_To_Learn" = "Требуется СП";
 "Main_Skills_Required_Time" = "Требуется времени";
 "Main_Skills_All_Points" = "Всего СП";
 "Main_Skills_Points_Format" = "%@ СП";
 // Skill Queue Countdown
-"Main_Skills_Queue_Training_Days" = "Training: %d skills(%dd %dh %dm)";
-"Main_Skills_Queue_Training_Hours" = "Training: %d skills(%dh %dm %ds)";
-"Main_Skills_Queue_Training_Minutes" = "Training: %d skills(%dm %ds)";
-"Main_Skills_Queue_Paused" = "Paused: %d skills";
-"Main_Skills_Queue_Complete" = "Complete";
-"Main_Skill_Queue_Free_SP" = "Free:";
+"Main_Skills_Queue_Training_Days" = "Изучается: %d навыков(%dд %dч %dм)";
+"Main_Skills_Queue_Training_Hours" = "Изучается: %d навыков(%dч %dм %dс)";
+"Main_Skills_Queue_Training_Minutes" = "Изучается: %d навыков(%dм %dс)";
+"Main_Skills_Queue_Paused" = "Остановлено: %d навыков";
+"Main_Skills_Queue_Complete" = "Закончено";
+"Main_Skill_Queue_Free_SP" = "Свободные:";
 
 "Main_EVE_Mail" = "Почта EVE";
 "Main_Calendar" = "Календарь";
 
 // Calendar related strings
-"Calendar_Loading" = "Loading calendar data...";
-"Calendar_No_Events" = "No Calendar Events";
-"Calendar_No_Events_Description" = "There are currently no calendar events";
-"Calendar_Refresh" = "Refresh";
-"Calendar_Error" = "Error";
+"Calendar_Loading" = "Загрузка данных календаря...";
+"Calendar_No_Events" = "Никаких событий в календаре";
+"Calendar_No_Events_Description" = "В настоящее время в календаре нет событий";
+"Calendar_Refresh" = "Обновить";
+"Calendar_Error" = "Ошибка";
 "Calendar_OK" = "OK";
-"Calendar_Load_Failed" = "Failed to load calendar: %@";
-"Calendar_Unknown_Time" = "Unknown Time";
+"Calendar_Load_Failed" = "Ошибка загрузки календаря: %@";
+"Calendar_Unknown_Time" = "Неизвестное время";
 "Calendar_Importance" = "Important";
 
 // Event response status
@@ -72,7 +72,7 @@
 "Calendar_Minutes" = "minutes";
 "Calendar_Hours" = "hours";
 "Calendar_Owner_Character" = "Character";
-"Calendar_Owner_Corporation" = "Corporation";
+"Calendar_Owner_Corporation" = "Корпорация";
 "Calendar_Owner_Alliance" = "Alliance";
 
 // Notification related texts
@@ -163,17 +163,17 @@
 
 "Main_Wealth" = "Финансы";
 "Main_Wealth_ISK" = "Кошелек: %@";
-"Main_Loyalty_Points" = "Loyalty Points";
-"Main_Databases" = "Databases";
-"Main_Database" = "Database";
-"Main_Database_title" = "Database";
-"Main_Database_unpublished" = "Unpublished";
-"Main_Database_published" = "Published";
-"Main_Database_Search" = "Search";
-"Main_Database_Search_Item" = "Search Item";
-"Main_Database_Searching" = "Searching...";
-"Main_Database_Variations" = "Variations";
-"Main_Database_Browse_Variations" = "Browse %d variations";
+"Main_Loyalty_Points" = "Наградные баллы (ЛП)";
+"Main_Databases" = "Информация";
+"Main_Database" = "Энциклопедия";
+"Main_Database_title" = "Энциклопедия";
+"Main_Database_unpublished" = "Не актуальные";
+"Main_Database_published" = "Актуальные";
+"Main_Database_Search" = "Поиск";
+"Main_Database_Search_Item" = "Поиск предмета";
+"Main_Database_Searching" = "Идет поиск...";
+"Main_Database_Variations" = "Варианты";
+"Main_Database_Browse_Variations" = "Показать %d вариаций";
 "Main_Database_Item_info_Immune" = "Immune";
 "Main_Database_Item_info_NonImmune" = "Non-immune";
 "Main_Database_Item_info_Reprocess" = "Reprocess Output";
@@ -190,10 +190,10 @@
 "Main_Database_NPC_Ships" = "Ships";
 "Main_Market_Current_Price" = "Current Price";
 "Main_Market_Price_History" = "Price History";
-"Main_Market_Price_History_1M" = "1 Month";
-"Main_Market_Price_History_3M" = "3 Months";
-"Main_Market_Price_History_1Y" = "1 Year";
-"Main_Market_Show_market_orders" = "Show market orders";
+"Main_Market_Price_History_1M" = "1 Месяц";
+"Main_Market_Price_History_3M" = "3 Месяца";
+"Main_Market_Price_History_1Y" = "1 год";
+"Main_Market_Show_market_orders" = "Показать ордера";
 "Main_Market_WH_info" = "Info of wormhole";
 "Main_Market_WH_Details" = "Details";
 "Main_Market_WH_MaxStableTime" = "Maximum Stable Time";
@@ -213,17 +213,17 @@
 "Main_WH" = "Wormholes";
 "Main_Incursions" = "Incursions";
 "Main_Infested_Systems" = "Infested Systems";
-"Main_Business" = "Business";
-"Main_Assets" = "Assets";
-"Main_Market_Orders" = "Market Orders";
-"Main_Contracts" = "Contracts";
-"Main_Market_Transactions" = "Market Transactions";
-"Main_Market_Transactions_short" = "Transactions";
-"Main_Wallet_Journal" = "Wallet Journal";
-"Main_Wallet_Journal_short" = "Journal";
-"Main_Industry_Jobs" = "Industry Jobs";
-"Main_Other" = "Other";
-"Main_Unzipping_Icons" = "Unzipping Icons...";
+"Main_Business" = "Деловая деятельность";
+"Main_Assets" = "Актывы";
+"Main_Market_Orders" = "Заказы на рынке";
+"Main_Contracts" = "Контракты";
+"Main_Market_Transactions" = "Операции на рынке";
+"Main_Market_Transactions_short" = "Транзакции";
+"Main_Wallet_Journal" = "Движения по кошельку";
+"Main_Wallet_Journal_short" = "Транзакции";
+"Main_Industry_Jobs" = "Производство";
+"Main_Other" = "Другое";
+"Main_Unzipping_Icons" = "Распаковка иконок...";
 
 // Insurance
 "Insurance_Title" = "Insurance";
@@ -235,22 +235,22 @@
 "Insurance_No_Data" = "No insurance data available for this ship";
 "Insurance_Info_Tip" = "Insurance payout is issued when the ship is destroyed";
 
-"Main_Setting" = "Setting";
-"Main_Setting_Title" = "Setting";
-"Main_Setting_Language" = "App Language";
-"Main_Setting_Database_Language" = "Database Language";
-"Main_Setting_Select_your_language" = "Select your language";
-"Main_Setting_Appearance" = "Appearance";
-"Main_Setting_ColorMode" = "Appearance Mode";
-"Main_Setting_Others" = "Others";
-"Main_Setting_Dark" = "Dark";
-"Main_Setting_Light" = "Light";
-"Main_Setting_Auto" = "Auto";
-"Main_Setting_Select_Language" = "Select Language";
-"Main_Setting_Clean_Cache" = "Clean Cache";
-"Main_Setting_Clean_Character_Database" = "Clean Character Data";
+"Main_Setting" = "Настройки";
+"Main_Setting_Title" = "Настройки";
+"Main_Setting_Language" = "Язык приложения";
+"Main_Setting_Database_Language" = "Язык базы данных";
+"Main_Setting_Select_your_language" = "Выберите ваш язык";
+"Main_Setting_Appearance" = "Внешний вид";
+"Main_Setting_ColorMode" = "Цветовой режим";
+"Main_Setting_Others" = "Разные";
+"Main_Setting_Dark" = "Темный";
+"Main_Setting_Light" = "Светлый";
+"Main_Setting_Auto" = "Авто";
+"Main_Setting_Select_Language" = "Выбрать язык";
+"Main_Setting_Clean_Cache" = "Очистить кэш";
+"Main_Setting_Clean_Character_Database" = "Очистить данные персонажа";
 "Main_Setting_Clean_Character_Database_Detail" = "Reset character database and delete all locally stored character data";
-"Main_Setting_Clean_Character_Database_Title" = "Clean Character Data";
+"Main_Setting_Clean_Character_Database_Title" = "Очистить данные персонажа";
 "Main_Setting_Clean_Character_Database_Message" = "Warning: This will delete all locally stored character data, including wallet history. This action cannot be undone. Are you sure?";
 "Main_Database_Role_Bonuses" = "Role Bonuses";
 "Main_Database_Misc_Bonuses" = "Misc Bonuses";
@@ -309,8 +309,8 @@
 "Misc_unit" = "unit(s)";
 "Misc_Done" = "Done";
 "Misc_Calculating" = "Calculating...";
-"Misc_Loading" = "Loading...";
-"Misc_Not_Found" = "Not found";
+"Misc_Loading" = "Загрузка...";
+"Misc_Not_Found" = "Не найдено";
 "Misc_Level" = "Level %d";
 "Misc_Level_Short" = "Lv %d";
 "Misc_No_Data" = "No Data";
@@ -347,10 +347,10 @@
 "Misc_Copy_Victim_Name" = "Copy Victim";
 "Misc_Copy_Module_Name" = "Copy Module Name";
 
-"Wallet_Transaction_View_Buyer_Info" = "View Buyer Info";
-"Wallet_Transaction_View_Seller_Info" = "View Seller Info";
-"Misc_Copy_Item_Name" = "Copy Item Name";
-"Misc_Copy_Trans" = "Copy Translation";
+"Wallet_Transaction_View_Buyer_Info" = "Показать информ. о покупателе";
+"Wallet_Transaction_View_Seller_Info" = "Показать информ. о продавце";
+"Misc_Copy_Item_Name" = "Скопировать имя предмета";
+"Misc_Copy_Trans" = "Скопировать перевод";
 "Misc_Save_Render_Image" = "Save Render Image";
 "Misc_Save_Render_Image_Success" = "Render image saved to photo library";
 "Misc_Save_Render_Image_Error" = "Failed to save render image, please check photo library permissions";
@@ -375,10 +375,10 @@
 "Industry_Filtered_Count" = "Filtered %d items";
 
 // Structure Market Orders
-"Structure_Orders_Load" = "Load Market Orders";
-"Structure_Orders_Loading" = "Loading Orders...";
-"Structure_Orders_Success" = "Orders Loaded Successfully";
-"Structure_Orders_Failed" = "Failed to Load Orders";
+"Structure_Orders_Load" = "Загрузить Ордера";
+"Structure_Orders_Loading" = "Загпузка ордеров...";
+"Structure_Orders_Success" = "Ордера успешно загружены";
+"Structure_Orders_Failed" = "Загрузка ордеров не удалась";
 
 // Blueprint Details
 "Blueprint_Product" = "Product";
@@ -393,7 +393,7 @@
 "Time_Minute" = "m";
 "Time_Second" = "s";
 
-"Item_Info" = "Item Info";
+"Item_Info" = "Описание предмета";
 "Blueprint_Info" = "Blueprint Info";
 "Blueprint_Manufacturing" = "Manufacturing";
 "Blueprint_Research_Material" = "Material Research";
@@ -528,18 +528,18 @@
 "Main_Market_Detail" = "Market Detail";
 "Account_Logout" = "Logout";
 // Account Management
-"Account_Management" = "Character Management";
-"Account_Add_Character" = "Add Character";
-"Account_Logging_In" = "Logging in...";
-"Account_Logged_Characters" = "Logged Characters";
+"Account_Management" = "Управление персонажами";
+"Account_Add_Character" = "Добавить пилота";
+"Account_Logging_In" = "Вход в систему...";
+"Account_Logged_Characters" = "Добавленные пилоты";
 "Account_Cannot_Get_Auth_URL" = "Cannot get authorization URL";
-"Account_Login_Failed" = "Login Failed";
-"Account_Remove_Confirm_Title" = "Remove Character";
-"Account_Remove_Confirm_Cancel" = "Cancel";
-"Account_Remove_Confirm_Remove" = "Remove";
-"Account_Character_ID" = "Character ID";
-"Account_Total_SP" = "Total SP";
-"Account_Wallet_value" = "Wallet";
+"Account_Login_Failed" = "Вход не удался";
+"Account_Remove_Confirm_Title" = "Удалитьпилота";
+"Account_Remove_Confirm_Cancel" = "Отменить";
+"Account_Remove_Confirm_Remove" = "Удалить";
+"Account_Character_ID" = "ID персонажа";
+"Account_Total_SP" = "Всего SP";
+"Account_Wallet_value" = "Кошелек";
 "Scopes_refresh_hint" = "Click to refresh invalid scopes:";
 "Account_Steam_Login_Hint" = "About Steam Login";
 "Account_Steam_Login_Title" = "Steam Login Help";
@@ -550,17 +550,17 @@
 "Common_OK" = "OK";
 
 // Language Settings
-"Main_Setting_Language_Switch_Title" = "Switch Language";
-"Main_Setting_Language_Switch_Message" = "The app needs to reload to apply the language change. Do you want to continue?";
-"Main_Setting_Language_Switch_Cancel" = "Cancel";
-"Main_Setting_Language_Switch_Confirm" = "Switch";
+"Main_Setting_Language_Switch_Title" = "Изменить язык";
+"Main_Setting_Language_Switch_Message" = "Чтобы изменить язык, приложение необходимо перезагрузить. Хотите продолжить?";
+"Main_Setting_Language_Switch_Cancel" = "Отмена";
+"Main_Setting_Language_Switch_Confirm" = "Сменить язык";
 
 
-"Character_in_station" = "in Station";
+"Character_in_station" = "на станции";
 "Character_in_structure" = "in Structure";
-"Character_in_space" = "in Space";
+"Character_in_space" = "В космосе";
 "Character_Location" = "Location";
-"Character_Current_Ship" = "Current Ship";
+"Character_Current_Ship" = "Текущий корабль";
 "Character_Rank" = "Rank";
 
 "rank_500003_0" = "Paladin Crusader";
@@ -620,7 +620,7 @@
 "Main_Setting_Logs_Level_Warning" = "WARNING";
 "Main_Setting_Logs_Level_Error" = "ERROR";
 "Main_Setting_Logs_Level_Fault" = "FAULT";
-"Main_Setting_Logs_Search_Placeholder" = "Search in log...";
+"Main_Setting_Logs_Search_Placeholder" = "Поиск в логе...";
 "Main_Setting_Logs_Search_No_Results" = "No results found";
 
 // Assets Loading
@@ -928,33 +928,33 @@
 "Mining_Total_Volume" = "Total Volume";
 "Mining_Unknown_Ore" = "Unknown Ore: %d";
 
-"Common_info" = "Basic info";
+"Common_info" = "Основная информация";
 "Timer" = "Timer";
 
-"Character_Security_Status" = "Security Status";
-"Character_Current_Ship" = "Current Ship";
-"Character_Current_Location" = "Current Location";
+"Character_Security_Status" = "Статус безапасности";
+"Character_Current_Ship" = "Текущий корабль";
+"Character_Current_Location" = "Текущее местоположение";
 
 // Jump Fatigue
-"Character_Jump_Fatigue" = "Jump Fatigue";
-"Character_No_Jump_Fatigue" = "No Jump Fatigue";
-"Character_Last_Jump" = "Last Jump: %@";
+"Character_Jump_Fatigue" = "Усталость от прыжков";
+"Character_No_Jump_Fatigue" = "Нет усталости";
+"Character_Last_Jump" = "Последний прыжок: %@";
 
 // Character Info
-"Character_Birthday" = "Birthday";
-"Character_Age" = "%dy %dm %dd";
+"Character_Birthday" = "День рождения";
+"Character_Age" = "%dл %dм %dд";
 
 // Medals
 "Character_Medals" = "Medals";
 
 // Clone related
-"Character_Home_Station" = "Home Station";
+"Character_Home_Station" = "Домашняя станция";
 "Character_Home_Location" = "Home Location";
 "Character_Last_Clone_Jump" = "Last Clone Jump";
 "Character_Last_Station_Change" = "Last Station Change";
-"Character_Current_Implants" = "Current Implants";
-"Character_Jump_Clones" = "Jump Clones";
-"Character_Clone_Count" = "%d Clone(s)";
+"Character_Current_Implants" = "Текущие импланты";
+"Character_Jump_Clones" = "Джамп клоны";
+"Character_Clone_Count" = "%d Клон(ов)";
 "Character_View_Implants" = "View Implants";
 "Character_Clone_Details" = "Clone Details";
 "Character_Clone_Implants" = "Implants";
@@ -973,74 +973,74 @@
 "Character_Never" = "Never";
 
 // Skills View
-"Main_Skills_Attribute" = "Attributes";
-"Main_Skills_Category" = "Skill Categories";
-"Main_Skills_Queue_Count" = "Skill Queue (%d)";
-"Main_Skills_Queue_Count_Time" = "Skill Queue (%d) - %@ remaining";
-"Main_Skills_Queue_Count_Paused" = "Skill Queue (%d) - Paused";
-"Main_Skills_Queue_Empty" = "No skills in queue";
-"Main_Skills_Queue_All_Completed" = "All skills completed";
+"Main_Skills_Attribute" = "Характеристики";
+"Main_Skills_Category" = "Категории навыков";
+"Main_Skills_Queue_Count" = "Очередь освоения (%d)";
+"Main_Skills_Queue_Count_Time" = "Очередь освоения (%d) - %@ срок обучения";
+"Main_Skills_Queue_Count_Paused" = "Очередь освоения (%d) - Остановлено";
+"Main_Skills_Queue_Empty" = "Нет навыков в очереди";
+"Main_Skills_Queue_All_Completed" = "Все навыки выучены";
 "Main_Skills_Points_Progress" = "%@/%@ SP";
 "Main_Skills_Time_Required" = "%@";
-"Main_Skills_Categories" = "Skill Categories";
-"Main_Skills_Not_Injected" = "Uninjected";
-"Main_Skills_Completed" = "Completed";
-"Main_Skills_Trainable" = "Trainable";
-"Main_Skills_Paused" = "Paused";
-"Main_Skills_Running" = "Running";
-"Main_Skills_Empty" = "Empty Queue";
-"Main_Skills_number" = "Skills";
-"Main_Skills_Queue_In_Queue" = "In Queue: %d";
-"Main_Skills_In_Queue" = "In Queue";
-"Main_Skills_Queue_Count" = "%d in Queue";
-"Main_Skills_Training" = "Training";
+"Main_Skills_Categories" = "Категории навыков";
+"Main_Skills_Not_Injected" = "Не ускоренные";
+"Main_Skills_Completed" = "Завершено";
+"Main_Skills_Trainable" = "Изучаемые";
+"Main_Skills_Paused" = "Остановлено";
+"Main_Skills_Running" = "Запущено";
+"Main_Skills_Empty" = "Пустая очередь";
+"Main_Skills_number" = "Навыки";
+"Main_Skills_Queue_In_Queue" = "В очереди: %d";
+"Main_Skills_In_Queue" = "В очереди";
+"Main_Skills_Queue_Count" = "%d в очереди";
+"Main_Skills_Training" = "Изучение";
 
 // Time Format
-"Time_Days_Hours_Minutes" = "%dd %dh %dm";
-"Time_Hours_Minutes" = "%dh %dm";
+"Time_Days_Hours_Minutes" = "%dд %dч %dм";
+"Time_Hours_Minutes" = "%dч %dм";
 
 // Character Attributes Time
-"Character_Attributes_Ready_Now" = "Now";
-"Time_Months_Days" = "%dM %dD";
-"Time_Months" = "%dM";
+"Character_Attributes_Ready_Now" = "Сейчас";
+"Time_Months_Days" = "%dМ %dД";
+"Time_Months" = "%dМ";
 
 // Character Attributes
-"Character_Attributes_Title" = "Character Attributes";
-"Character_Attributes_Basic" = "Basic Attributes";
-"Character_Attributes_Remap" = "Attribute Remap";
-"Character_Attribute_Perception" = "Perception";
-"Character_Attribute_Memory" = "Memory";
-"Character_Attribute_Willpower" = "Willpower";
-"Character_Attribute_Intelligence" = "Intelligence";
-"Character_Attribute_Charisma" = "Charisma";
-"Character_Attributes_Bonus_Remaps" = "Available Bonus Remaps";
-"Character_Attributes_Next_Remap" = "Next Remap Available";
-"Character_Attributes_Load_Failed" = "Failed to load attributes";
-"Character_Attributes_Has_Booster" = "Character has booster, +%d each";
+"Character_Attributes_Title" = "Характеристики пилота";
+"Character_Attributes_Basic" = "Основные характеристики";
+"Character_Attributes_Remap" = "Перераспределение";
+"Character_Attribute_Perception" = "Восприятие";
+"Character_Attribute_Memory" = "Память";
+"Character_Attribute_Willpower" = "Сила воли";
+"Character_Attribute_Intelligence" = "Интеллект";
+"Character_Attribute_Charisma" = "Харизма";
+"Character_Attributes_Bonus_Remaps" = "Кол-во перераспределений";
+"Character_Attributes_Next_Remap" = "Следующее перераспр. через";
+"Character_Attributes_Load_Failed" = "Ошибка загрузки характеристик";
+"Character_Attributes_Has_Booster" = "Используется бустер, +%d к каждому";
 
 // Skill Categories
 "Main_Skills_No_Skills" = "No skills found";
 
-"Main_Skills_Required_Injectors" = "Required Skill Injectors";
-"Main_Skills_Total_Required_SP" = "Estimated Skill Points: %@ SP";
-"Main_Skills_Total_Injector_Cost" = "Estimated Injector Cost: %@";
-"Main_Skills_Injector_Actual_SP" = "Each +%@ SP";
+"Main_Skills_Required_Injectors" = "Требуется инжекторов навыков";
+"Main_Skills_Total_Required_SP" = "Осталось изучить СП: %@ SP";
+"Main_Skills_Total_Injector_Cost" = "Стоимость инжекторов: %@";
+"Main_Skills_Injector_Actual_SP" = "Каждый +%@ SP";
 
 // Wealth View
-"Wealth_Total" = "Total Wealth";
-"Wealth_Assets" = "Assets";
-"Wealth_Implants" = "Implants";
-"Wealth_Orders" = "Market Orders";
-"Wealth_Wallet" = "Wallet Balance";
-"Wealth_Assets_Count" = "%d Items";
-"Wealth_Implants_Count" = "%d Implants";
-"Wealth_Orders_Count" = "%d Orders";
-"Wealth_Wallet_Balance" = "Current Balance";
+"Wealth_Total" = "Все имущество и финансы";
+"Wealth_Assets" = "Активы";
+"Wealth_Implants" = "Импланты";
+"Wealth_Orders" = "Заказы на рынке";
+"Wealth_Wallet" = "Баланс кошелька";
+"Wealth_Assets_Count" = "%d предметов";
+"Wealth_Implants_Count" = "%d имплантов";
+"Wealth_Orders_Count" = "%d заказов";
+"Wealth_Wallet_Balance" = "Текущий баланс";
 
 // Wealth Detail View
 "Wealth_Detail_Title" = "%@ Est. (Top 20)";
-"Wealth_Detail_Loading" = "Loading...";
-"Wealth_Detail_MarketPrice" = "Market Price";
+"Wealth_Detail_Loading" = "Загрузка...";
+"Wealth_Detail_MarketPrice" = "Цена на маркете";
 "Wealth_Detail_Quantity" = "Quantity";
 "Wealth_Detail_TotalValue" = "Total Value";
 "Wealth_Detail_HasPrice" = "Items with Market Price (Top 20)";
@@ -1061,18 +1061,18 @@
 "Main_LP_Unknown_Faction" = "Unknown Faction";
 "Main_LP_Militia" = "FW";
 
-"Main_EVE_Mail_Title" = "EVE Mail";
-"Main_EVE_Mail_All" = "All Mails";
-"Main_EVE_Mail_Mailboxes" = "All Mailboxes";
-"Main_EVE_Mail_List" = "Mail List";
-"Main_EVE_Mail_No_Mail" = "No Mail";
-"Main_EVE_Mail_Inbox" = "Inbox";
-"Main_EVE_Mail_Sent" = "Sent";
-"Main_EVE_Mail_Corporation" = "Corporation";
-"Main_EVE_Mail_Alliance" = "Alliance";
-"Main_EVE_Mail_Spam" = "Spam";
-"Main_EVE_Mail_Loading" = "Loading mails...";
-"Main_EVE_Mail_Error" = "Failed to load mails";
+"Main_EVE_Mail_Title" = "Почта EVE";
+"Main_EVE_Mail_All" = "Все письма";
+"Main_EVE_Mail_Mailboxes" = "Папки";
+"Main_EVE_Mail_List" = "Список писем";
+"Main_EVE_Mail_No_Mail" = "Нет почты";
+"Main_EVE_Mail_Inbox" = "Входящие";
+"Main_EVE_Mail_Sent" = "Отправленные";
+"Main_EVE_Mail_Corporation" = "Корпорация";
+"Main_EVE_Mail_Alliance" = "Альянс";
+"Main_EVE_Mail_Spam" = "Спам";
+"Main_EVE_Mail_Loading" = "Загрузка писем...";
+"Main_EVE_Mail_Error" = "Сбой загрузки почты";
 
 "Main_EVE_Mail_Lists" = "Mail Lists";
 "Main_EVE_Mail_List_Name" = "List Name";
@@ -1080,77 +1080,77 @@
 "Main_EVE_Mail_List_No_Lists" = "No mailing lists subscribed";
 
 // Mail Compose
-"Main_EVE_Mail_New" = "New Mail";
-"Main_EVE_Mail_Recipients" = "Recipients";
-"Main_EVE_Mail_Add_Recipient" = "Add Recipient";
-"Main_EVE_Mail_Add_Mailing_List" = "Add Mailing List";
-"Main_EVE_Mail_Subject" = "Subject";
-"Main_EVE_Mail_Body" = "Body";
-"Main_EVE_Mail_Send" = "Send";
-"Main_EVE_Mail_Send_Success" = "Mail sent successfully";
-"Main_EVE_Mail_Send_Failed" = "Failed to send mail";
-"Main_EVE_Mail_Cancel" = "Cancel";
-"Main_EVE_Mail_Search_Recipients" = "Search characters, corporations or alliances";
-"Main_EVE_Mail_Min_Search_Length" = "Please enter at least 3 characters";
-"Main_EVE_Mail_No_Results" = "No results found";
-"Main_EVE_Mail_Select_Mailing_List" = "Select Mailing List";
-"Main_EVE_Mail_No_Mailing_Lists" = "No mailing lists subscribed";
+"Main_EVE_Mail_New" = "Новое письмо";
+"Main_EVE_Mail_Recipients" = "Получатели";
+"Main_EVE_Mail_Add_Recipient" = "Добавить получателя";
+"Main_EVE_Mail_Add_Mailing_List" = "Список получателей";
+"Main_EVE_Mail_Subject" = "Тема";
+"Main_EVE_Mail_Body" = "Письмо";
+"Main_EVE_Mail_Send" = "Отправить";
+"Main_EVE_Mail_Send_Success" = "Письмо успешно отправлено";
+"Main_EVE_Mail_Send_Failed" = "Сбой отправки письма";
+"Main_EVE_Mail_Cancel" = "Отмена";
+"Main_EVE_Mail_Search_Recipients" = "Поиск пилотов, корпораций или альяносов";
+"Main_EVE_Mail_Min_Search_Length" = "Пожалуйста, введите не менее 3 символов";
+"Main_EVE_Mail_No_Results" = "Не найдено результатов";
+"Main_EVE_Mail_Select_Mailing_List" = "Выбрать список рассылки";
+"Main_EVE_Mail_No_Mailing_Lists" = "Ни на какие списки рассылки вы не подписаны";
 
 // Mail Detail
-"Main_EVE_Mail_Reply" = "Reply";
-"Main_EVE_Mail_Reply_All" = "Reply All";
-"Main_EVE_Mail_Forward" = "Forward";
-"Main_EVE_Mail_From" = "From: ";
-"Main_EVE_Mail_To" = "To: ";
-"Main_EVE_Mail_Unknown_Recipient" = "Unknown Recipient";
-"Main_EVE_Mail_Unknown_Sender" = "Unknown Sender";
-"Main_EVE_Mail_Load_Failed" = "Failed to load mail content";
-"Main_EVE_Mail_Original_Message" = "-------- Original Message --------";
+"Main_EVE_Mail_Reply" = "Ответить";
+"Main_EVE_Mail_Reply_All" = "Ответить всем";
+"Main_EVE_Mail_Forward" = "Переслать";
+"Main_EVE_Mail_From" = "От кого: ";
+"Main_EVE_Mail_To" = "Кому: ";
+"Main_EVE_Mail_Unknown_Recipient" = "Неизвестный получатель";
+"Main_EVE_Mail_Unknown_Sender" = "Неизвестный отправитель";
+"Main_EVE_Mail_Load_Failed" = "Не удалось загрузить содержимое почты";
+"Main_EVE_Mail_Original_Message" = "-------- Оригинальное сообщение --------";
 "Main_EVE_Mail_Wrote" = "-----------------";
-"Main_EVE_Mail_Forward_Header" = "-------- Forwarded Message --------";
-"Main_EVE_Mail_Forward_From" = "From: %@";
-"Main_EVE_Mail_Forward_Date" = "Date: %@";
-"Main_EVE_Mail_Forward_Subject" = "Subject: %@";
-"Main_EVE_Mail_Forward_To" = "To: %@";
-"Main_EVE_Mail_Copy_Sender" = "Copy Sender";
-"Main_EVE_Mail_Copy_Recipients" = "Copy Recipients";
+"Main_EVE_Mail_Forward_Header" = "-------- Пересланное сообщение --------";
+"Main_EVE_Mail_Forward_From" = "От кого: %@";
+"Main_EVE_Mail_Forward_Date" = "Дата: %@";
+"Main_EVE_Mail_Forward_Subject" = "Тема: %@";
+"Main_EVE_Mail_Forward_To" = "Кому: %@";
+"Main_EVE_Mail_Copy_Sender" = "Копировать отправителя";
+"Main_EVE_Mail_Copy_Recipients" = "Копировать получателя";
 
 // Mail Recipient Types
-"Main_EVE_Mail_Recipient_Character" = "Character";
-"Main_EVE_Mail_Recipient_Corporation" = "Corporation";
-"Main_EVE_Mail_Recipient_Alliance" = "Alliance";
-"Main_EVE_Mail_Recipient_Mailing_List" = "Mailing List";
+"Main_EVE_Mail_Recipient_Character" = "персонаж";
+"Main_EVE_Mail_Recipient_Corporation" = "Корпорация";
+"Main_EVE_Mail_Recipient_Alliance" = "Альянс";
+"Main_EVE_Mail_Recipient_Mailing_List" = "Список рассылки";
 
 // Mail Quick Select
-"Main_EVE_Mail_Quick_Select" = "Quick Select";
-"Main_EVE_Mail_Searching" = "Searching...";
-"Main_EVE_Mail_Search_Failed" = "Search Failed";
+"Main_EVE_Mail_Quick_Select" = "Быстрый выбор";
+"Main_EVE_Mail_Searching" = "Поиск...";
+"Main_EVE_Mail_Search_Failed" = "Сбой поиска";
 
 "Main_Setting_Function" = "Function Setting";
 "Main_Setting_Show_Corporation_Affairs" = "Show Corporation Affairs";
 
 // Corporation Section
-"Main_Corporation" = "Corporation";
+"Main_Corporation" = "Корпорация";
 "Main_Setting_Show_Corporation_Affairs_detail" = "Whether to show the list of corporation affairs on the home page";
-"Main_Corporation_wallet" = "Corp Wallet";
-"Main_Corporation_Assets" = "Corp Assets";
-"Main_Corporation_Members" = "Corp Members";
-"Main_Corporation_Members_Title" = "Corporation Members";
-"Main_Corporation_Members_Loading" = "Loading members...";
-"Main_Corporation_Members_No_Data" = "No member data available";
-"Main_Corporation_Members_Error" = "Failed to load member data";
+"Main_Corporation_wallet" = "Корп финансы";
+"Main_Corporation_Assets" = "Корп имущество";
+"Main_Corporation_Members" = "Корп пилоты";
+"Main_Corporation_Members_Title" = "Участники корпорации";
+"Main_Corporation_Members_Loading" = "Загрузка участн...";
+"Main_Corporation_Members_No_Data" = "Нет информации для загрузки";
+"Main_Corporation_Members_Error" = "Загрузить инф. не удалось";
 "Main_Corporation_Members_Last_Login" = "Last Login";
 "Main_Corporation_Members_Last_Logout" = "Last Logout";
 "Main_Corporation_Members_Location" = "Location";
-"Main_Corporation_Members_Ship" = "Current Ship";
+"Main_Corporation_Members_Ship" = "Текущий корабль";
 "Main_Corporation_Members_Join_Date" = "Join Date";
-"Main_Corporation_Members_Refresh" = "Refresh";
+"Main_Corporation_Members_Refresh" = "Обновить";
 "Main_Corporation_Members_Total" = "%d Members";
-"Main_Corporation_Structures" = "Corp Structures";
+"Main_Corporation_Structures" = "Корп структуры";
 "Main_Corporation_Starbases" = "Corp Starbases";
-"Main_Corporation_Contracts" = "Corp Contracts";
-"Main_Corporation_Market_Orders" = "Corp Market Orders";
-"Main_Corporation_Industry" = "Corp Industry";
+"Main_Corporation_Contracts" = "Корп контракты";
+"Main_Corporation_Market_Orders" = "Корп заказы на рынке";
+"Main_Corporation_Industry" = "Корп производство";
 "Main_Corporation_Members_Favorites" = "Favorites";
 "Main_Corporation_Members_Favorites_Title" = "Favorite Members";
 "Main_Corporation_Members_Favorites_Total" = "%d Members Pinned";
@@ -1168,20 +1168,20 @@
 "Main_Corporation_Wallet_Default" = "Wallet Division %d";
 
 // Wallet Journal
-"Summary" = "Summary";
-"Total Income" = "Total Income";
-"Total Expense" = "Total Expense";
+"Summary" = "Под итог";
+"Total Income" = "Общие поступления";
+"Total Expense" = "Общие расходы";
 "Net Income" = "Net Income";
-"Transaction Dates" = "Transaction Dates";
-"transactions" = "trans";
-"Common_Error" = "Error";
-"Common_Unknown_Error" = "Unknown error occurred";
+"Transaction Dates" = "Даты транзакций";
+"transactions" = "транз";
+"Common_Error" = "Ошибка";
+"Common_Unknown_Error" = "Произошла неизвестная ошибка";
 "Net Balance" = "Net Balance";
-"Load More" = "Load More";
-"Balance" = "Balance: %@ ISK";
-"Reason" = "Reason: %@";
+"Load More" = "Загрузить еще";
+"Balance" = "Баланс: %@ ISK";
+"Reason" = "Причина: %@";
 
-"Total_volume" = "Total volume";
+"Total_volume" = "Общая сумма";
 
 // Optimal Attributes
 "Main_Skills_Optimal_Attributes" = "Optimal Attributes";
@@ -1233,12 +1233,12 @@
 "Main_Skills_Plan_Has_Dependencies" = "This skill is required by other skills";
 "Main_Skills_Plan_Cannot_Delete_Has_Dependencies" = "Cannot delete: some skills are required by others";
 
-"Main_Search" = "Search";
+"Main_Search" = "Поиск";
 
 // Searcher View
 "Main_Contact_Search" = "People & Locations";
-"Main_Search_Title" = "Search";
-"Main_Search_Placeholder" = "Enter search content...";
+"Main_Search_Title" = "Поиск";
+"Main_Search_Placeholder" = "Задайте вопрос...";
 "Main_Search_Type_Character" = "Character";
 "Main_Search_Type_Corporation" = "Corp";
 "Main_Search_Type_Alliance" = "Alliance";
@@ -1254,7 +1254,7 @@
 "Main_Search_Filter_Corporation" = "Corporation";
 "Main_Search_Filter_Alliance" = "Alliance";
 "Main_Search_Filter_Ticker" = "Ticker";
-"Main_Search_Filter_Security" = "Security Status";
+"Main_Search_Filter_Security" = "Статус безопасности";
 "Main_Search_Filter_Structure_Type" = "Structure Type";
 "Main_Search_Filter_Location" = "Location (System/Constellation/Region)";
 "Main_Search_Filter_All" = "All";
@@ -1270,30 +1270,30 @@
 "Main_Search_Sort_By_Name" = "By Name";
 
 "Main_Search_Filter_Clear" = "Clear Filters";
-"Main_Search_Filter_Only_My_Corp" = "Only My Corporation";
-"Main_Search_Filter_Only_My_Alliance" = "Only My Alliance";
+"Main_Search_Filter_Only_My_Corp" = "Только моя корп";
+"Main_Search_Filter_Only_My_Alliance" = "Только мой альянс";
 "Main_Search_Strict_Match" = "Exact Match";
 
 // Search Status
-"Main_Search_Status_Searching" = "Searching...";
-"Main_Search_Status_Finding_Characters" = "Finding characters...";
-"Main_Search_Status_Finding_Corporations" = "Finding corporations...";
-"Main_Search_Status_Finding_Alliances" = "Finding alliances...";
-"Main_Search_Status_Loading_Names" = "Loading names...";
-"Main_Search_Status_Loading_Details" = "Loading details...";
-"Main_Search_Status_Loading_Corps" = "Loading corporation info...";
-"Main_Search_Status_Loading_Alliances" = "Loading alliance info...";
-"Main_Search_Status_Loading_Alliance_Names" = "Loading alliance names...";
+"Main_Search_Status_Searching" = "Идет поиск...";
+"Main_Search_Status_Finding_Characters" = "Поиск пилотов...";
+"Main_Search_Status_Finding_Corporations" = "Поиск корпораций...";
+"Main_Search_Status_Finding_Alliances" = "Поиск альянсов...";
+"Main_Search_Status_Loading_Names" = "Загрузка имен...";
+"Main_Search_Status_Loading_Details" = "Загрузка подробностей...";
+"Main_Search_Status_Loading_Corps" = "Загрузка информации по корп...";
+"Main_Search_Status_Loading_Alliances" = "Загрузка информации по альянсу...";
+"Main_Search_Status_Loading_Alliance_Names" = "Загрузка названий альянсов...";
 
 // Search Results
-"Main_Search_Results" = "Search Results";
-"Main_Search_Failed" = "Search Failed";
-"Main_Search_Min_Length" = "Please enter at least 3 characters";
-"Main_Search_No_Results" = "No matching results found";
-"Main_Search_No_Filtered_Results" = "No results match the filter criteria";
-"Main_Search_Load_More" = "Load More";
-"Main_Search_Load_More_Status" = "Loading more results...";
-"Main_Search_Enter_Keywords" = "Please enter keywords to search";
+"Main_Search_Results" = "Результаты поиска";
+"Main_Search_Failed" = "Поиск не удался";
+"Main_Search_Min_Length" = "Пожалуйста, введите не менее 3 символов";
+"Main_Search_No_Results" = "Совпадающих результатов не найдено";
+"Main_Search_No_Filtered_Results" = "Ни один результат не соответствует критериям фильтрации";
+"Main_Search_Load_More" = "Загрузить еще";
+"Main_Search_Load_More_Status" = "Загрузить больше результатов...";
+"Main_Search_Enter_Keywords" = "Пожалуйста, введите ключевые слова для поиска";
 
 // Structure Search Status
 "Main_Search_Status_Finding_Structures" = "Searching for structures...";
@@ -1436,18 +1436,18 @@
 "KillMail_Data_Source" = "Data from zkillboard and ESI";
 
 "KillMail_Search_Prompt" = "Tap here to start searching...";
-"KillMail_Search_Input_Prompt" = "Enter search keyword";
-"KillMail_Search" = "Search";
-"KillMail_Cancel" = "Cancel";
-"KillMail_Search_Alliance" = "Alliance";
-"KillMail_Search_Character" = "Character";
-"KillMail_Search_Corporation" = "Corporation";
+"KillMail_Search_Input_Prompt" = "Введите ключевое слово для поиска";
+"KillMail_Search" = "Поиск";
+"KillMail_Cancel" = "Отмена";
+"KillMail_Search_Alliance" = "Альянс";
+"KillMail_Search_Character" = "Пилот";
+"KillMail_Search_Corporation" = "Корпорация";
 "KillMail_Search_Item" = "Item";
-"KillMail_Search_System" = "Solar System";
-"KillMail_Search_Region" = "Region";
-"Main_Search_Network_Min_Length" = "At least 3 characters to search online";
+"KillMail_Search_System" = "Солнечная система";
+"KillMail_Search_Region" = "регион";
+"Main_Search_Network_Min_Length" = "Не менее 3 символов для поиска в Интернете";
 
-"Main_Search_Results_Placeholder" = "Search results will be shown here";
+"Main_Search_Results_Placeholder" = "Результаты поиска будут показаны здесь";
 
 "Main_KM_Ship_Value" = "Ship value:";
 "Main_KM_Destroyed_Value" = "Destroyed:";
@@ -1578,11 +1578,11 @@
 "Corp_Structure_State_Unknown" = "Unknown State";
 
 // Monitor Time Options
-"Corp_Structure_Monitor_1Week" = "1 Week";
-"Corp_Structure_Monitor_2Weeks" = "2 Weeks";
-"Corp_Structure_Monitor_3Weeks" = "3 Weeks";
-"Corp_Structure_Monitor_1Month" = "1 Month";
-"Corp_Structure_Monitor_2Months" = "2 Months";
+"Corp_Structure_Monitor_1Week" = "1 Неделя";
+"Corp_Structure_Monitor_2Weeks" = "2 Недели";
+"Corp_Structure_Monitor_3Weeks" = "3 Недели";
+"Corp_Structure_Monitor_1Month" = "1 Месяц";
+"Corp_Structure_Monitor_2Months" = "2 Месяца";
 
 // Time Format
 "Corp_Structure_Time_Format_UTC" = " (UTC+8)";
@@ -1591,51 +1591,51 @@
 "Corp_Structure_Time_Format_Hours" = "%d hours later";
 "Corp_Structure_Time_Format_Minutes" = "%d minutes later";
 
-"Main_Planetary" = "Planetary Industry";
-"Main_Planetary_Title" = "Planetary Industry";
-"Main_Planetary_No_Planets" = "No Planets";
-"Main_Planetary_Unknown_Planet" = "Unknown Planet";
-"Main_Planetary_Unknown_Type" = "Unknown Type";
-"Main_Planetary_Loading" = "Loading...";
-"Main_Planetary_Error" = "Loading Failed";
-"Planet_Detail_Last_Update" = "Submit at";
-"Main_Planetary_Total_Count" = "Total %d planets";
-"Main_Planetary_location_calc" = "Find System for Colony";
-"Main_Planetary_of_Mine" = "My Planetary";
+"Main_Planetary" = "Планетарное производство";
+"Main_Planetary_Title" = "Планетарное производство";
+"Main_Planetary_No_Planets" = "Нет планет";
+"Main_Planetary_Unknown_Planet" = "Не известная планета";
+"Main_Planetary_Unknown_Type" = "Не известный тип";
+"Main_Planetary_Loading" = "Загрузка...";
+"Main_Planetary_Error" = "Загрузка прервана";
+"Planet_Detail_Last_Update" = "Перезапущена";
+"Main_Planetary_Total_Count" = "Всего %d планет";
+"Main_Planetary_location_calc" = "Поиск системы для колонии";
+"Main_Planetary_of_Mine" = "Мои планеты";
 
 // Extractor Related
-"Total_Yield" = "Total Yield:";
-"Current_Cycle_Yield" = "Cycle Yield:";
-"Current_Cycle_Elapsed" = "Cycle Elapsed:";
-"Cycle_Time" = "Cycle Time:";
-"Time_Remaining" = "Remaining Time:";
+"Total_Yield" = "Всего за период:";
+"Current_Cycle_Yield" = "Всего за цикл:";
+"Current_Cycle_Elapsed" = "Цикл идет:";
+"Cycle_Time" = "Время цикла:";
+"Time_Remaining" = "Осталось времени:";
 
 // Factory Related
-"Factory_Input" = "Input:";
-"Factory_Output" = "Output:";
-"Factory_Inventory" = "Cache:";
-"Factory_Processing" = "In production";
-"Factory_Waiting_Materials" = "Waiting for Materials";
-"Factory_Stopped" = "Stopped";
-"Factory_Not_Started" = "Not Started";
-"Factory_No_Recipe" = "No Schematic";
-"Factory_Ready" = "Ready";
+"Factory_Input" = "Потребляет:";
+"Factory_Output" = "Выход:";
+"Factory_Inventory" = "Наличие:";
+"Factory_Processing" = "Идет производство";
+"Factory_Waiting_Materials" = "Ожидает материалы";
+"Factory_Stopped" = "Остановлен";
+"Factory_Not_Started" = "Не запущен";
+"Factory_No_Recipe" = "Нет схемы";
+"Factory_Ready" = "Готов";
 "Planet_Detail_No_Data" = "No Data";
-"Planet_Detail_View_Time" = "View Time:";
-"Planet_Detail_Current_Time" = "Current Time";
+"Planet_Detail_View_Time" = "Просмотр времени:";
+"Planet_Detail_Current_Time" = "Текущее время";
 "Planet_Detail_At_Submit" = "At Submit";
 "Planet_Detail_Stop_Work_Countdown" = "Stop Work Countdown:";
 "Planet_Detail_Stopped" = "Stopped";
 "Planet_Detail_Generating_Snapshots" = "Generating snapshots...";
-"Planet_Detail_Realtime" = "Realtime";
-"Planet_Detail_Expire" = "Expire";
+"Planet_Detail_Realtime" = "Сейчас";
+"Planet_Detail_Expire" = "Финиш";
 "Planet_Detail_Simulating" = "Simulating...";
-"Planet_Detail_Extractor_Expiry_Time" = "Extractor expiry after";
-"Planet_Detail_Extractor_Expired" = "Extractor expired";
-"Planet_Colony_Stopped" = "Colony Stopped";
-"Planet_Extractor_Expired_Count" = "%d/%d extractors expired";
-"Planet_Extractor_Expiring_Soon_Count" = "%d/%d extractors expiring soon";
-"Storage_Change_Chart" = "Storage Chart";
+"Planet_Detail_Extractor_Expiry_Time" = "Добыча завершится через";
+"Planet_Detail_Extractor_Expired" = "Добыча завершена";
+"Planet_Colony_Stopped" = "Колония остановлена";
+"Planet_Extractor_Expired_Count" = "%d/%d добыча завершена";
+"Planet_Extractor_Expiring_Soon_Count" = "%d/%d срок добычи скоро истечет";
+"Storage_Change_Chart" = "Статистика хранения";
 
 "Contracts_Personal" = "Personal";
 "Contracts_Corporation" = "Corporation";
@@ -1715,7 +1715,7 @@
 
 // Language Map Tool
 "Main_Language_Map" = "Language Map";
-"Main_Language_Map_Search" = "Search";
+"Main_Language_Map_Search" = "Поиск";
 "Main_Language_Map_No_Results" = "No Results";
 "Main_Language_Map_Type_Item" = "Item";
 "Main_Language_Map_Type_System" = "Solar System";
@@ -1776,7 +1776,7 @@
 "ESI_Tag_Opportunities" = "Opportunities";
 "ESI_Tag_PlanetaryInteraction" = "Planetary Industry";
 "ESI_Tag_Routes" = "Routes";
-"ESI_Tag_Search" = "Search";
+"ESI_Tag_Search" = "Поиск";
 "ESI_Tag_Skills" = "Skills";
 "ESI_Tag_Sovereignty" = "Sovereignty";
 "ESI_Tag_Status" = "Status";
@@ -1876,8 +1876,8 @@
 "Agent_Type_Short_TutorialAgent" = "Tutorial";
 "Agent_Type_Short_ResearchAgent" = "Research";
 "Agent_Type_Short_CONCORDAgent" = "CONCORD";
-"Agent_Type_Short_GenericStorylineMissionAgent" = "Storyline";
-"Agent_Type_Short_StorylineMissionAgent" = "Storyline";
+"Agent_Type_Short_GenericStorylineMissionAgent" = "Наградные";
+"Agent_Type_Short_StorylineMissionAgent" = "Наградные";
 "Agent_Type_Short_EventMissionAgent" = "Event";
 "Agent_Type_Short_FactionalWarfareAgent" = "FW";
 "Agent_Type_Short_EpicArcAgent" = "Epic";
@@ -2019,7 +2019,7 @@
 "Time_Format_Days" = "%d days %02d:%02d:%02d";
 "Main_Database_Blueprints" = "Blueprints";
 "Main_Database_unknown_meta_group" = "Unknown Meta Group";
-"Main_Database_search_placeholder" = "Search";
+"Main_Database_search_placeholder" = "Поиск";
 "Misc_Cancel" = "Cancel";
 
 // Structure Selector
@@ -2116,10 +2116,10 @@
 "Jump_Navigation_Error_Path_Not_Found" = "Cannot find path from %@ to %@";
 "Jump_Navigation_No_Sovereignty" = "No Sovereignty";
 
-"Server_Status_Online" = "Server Online";
-"Server_Status_Offline" = "Server Offline";
-"Server_Status_Checking" = "Checking Status...";
-"Server_Status_Players" = " (%@ players)";
+"Server_Status_Online" = "Сервер Online";
+"Server_Status_Offline" = "Сервер Offline";
+"Server_Status_Checking" = "Проверка статуса...";
+"Server_Status_Players" = " (%@ игроков)";
 
 "Character_Implants_Count" = "%d Implant(s)";
 "Character_Clone_And_Implants_Count" = "%d Clone(s) · %d Implant(s)";
@@ -2222,10 +2222,10 @@
 "Recipient_Type_Alliance" = "Alliance";
 "Recipient_Type_Mailing_List" = "Mailing List";
 
-"Main_Fitting" = "Fitting";
-"Main_Fitting_Simulation" = "Fitting Simulation";
-"Fitting_Local" = "Local";
-"Fitting_Online" = "In-Game";
+"Main_Fitting" = "Оснащение кораблей";
+"Main_Fitting_Simulation" = "Симуляция оснащения";
+"Fitting_Local" = "Локальные";
+"Fitting_Online" = "В игре";
 "Fitting_Online_Need_Login" = "Need login";
 "Fitting_Local_Text" = "Local Fittings";
 "Fitting_Online_Text" = "In-Game Fittings";
@@ -2272,8 +2272,8 @@
 "Fitting_Mutation_Value_Out_Of_Range" = "Value out of range. Should be between %@ and %@";
 "Fitting_Mutation_Edit" = "Edit";
 "Fitting_Setting_Items" = "Items Setting";
-"Fitting_Add_Drones" = "Add Drones";
-"Fitting_Select_Drone" = "Select Drones";
+"Fitting_Add_Drones" = "Добавить дроны";
+"Fitting_Select_Drone" = "Поиск дронов";
 "Fitting_Drones_Qty" = "Qty: %d";
 "Fitting_Act_Drones_Qty" = "Active Qty: %d";
 "Fitting_unit_vol" = "Volume:";
@@ -2319,10 +2319,10 @@
 "Fitting_Fighters_Max_Qty" = "Maximum Quantity";
 
 // Module Status
-"Module_Status_Offline" = "Offline";
-"Module_Status_Online" = "Online";
-"Module_Status_Active" = "Active";
-"Module_Status_Overload" = "Overload";
+"Module_Status_Offline" = "Выключен";
+"Module_Status_Online" = "Включен";
+"Module_Status_Active" = "Активный";
+"Module_Status_Overload" = "Перегружен";
 
 // Ship Misc Stats View
 "Fitting_stat_misc" = "Misc Stats";
