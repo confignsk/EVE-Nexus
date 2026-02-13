@@ -2755,7 +2755,7 @@
 "StarMap_Export_Error_Message" = "Failed to export map";
 
 // Star Map Filter
-"StarMap_Filter_All" = "All";
+"StarMap_Filter_All" = "Все";
 "StarMap_Filter_Gas" = "Planet (Gas)";
 "StarMap_Filter_Temperate" = "Planet (Temperate)";
 "StarMap_Filter_Barren" = "Planet (Barren)";
